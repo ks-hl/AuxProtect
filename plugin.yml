@@ -1,0 +1,15 @@
+name: AuxProtect
+version: 1.0.2
+main: dev.heliosares.auxprotect.AuxProtect
+description: A plugin designed to suplement CoreProtect in a few ways.
+api-version: 1.13
+softdepend: [ShopGUIPlus, ChestShop, AuctionHouse, Vault, CoreProtect]
+
+commands:
+    auxprotect:
+        usage: /auxprotect
+        description: Base command
+        aliases: [ap]
+    claiminv:
+        usage: /claiminv
+        description: Claim a recovered inventory
