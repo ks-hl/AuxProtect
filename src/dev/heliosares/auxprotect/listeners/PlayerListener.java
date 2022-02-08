@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.listeners;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -24,6 +25,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerUnleashEntityEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
@@ -211,6 +213,30 @@ public class PlayerListener implements Listener {
 				}
 			}.runTaskLater(plugin, 20);
 		}
+	}
+
+	@EventHandler
+	public void onWorldChange(PlayerTeleportEvent e) {
+		if (!plugin.config.inventoryOnWorldChange || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
+			return;
+		}
+		final String inventory = InvSerialization.playerToBase64(e.getPlayer());
+		final Location oldLocation = e.getPlayer().getLocation().clone();
+
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				String newInventory = InvSerialization.playerToBase64(e.getPlayer());
+				if (newInventory.equals(inventory)) {
+					return;
+				}
+				plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+						oldLocation, "worldchange", inventory));
+				plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+						e.getPlayer().getLocation(), "worldchange", newInventory));
+			}
+
+		}.runTaskLater(plugin, 5);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)

@@ -156,6 +156,7 @@ public class APCommand implements CommandExecutor {
 				// plugin.saveConfig();
 				plugin.reloadConfig();
 				plugin.config.load();
+				sender.sendMessage("§aConfig reloaded");
 				return true;
 			} else if (args[0].equalsIgnoreCase("sql")) {
 				if (!MyPermission.SQL.hasPermission(sender)) {

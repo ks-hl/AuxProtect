@@ -843,9 +843,7 @@ public class SQLiteManager {
 		if (Bukkit.getWorld(world) == null) {
 			return -1;
 		}
-		Statement statement;
 		try {
-			statement = connection.createStatement();
 
 			String stmt = "INSERT INTO " + TABLE.WORLDS.toString() + " (name, wid)";
 			stmt += "\nVALUES (?,?)";
@@ -854,8 +852,6 @@ public class SQLiteManager {
 			pstmt.setInt(2, nextWid);
 			plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
 			pstmt.execute();
-
-			statement.close();
 			worlds.put(world, nextWid);
 			return nextWid++;
 		} catch (SQLException e) {
@@ -863,5 +859,26 @@ public class SQLiteManager {
 		}
 
 		return -1;
+	}
+
+	public int count() {
+		int total = 0;
+		final String stmt = "SELECT COUNT(1) FROM (?)";
+		for (TABLE table : TABLE.values()) {
+			synchronized (connection) {
+				holdingConnectionSince = System.currentTimeMillis();
+				holdingConnection = "count";
+				try {
+					PreparedStatement pstmt = connection.prepareStatement(stmt);
+					pstmt.setString(1, table.toString());
+					ResultSet rs = pstmt.executeQuery();
+					total += rs.getInt(1);
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+				holdingConnectionSince = 0;
+			}
+		}
+		return total;
 	}
 }

@@ -41,6 +41,7 @@ Actions:
     Enabled: true
   inventory:
     Enabled: true
+    WorldChange: false
   launch:
     Enabled: true
   grab:
@@ -55,3 +56,6 @@ Actions:
     Enabled: true
   ahbuy:
     Enabled: true
+
+#AuxProtect reports anonymous usage data to bStats. If you would like to disable that, set this option to false.
+telemetry: true 

@@ -8,6 +8,8 @@ public class APConfig {
 
 	private final FileConfiguration config;
 	private boolean privateRelease = false;
+	public boolean inventoryOnWorldChange;
+	public boolean telemetry;
 
 	public boolean isPrivate() {
 		return privateRelease;
@@ -19,6 +21,8 @@ public class APConfig {
 
 	public void load() {
 		privateRelease = config.getBoolean("private");
+		telemetry = config.getBoolean("telemetry");
+		inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
 		for (EntryAction action : EntryAction.values()) {
 			boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", false);
 			action.setEnabled(enabled);

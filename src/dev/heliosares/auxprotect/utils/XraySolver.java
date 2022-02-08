@@ -42,17 +42,17 @@ public class XraySolver {
 			}
 			if (score >= 6) {
 				String user = entries1.get(0).getUser(plugin.getSqlManager());
-				String tooltip = "ยง4Hits for '" + user + "':\n";
+				String tooltip = "ง4Hits for '" + user + "':\n";
 				for (DbEntry entry : entries1) {
 					switch (entry.getTarget()) {
 					case "1":
-						tooltip += "ยงe";
+						tooltip += "งe";
 						break;
 					case "2":
-						tooltip += "ยงc";
+						tooltip += "งc";
 						break;
 					case "3":
-						tooltip += "ยง4";
+						tooltip += "ง4";
 						break;
 					default:
 						continue;
@@ -60,7 +60,7 @@ public class XraySolver {
 					tooltip += "\n" + TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime())
 							+ " ago, severity " + entry.getTarget();
 				}
-				message.append("ยง4ยงl" + user + "ยงc - score " + score + " / 6.0")
+				message.append("ง4งl" + user + "งc - score " + score + " / 6.0")
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(tooltip)))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 								String.format("/ap lookup action:xraycheck target:1,2,3 user:%s", user)));

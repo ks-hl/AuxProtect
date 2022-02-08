@@ -31,6 +31,7 @@ import dev.heliosares.auxprotect.listeners.*;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Language;
 import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.heliosares.auxprotect.utils.YMLManager;
 
@@ -45,6 +46,7 @@ import dev.heliosares.auxprotect.utils.YMLManager;
 public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	public static final char LEFT_ARROW = 9668;
 	public static final char RIGHT_ARROW = 9658;
+	public static final char BLOCK = 9608;
 
 	public static IAuxProtect getInstance() {
 		return instance;
@@ -164,7 +166,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					debug("Checking for updates...");
 					String newVersion = UpdateChecker.getVersion(AuxProtect.this, 99147);
 					if (newVersion != null) {
-						if (!AuxProtect.this.getDescription().getVersion().equals(newVersion)) {
+						if (AuxProtect.this.getDescription().getVersion().equals(newVersion)) {
+							update = null;
+						} else {
 							boolean newUpdate = update == null;
 							update = newVersion;
 							if (newUpdate) {
@@ -211,6 +215,10 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			EntryAction.CENSOR.setEnabled(false);
 			EntryAction.IGNOREABANDONED.setEnabled(false);
 			EntryAction.XRAYCHECK.setEnabled(false);
+		}
+
+		if (config.telemetry) {
+			new Telemetry(this, 14232);
 		}
 	}
 
