@@ -56,6 +56,3 @@ Actions:
     Enabled: true
   ahbuy:
     Enabled: true
-
-#AuxProtect reports anonymous usage data to bStats. If you would like to disable that, set this option to false.
-telemetry: true 

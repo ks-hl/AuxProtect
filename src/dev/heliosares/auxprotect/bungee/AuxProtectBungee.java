@@ -132,13 +132,20 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		return translate;
 	}
 
-	public void debug(String string) {
+	@Override
+	public void info(String string) {
 		this.getLogger().info(string);
 	}
 
+	@Override
+	public void debug(String string) {
+		debug(string, 1);
+	}
+
+	@Override
 	public void debug(String string, int verbosity) {
 		if (debug >= verbosity) {
-			this.debug(string);
+			this.info("DEBUG" + verbosity + ": " + string);
 		}
 	}
 

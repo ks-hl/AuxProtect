@@ -58,20 +58,29 @@ public class LookupCommand implements CommandExecutor {
 		if (args.length == 2) {
 			int page = -1;
 			int perpage = -1;
-			if (args[1].contains(":")) {
-				String[] split = args[1].split(":");
-				try {
-					page = Integer.parseInt(split[0]);
-					perpage = Integer.parseInt(split[1]);
-				} catch (NumberFormatException e) {
-				}
-			} else {
-				try {
-					page = Integer.parseInt(args[1]);
-				} catch (NumberFormatException e) {
+			boolean isPageLookup = false;
+			boolean next = args[1].equalsIgnoreCase("next");
+			boolean prev = args[1].equalsIgnoreCase("prev");
+			boolean first = args[1].equalsIgnoreCase("first");
+			boolean last = args[1].equalsIgnoreCase("last");
+			if (!next && !prev && !first && !last) {
+				if (args[1].contains(":")) {
+					String[] split = args[1].split(":");
+					try {
+						page = Integer.parseInt(split[0]);
+						perpage = Integer.parseInt(split[1]);
+						isPageLookup = true;
+					} catch (NumberFormatException e) {
+					}
+				} else {
+					try {
+						page = Integer.parseInt(args[1]);
+						isPageLookup = true;
+					} catch (NumberFormatException e) {
+					}
 				}
 			}
-			if (page > 0) {
+			if (isPageLookup || first || last || next || prev) {
 				Results result = null;
 				String uuid = "nonplayer";
 				if (sender instanceof Player) {
@@ -83,6 +92,18 @@ public class LookupCommand implements CommandExecutor {
 				if (result == null) {
 					sender.sendMessage(plugin.translate("lookup-no-results-selected"));
 					return true;
+				}
+				if (perpage == -1) {
+					perpage = result.perpage;
+				}
+				if (first) {
+					page = 1;
+				} else if (last) {
+					page = result.getLastPage(result.perpage);
+				} else if (next) {
+					page = result.prevpage + 1;
+				} else if (prev) {
+					page = result.prevpage - 1;
 				}
 				if (perpage > 0) {
 					if (perpage > 100) {
@@ -96,6 +117,7 @@ public class LookupCommand implements CommandExecutor {
 				}
 			}
 		}
+
 		HashMap<String, String> params = new HashMap<>();
 		boolean count = false;
 		boolean playtime = false;

@@ -5,6 +5,7 @@
 	<version>1.0.4</version>
 	<name>AuxProtect</name>
 	<build>
+		<directory>${myPath}/plugins</directory>
 		<resources>
 			<resource>
 				<directory>${basedir}</directory>

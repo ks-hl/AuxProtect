@@ -24,6 +24,7 @@ public class Results {
 	protected final DateTimeFormatter formatter;
 	private final IAuxProtect plugin;
 	public int perpage = 4;
+	public int prevpage = 0;
 
 	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, CommandSender player) {
 		this.entries = entries;
@@ -41,12 +42,13 @@ public class Results {
 	}
 
 	public void showPage(int page, int perpage_) {
-		perpage = perpage_;
-		int lastpage = lastPage(perpage);
-		if (page > lastpage) {
+		int lastpage = getLastPage(perpage_);
+		if (page > lastpage || page < 1) {
 			player.sendMessage(plugin.translate("lookup-nopage"));
 			return;
 		}
+		perpage = perpage_;
+		prevpage = page;
 		player.sendMessage("§f------  §9AuxProtect Results§7  ------");
 		for (int i = (page - 1) * perpage; i < (page) * perpage && i < entries.size(); i++) {
 			DbEntry en = entries.get(i);
@@ -54,8 +56,10 @@ public class Results {
 
 			message.append(String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - en.getTime()),
 					en.getUser(plugin.getSqlManager())))
-					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7"
-							+ Instant.ofEpochMilli(en.getTime()).atZone(ZoneId.systemDefault()).format(formatter))));
+					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+							new Text(Instant.ofEpochMilli(en.getTime()).atZone(ZoneId.systemDefault()).format(formatter)
+									+ "\n§7Click to copy epoch time.")))
+					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTime() + "e"));
 
 			message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(plugin.getSqlManager()),
 					plugin.translate(en.getAction().getLang(en.getState())), en.getTarget())).event((HoverEvent) null);
@@ -133,7 +137,7 @@ public class Results {
 		return;
 	}
 
-	int lastPage(int perpage) {
+	public int getLastPage(int perpage) {
 		return (int) Math.ceil(entries.size() / (double) perpage);
 	}
 

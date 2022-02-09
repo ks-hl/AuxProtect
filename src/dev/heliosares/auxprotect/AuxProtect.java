@@ -38,7 +38,6 @@ import dev.heliosares.auxprotect.utils.YMLManager;
 /*-
  * TODO: 
  * 
- * Auctionhouse logging
  * better api
  * 
  * */
@@ -68,13 +67,15 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	public String update;
 	long lastCheckedForUpdate;
 
+	long lastloaded;
+
 	@Override
 	public void onEnable() {
 		instance = this;
 		AuxProtectApi.setInstance(this);
-		this.getConfig().options().copyDefaults(true);
 		this.saveDefaultConfig();
-		this.saveConfig();
+		this.reloadConfig();
+		this.getConfig().options().copyDefaults(true);
 
 		YMLManager langManager = new YMLManager("en-us", this);
 		langManager.load(true);
@@ -82,6 +83,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 		data = new YMLManager("data", this);
 		data.load(false);
+		lastloaded = data.getData().getLong("lastloaded");
+		data.getData().set("lastloaded", System.currentTimeMillis());
+		data.save();
 
 		config = new APConfig(this.getConfig());
 		config.load();
@@ -129,6 +133,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					}
 					purge.purge(Bukkit.getConsoleSender(), args);
 				}
+				sqlManager.count();
 			}
 		}.runTaskAsynchronously(this);
 
@@ -217,8 +222,20 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			EntryAction.XRAYCHECK.setEnabled(false);
 		}
 
-		if (config.telemetry) {
+		if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
+			debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+					3);
 			new Telemetry(this, 14232);
+		} else {
+			debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+					3);
+			new BukkitRunnable() {
+
+				@Override
+				public void run() {
+					new Telemetry(AuxProtect.this, 14232);
+				}
+			}.runTaskLater(this, 20 * 60 * 60);
 		}
 	}
 
@@ -228,8 +245,6 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 	@Override
 	public void onDisable() {
-		config.save();
-		this.saveConfig();
 		dbRunnable.run();
 		if (sqlManager != null)
 			sqlManager.close();
@@ -249,13 +264,20 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		return econ != null;
 	}
 
-	public void debug(String string) {
+	@Override
+	public void info(String string) {
 		this.getLogger().info(string);
 	}
 
+	@Override
+	public void debug(String string) {
+		debug(string, 1);
+	}
+
+	@Override
 	public void debug(String string, int verbosity) {
 		if (debug >= verbosity) {
-			this.debug(string);
+			this.info("DEBUG" + verbosity + ": " + string);
 		}
 	}
 

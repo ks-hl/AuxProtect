@@ -61,7 +61,7 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return moneyCommand.onCommand(sender, command, label, args);
-			} else if (args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray") && plugin.config.isPrivate()) {
+			} else if ((args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray")) && plugin.config.isPrivate()) {
 				if (!MyPermission.LOOKUP_XRAY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;

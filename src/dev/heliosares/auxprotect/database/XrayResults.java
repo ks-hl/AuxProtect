@@ -33,7 +33,7 @@ public class XrayResults extends Results {
 	public void showPage(int page, int perpage) {
 		index = page;
 		perpage = 1;
-		int lastpage = lastPage(perpage);
+		int lastpage = getLastPage(perpage);
 		if (page > lastpage) {
 			player.sendMessage(AuxProtect.getInstance().translate("lookup-nopage"));
 			return;

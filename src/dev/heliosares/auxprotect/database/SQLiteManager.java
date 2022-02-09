@@ -31,6 +31,12 @@ public class SQLiteManager {
 
 	private int version;
 
+	private int count;
+
+	public int getCount() {
+		return count;
+	}
+
 	public boolean isConnected() {
 		return isConnected;
 	}
@@ -314,6 +320,7 @@ public class SQLiteManager {
 
 			result.close();
 			statement.close();
+			count += entries.size();
 			holdingConnectionSince = 0;
 			return serialized_id;
 		}
@@ -853,6 +860,7 @@ public class SQLiteManager {
 			plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
 			pstmt.execute();
 			worlds.put(world, nextWid);
+			count++;
 			return nextWid++;
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -861,24 +869,31 @@ public class SQLiteManager {
 		return -1;
 	}
 
-	public int count() {
+	public void count() {
 		int total = 0;
-		final String stmt = "SELECT COUNT(1) FROM (?)";
+		plugin.debug("Counting rows..");
 		for (TABLE table : TABLE.values()) {
+			if (table == TABLE.AUXPROTECT_ABANDONED && !plugin.getAPConfig().isPrivate()) {
+				continue;
+			}
 			synchronized (connection) {
 				holdingConnectionSince = System.currentTimeMillis();
 				holdingConnection = "count";
 				try {
-					PreparedStatement pstmt = connection.prepareStatement(stmt);
-					pstmt.setString(1, table.toString());
+					PreparedStatement pstmt = connection.prepareStatement("SELECT COUNT(1) FROM " + table.toString());
 					ResultSet rs = pstmt.executeQuery();
-					total += rs.getInt(1);
+					int count = rs.getInt(1);
+					total += count;
+					plugin.debug(table.toString() + ": " + count + " rows.");
+					rs.close();
+					pstmt.close();
 				} catch (SQLException e) {
 					e.printStackTrace();
 				}
 				holdingConnectionSince = 0;
 			}
 		}
-		return total;
+		plugin.debug("Counted all tables. " + total + " rows.");
+		count = total;
 	}
 }

@@ -272,11 +272,12 @@ public class XrayCommand implements CommandExecutor {
 							Statement statement = Database.getConnection(true).createStatement();
 							lookup = Lookup.performLookup(statement, Bukkit.getConsoleSender(), new ArrayList<String>(),
 									new ArrayList<String>(), blocks, new ArrayList<>(), new ArrayList<String>(),
-									actions/* actions */, null, null, (int) ((System.currentTimeMillis() - time) / 1000), false,
-									true);
+									actions/* actions */, null, null,
+									(int) ((System.currentTimeMillis() - time) / 1000), false, true);
 
 						} catch (Exception e) {
 							e.printStackTrace();
+							sender.sendMessage("§cAn error occured.");
 							return;
 						}
 

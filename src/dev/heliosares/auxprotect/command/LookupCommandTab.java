@@ -30,6 +30,12 @@ public class LookupCommandTab implements TabCompleter {
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 		List<String> possible = new ArrayList<>();
 		String currentArg = args[args.length - 1];
+		if (args.length == 2) {
+			possible.add("next");
+			possible.add("prev");
+			possible.add("first");
+			possible.add("last");
+		}
 
 		possible.add("radius:");
 		possible.add("time:");

@@ -13,6 +13,8 @@ public interface IAuxProtect {
 
 	String translate(String key);
 
+	void info(String msg);
+
 	void debug(String msg);
 
 	void debug(String msg, int verb);
