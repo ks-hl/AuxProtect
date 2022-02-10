@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -61,7 +62,8 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return moneyCommand.onCommand(sender, command, label, args);
-			} else if ((args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray")) && plugin.config.isPrivate()) {
+			} else if ((args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray"))
+					&& plugin.config.isPrivate()) {
 				if (!MyPermission.LOOKUP_XRAY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
@@ -91,7 +93,7 @@ public class APCommand implements CommandExecutor {
 					} catch (NumberFormatException e) {
 					}
 					if (verbosity < 0 || verbosity > 5) {
-						sender.sendMessage("Â§cInvalid verbosity level. /ap debug [0-5]");
+						sender.sendMessage("§cInvalid verbosity level. /ap debug [0-5]");
 						return true;
 					}
 				} else {
@@ -104,7 +106,7 @@ public class APCommand implements CommandExecutor {
 				plugin.debug = verbosity;
 				plugin.getConfig().set("debug", plugin.debug);
 				plugin.saveConfig();
-				sender.sendMessage("Debug " + (verbosity > 0 ? "Â§aenabled. Â§7Level: " + verbosity : "Â§cdisabled."));
+				sender.sendMessage("Debug " + (verbosity > 0 ? "§aenabled. §7Level: " + verbosity : "§cdisabled."));
 				return true;
 			} else if (args[0].equalsIgnoreCase("help")) {
 				if (!MyPermission.HELP.hasPermission(sender)) {
@@ -127,8 +129,8 @@ public class APCommand implements CommandExecutor {
 				}
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm.ss");
 				if (args.length == 1) {
-					sender.sendMessage("Â§9Server time:");
-					sender.sendMessage("Â§7" + LocalDateTime.now().format(formatter));
+					sender.sendMessage("§9Server time:");
+					sender.sendMessage("§7" + LocalDateTime.now().format(formatter));
 					return true;
 				} else if (args.length == 2) {
 					if (args[1].startsWith("+") || args[1].startsWith("-")) {
@@ -139,8 +141,8 @@ public class APCommand implements CommandExecutor {
 							return true;
 						}
 						sender.sendMessage(
-								"Â§9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
-						sender.sendMessage("Â§7"
+								"§9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
+						sender.sendMessage("§7"
 								+ LocalDateTime.now().plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
 						return true;
 					}
@@ -156,15 +158,25 @@ public class APCommand implements CommandExecutor {
 				// plugin.saveConfig();
 				plugin.reloadConfig();
 				plugin.config.load();
-				sender.sendMessage("Â§aConfig reloaded");
+				sender.sendMessage("§aConfig reloaded");
 				return true;
-			} else if (args[0].equalsIgnoreCase("sql")) {
-				if (!MyPermission.SQL.hasPermission(sender)) {
+			} else if (args[0].equalsIgnoreCase("stats")) {
+				if (!MyPermission.ADMIN.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
-				if (plugin.debug == 0) {
-					sender.sendMessage("Â§cDebug mode must be enabled to use this command.");
+
+				sender.sendMessage("§7Rows: §9" + plugin.getSqlManager().getCount());
+				sender.sendMessage("§7Average lookup time: §9"
+						+ Math.round(plugin.getSqlManager().lookupTime.getMean() / 1000.0) / 1000.0 + "§7ms");
+				sender.sendMessage("§7Average record time per entry: §9"
+						+ Math.round(plugin.getSqlManager().putTimePerEntry.getMean() / 1000.0) / 1000.0 + "§7ms");
+				sender.sendMessage("§7Average lookup time per execution: §9"
+						+ Math.round(plugin.getSqlManager().putTimePerExec.getMean() / 1000.0) / 1000.0 + "§7ms");
+				return true;
+			} else if (args[0].equalsIgnoreCase("sql")) {
+				if (!MyPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
+					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				String msg = "";
@@ -174,11 +186,11 @@ public class APCommand implements CommandExecutor {
 				try {
 					plugin.getSqlManager().execute(msg.trim());
 				} catch (SQLException e) {
-					sender.sendMessage("Â§cAn error occured.");
+					sender.sendMessage("§cAn error occured.");
 					e.printStackTrace();
 					return true;
 				}
-				sender.sendMessage("Â§aSQL statement executed successfully.");
+				sender.sendMessage("§aSQL statement executed successfully.");
 				return true;
 			} else {
 				sender.sendMessage(plugin.translate("unknown-subcommand"));
@@ -187,17 +199,17 @@ public class APCommand implements CommandExecutor {
 		}
 		sendInfo(sender);
 		if (MyPermission.HELP.hasPermission(sender)) {
-			sender.sendMessage("Â§7Do Â§9/ap helpÂ§7 for more info.");
+			sender.sendMessage("§7Do §9/ap help§7 for more info.");
 		}
 		return true;
 	}
 
 	private void sendInfo(CommandSender sender) {
-		sender.sendMessage("Â§9AuxProtect"
-				+ (MyPermission.ADMIN.hasPermission(sender) ? (" Â§7v" + plugin.getDescription().getVersion()) : ""));
-		sender.sendMessage("Â§7Developed by Â§9Heliosares");
+		sender.sendMessage("§9AuxProtect"
+				+ (MyPermission.ADMIN.hasPermission(sender) ? (" §7v" + plugin.getDescription().getVersion()) : ""));
+		sender.sendMessage("§7Developed by §9Heliosares");
 		if (MyPermission.ADMIN.hasPermission(sender)) {
-			sender.sendMessage("Â§7Â§ohttps://www.spigotmc.org/resources/auxprotect.99147/");
+			sender.sendMessage("§7§ohttps://www.spigotmc.org/resources/auxprotect.99147/");
 		}
 	}
 

@@ -13,7 +13,7 @@ public class Experience {
 	 *      href=http://minecraft.gamepedia.com/Experience#Leveling_up>Experience#Leveling_up</a>
 	 */
 	public static int getTotalExp(Player player) {
-		return getExpFromLevel(player.getLevel()) + player.getExpToLevel();
+		return getExpFromLevel(player.getLevel()) + (int) player.getExp();
 	}
 
 	/**

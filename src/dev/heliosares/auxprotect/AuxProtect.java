@@ -171,7 +171,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					debug("Checking for updates...");
 					String newVersion = UpdateChecker.getVersion(AuxProtect.this, 99147);
 					if (newVersion != null) {
-						if (AuxProtect.this.getDescription().getVersion().equals(newVersion)) {
+						int compare = UpdateChecker.compareVersions(AuxProtect.this.getDescription().getVersion(),
+								newVersion);
+						if (compare <= 0) {
 							update = null;
 						} else {
 							boolean newUpdate = update == null;

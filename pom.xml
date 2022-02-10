@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.4</version>
+	<version>1.0.5</version>
 	<name>AuxProtect</name>
 	<build>
 		<directory>${myPath}/plugins</directory>
@@ -40,20 +40,19 @@
 			<url>https://repo.minebench.de/</url>
 		</repository>
 		<repository>
-			<id>playpro-repo</id>
-			<url>https://maven.playpro.com/</url>
-		</repository>
-		<repository>
 			<id>jitpack.io</id>
 			<url>https://jitpack.io</url>
+		</repository>
+		<repository>
+			<id>playpro-repo</id>
+			<url>https://maven.playpro.com</url>
 		</repository>
 	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.spigotmc</groupId>
-			<artifactId>spigot</artifactId>
+			<artifactId>spigot-api</artifactId>
 			<version>1.18.1-R0.1-SNAPSHOT</version>
-			<classifier>remapped-mojang</classifier>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>

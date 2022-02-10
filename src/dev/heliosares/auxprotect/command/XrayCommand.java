@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.command;
 
+import java.lang.reflect.Method;
 import java.sql.Statement;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -250,6 +251,7 @@ public class XrayCommand implements CommandExecutor {
 				sender.sendMessage(plugin.translate("lookup-looking"));
 				new BukkitRunnable() {
 
+					@SuppressWarnings("unchecked")
 					@Override
 					public void run() {
 						ArrayList<DbEntry> entries = new ArrayList<>();
@@ -270,12 +272,25 @@ public class XrayCommand implements CommandExecutor {
 						List<String[]> lookup = null;
 						try {
 							Statement statement = Database.getConnection(true).createStatement();
-							lookup = Lookup.performLookup(statement, Bukkit.getConsoleSender(), new ArrayList<String>(),
-									new ArrayList<String>(), blocks, new ArrayList<>(), new ArrayList<String>(),
-									actions/* actions */, null, null,
-									(int) ((System.currentTimeMillis() - time) / 1000), false, true);
+							/*
+							 * lookup = Lookup.performLookup(statement, Bukkit.getConsoleSender(), new
+							 * ArrayList<String>(), new ArrayList<String>(), blocks, new
+							 * ArrayList<Object>(), new ArrayList<String>(), actions, null, null,
+							 * ((System.currentTimeMillis() - time) / 1000), false, true);
+							 */
+							Method method = null;
+							for (Method method_ : Lookup.class.getMethods()) {
+								if (method_.getName().equals("performLookup")) {
+									method = method_;
+									break;
+								}
+							}
+							lookup = (List<String[]>) method.invoke(null, statement, Bukkit.getConsoleSender(),
+									new ArrayList<String>(), new ArrayList<String>(), blocks, new ArrayList<Object>(),
+									new ArrayList<String>(), actions/* actions */, null, null,
+									((System.currentTimeMillis() - time) / 1000), false, true);
 
-						} catch (Exception e) {
+						} catch (Throwable e) {
 							e.printStackTrace();
 							sender.sendMessage("§cAn error occured.");
 							return;

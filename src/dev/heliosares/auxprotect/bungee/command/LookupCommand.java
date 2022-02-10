@@ -4,11 +4,15 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
+import org.bukkit.entity.Player;
+
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import dev.heliosares.auxprotect.bungee.Results;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLiteManager.LookupException;
+import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
@@ -41,55 +45,89 @@ public class LookupCommand {
 			AuxProtectBungee.tell(sender, plugin.lang.translate("lookup-invalid-syntax"));
 			return true;
 		}
+		Player player_ = null;
+		if (sender instanceof Player) {
+			player_ = (Player) sender;
+		}
+		final Player player = player_;
 		if (args.length == 2) {
 			int page = -1;
-			int perpage = 4;
-			if (args[1].contains(":")) {
-				String[] split = args[1].split(":");
-
-				try {
-					page = Integer.parseInt(split[0]);
-					perpage = Integer.parseInt(split[1]);
-				} catch (NumberFormatException e) {
-
-				}
-			} else {
-				try {
-					page = Integer.parseInt(args[1]);
-				} catch (NumberFormatException e) {
-
+			int perpage = -1;
+			boolean isPageLookup = false;
+			boolean next = args[1].equalsIgnoreCase("next");
+			boolean prev = args[1].equalsIgnoreCase("prev");
+			boolean first = args[1].equalsIgnoreCase("first");
+			boolean last = args[1].equalsIgnoreCase("last");
+			if (!next && !prev && !first && !last) {
+				if (args[1].contains(":")) {
+					String[] split = args[1].split(":");
+					try {
+						page = Integer.parseInt(split[0]);
+						perpage = Integer.parseInt(split[1]);
+						isPageLookup = true;
+					} catch (NumberFormatException e) {
+					}
+				} else {
+					try {
+						page = Integer.parseInt(args[1]);
+						isPageLookup = true;
+					} catch (NumberFormatException e) {
+					}
 				}
 			}
-			if (page > 0) {
-				if (perpage > 99)
-					perpage = 99;
+			if (isPageLookup || first || last || next || prev) {
+				Results result = null;
 				String uuid = "nonplayer";
-				if (sender instanceof ProxiedPlayer) {
-					uuid = ((ProxiedPlayer) sender).getUniqueId().toString();
+				if (sender instanceof Player) {
+					uuid = ((Player) sender).getUniqueId().toString();
 				}
 				if (results.containsKey(uuid)) {
-					results.get(uuid).showPage(page, perpage);
-					return true;
-				} else {
+					result = results.get(uuid);
+				}
+				if (result == null) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("lookup-no-results-selected"));
+					return true;
+				}
+				if (perpage == -1) {
+					perpage = result.perpage;
+				}
+				if (first) {
+					page = 1;
+				} else if (last) {
+					page = result.getLastPage(result.perpage);
+				} else if (next) {
+					page = result.prevpage + 1;
+				} else if (prev) {
+					page = result.prevpage - 1;
+				}
+				if (perpage > 0) {
+					if (perpage > 100) {
+						perpage = 100;
+					}
+					result.showPage(page, perpage);
 					return true;
 				}
 			}
 		}
+
 		HashMap<String, String> params = new HashMap<>();
 		boolean count = false;
-		boolean showTime = false;
+		boolean playtime = false;
 		boolean bw = false;
 		long startTime = 0;
 		for (int i = 1; i < args.length; i++) {
 			if (args[i].equalsIgnoreCase("#count")) {
 				count = true;
 				continue;
-			} else if (args[i].equalsIgnoreCase("#time")) {
-				showTime = true;
-				continue;
 			} else if (args[i].equalsIgnoreCase("#bw")) {
 				bw = true;
+				continue;
+			} else if (args[i].equalsIgnoreCase("#pt")) {
+				if (!MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
+					AuxProtectBungee.tell(sender, plugin.translate("no-permission-flag"));
+					return true;
+				}
+				playtime = true;
 				continue;
 			}
 			String[] split = args[i].split(":");
@@ -112,9 +150,14 @@ public class LookupCommand {
 				token = "world";
 				break;
 			}
+			if (token.equalsIgnoreCase("db")) {
+				if (!MyPermission.ADMIN.hasPermission(sender)) {
+					AuxProtectBungee.tell(sender, plugin.translate("no-permission"));
+					return true;
+				}
+			}
 			if (split.length != 2 || !validParams.contains(token)) {
-				AuxProtectBungee.tell(sender,
-						String.format(plugin.lang.translate("lookup-invalid-parameter"), args[i]));
+				AuxProtectBungee.tell(sender, String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 				return true;
 			}
 			String param = split[1];
@@ -127,7 +170,7 @@ public class LookupCommand {
 					}
 					if (time < 0) {
 						AuxProtectBungee.tell(sender,
-								String.format(plugin.lang.translate("lookup-invalid-parameter"), args[i]));
+								String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 						return true;
 					}
 					param = time + "";
@@ -176,38 +219,67 @@ public class LookupCommand {
 				params.put("target", target);
 			}
 		}
+		if (playtime) {
+			if (params.containsKey("user")) {
+				if (params.get("user").split(",").length > 1) {
+					AuxProtectBungee.tell(sender, plugin.translate("lookup-playtime-toomanyusers"));
+					return true;
+				}
+			} else {
+				AuxProtectBungee.tell(sender, plugin.translate("lookup-playtime-nouser"));
+				return true;
+			}
+			if (params.containsKey("action")) {
+				params.remove("action");
+				params.put("action", "session");
+			}
+		}
 		final boolean count_ = count;
-		final boolean showTime_ = showTime;
-		AuxProtectBungee.tell(sender, plugin.lang.translate("lookup-looking"));
+		final boolean playtime_ = playtime;
+		final long startTime_ = startTime;
+		AuxProtectBungee.tell(sender, plugin.translate("lookup-looking"));
 		Runnable runnable = new Runnable() {
 
 			@Override
 			public void run() {
-				// TODO: Sender compatibility
 				ArrayList<DbEntry> results = null;
 				try {
-					results = plugin.getSqlManager().lookup(params, null, false);
+					results = plugin.getSqlManager().lookup(params, player != null ? player.getLocation() : null,
+							false);
 				} catch (LookupException e) {
 					AuxProtectBungee.tell(sender, e.errorMessage);
 					return;
 				}
 				if (results == null || results.size() == 0) {
-					AuxProtectBungee.tell(sender, plugin.lang.translate("lookup-noresults"));
+					AuxProtectBungee.tell(sender, plugin.translate("lookup-noresults"));
 					return;
 				}
 				if (count_) {
-					AuxProtectBungee.tell(sender, String.format(plugin.lang.translate("lookup-count"), results.size()));
+					AuxProtectBungee.tell(sender, String.format(plugin.translate("lookup-count"), results.size()));
+				} else if (playtime_) {
+					String users = params.get("user");
+					if (users == null) {
+						AuxProtectBungee.tell(sender, plugin.translate("playtime-nouser"));
+						return;
+					}
+					if (users.contains(",")) {
+						AuxProtectBungee.tell(sender, plugin.translate("playtime-toomanyusers"));
+						return;
+					}
+					sender.sendMessage(
+							PlayTimeSolver.solvePlaytime(results, (int) Math.round(startTime_ / (1000 * 3600)), users));
 				} else {
 					String uuid = "nonplayer";
-					if (sender instanceof ProxiedPlayer) {
-						uuid = ((ProxiedPlayer) sender).getUniqueId().toString();
+					if (player != null) {
+						uuid = player.getUniqueId().toString();
 					}
-					Results result = new Results(plugin, results, sender, showTime_);
+					Results result = new Results(plugin, results, sender);
 					result.showPage(1, 4);
 					LookupCommand.this.results.put(uuid, result);
 				}
 			}
 		};
+		// plugin.dbRunnable.scheduleLookup(runnable);
 		plugin.dbRunnable.scheduleLookup(runnable);
 		return true;
 	}

@@ -18,6 +18,7 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.command.CommandSender;
 
 import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.utils.MovingAverage;
 
 public class SQLiteManager {
 	private Connection connection;
@@ -31,8 +32,6 @@ public class SQLiteManager {
 
 	private int version;
 
-	private int count;
-
 	public int getCount() {
 		return count;
 	}
@@ -44,6 +43,11 @@ public class SQLiteManager {
 	public int getVersion() {
 		return version;
 	}
+
+	public MovingAverage putTimePerEntry = new MovingAverage(100);
+	public MovingAverage putTimePerExec = new MovingAverage(100);
+	public MovingAverage lookupTime = new MovingAverage(100);
+	private int count;
 
 	public static enum TABLE {
 		AUXPROTECT, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_INVENTORY, WORLDS;
@@ -252,6 +256,7 @@ public class SQLiteManager {
 	protected long put(TABLE table, ArrayList<DbEntry> entries) throws SQLException {
 		if (!isConnected)
 			return -1;
+		long start = System.nanoTime();
 		synchronized (connection) {
 			holdingConnectionSince = System.currentTimeMillis();
 			holdingConnection = "put";
@@ -322,6 +327,8 @@ public class SQLiteManager {
 			statement.close();
 			count += entries.size();
 			holdingConnectionSince = 0;
+			this.putTimePerEntry.addData((System.nanoTime() - start) / (double) entries.size());
+			this.putTimePerExec.addData(System.nanoTime() - start);
 			return serialized_id;
 		}
 	}
@@ -350,6 +357,7 @@ public class SQLiteManager {
 
 	public ArrayList<DbEntry> lookup(HashMap<String, String> params, Location location, boolean exact)
 			throws LookupException {
+		long start = System.nanoTime();
 		if (!isConnected)
 			return null;
 
@@ -649,6 +657,7 @@ public class SQLiteManager {
 						1);
 
 				holdingConnectionSince = 0;
+				this.lookupTime.addData(System.nanoTime() - start);
 				return output;
 			}
 		} catch (Exception e) {
