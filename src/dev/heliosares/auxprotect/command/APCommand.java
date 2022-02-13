@@ -171,7 +171,7 @@ public class APCommand implements CommandExecutor {
 						+ Math.round(plugin.getSqlManager().lookupTime.getMean() / 1000.0) / 1000.0 + "§7ms");
 				sender.sendMessage("§7Average record time per entry: §9"
 						+ Math.round(plugin.getSqlManager().putTimePerEntry.getMean() / 1000.0) / 1000.0 + "§7ms");
-				sender.sendMessage("§7Average lookup time per execution: §9"
+				sender.sendMessage("§7Average record time per execution: §9"
 						+ Math.round(plugin.getSqlManager().putTimePerExec.getMean() / 1000.0) / 1000.0 + "§7ms");
 				return true;
 			} else if (args[0].equalsIgnoreCase("sql")) {

@@ -1,3 +1,6 @@
+#AuxProtect
+#Developed by Heliosares
+#https://www.spigotmc.org/resources/auxprotect.99147/
 purge-cmds:
   - 'auxprotect 90d'
   - 'auxprotect_spam 30d'
@@ -23,8 +26,10 @@ Actions:
     Enabled: true
   money:
     Enabled: true
+    Interval: 600000
   pos:
     Enabled: true
+    Interval: 10000
   hurt:
     Enabled: true
   inv:
@@ -42,6 +47,7 @@ Actions:
   inventory:
     Enabled: true
     WorldChange: false
+    Interval: 3600000
   launch:
     Enabled: true
   grab:
@@ -56,3 +62,6 @@ Actions:
     Enabled: true
   ahbuy:
     Enabled: true
+#Automatically check for updates and display notifications in game.
+#It's recommended to leave this enabled, as I'm constantly improving the plugin.
+checkforupdates: true

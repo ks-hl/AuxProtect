@@ -146,29 +146,45 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		getServer().getScheduler().runTaskTimerAsynchronously(this, dbRunnable, 60, 5);
 
 		new BukkitRunnable() {
+			long lastPos;
+
+			@Override
+			public void run() {
+				if (System.currentTimeMillis() - lastPos > config.posInterval) {
+					lastPos = System.currentTimeMillis();
+					for (Player player : Bukkit.getOnlinePlayers()) {
+						dbRunnable.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false,
+								player.getLocation(), "", "Y:" + Math.round(player.getLocation().getYaw()) + " P:"
+										+ Math.round(player.getLocation().getPitch())));
+					}
+				}
+			}
+		}.runTaskTimerAsynchronously(this, 20, 20);
+
+		new BukkitRunnable() {
 
 			@Override
 			public void run() {
 				for (Player player : Bukkit.getOnlinePlayers()) {
-					Long lastInv = lastLogOfInventoryForUUID.get(player.getUniqueId().toString());
-					if (lastInv == null || System.currentTimeMillis() - lastInv > 1000 * 60 * 60) {
-						lastLogOfInventoryForUUID.put(player.getUniqueId().toString(), System.currentTimeMillis());
-						dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.INVENTORY, false,
-								player.getLocation(), "periodic", InvSerialization.playerToBase64(player)));
+					if (config.inventoryInterval > 0) {
+						Long lastInv = lastLogOfInventoryForUUID.get(player.getUniqueId().toString());
+						if (lastInv == null || System.currentTimeMillis() - lastInv > config.inventoryInterval) {
+							lastLogOfInventoryForUUID.put(player.getUniqueId().toString(), System.currentTimeMillis());
+							dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.INVENTORY, false,
+									player.getLocation(), "periodic", InvSerialization.playerToBase64(player)));
+						}
 					}
 
-					dbRunnable.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false,
-							player.getLocation(), "", "Y:" + Math.round(player.getLocation().getYaw()) + " P:"
-									+ Math.round(player.getLocation().getPitch())));
-
-					lastInv = lastLogOfMoneyForUUID.get(player.getUniqueId().toString());
-					if (lastInv == null || System.currentTimeMillis() - lastInv > 1000 * 10 * 60) {
-						PlayerListener.logMoney(AuxProtect.this, player, "periodic");
+					if (config.moneyInterval > 0) {
+						Long lastMoney = lastLogOfMoneyForUUID.get(player.getUniqueId().toString());
+						if (lastMoney == null || System.currentTimeMillis() - lastMoney > config.moneyInterval) {
+							PlayerListener.logMoney(AuxProtect.this, player, "periodic");
+						}
 					}
 				}
-				if (System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
+				if (config.checkforupdates && System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
 					lastCheckedForUpdate = System.currentTimeMillis();
-					debug("Checking for updates...");
+					debug("Checking for updates...", 1);
 					String newVersion = UpdateChecker.getVersion(AuxProtect.this, 99147);
 					if (newVersion != null) {
 						int compare = UpdateChecker.compareVersions(AuxProtect.this.getDescription().getVersion(),
@@ -237,7 +253,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 				public void run() {
 					new Telemetry(AuxProtect.this, 14232);
 				}
-			}.runTaskLater(this, 20 * 60 * 60);
+			}.runTaskLater(this, (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50);
 		}
 	}
 
