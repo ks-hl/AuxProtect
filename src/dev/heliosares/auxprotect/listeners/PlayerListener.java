@@ -55,14 +55,18 @@ public class PlayerListener implements Listener {
 	public PlayerListener(AuxProtect plugin) {
 		this.plugin = plugin;
 		buckets = new ArrayList<>();
-		buckets.add(Material.AXOLOTL_BUCKET);
+		if (plugin.getCompatabilityVersion() >= 17) {
+			buckets.add(Material.AXOLOTL_BUCKET);
+		}
 		buckets.add(Material.COD_BUCKET);
 		buckets.add(Material.SALMON_BUCKET);
 		buckets.add(Material.TROPICAL_FISH_BUCKET);
 		buckets.add(Material.PUFFERFISH_BUCKET);
 		mobs = new ArrayList<>();
 		mobs.add(EntityType.PUFFERFISH);
-		mobs.add(EntityType.AXOLOTL);
+		if (plugin.getCompatabilityVersion() >= 17) {
+			mobs.add(EntityType.AXOLOTL);
+		}
 		mobs.add(EntityType.TROPICAL_FISH);
 		mobs.add(EntityType.COD);
 		mobs.add(EntityType.SALMON);
@@ -216,7 +220,8 @@ public class PlayerListener implements Listener {
 	}
 
 	@EventHandler
-	public void onWorldChange(PlayerTeleportEvent e) {
+	public void onPlayerTeleport(PlayerTeleportEvent e) {
+		logPos(plugin, e.getPlayer(), e.getTo(), "tele");
 		if (!plugin.config.inventoryOnWorldChange || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
 			return;
 		}
@@ -373,5 +378,10 @@ public class PlayerListener implements Listener {
 			}
 		}
 		return false;
+	}
+
+	public static void logPos(AuxProtect auxProtect, Player player, Location location, String string) {
+		auxProtect.dbRunnable.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location,
+				string, "Y:" + Math.round(location.getYaw()) + " P:" + Math.round(location.getPitch())));
 	}
 }

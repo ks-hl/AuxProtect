@@ -69,6 +69,12 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 	long lastloaded;
 
+	private int SERVER_VERSION;
+
+	public int getCompatabilityVersion() {
+		return SERVER_VERSION;
+	}
+
 	@Override
 	public void onEnable() {
 		instance = this;
@@ -76,6 +82,11 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		this.saveDefaultConfig();
 		this.reloadConfig();
 		this.getConfig().options().copyDefaults(true);
+
+		debug = getConfig().getInt("debug", 0);
+
+		config = new APConfig(this.getConfig());
+		config.load();
 
 		YMLManager langManager = new YMLManager("en-us", this);
 		langManager.load(true);
@@ -87,10 +98,14 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		data.getData().set("lastloaded", System.currentTimeMillis());
 		data.save();
 
-		config = new APConfig(this.getConfig());
-		config.load();
-
-		debug = getConfig().getInt("debug", 0);
+		try {
+			SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("\\.")[1]);
+		} catch (Exception e) {
+			warning("Failed to parse version string: \"" + Bukkit.getBukkitVersion() + "\". Defaulting to 1.16");
+			SERVER_VERSION = 16;
+			e.printStackTrace();
+		}
+		debug("Compatability version: " + SERVER_VERSION, 1);
 
 		File sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
 		if (!sqliteFile.getParentFile().exists()) {
@@ -153,9 +168,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 				if (System.currentTimeMillis() - lastPos > config.posInterval) {
 					lastPos = System.currentTimeMillis();
 					for (Player player : Bukkit.getOnlinePlayers()) {
-						dbRunnable.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false,
-								player.getLocation(), "", "Y:" + Math.round(player.getLocation().getYaw()) + " P:"
-										+ Math.round(player.getLocation().getPitch())));
+						PlayerListener.logPos(AuxProtect.this, player, player.getLocation(), "");
 					}
 				}
 			}

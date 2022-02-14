@@ -260,7 +260,9 @@ public class XrayCommand implements CommandExecutor {
 						actions.add(0);
 						List<Object> blocks = new ArrayList<>();
 						blocks.add(Material.DIAMOND_ORE);
-						blocks.add(Material.DEEPSLATE_DIAMOND_ORE);
+						if (plugin.getCompatabilityVersion() >= 17) {
+							blocks.add(Material.DEEPSLATE_DIAMOND_ORE);
+						}
 						blocks.add(Material.ANCIENT_DEBRIS);
 
 						/*
@@ -316,8 +318,8 @@ public class XrayCommand implements CommandExecutor {
 									false, res.worldName(), res.getX(), res.getY(), res.getZ(),
 									res.getType().toString().toLowerCase(), "");
 
-							if (res.getType() == Material.DIAMOND_ORE
-									|| res.getType() == Material.DEEPSLATE_DIAMOND_ORE) {
+							if (res.getType() == Material.DIAMOND_ORE || (plugin.getCompatabilityVersion() >= 17
+									&& res.getType() == Material.DEEPSLATE_DIAMOND_ORE)) {
 								if (res.getY() > 18) {
 									continue;
 								}
