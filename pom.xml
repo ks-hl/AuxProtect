@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.8</version>
+	<version>1.0.8.1</version>
 	<name>AuxProtect</name>
 	<build>
 		<directory>${myPath}/plugins</directory>
@@ -112,7 +112,7 @@
 		<dependency>
 			<groupId>com.github.Gypopo</groupId>
 			<artifactId>EconomyShopGUI-API</artifactId>
-			<version>1.0.1</version>
+			<version>1.1.0</version>
 		</dependency>
 	</dependencies>
 	<properties>

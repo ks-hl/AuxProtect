@@ -16,7 +16,7 @@ import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.listeners.ChestShopListener;
 import dev.heliosares.auxprotect.listeners.EntityListener;
-import dev.heliosares.auxprotect.listeners.GuiShopListener;
+import dev.heliosares.auxprotect.listeners.ShopGUIPlusListener;
 import dev.heliosares.auxprotect.listeners.InventoryListener;
 import dev.heliosares.auxprotect.listeners.ProjectileListener;
 import net.brcdev.shopgui.ShopGuiPlugin;

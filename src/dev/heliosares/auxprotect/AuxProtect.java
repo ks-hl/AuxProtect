@@ -249,7 +249,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 		Plugin plugin = getServer().getPluginManager().getPlugin("ShopGuiPlus");
 		if (plugin != null && plugin.isEnabled() && plugin instanceof ShopGuiPlugin) {
-			getServer().getPluginManager().registerEvents(new GuiShopListener(this), this);
+			getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
 		}
 
 		plugin = getServer().getPluginManager().getPlugin("ChestShop");
@@ -260,6 +260,11 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		plugin = getServer().getPluginManager().getPlugin("AuctionHouse");
 		if (plugin != null && plugin.isEnabled() && plugin instanceof AuctionHouse) {
 			getServer().getPluginManager().registerEvents(new AuctionHouseListener(this, (AuctionHouse) plugin), this);
+		}
+
+		if (getServer().getPluginManager().getPlugin("EconomyShopGUI") != null
+				|| getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium") != null) {
+			getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), plugin);
 		}
 
 		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));

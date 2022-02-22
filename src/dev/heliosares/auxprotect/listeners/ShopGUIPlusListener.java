@@ -10,10 +10,10 @@ import net.brcdev.shopgui.event.ShopPostTransactionEvent;
 import net.brcdev.shopgui.shop.ShopManager.ShopAction;
 import net.brcdev.shopgui.shop.ShopTransactionResult;
 
-public class GuiShopListener implements Listener {
+public class ShopGUIPlusListener implements Listener {
 	private final AuxProtect plugin;
 
-	public GuiShopListener(AuxProtect plugin) {
+	public ShopGUIPlusListener(AuxProtect plugin) {
 		this.plugin = plugin;
 	}
 
@@ -21,10 +21,10 @@ public class GuiShopListener implements Listener {
 	public void onShopPostTransactionEvent(ShopPostTransactionEvent e) {
 		ShopTransactionResult result = e.getResult();
 		boolean state = result.getShopAction() == ShopAction.BUY;
-		String data = "SERVER_SHOP, $" + (Math.round(result.getPrice() / (double) result.getAmount() * 100) / 100.0)
+		String data = "SGP, $" + (Math.round(result.getPrice() / (double) result.getAmount() * 100) / 100.0)
 				+ " each, QTY: " + result.getAmount();
 		if (plugin.getEconomy() != null) {
-			data += ", balance: " + plugin.formatMoney(plugin.getEconomy().getBalance(result.getPlayer()));
+			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(result.getPlayer()));
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(result.getPlayer()), EntryAction.SHOP, state,
 				result.getPlayer().getLocation(), result.getShopItem().getItem().getType().toString().toLowerCase(),
