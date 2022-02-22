@@ -73,7 +73,7 @@ public class DbEntry {
 		this.data = data;
 	}
 
-	public String getUser(SQLiteManager sqlManager) {
+	public String getUser(SQLManager sqlManager) {
 		if (user != null) {
 			return user;
 		}

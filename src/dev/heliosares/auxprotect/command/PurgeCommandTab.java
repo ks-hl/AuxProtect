@@ -9,7 +9,7 @@ import org.bukkit.command.TabCompleter;
 import org.bukkit.util.StringUtil;
 
 import dev.heliosares.auxprotect.AuxProtect;
-import dev.heliosares.auxprotect.database.SQLiteManager;
+import dev.heliosares.auxprotect.database.SQLManager;
 
 public class PurgeCommandTab implements TabCompleter {
 	// private final AuxProtect plugin;
@@ -24,7 +24,7 @@ public class PurgeCommandTab implements TabCompleter {
 		String currentArg = args[args.length - 1];
 
 		if (args.length == 2) {
-			for (SQLiteManager.TABLE table : SQLiteManager.TABLE.values()) {
+			for (SQLManager.TABLE table : SQLManager.TABLE.values()) {
 				possible.add(table.toString());
 			}
 		}

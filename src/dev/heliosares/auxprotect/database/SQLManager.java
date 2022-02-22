@@ -4,10 +4,13 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -20,10 +23,12 @@ import org.bukkit.command.CommandSender;
 import dev.heliosares.auxprotect.IAuxProtect;
 import dev.heliosares.auxprotect.utils.MovingAverage;
 
-public class SQLiteManager {
+public class SQLManager {
 	private Connection connection;
-	private String dbFile;
+	private String targetString;
 	private final IAuxProtect plugin;
+	private static String tablePrefix;
+	private boolean mysql;
 
 	private boolean isConnected;
 
@@ -31,6 +36,8 @@ public class SQLiteManager {
 	private int nextWid;
 
 	private int version;
+
+	public static final int DBVERSION = 2;
 
 	public int getCount() {
 		return count;
@@ -50,23 +57,31 @@ public class SQLiteManager {
 	private int count;
 
 	public static enum TABLE {
-		AUXPROTECT, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_INVENTORY, WORLDS;
+		AUXPROTECT, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_INVENTORY, AUXPROTECT_WORLDS;
 
 		@Override
 		public String toString() {
-			return super.toString().toLowerCase();
+			return tablePrefix + super.toString().toLowerCase();
 		}
 	}
 
 	public String holdingConnection;
 	public long holdingConnectionSince;
 
-	public SQLiteManager(IAuxProtect plugin, String dbFile) {
+	public SQLManager(IAuxProtect plugin, String target, String prefix) {
 		this.plugin = plugin;
-		this.dbFile = dbFile;
+		this.targetString = target;
+		if (prefix == null) {
+			tablePrefix = "";
+		} else {
+			tablePrefix = prefix;
+			if (tablePrefix.length() > 0 && !tablePrefix.endsWith("_")) {
+				tablePrefix += "_";
+			}
+		}
 	}
 
-	public boolean connect() {
+	public boolean connect(String user, String pass) {
 		boolean driver = false;
 		if (!driver)
 			try {
@@ -92,7 +107,13 @@ public class SQLiteManager {
 		}
 
 		try {
-			connection = DriverManager.getConnection(dbFile);
+			if (user != null && pass != null) {
+				mysql = true;
+				connection = DriverManager.getConnection(targetString, user, pass);
+			} else {
+				mysql = false;
+				connection = DriverManager.getConnection(targetString);
+			}
 			init();
 
 			isConnected = true;
@@ -101,6 +122,10 @@ public class SQLiteManager {
 			e.printStackTrace();
 		}
 		return false;
+	}
+
+	public boolean connect() {
+		return connect(null, null);
 	}
 
 	public void close() {
@@ -139,7 +164,7 @@ public class SQLiteManager {
 					version = version_;
 					versionTime = versionTime_;
 				}
-				plugin.debug("Version at " + versionTime_ + " was v" + version_ + ".", 5);
+				plugin.debug("Version at " + versionTime_ + " was v" + version_ + ".", 1);
 			}
 			results.close();
 
@@ -147,10 +172,25 @@ public class SQLiteManager {
 				PreparedStatement pstmt = connection
 						.prepareStatement("INSERT INTO version (time,version) VALUES (?,?)");
 				pstmt.setLong(1, System.currentTimeMillis());
-				pstmt.setInt(2, 1);
-				plugin.debug("Updating database to v1", 1);
+				pstmt.setInt(2, DBVERSION);
+				plugin.debug("Setting database to v" + DBVERSION, 1);
 				pstmt.execute();
 				pstmt.close();
+			} else {
+				// This is inside an else so that it's only done if this isn't the first time
+				// running the plugin.
+				if (version < 2) {
+					plugin.info("Migrating database to v2");
+					execute("ALTER TABLE worlds RENAME TO auxprotect_worlds;");
+
+					PreparedStatement pstmt = connection
+							.prepareStatement("INSERT INTO version (time,version) VALUES (?,?)");
+					pstmt.setLong(1, System.currentTimeMillis());
+					pstmt.setInt(2, 2);
+					pstmt.execute();
+					pstmt.close();
+					plugin.info("Done migrating.");
+				}
 			}
 
 			stmt = "CREATE TABLE IF NOT EXISTS " + TABLE.AUXPROTECT.toString() + " (\n";
@@ -222,11 +262,12 @@ public class SQLiteManager {
 					statement.execute(stmt);
 				}
 
-				stmt = "CREATE TABLE IF NOT EXISTS " + TABLE.WORLDS.toString() + " (name varchar(255), wid SMALLINT);";
+				stmt = "CREATE TABLE IF NOT EXISTS " + TABLE.AUXPROTECT_WORLDS.toString()
+						+ " (name varchar(255), wid SMALLINT);";
 				plugin.debug(stmt, 3);
 				statement.execute(stmt);
 
-				stmt = "SELECT * FROM " + TABLE.WORLDS + ";";
+				stmt = "SELECT * FROM " + TABLE.AUXPROTECT_WORLDS.toString() + ";";
 				plugin.debug(stmt, 3);
 				results = statement.executeQuery(stmt);
 				while (results.next()) {
@@ -246,11 +287,37 @@ public class SQLiteManager {
 		}
 	}
 
-	public void execute(String string) throws SQLException {
+	public void execute(String stmt) throws SQLException {
+		plugin.debug(stmt, 2);
+		Statement statement = connection.createStatement();
+		statement.execute(stmt);
+		statement.close();
+	}
+
+	public List<List<String>> executeUpdate(String string) throws SQLException {
 		plugin.debug(string, 2);
 		Statement statement = connection.createStatement();
-		statement.execute(string);
+		ResultSet rs = statement.executeQuery(string);
+
+		if (rs == null) {
+			statement.close();
+			return null;
+		}
+		final ResultSetMetaData meta = rs.getMetaData();
+		final int columnCount = meta.getColumnCount();
+		final List<List<String>> rowList = new LinkedList<List<String>>();
+		while (rs.next()) {
+			final List<String> columnList = new LinkedList<String>();
+			rowList.add(columnList);
+
+			for (int column = 1; column <= columnCount; ++column) {
+				final Object value = rs.getObject(column);
+				columnList.add(String.valueOf(value));
+			}
+		}
+		rs.close();
 		statement.close();
+		return rowList;
 	}
 
 	protected long put(TABLE table, ArrayList<DbEntry> entries) throws SQLException {
@@ -293,7 +360,7 @@ public class SQLiteManager {
 					stmt += ",";
 				}
 			}
-			PreparedStatement statement = connection.prepareStatement(stmt);
+			PreparedStatement statement = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS);
 
 			int i = 1;
 			for (DbEntry dbEntry : entries) {
@@ -571,7 +638,7 @@ public class SQLiteManager {
 			} else if (table == TABLE.AUXPROTECT_ABANDONED) {
 				stmt = "SELECT time, user, action_id, world_id, x, y, z, target FROM " + table.toString() + stmt;
 				hasData = false;
-			} else if (table == TABLE.WORLDS && plugin.getDebug() > 0) {
+			} else if (table == TABLE.AUXPROTECT_WORLDS && plugin.getDebug() > 0) {
 				stmt = "SELECT * FROM " + table.toString();
 				plugin.debug(stmt, 3);
 				try {
@@ -861,7 +928,7 @@ public class SQLiteManager {
 		}
 		try {
 
-			String stmt = "INSERT INTO " + TABLE.WORLDS.toString() + " (name, wid)";
+			String stmt = "INSERT INTO " + TABLE.AUXPROTECT_WORLDS.toString() + " (name, wid)";
 			stmt += "\nVALUES (?,?)";
 			PreparedStatement pstmt = connection.prepareStatement(stmt);
 			pstmt.setString(1, world);
@@ -889,9 +956,19 @@ public class SQLiteManager {
 				holdingConnectionSince = System.currentTimeMillis();
 				holdingConnection = "count";
 				try {
-					PreparedStatement pstmt = connection.prepareStatement("SELECT COUNT(1) FROM " + table.toString());
+					String stmtStr = "";
+					if (mysql) {
+						stmtStr = "SELECT COUNT(*) FROM " + table.toString();
+					} else {
+						stmtStr = "SELECT COUNT(1) FROM " + table.toString();
+					}
+					plugin.debug(stmtStr, 5);
+					PreparedStatement pstmt = connection.prepareStatement(stmtStr);
 					ResultSet rs = pstmt.executeQuery();
-					int count = rs.getInt(1);
+					int count = 0;
+					if (rs.next()) {
+						count = rs.getInt(1);
+					}
 					total += count;
 					plugin.debug(table.toString() + ": " + count + " rows.");
 					rs.close();

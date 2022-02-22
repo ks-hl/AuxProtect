@@ -10,7 +10,7 @@ import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import dev.heliosares.auxprotect.bungee.Results;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLiteManager.LookupException;
+import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.utils.MyPermission;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.TimeUtil;

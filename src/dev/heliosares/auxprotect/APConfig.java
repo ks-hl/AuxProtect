@@ -30,7 +30,7 @@ public class APConfig {
 		inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
 		moneyInterval = config.getLong("Actions.money.Interval", 600000);
 		for (EntryAction action : EntryAction.values()) {
-			boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", false);
+			boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", true);
 			action.setEnabled(enabled);
 		}
 	}

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLiteManager.LookupException;
+import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;

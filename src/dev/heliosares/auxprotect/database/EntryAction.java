@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.database.SQLiteManager.TABLE;
+import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 
 public enum EntryAction {
 	// TODO Migrate Kick to singles
@@ -17,7 +17,7 @@ public enum EntryAction {
 	// END DEFAULT (255)
 
 	// START SPAM(256)
-	POS(256), HURT(257), INV(258, 259), COMMAND(260), KILL(261), LAND(262),
+	POS(256), HURT(257), INV(258, 259), COMMAND(260), KILL(261), LAND(262), ELYTRA(263, 264),
 	// END SPAM(511)
 
 	// START IGNOREABANDONED(512)

@@ -10,7 +10,7 @@ import org.bukkit.command.CommandSender;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.Results;
-import dev.heliosares.auxprotect.database.SQLiteManager.TABLE;
+import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 public class PurgeCommand implements CommandExecutor {

@@ -87,6 +87,9 @@ actions:
   command: executed
   kill: killed
   land: projectile landed
+  elytra:
+    p: started flying
+    n: stopped flying
   ignoreabandoned: ignored abandoned warning
   ip: Unique IP
   username: username

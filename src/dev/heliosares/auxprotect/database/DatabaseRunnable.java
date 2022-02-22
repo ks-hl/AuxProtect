@@ -6,15 +6,15 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.IAuxProtect;
-import dev.heliosares.auxprotect.database.SQLiteManager.TABLE;
+import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 
 public class DatabaseRunnable implements Runnable {
 	private ConcurrentLinkedQueue<DbEntry> queue;
 	private ConcurrentLinkedQueue<Runnable> lookupqueue;
-	private final SQLiteManager sqlManager;
+	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
 
-	public DatabaseRunnable(IAuxProtect plugin, SQLiteManager sqlManager) {
+	public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
 		queue = new ConcurrentLinkedQueue<>();
 		lookupqueue = new ConcurrentLinkedQueue<>();
 		this.sqlManager = sqlManager;

@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.command;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 
 import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
@@ -174,7 +175,7 @@ public class APCommand implements CommandExecutor {
 				sender.sendMessage("§7Average record time per execution: §9"
 						+ Math.round(plugin.getSqlManager().putTimePerExec.getMean() / 1000.0) / 1000.0 + "§7ms");
 				return true;
-			} else if (args[0].equalsIgnoreCase("sql")) {
+			} else if (args[0].equalsIgnoreCase("sql") || args[0].equalsIgnoreCase("sqlu")) {
 				if (!MyPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
@@ -184,7 +185,20 @@ public class APCommand implements CommandExecutor {
 					msg += args[i] + " ";
 				}
 				try {
-					plugin.getSqlManager().execute(msg.trim());
+					if (args[0].equalsIgnoreCase("sql")) {
+						plugin.getSqlManager().execute(msg.trim());
+					} else {
+						List<List<String>> results = plugin.getSqlManager().executeUpdate(msg.trim());
+						if (results != null) {
+							for (List<String> result : results) {
+								String line = "";
+								for (String part : result) {
+									line += part + ", ";
+								}
+								sender.sendMessage(line);
+							}
+						}
+					}
 				} catch (SQLException e) {
 					sender.sendMessage("§cAn error occured.");
 					e.printStackTrace();

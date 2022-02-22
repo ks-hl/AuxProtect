@@ -15,8 +15,8 @@ import org.bukkit.util.StringUtil;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLiteManager;
-import dev.heliosares.auxprotect.database.SQLiteManager.TABLE;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 import dev.heliosares.auxprotect.utils.MyPermission;
 
 public class LookupCommandTab implements TabCompleter {
@@ -76,7 +76,7 @@ public class LookupCommandTab implements TabCompleter {
 		if (MyPermission.ADMIN.hasPermission(sender)) {
 			possible.add("db:");
 			if (currentArg.startsWith("db:")) {
-				for (TABLE table : SQLiteManager.TABLE.values()) {
+				for (TABLE table : SQLManager.TABLE.values()) {
 					possible.add("db:" + table.toString());
 				}
 			}

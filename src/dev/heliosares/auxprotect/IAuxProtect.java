@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect;
 import java.io.File;
 import java.io.InputStream;
 
-import dev.heliosares.auxprotect.database.SQLiteManager;
+import dev.heliosares.auxprotect.database.SQLManager;
 
 public interface IAuxProtect {
 
@@ -23,7 +23,7 @@ public interface IAuxProtect {
 
 	boolean isBungee();
 
-	SQLiteManager getSqlManager();
+	SQLManager getSqlManager();
 
 	int getDebug();
 

@@ -1,6 +1,18 @@
 #AuxProtect
 #Developed by Heliosares
 #https://www.spigotmc.org/resources/auxprotect.99147/
+
+# MySQL functionality is experimental. Use with caution.
+# OLD LOGS WILL NOT BE MIGRATED.
+MySQL:
+  use: false
+  host: localhost
+  port: 3306
+  database: database
+  username: username
+  password: password
+#Prefix to be used for all table names. Editing this after creating your databases will cause all past data to be lost.
+  table-prefix: ''
 purge-cmds:
   - 'auxprotect 90d'
   - 'auxprotect_spam 30d'
@@ -61,6 +73,8 @@ Actions:
   ahlist:
     Enabled: true
   ahbuy:
+    Enabled: true
+  elytra:
     Enabled: true
 #Automatically check for updates and display notifications in game.
 #It's recommended to leave this enabled, as I'm constantly improving the plugin.

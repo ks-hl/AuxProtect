@@ -26,7 +26,7 @@ import dev.heliosares.auxprotect.command.PurgeCommand;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLiteManager;
+import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.listeners.*;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Language;
@@ -62,7 +62,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	private Economy econ;
 	private static AuxProtect instance;
 
-	SQLiteManager sqlManager;
+	SQLManager sqlManager;
 
 	public String update;
 	long lastCheckedForUpdate;
@@ -107,31 +107,51 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		}
 		debug("Compatability version: " + SERVER_VERSION, 1);
 
-		File sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
-		if (!sqliteFile.getParentFile().exists()) {
-			if (!sqliteFile.getParentFile().mkdirs()) {
-				this.getLogger().severe("Failed to create database directory.");
-				this.setEnabled(false);
-				return;
-			}
-		}
-		if (!sqliteFile.exists()) {
-			try {
-				if (!sqliteFile.createNewFile()) {
-					throw new IOException();
+		boolean mysql = getConfig().getBoolean("MySQL.use", false);
+		String user = getConfig().getString("MySQL.username", "");
+		String pass = getConfig().getString("MySQL.password", "");
+		String uri = "";
+		if (mysql) {
+			String host = getConfig().getString("MySQL.host", "localhost");
+			String port = getConfig().getString("MySQL.port", "3306");
+			String database = getConfig().getString("MySQL.database", "database");
+			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
+		} else {
+			File sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
+			if (!sqliteFile.getParentFile().exists()) {
+				if (!sqliteFile.getParentFile().mkdirs()) {
+					this.getLogger().severe("Failed to create database directory.");
+					this.setEnabled(false);
+					return;
 				}
-			} catch (IOException e) {
-				this.getLogger().severe("Failed to create database file.");
-				this.setEnabled(false);
-				return;
 			}
+			if (!sqliteFile.exists()) {
+				try {
+					if (!sqliteFile.createNewFile()) {
+						throw new IOException();
+					}
+				} catch (IOException e) {
+					this.getLogger().severe("Failed to create database file.");
+					this.setEnabled(false);
+					return;
+				}
+			}
+			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
-		sqlManager = new SQLiteManager(this, "jdbc:sqlite:" + sqliteFile.getAbsolutePath());
+
+		sqlManager = new SQLManager(this, uri, getConfig().getString("MySQL.table-prefix"));
+
 		new BukkitRunnable() {
 
 			@Override
 			public void run() {
-				if (!sqlManager.connect()) {
+				boolean success = false;
+				if (mysql) {
+					success = sqlManager.connect(user, pass);
+				} else {
+					success = sqlManager.connect();
+				}
+				if (!success) {
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
 					setEnabled(false);
 					return;
@@ -312,7 +332,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		}
 	}
 
-	public SQLiteManager getSqlManager() {
+	public SQLManager getSqlManager() {
 		return sqlManager;
 	}
 

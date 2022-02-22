@@ -15,6 +15,7 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -37,7 +38,7 @@ import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PickupEntry;
-import dev.heliosares.auxprotect.database.SQLiteManager.LookupException;
+import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.MyPermission;
@@ -115,6 +116,16 @@ public class PlayerListener implements Listener {
 				plugin.dbRunnable.add(entry);
 			}
 		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onEntityToggleGlideEvent(EntityToggleGlideEvent e) {
+		if (e.isCancelled()) {
+			return;
+		}
+		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.ELYTRA, e.isGliding(),
+				e.getEntity().getLocation(), "", "");
+		plugin.dbRunnable.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)

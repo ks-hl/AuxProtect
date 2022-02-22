@@ -13,7 +13,7 @@ import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.IAuxProtect;
 import dev.heliosares.auxprotect.bungee.command.APCommand;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
-import dev.heliosares.auxprotect.database.SQLiteManager;
+import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.listeners.ChestShopListener;
 import dev.heliosares.auxprotect.listeners.EntityListener;
 import dev.heliosares.auxprotect.listeners.GuiShopListener;
@@ -34,7 +34,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	protected Configuration config;
 	public Language lang;
 	public int debug;
-	SQLiteManager sqlManager;
+	SQLManager sqlManager;
 	public DatabaseRunnable dbRunnable;
 	private static AuxProtectBungee instance;
 
@@ -71,7 +71,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 				return;
 			}
 		}
-		sqlManager = new SQLiteManager(this, "jdbc:sqlite:" + sqliteFile.getAbsolutePath());
+		sqlManager = new SQLManager(this, "jdbc:sqlite:" + sqliteFile.getAbsolutePath(), null);
 		if (!sqlManager.connect()) {
 			this.getLogger().severe("Failed to connect to SQL database. Disabling.");
 			this.onDisable();
@@ -121,7 +121,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		return getResourceAsStream(string);
 	}
 
-	public SQLiteManager getSqlManager() {
+	public SQLManager getSqlManager() {
 		return sqlManager;
 	}
 
