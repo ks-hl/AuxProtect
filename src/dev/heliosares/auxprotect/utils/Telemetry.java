@@ -18,11 +18,18 @@ public class Telemetry {
 				return count;
 			}
 		}));
-		
+
 		metrics.addCustomChart(new Metrics.SimplePie("private", new Callable<String>() {
 			@Override
 			public String call() throws Exception {
 				return plugin.config.isPrivate() ? "Private" : "Public";
+			}
+		}));
+
+		metrics.addCustomChart(new Metrics.SimplePie("mysql", new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				return plugin.getSqlManager().isMySQL() ? "MySQL" : "SQLite";
 			}
 		}));
 	}

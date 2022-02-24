@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.8.1</version>
+	<version>1.0.9.1</version>
 	<name>AuxProtect</name>
 	<build>
 		<directory>${myPath}/plugins</directory>

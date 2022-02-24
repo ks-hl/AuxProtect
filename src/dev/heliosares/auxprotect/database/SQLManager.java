@@ -51,6 +51,10 @@ public class SQLManager {
 		return version;
 	}
 
+	public boolean isMySQL() {
+		return mysql;
+	}
+
 	public MovingAverage putTimePerEntry = new MovingAverage(100);
 	public MovingAverage putTimePerExec = new MovingAverage(100);
 	public MovingAverage lookupTime = new MovingAverage(100);
