@@ -1,11 +1,18 @@
 package dev.heliosares.auxprotect.utils;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.Callable;
 
 import dev.heliosares.auxprotect.AuxProtect;
 
 public class Telemetry {
 	private final Metrics metrics;
+	private static final Map<String, Integer> hooks = new HashMap<>();
+
+	public static void reportHook(String name) {
+		hooks.put(name, 1);
+	}
 
 	public Telemetry(AuxProtect plugin, int pluginId) {
 		metrics = new Metrics(plugin, pluginId);
@@ -30,6 +37,13 @@ public class Telemetry {
 			@Override
 			public String call() throws Exception {
 				return plugin.getSqlManager().isMySQL() ? "MySQL" : "SQLite";
+			}
+		}));
+
+		metrics.addCustomChart(new Metrics.SimpleBarChart("hooks", new Callable<Map<String, Integer>>() {
+			@Override
+			public Map<String, Integer> call() throws Exception {
+				return hooks;
 			}
 		}));
 	}

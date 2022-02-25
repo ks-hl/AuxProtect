@@ -2,13 +2,13 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.10</version>
+	<version>1.0.9.1</version>
 	<name>AuxProtect</name>
 	<build>
-		<directory>${testserver}/plugins</directory>
+		<directory>${myPath}/plugins</directory>
 		<resources>
 			<resource>
-				<directory>${basedir}</directory>
+				<directory>C:\\Users\\Kyler\\eclipse-workspace\\AuxProtect</directory>
 				<filtering>true</filtering>
 				<includes>
 					<include>*</include>
@@ -112,18 +112,17 @@
 			<artifactId>auctionhouse</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>
-			<systemPath>${jars}/AuctionHouse-1.18-3.1.jar</systemPath>
+			<systemPath>C:\\Users\\Kyler/eclipse-workspace\\jars/AuctionHouse-1.18-3.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.dynamicshop</groupId>
 			<artifactId>dynamicshop</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>
-			<systemPath>${jars}/DynamicShop-3.3.2.jar</systemPath>
+			<systemPath>C:\\Users\\Kyler/eclipse-workspace\\jars/DynamicShop-3.3.2.jar</systemPath>
 		</dependency>
 	</dependencies>
 	<properties>
-		<jars>${env.USERPROFILE}/eclipse-workspace\jars</jars>
-		<testserver>${env.USERPROFILE}/Documents/TestServer/Test1/</testserver>
+		<jars>C:\\Users\\Kyler/eclipse-workspace\jars</jars>
 	</properties>
 </project>

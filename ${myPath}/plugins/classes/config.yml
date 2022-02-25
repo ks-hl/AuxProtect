@@ -1,0 +1,81 @@
+#AuxProtect
+#Developed by Heliosares
+#https://www.spigotmc.org/resources/auxprotect.99147/
+
+# MySQL functionality is experimental. Use with caution.
+# OLD LOGS WILL NOT BE MIGRATED.
+MySQL:
+  use: false
+  host: localhost
+  port: 3306
+  database: database
+  username: username
+  password: password
+#Prefix to be used for all table names. Editing this after creating your databases will cause all past data to be lost.
+  table-prefix: ''
+purge-cmds:
+  - 'auxprotect 90d'
+  - 'auxprotect_spam 30d'
+  - 'auxprotect_inventory 30d'
+Actions:
+  leash:
+    Enabled: true
+  session:
+    Enabled: true
+  kick:
+    Enabled: true
+  shop:
+    Enabled: true
+  bucket:
+    Enabled: true
+  mount:
+    Enabled: true
+  respawn:
+    Enabled: true
+  consume:
+    Enabled: true
+  recover:
+    Enabled: true
+  money:
+    Enabled: true
+    Interval: 600000
+  pos:
+    Enabled: true
+    Interval: 10000
+  hurt:
+    Enabled: true
+  inv:
+    Enabled: true
+  command:
+    Enabled: true
+  kill:
+    Enabled: true
+  land:
+    Enabled: true
+  ip:
+    Enabled: true
+  username:
+    Enabled: true
+  inventory:
+    Enabled: true
+    WorldChange: false
+    Interval: 3600000
+  launch:
+    Enabled: true
+  grab:
+    Enabled: true
+  drop:
+    Enabled: true
+  pickup:
+    Enabled: true
+  itemframe:
+    Enabled: true
+  ahlist:
+    Enabled: true
+  ahbuy:
+    Enabled: true
+  elytra:
+    Enabled: true
+#Automatically check for updates and display notifications in game.
+#It's recommended to leave this enabled, as I'm constantly improving the plugin.
+checkforupdates: true

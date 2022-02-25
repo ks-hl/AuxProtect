@@ -29,8 +29,8 @@ public class ChestShopListener implements Listener {
 		if (qty == 0) {
 			return;
 		}
-		String data = "$" + (Math.round(e.getExactPrice().doubleValue() / (double) qty * 100) / 100.0) + " each, qty: "
-				+ qty + ", shop: " + e.getOwnerAccount().getName();
+		String data = plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
+				+ ", shop: " + e.getOwnerAccount().getName();
 		if (plugin.getEconomy() != null) {
 			data += ", balance: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getClient()));
 		}
@@ -39,7 +39,7 @@ public class ChestShopListener implements Listener {
 				e.getSign().getLocation(), e.getStock()[0].getType().toString().toLowerCase(), data));
 
 		data = "CLIENT: " + e.getClient().getName() + ", $"
-				+ (Math.round(e.getExactPrice().doubleValue() / (double) qty * 100) / 100.0) + " each, qty: " + qty;
+				+ plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty;
 		if (plugin.getEconomy() != null) {
 			data += ", owner_balance: " + plugin.formatMoney(
 					plugin.getEconomy().getBalance(Bukkit.getOfflinePlayer(e.getOwnerAccount().getUuid())));

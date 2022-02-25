@@ -8,28 +8,31 @@ import org.bukkit.inventory.ItemStack;
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import me.gypopo.economyshopgui.api.events.PreTransactionEvent;
+import me.sat7.dynamicshop.events.ShopBuySellEvent;
 
-public class EconomyShopGUIListener implements Listener {
+public class DynamicShopListener implements Listener {
 	private final AuxProtect plugin;
 
-	public EconomyShopGUIListener(AuxProtect plugin) {
+	public DynamicShopListener(AuxProtect plugin) {
 		this.plugin = plugin;
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
-	public void onPreTransactionEvent(PreTransactionEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
+	public void onShopBuySellEvent(ShopBuySellEvent e) {
 		ItemStack item = e.getItemStack();
-		boolean state = e.getTransactionMode().contains("BUY");
-		String data = "ESG, " + plugin.formatMoney(e.getPrice() / (double) item.getAmount()) + " each, QTY: "
-				+ item.getAmount();
+		boolean buy = e.isBuy();
+		double price = 0;
+		if (buy) {
+			price = e.getNewBuyPrice();
+		} else {
+			price = e.getNewSellPrice();
+		}
+		String data = "DS, " + plugin.formatMoney(price) + " each, QTY: " + item.getAmount();
 		if (plugin.getEconomy() != null) {
 			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getPlayer()));
 		}
-		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.SHOP, state,
+		data += ", stock: " + e.getNewStock();
+		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.SHOP, buy,
 				e.getPlayer().getLocation(), item.getType().toString().toLowerCase(), data);
 		plugin.dbRunnable.add(entry);
 	}

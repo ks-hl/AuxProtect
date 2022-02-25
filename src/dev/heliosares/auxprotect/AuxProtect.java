@@ -14,10 +14,8 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.Acrobot.ChestShop.ChestShop;
 import com.spawnchunk.auctionhouse.AuctionHouse;
 
-import net.brcdev.shopgui.ShopGuiPlugin;
 import net.milkbowl.vault.economy.Economy;
 import dev.heliosares.auxprotect.command.APCommand;
 import dev.heliosares.auxprotect.command.APCommandTab;
@@ -219,6 +217,8 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					lastCheckedForUpdate = System.currentTimeMillis();
 					debug("Checking for updates...", 1);
 					String newVersion = UpdateChecker.getVersion(AuxProtect.this, 99147);
+					debug("New Version: " + newVersion + " Current Version: "
+							+ AuxProtect.this.getDescription().getVersion(), 1);
 					if (newVersion != null) {
 						int compare = UpdateChecker.compareVersions(AuxProtect.this.getDescription().getVersion(),
 								newVersion);
@@ -247,24 +247,48 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
 
-		Plugin plugin = getServer().getPluginManager().getPlugin("ShopGuiPlus");
-		if (plugin != null && plugin.isEnabled() && plugin instanceof ShopGuiPlugin) {
-			getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
-		}
+		try {
+			Plugin plugin = getServer().getPluginManager().getPlugin("ShopGuiPlus");
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
+				info("ShopGUIPlus hooked");
+				Telemetry.reportHook("ShopGUIPlus");
+			}
 
-		plugin = getServer().getPluginManager().getPlugin("ChestShop");
-		if (plugin != null && plugin.isEnabled() && plugin instanceof ChestShop) {
-			getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
-		}
+			plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI");
+			if (plugin == null) {
+				plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium");
+			}
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), this);
+				info("EconomyShopGUI hooked");
+				Telemetry.reportHook("EconomyShopGUI");
+			}
 
-		plugin = getServer().getPluginManager().getPlugin("AuctionHouse");
-		if (plugin != null && plugin.isEnabled() && plugin instanceof AuctionHouse) {
-			getServer().getPluginManager().registerEvents(new AuctionHouseListener(this, (AuctionHouse) plugin), this);
-		}
+			plugin = getServer().getPluginManager().getPlugin("DynamicShop");
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new DynamicShopListener(this), this);
+				info("DynamicShop hooked");
+				Telemetry.reportHook("DynamicShop");
+			}
 
-		if (getServer().getPluginManager().getPlugin("EconomyShopGUI") != null
-				|| getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium") != null) {
-			getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), plugin);
+			plugin = getServer().getPluginManager().getPlugin("ChestShop");
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
+				info("ChestShop hooked");
+				Telemetry.reportHook("ChestShop");
+			}
+
+			plugin = getServer().getPluginManager().getPlugin("AuctionHouse");
+			if (plugin != null && plugin.isEnabled() && plugin instanceof AuctionHouse) {
+				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this, (AuctionHouse) plugin),
+						this);
+				info("AuctionHouse hooked");
+				Telemetry.reportHook("AuctionHouse");
+			}
+		} catch (Exception e) {
+			warning("Exception while hooking other plugins");
+			e.printStackTrace();
 		}
 
 		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
