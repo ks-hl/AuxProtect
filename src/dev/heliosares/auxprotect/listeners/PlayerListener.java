@@ -82,9 +82,11 @@ public class PlayerListener implements Listener {
 		ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
 		if ((mainhand != null && mainhand.getType() == Material.WATER_BUCKET)
 				|| (offhand != null && offhand.getType() == Material.WATER_BUCKET)) {
-			DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
-					e.getRightClicked().getLocation(), AuxProtect.getLabel(e.getRightClicked()), "");
-			plugin.dbRunnable.add(entry);
+			if (mobs.contains(e.getRightClicked().getType())) {
+				DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
+						e.getRightClicked().getLocation(), AuxProtect.getLabel(e.getRightClicked()), "");
+				plugin.dbRunnable.add(entry);
+			}
 		}
 		if (e.getRightClicked() instanceof ItemFrame) {
 			final ItemFrame item = (ItemFrame) e.getRightClicked();
@@ -103,7 +105,6 @@ public class PlayerListener implements Listener {
 					plugin.dbRunnable.add(entry);
 				}
 			}
-
 		}
 	}
 

@@ -377,7 +377,14 @@ public class SQLManager {
 				if (hasLocation) {
 					statement.setInt(i++, getWid(dbEntry.world));
 					statement.setInt(i++, dbEntry.x);
-					statement.setInt(i++, dbEntry.y);
+					int y = dbEntry.y;
+					if (y > 32767) {
+						y = 32767;
+					}
+					if (y < -32768) {
+						y = -32768;
+					}
+					statement.setInt(i++, y);
 					statement.setInt(i++, dbEntry.z);
 				}
 				statement.setString(i++, dbEntry.targetUuid);

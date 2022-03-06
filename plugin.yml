@@ -1,5 +1,5 @@
 name: AuxProtect
-version: 1.0.10
+version: 1.0.10.1
 main: dev.heliosares.auxprotect.AuxProtect
 description: A plugin designed to suplement CoreProtect in a few ways.
 api-version: 1.13

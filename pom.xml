@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.10</version>
+	<version>1.0.10.1</version>
 	<name>AuxProtect</name>
 	<build>
 		<directory>${testserver}/plugins</directory>
@@ -47,6 +47,7 @@
 			<id>playpro-repo</id>
 			<url>https://maven.playpro.com</url>
 		</repository>
+
 	</repositories>
 	<dependencies>
 		<dependency>
@@ -115,12 +116,11 @@
 			<systemPath>${jars}/AuctionHouse-1.18-3.1.jar</systemPath>
 		</dependency>
 		<dependency>
-			<groupId>com.dynamicshop</groupId>
-			<artifactId>dynamicshop</artifactId>
-			<version>1.0</version>
-			<scope>system</scope>
-			<systemPath>${jars}/DynamicShop-3.3.2.jar</systemPath>
-		</dependency>
+            <groupId>com.github.7sat</groupId>
+            <artifactId>SSDynamicShop</artifactId>
+            <version>f99e33d4e4</version>
+            <scope>provided</scope>
+        </dependency>
 	</dependencies>
 	<properties>
 		<jars>${env.USERPROFILE}/eclipse-workspace\jars</jars>
