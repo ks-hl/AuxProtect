@@ -9,6 +9,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
+import org.bukkit.scheduler.BukkitRunnable;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -258,7 +259,7 @@ public class LookupCommand implements CommandExecutor {
 		final long startTime_ = startTime;
 		final boolean money_ = money;
 		sender.sendMessage(plugin.translate("lookup-looking"));
-		Runnable runnable = new Runnable() {
+		BukkitRunnable runnable = new BukkitRunnable() {
 
 			@Override
 			public void run() {
@@ -276,7 +277,9 @@ public class LookupCommand implements CommandExecutor {
 				}
 				if (count_) {
 					sender.sendMessage(String.format(plugin.translate("lookup-count"), results.size()));
-					double total = 0;
+					double totalMoney = 0;
+					int dropcount = 0;
+					int pickupcount = 0;
 					for (DbEntry entry : results) {
 						if (entry.getAction() == EntryAction.SHOP) {
 							String[] parts = entry.getData().split(", ");
@@ -288,7 +291,7 @@ public class LookupCommand implements CommandExecutor {
 										if (entry.getState()) {
 											each *= -1;
 										}
-										total += each * qty;
+										totalMoney += each * qty;
 									}
 								} catch (Exception ignored) {
 									if (plugin.debug >= 3) {
@@ -301,16 +304,44 @@ public class LookupCommand implements CommandExecutor {
 							String[] parts = entry.getData().split(" ");
 							try {
 								double each = Double.parseDouble(parts[parts.length - 1].substring(1));
-								total += each;
+								totalMoney += each;
 							} catch (Exception ignored) {
 								if (plugin.debug >= 3) {
 									ignored.printStackTrace();
 								}
 							}
 						}
+						if (entry.getAction() == EntryAction.DROP || entry.getAction() == EntryAction.PICKUP) {
+							int quantity = -1;
+							try {
+								quantity = Integer.parseInt(entry.getData().substring(1));
+							} catch (Exception ignored) {
+
+							}
+							if (quantity > 0) {
+								if (entry.getAction() == EntryAction.DROP) {
+									dropcount += quantity;
+								} else {
+									pickupcount += quantity;
+								}
+							}
+						}
 					}
-					if (total != 0) {
-						sender.sendMessage("§9" + plugin.formatMoney(total));
+					if (totalMoney != 0) {
+						sender.sendMessage("§9" + plugin.formatMoney(totalMoney));
+					}
+					String msg = "";
+					if (pickupcount > 0) {
+						msg += "§fPicked up: §9" + pickupcount + "§7, ";
+					}
+					if (dropcount > 0) {
+						msg += "§fDropped: §9" + dropcount + "§7, ";
+					}
+					if (pickupcount > 0 && dropcount > 0) {
+						msg += "§fNet: §9" + (pickupcount - dropcount);
+					}
+					if (msg.length() > 0) {
+						sender.sendMessage(msg);
 					}
 				} else if (playtime_) {
 					String users = params.get("user");
@@ -356,8 +387,7 @@ public class LookupCommand implements CommandExecutor {
 				}
 			}
 		};
-		// plugin.dbRunnable.scheduleLookup(runnable);
-		plugin.getServer().getScheduler().runTaskAsynchronously(plugin, runnable);
+		runnable.runTaskAsynchronously(plugin);
 		return true;
 	}
 }

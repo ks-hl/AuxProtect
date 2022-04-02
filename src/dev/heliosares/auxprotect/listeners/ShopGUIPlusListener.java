@@ -21,7 +21,8 @@ public class ShopGUIPlusListener implements Listener {
 	public void onShopPostTransactionEvent(ShopPostTransactionEvent e) {
 		ShopTransactionResult result = e.getResult();
 		boolean state = result.getShopAction() == ShopAction.BUY;
-		String data = "SGP, " + plugin.formatMoney(result.getPrice()) + " each, QTY: " + result.getAmount();
+		String data = "SGP, " + plugin.formatMoney(result.getPrice() / result.getAmount()) + " each, QTY: "
+				+ result.getAmount();
 		if (plugin.getEconomy() != null) {
 			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(result.getPlayer()));
 		}

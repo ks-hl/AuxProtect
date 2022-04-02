@@ -1,7 +1,7 @@
 name: AuxProtect
-version: 1.0.10.1
+version: 1.0.10.2
 main: dev.heliosares.auxprotect.AuxProtect
-description: A plugin designed to suplement CoreProtect in a few ways.
+description: A plugin designed to supplement CoreProtect in a few ways.
 api-version: 1.13
 softdepend: [ShopGUIPlus, ChestShop, AuctionHouse, Vault, CoreProtect, EconomyShopGUI, EconomyShopGUI-Premium, DynamicShop]
 

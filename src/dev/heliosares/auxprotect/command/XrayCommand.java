@@ -187,44 +187,52 @@ public class XrayCommand implements CommandExecutor {
 								}
 								if (!skipWarning) {
 									sender.sendMessage(plugin.translate("xray-rate-conflic"));
+									boolean validWarning = false;
 									for (DbEntry warn : localHits) {
-										EntryFormatter.sendEntry(plugin, warn, sender);
+										if (warn.userUuid.equals(en.userUuid)) {
+											EntryFormatter.sendEntry(plugin, warn, sender);
+											validWarning = true;
+										}
 									}
-									String originalCmd = "/" + label;
-									for (String arg : args) {
-										originalCmd += " " + arg;
-									}
-									ComponentBuilder message = new ComponentBuilder();
-									message.append("                ").event((ClickEvent) null)
-											.event((HoverEvent) null);
-									if (MyPermission.LOOKUP_XRAY_OVERWRITE.hasPermission(sender)) {
-										message.append("§4§l[Overwrite]")
+									if (validWarning) {
+										String originalCmd = "/" + label;
+										for (String arg : args) {
+											originalCmd += " " + arg;
+										}
+										ComponentBuilder message = new ComponentBuilder();
+										message.append("                ").event((ClickEvent) null)
+												.event((HoverEvent) null);
+										if (MyPermission.LOOKUP_XRAY_OVERWRITE.hasPermission(sender)) {
+											message.append("§4§l[Overwrite]")
+													.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+															originalCmd + " -o"))
+													.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+															new Text("§4Overwrite the existing entries. Be careful!")));
+											message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
+										}
+										message.append("§c§l[Ignore]")
 												.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-														originalCmd + " -o"))
+														originalCmd + " -i"))
 												.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-														new Text("§4Overwrite the existing entries. Be careful!")));
+														new Text("§cIgnore the existing entries and add a duplicate")));
 										message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
+										message.append("§a§l[Cancel]")
+												.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+														originalCmd + " -c"))
+												.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+														new Text("§aCancel making an entry and go to the next hit.")));
+										player.spigot().sendMessage(message.create());
+										return;
 									}
-									message.append("§c§l[Ignore]")
-											.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, originalCmd + " -i"))
-											.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-													new Text("§cIgnore the existing entries and add a duplicate")));
-									message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
-									message.append("§a§l[Cancel]")
-											.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, originalCmd + " -c"))
-											.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-													new Text("§aCancel making an entry and go to the next hit.")));
-									player.spigot().sendMessage(message.create());
-									return;
 								}
 							}
-							sender.sendMessage(plugin.translate("xray-rate-written"));
 							plugin.dbRunnable.add(new DbEntry(en.getTime(),
 									"$" + Bukkit.getOfflinePlayer(en.getUser(plugin.getSqlManager())).getUniqueId()
 											.toString(),
 									EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, rating_ + "",
 									"Rated by " + sender.getName() + " on "
 											+ LocalDateTime.now().format(EntryFormatter.formatter)));
+							sender.sendMessage(plugin.translate("xray-rate-written"));
 							if (results_ != null) {
 								results_.showPage(entryIndex_ + 2, 1);
 							}
@@ -287,10 +295,21 @@ public class XrayCommand implements CommandExecutor {
 									break;
 								}
 							}
-							lookup = (List<String[]>) method.invoke(null, statement, Bukkit.getConsoleSender(),
-									new ArrayList<String>(), new ArrayList<String>(), blocks, new ArrayList<Object>(),
-									new ArrayList<String>(), actions/* actions */, null, null,
-									((System.currentTimeMillis() - time) / 1000), false, true);
+
+							lookup = (List<String[]>) method.invoke(null, statement, // Statement statement,
+									Bukkit.getConsoleSender(), // CommandSender user,
+									new ArrayList<String>(), // List<String> checkUuids,
+									new ArrayList<String>(), // List<String> checkUsers,
+									blocks, // List<Object> restrictList,
+									new HashMap<Object, Boolean>(), // Map<Object, Boolean> excludeList,
+									new ArrayList<String>(), // List<String> excludeUserList,
+									actions, // List<Integer> actionList,
+									null, // Location location,
+									null, // Integer[] radius,
+									(System.currentTimeMillis() - time) / 1000, // long startTime,
+									System.currentTimeMillis() / 1000, // long endTime,
+									false, // boolean restrictWorld,
+									true);// boolean lookup
 
 						} catch (Throwable e) {
 							e.printStackTrace();
@@ -353,10 +372,10 @@ public class XrayCommand implements CommandExecutor {
 						if (player != null) {
 							uuid = player.getUniqueId().toString();
 						}
-						entries.sort((o1, o2) -> o1.getLocation().getWorld().getName()
-								.compareTo(o2.getLocation().getWorld().getName()));
 						entries.sort((o1, o2) -> o1.getUser(plugin.getSqlManager())
 								.compareTo(o2.getUser(plugin.getSqlManager())));
+						entries.sort((o1, o2) -> o1.getLocation().getWorld().getName()
+								.compareTo(o2.getLocation().getWorld().getName()));
 						XrayResults result = new XrayResults(plugin, entries, sender);
 						result.showPage(1, 1);
 						XrayCommand.this.results.put(uuid, result);

@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.0.10.1</version>
+	<version>1.0.10.2</version>
 	<name>AuxProtect</name>
 	<build>
 		<directory>${testserver}/plugins</directory>
@@ -53,7 +53,7 @@
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.18.1-R0.1-SNAPSHOT</version>
+			<version>1.18.2-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -84,7 +84,7 @@
 		<dependency>
 			<groupId>net.coreprotect</groupId>
 			<artifactId>coreprotect</artifactId>
-			<version>20.4</version>
+			<version>21.2</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -116,11 +116,11 @@
 			<systemPath>${jars}/AuctionHouse-1.18-3.1.jar</systemPath>
 		</dependency>
 		<dependency>
-            <groupId>com.github.7sat</groupId>
-            <artifactId>SSDynamicShop</artifactId>
-            <version>f99e33d4e4</version>
-            <scope>provided</scope>
-        </dependency>
+			<groupId>com.github.7sat</groupId>
+			<artifactId>SSDynamicShop</artifactId>
+			<version>f99e33d4e4</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 	<properties>
 		<jars>${env.USERPROFILE}/eclipse-workspace\jars</jars>

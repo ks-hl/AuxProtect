@@ -29,7 +29,7 @@ public class ChestShopListener implements Listener {
 		if (qty == 0) {
 			return;
 		}
-		String data = plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
+		String data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
 				+ ", shop: " + e.getOwnerAccount().getName();
 		if (plugin.getEconomy() != null) {
 			data += ", balance: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getClient()));
@@ -38,10 +38,10 @@ public class ChestShopListener implements Listener {
 		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getClient()), EntryAction.SHOP, state,
 				e.getSign().getLocation(), e.getStock()[0].getType().toString().toLowerCase(), data));
 
-		data = "CLIENT: " + e.getClient().getName() + ", $"
-				+ plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty;
+		data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
+				+ ", client: " + e.getClient().getName();
 		if (plugin.getEconomy() != null) {
-			data += ", owner_balance: " + plugin.formatMoney(
+			data += ", balance: " + plugin.formatMoney(
 					plugin.getEconomy().getBalance(Bukkit.getOfflinePlayer(e.getOwnerAccount().getUuid())));
 		}
 		// Owner
