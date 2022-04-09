@@ -5,20 +5,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
+import dev.heliosares.auxprotect.command.LookupCommand;
+import dev.heliosares.auxprotect.command.PurgeCommand;
+import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.MySender;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.ProxyServer;
+import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;
 
-public class APCommand extends Command implements TabExecutor {
+public class APBCommand extends Command implements TabExecutor {
 
 	private AuxProtectBungee plugin;
-	private LookupCommand lookupCommand;
 
-	public APCommand(AuxProtectBungee plugin) {
+	public APBCommand(AuxProtectBungee plugin) {
 		super("apb");
 		this.plugin = plugin;
-		lookupCommand = new LookupCommand(plugin);
 	}
 
 	private void sendHelpMessage(CommandSender sender, String subcommand) {
@@ -53,7 +57,7 @@ public class APCommand extends Command implements TabExecutor {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
-				lookupCommand.onCommand(sender, args);
+				LookupCommand.onCommand(plugin, new MySender(sender), args);
 				return;
 			} else if (args[0].equalsIgnoreCase("help")) {
 				if (!MyPermission.HELP.hasPermission(sender)) {
@@ -117,10 +121,17 @@ public class APCommand extends Command implements TabExecutor {
 					plugin.getSqlManager().execute(msg.trim());
 				} catch (SQLException e) {
 					AuxProtectBungee.tell(sender, "§cAn error occured.");
-					e.printStackTrace();
+					plugin.print(e);
 					return;
 				}
 				AuxProtectBungee.tell(sender, "§aSQL statement executed successfully.");
+				return;
+			} else if (args[0].equalsIgnoreCase("purge")) {
+				if (!MyPermission.PURGE.hasPermission(sender)) {
+					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
+					return;
+				}
+				PurgeCommand.purge(plugin, new MySender(sender), args);
 				return;
 			} else {
 				AuxProtectBungee.tell(sender, plugin.lang.translate("unknown-subcommand"));
@@ -138,7 +149,6 @@ public class APCommand extends Command implements TabExecutor {
 		if (args.length == 1) {
 			if (MyPermission.LOOKUP.hasPermission(sender)) {
 				possible.add("lookup");
-				possible.add("playtime");
 			}
 			if (MyPermission.ADMIN.hasPermission(sender)) {
 				possible.add("debug");
@@ -154,7 +164,56 @@ public class APCommand extends Command implements TabExecutor {
 		if (args.length >= 2) {
 			if ((args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l"))
 					&& MyPermission.LOOKUP.hasPermission(sender)) {
-				possible.addAll(lookupCommand.onTabComplete(sender, args));
+				possible.add("time:");
+				possible.add("target:");
+				possible.add("action:");
+				possible.add("user:");
+				if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
+					String action = currentArg.split(":")[0] + ":";
+					for (EntryAction eaction : EntryAction.values()) {
+						if (eaction.isBungee() && eaction.isEnabled()) {
+							String actString = eaction.toString().toLowerCase();
+							if (eaction.hasDual) {
+								possible.add(action + "+" + actString);
+								possible.add(action + "-" + actString);
+
+							}
+							possible.add(action + actString);
+						}
+					}
+				}
+				if (currentArg.startsWith("user:") || currentArg.startsWith("u:") || currentArg.startsWith("target:")) {
+					String user = currentArg.split(":")[0] + ":";
+					for (ProxiedPlayer player : ProxyServer.getInstance().getPlayers()) {
+						possible.add(user + player.getName());
+					}
+				}
+				if (currentArg.startsWith("time:") || currentArg.startsWith("t:")) {
+					if (currentArg.matches("t(ime)?:\\d+")) {
+						possible.add(currentArg + "s");
+						possible.add(currentArg + "m");
+						possible.add(currentArg + "h");
+						possible.add(currentArg + "d");
+						possible.add(currentArg + "w");
+					}
+				}
+				if (currentArg.startsWith("b"))
+					possible.add("before:");
+				if (currentArg.startsWith("a"))
+					possible.add("after:");
+
+				if (currentArg.startsWith("#")) {
+					possible.add("#bw");
+					possible.add("#count");
+				}
+
+				for (int i = 1; i < args.length - 1; i++) {
+					String arg = args[i];
+					if (!arg.contains(":"))
+						continue;
+					arg = arg.substring(0, arg.indexOf(":") + 1);
+					possible.remove(arg);
+				}
 			} else if ((args[0].equalsIgnoreCase("help")) && MyPermission.HELP.hasPermission(sender)) {
 				possible.add("lookup");
 				possible.add("purge");

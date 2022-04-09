@@ -7,6 +7,7 @@ import org.bukkit.command.CommandSender;
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.IAuxProtect;
 import dev.heliosares.auxprotect.utils.EntryFormatter;
+import dev.heliosares.auxprotect.utils.MySender;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -16,7 +17,7 @@ public class XrayResults extends Results {
 	private IAuxProtect plugin;
 
 	public XrayResults(IAuxProtect plugin, ArrayList<DbEntry> entries, CommandSender player) {
-		super(plugin, entries, player);
+		super(plugin, entries, new MySender(player), "ap");
 		this.plugin = plugin;
 	}
 
@@ -63,7 +64,7 @@ public class XrayResults extends Results {
 			message.append("§4§l[3]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, String.format(xraycmd, 3, i)))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
 							new Text("§4Rate this vein a 3/3 (almost certain or entirely certain)")));
-			player.spigot().sendMessage(message.create());
+			player.sendMessage(message.create());
 		}
 		ComponentBuilder message = new ComponentBuilder();
 		message.append("§7(");
@@ -99,7 +100,7 @@ public class XrayResults extends Results {
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
 		message.append(String.format(AuxProtect.getInstance().translate("lookup-page-footer"), page,
 				(int) Math.ceil(entries.size() / (double) perpage), entries.size()));
-		player.spigot().sendMessage(message.create());
+		player.sendMessage(message.create());
 		return;
 	}
 

@@ -1,26 +1,26 @@
 package dev.heliosares.auxprotect.bungee;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.net.InetSocketAddress;
 import java.util.UUID;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
-import net.md_5.bungee.api.event.ServerConnectEvent;
+import net.md_5.bungee.api.event.LoginEvent;
+import net.md_5.bungee.api.event.PlayerDisconnectEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
+import net.md_5.bungee.event.EventPriority;
 import xyz.olivermartin.multichat.bungee.Events;
 import xyz.olivermartin.multichat.bungee.MultiChat;
 import xyz.olivermartin.multichat.bungee.MultiChatUtil;
 
-public class APListener implements Listener {
+public class APBListener implements Listener {
 	private final AuxProtectBungee plugin;
 
-	public APListener(AuxProtectBungee plugin) {
+	public APBListener(AuxProtectBungee plugin) {
 		this.plugin = plugin;
 	}
 
@@ -29,8 +29,8 @@ public class APListener implements Listener {
 		if (e.getSender() instanceof ProxiedPlayer) {
 			ProxiedPlayer player = (ProxiedPlayer) e.getSender();
 			if (e.isCommand()) {
-				DbEntry entry = new DbEntry(player.getName(), EntryAction.COMMAND, false, "$null", 0, 0, 0,
-						e.getMessage(), player.getUniqueId().toString());
+				DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.COMMAND, false,
+						e.getMessage(), "");
 				plugin.dbRunnable.add(entry);
 				if (e.getMessage().toLowerCase().startsWith("/msg ")
 						|| e.getMessage().toLowerCase().startsWith("/message ")
@@ -54,8 +54,8 @@ public class APListener implements Listener {
 
 						ProxiedPlayer target = ProxyServer.getInstance()
 								.getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
-						DbEntry entry = new DbEntry((player).getName(), EntryAction.MSG, false, "$null", 0, 0, 0,
-								target.getName(), message);
+						DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
+								AuxProtectBungee.getLabel(target), message);
 						plugin.dbRunnable.add(entry);
 					}
 
@@ -70,8 +70,8 @@ public class APListener implements Listener {
 			if (ProxyServer.getInstance().getPlayer(args[0]) != null) {
 				ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
 
-				DbEntry entry = new DbEntry((player).getName(), EntryAction.MSG, false, "$null", 0, 0, 0,
-						target.getName(), message);
+				DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
+						AuxProtectBungee.getLabel(target), message);
 				plugin.dbRunnable.add(entry);
 			}
 		}
@@ -85,50 +85,42 @@ public class APListener implements Listener {
 					ProxiedPlayer target = ProxyServer.getInstance()
 							.getPlayer((UUID) MultiChat.lastmsg.get(player.getUniqueId()));
 
-					DbEntry entry = new DbEntry(player.getName(), EntryAction.MSG, false, "$null", 0, 0, 0,
-							target.getName(), message);
+					DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
+							AuxProtectBungee.getLabel(target), message);
 					plugin.dbRunnable.add(entry);
 				}
 			}
 		}
 	}
 
-	@EventHandler
-	public void serverConnectEvent(ServerConnectEvent e) {
-		plugin.getSqlManager().updateUsername(e.getPlayer().getUniqueId().toString(), e.getPlayer().getName());
-		Runnable run = new Runnable() {
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void serverConnectEvent(LoginEvent e) {
+		if (e.isCancelled()) {
+			return;
+		}
+		String ip_ = ((InetSocketAddress) e.getConnection().getSocketAddress()).getAddress().toString();
+		if (ip_.startsWith("/")) {
+			ip_ = ip_.substring(1);
+		}
+
+		final String ip = ip_;
+
+		plugin.runAsync(new Runnable() {
 
 			@Override
 			public void run() {
-				HashMap<String, String> params = new HashMap<>();
-				params.put("user", "$" + e.getPlayer().getUniqueId());
-				params.put("action", "username");
-
-				ArrayList<DbEntry> results = null;
-				try {
-					results = plugin.getSqlManager().lookup(params, null, false);
-				} catch (LookupException e1) {
-					plugin.warning(e1.toString());
-					return;
-				}
-				if (results == null)
-					return;
-				String newestusername = "";
-				long highestusername = 0;
-				for (DbEntry entry : results) {
-					if (entry.getAction() == EntryAction.USERNAME) {
-						if (entry.getTime() > highestusername) {
-							highestusername = entry.getTime();
-							newestusername = entry.getTarget();
-						}
-					}
-				}
-				if (!e.getPlayer().getName().equals(newestusername)) {
-					plugin.dbRunnable.add(new DbEntry("$"+e.getPlayer().getUniqueId().toString(), EntryAction.USERNAME, false,
-							"", 0, 0, 0, e.getPlayer().getName(), ""));
-				}
+				plugin.getSqlManager().updateUsernameAndIP(e.getConnection().getUniqueId().toString(),
+						e.getConnection().getName(), ip);
 			}
-		};
-		plugin.getProxy().getScheduler().runAsync(plugin, run);
+		});
+		plugin.dbRunnable.add(new DbEntry("$" + e.getConnection().getUniqueId().toString(), EntryAction.SESSION, true,
+				"", "IP: " + ip));
 	}
+
+	@EventHandler
+	public void onDisconnect(PlayerDisconnectEvent e) {
+		plugin.dbRunnable
+				.add(new DbEntry(AuxProtectBungee.getLabel(e.getPlayer()), EntryAction.SESSION, false, "", ""));
+	}
+
 }

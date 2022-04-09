@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.command;
 
-import java.util.HashMap;
 import java.util.UUID;
 
 import org.bukkit.Bukkit;
@@ -32,15 +31,10 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 public class InvCommand implements CommandExecutor {
 
 	private AuxProtect plugin;
-	private APCommand command;
 
 	public InvCommand(AuxProtect plugin, APCommand command) {
 		this.plugin = plugin;
-		results = new HashMap<>();
-		this.command = command;
 	}
-
-	HashMap<String, Results> results;
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
@@ -60,7 +54,7 @@ public class InvCommand implements CommandExecutor {
 		if (idnex < 0) {
 			return true;
 		}
-		Results results = this.command.lookupCommand.results.get(player.getUniqueId().toString());
+		Results results = LookupCommand.results.get(player.getUniqueId().toString());
 		if (results == null || idnex >= results.getSize()) {
 			return true;
 		}
@@ -75,7 +69,7 @@ public class InvCommand implements CommandExecutor {
 			final ItemStack[] storage = InvSerialization.toItemStackArray(data[0]);
 			final ItemStack[] armor = InvSerialization.toItemStackArray(data[1]);
 			final ItemStack[] extra = InvSerialization.toItemStackArray(data[2]);
-			OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(entry.userUuid.substring(1)));
+			OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
 			final Player targetO = target.getPlayer();
 			Pane enderpane = new Pane(Type.SHOW);
 			final Inventory ender = InvSerialization.toInventory(data[3], enderpane,

@@ -84,12 +84,13 @@ public class DatabaseRunnable implements Runnable {
 				ArrayList<DbEntry> entriesLongterm = new ArrayList<>();
 				ArrayList<DbEntry> entriesAbandoned = new ArrayList<>();
 				ArrayList<DbEntry> entriesInventory = new ArrayList<>();
+				ArrayList<DbEntry> entriesCommands = new ArrayList<>();
 				ArrayList<DbEntry> entriesSpam = new ArrayList<>();
 
 				lastPolled = System.currentTimeMillis();
 				while ((entry = queue.poll()) != null) {
 					if (plugin.getDebug() >= 2) {
-						String debug = String.format("§9%s §f%s§7(%d) §9%s §7", entry.getUser(sqlManager),
+						String debug = String.format("§9%s §f%s§7(%d) §9%s §7", entry.getUser(),
 								plugin.translate(entry.getAction().getLang(entry.getState())),
 								entry.getAction().getId(entry.getState()), entry.getTarget());
 						if (entry.getData() != null && entry.getData().length() > 0) {
@@ -103,7 +104,7 @@ public class DatabaseRunnable implements Runnable {
 						plugin.debug(debug, 2);
 					}
 
-					switch (entry.getAction().getTable(plugin.isBungee())) {
+					switch (entry.getAction().getTable()) {
 					case AUXPROTECT_ABANDONED:
 						entriesAbandoned.add(entry);
 						break;
@@ -116,11 +117,14 @@ public class DatabaseRunnable implements Runnable {
 					case AUXPROTECT_LONGTERM:
 						entriesLongterm.add(entry);
 						break;
+					case AUXPROTECT_COMMANDS:
+						entriesCommands.add(entry);
+						break;
 					case AUXPROTECT:
 						entries.add(entry);
 						break;
 					default:
-						plugin.warning("Unknown table " + entry.getAction().getTable(plugin.isBungee()).toString()
+						plugin.warning("Unknown table " + entry.getAction().getTable().toString()
 								+ ". This is bad. (DatabaseRunnable)");
 						continue;
 					}
@@ -152,13 +156,19 @@ public class DatabaseRunnable implements Runnable {
 						plugin.debug(debugLogStatement(start, entriesLongterm.size(), TABLE.AUXPROTECT_LONGTERM), 1);
 						start = System.nanoTime();
 					}
+					if (entriesCommands.size() > 0) {
+						sqlManager.put(TABLE.AUXPROTECT_COMMANDS, entriesCommands);
+						plugin.debug(debugLogStatement(start, entriesCommands.size(), TABLE.AUXPROTECT_COMMANDS), 1);
+						start = System.nanoTime();
+					}
 				} catch (SQLException e) {
-					e.printStackTrace();
+					plugin.print(e);
 				}
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			plugin.print(e);
 		}
+		sqlManager.cleanup();
 
 		running = 0;
 	}
@@ -199,8 +209,8 @@ public class DatabaseRunnable implements Runnable {
 				if (next.getAction() != entry.getAction()) {
 					continue;
 				}
-				if (next.userUuid.equals(entry.userUuid)) {
-					if (next.targetUuid.equals(entry.targetUuid)) {
+				if (next.getUserUUID().equals(entry.getUserUUID())) {
+					if (next.getTargetUUID().equals(entry.getTargetUUID())) {
 						if (next.world.equals(entry.world)) {
 							if (next.getDistance(entry) <= 3) {
 								next.add(entry);

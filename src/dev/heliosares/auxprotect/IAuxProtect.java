@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect;
 import java.io.File;
 import java.io.InputStream;
 
+import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 
 public interface IAuxProtect {
@@ -20,6 +21,8 @@ public interface IAuxProtect {
 	void debug(String msg, int verb);
 
 	void warning(String msg);
+	
+	void print(Throwable t);
 
 	boolean isBungee();
 
@@ -28,5 +31,10 @@ public interface IAuxProtect {
 	int getDebug();
 
 	APConfig getAPConfig();
-	
+
+	void add(DbEntry dbEntry);
+
+	public void runAsync(Runnable run);
+
+	public void runSync(Runnable runnable);
 }

@@ -13,6 +13,8 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
+import dev.heliosares.auxprotect.AuxProtect;
+
 public class InvSerialization {
 	public static String playerToBase64(Player player) {
 		String str1 = toBase64(player.getInventory().getStorageContents());
@@ -36,8 +38,8 @@ public class InvSerialization {
 
 			bukkitObjectOutputStream.close();
 			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException exception) {
-			exception.printStackTrace();
+		} catch (IOException e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}
@@ -51,8 +53,8 @@ public class InvSerialization {
 
 			bukkitObjectOutputStream.close();
 			return itemSeparator + Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException exception) {
-			exception.printStackTrace();
+		} catch (IOException e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}
@@ -84,8 +86,8 @@ public class InvSerialization {
 
 			bukkitObjectOutputStream.close();
 			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException exception) {
-			exception.printStackTrace();
+		} catch (IOException e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}
@@ -104,8 +106,8 @@ public class InvSerialization {
 
 			bukkitObjectInputStream.close();
 			return inventory;
-		} catch (Exception exc) {
-			exc.printStackTrace();
+		} catch (Exception e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}
@@ -126,8 +128,8 @@ public class InvSerialization {
 
 			bukkitObjectInputStream.close();
 			return arrayOfItemStack;
-		} catch (Exception exc) {
-			exc.printStackTrace();
+		} catch (Exception e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}
@@ -146,8 +148,8 @@ public class InvSerialization {
 
 			bukkitObjectInputStream.close();
 			return itemStack;
-		} catch (Exception exc) {
-			exc.printStackTrace();
+		} catch (Exception e) {
+			AuxProtect.getInstance().print(e);
 		}
 		return null;
 	}

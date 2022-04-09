@@ -20,9 +20,9 @@ public class XraySolver {
 		HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
 		for (int i = entries.size() - 1; i >= 0; i--) {
 			DbEntry entry = entries.get(i);
-			ArrayList<DbEntry> hits = hash.get(entry.userUuid);
+			ArrayList<DbEntry> hits = hash.get(entry.getUserUUID());
 			if (hits == null) {
-				hash.put(entry.userUuid, hits = new ArrayList<>());
+				hash.put(entry.getUserUUID(), hits = new ArrayList<>());
 			}
 			if (entry.getAction() == EntryAction.XRAYCHECK) {
 				hits.add(entry);
@@ -41,7 +41,7 @@ public class XraySolver {
 				}
 			}
 			if (score >= 6) {
-				String user = entries1.get(0).getUser(plugin.getSqlManager());
+				String user = entries1.get(0).getUser();
 				String tooltip = "§4Hits for '" + user + "':\n";
 				for (DbEntry entry : entries1) {
 					switch (entry.getTarget()) {

@@ -21,6 +21,10 @@ public enum MyPermission {
 		return player.hasPermission(node);
 	}
 
+	public boolean hasPermission(MySender player) {
+		return player.hasPermission(node);
+	}
+
 	public boolean hasPermission(net.md_5.bungee.api.CommandSender player) {
 		return player.hasPermission(node);
 	}

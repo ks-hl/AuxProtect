@@ -13,9 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
-import org.bukkit.scheduler.BukkitRunnable;
-
-import dev.heliosares.auxprotect.AuxProtect;
+import dev.heliosares.auxprotect.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 
 public class MoneySolver extends ChartRenderer {
@@ -47,7 +45,7 @@ public class MoneySolver extends ChartRenderer {
 					currentMoney = Double.parseDouble(result.getData().substring(1).replaceAll(",", ""));
 				} catch (Exception e) {
 					try {
-						currentMoney = Double.parseDouble(result.targetUuid.substring(1).replaceAll(",", ""));
+						currentMoney = Double.parseDouble(result.getTargetUUID().substring(1).replaceAll(",", ""));
 					} catch (Exception e1) {
 						e1.printStackTrace();
 						return;
@@ -115,13 +113,13 @@ public class MoneySolver extends ChartRenderer {
 		}
 	}
 
-	public static void showMoney(AuxProtect plugin, Player player, ArrayList<DbEntry> results, int time, String users) {
-		new BukkitRunnable() {
+	public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time, String users) {
+		plugin.runSync(new Runnable() {
 			@Override
 			public void run() {
 				MoneySolver solver = new MoneySolver(player, results, time, users);
 				player.getInventory().addItem(solver.asItem(player));
 			}
-		}.runTask(plugin);
+		});
 	}
 }

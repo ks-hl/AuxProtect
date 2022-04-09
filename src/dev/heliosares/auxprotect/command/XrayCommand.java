@@ -26,6 +26,7 @@ import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 import dev.heliosares.auxprotect.utils.EntryFormatter;
 import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI.ParseResult;
@@ -189,8 +190,8 @@ public class XrayCommand implements CommandExecutor {
 									sender.sendMessage(plugin.translate("xray-rate-conflic"));
 									boolean validWarning = false;
 									for (DbEntry warn : localHits) {
-										if (warn.userUuid.equals(en.userUuid)) {
-											EntryFormatter.sendEntry(plugin, warn, sender);
+										if (warn.getUserUUID().equals(en.getUserUUID())) {
+											EntryFormatter.sendEntry(plugin, warn, new MySender(sender));
 											validWarning = true;
 										}
 									}
@@ -227,8 +228,7 @@ public class XrayCommand implements CommandExecutor {
 								}
 							}
 							plugin.dbRunnable.add(new DbEntry(en.getTime(),
-									"$" + Bukkit.getOfflinePlayer(en.getUser(plugin.getSqlManager())).getUniqueId()
-											.toString(),
+									"$" + Bukkit.getOfflinePlayer(en.getUser()).getUniqueId().toString(),
 									EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, rating_ + "",
 									"Rated by " + sender.getName() + " on "
 											+ LocalDateTime.now().format(EntryFormatter.formatter)));
@@ -312,7 +312,7 @@ public class XrayCommand implements CommandExecutor {
 									true);// boolean lookup
 
 						} catch (Throwable e) {
-							e.printStackTrace();
+							plugin.print(e);
 							sender.sendMessage("§cAn error occured.");
 							return;
 						}
@@ -372,8 +372,7 @@ public class XrayCommand implements CommandExecutor {
 						if (player != null) {
 							uuid = player.getUniqueId().toString();
 						}
-						entries.sort((o1, o2) -> o1.getUser(plugin.getSqlManager())
-								.compareTo(o2.getUser(plugin.getSqlManager())));
+						entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
 						entries.sort((o1, o2) -> o1.getLocation().getWorld().getName()
 								.compareTo(o2.getLocation().getWorld().getName()));
 						XrayResults result = new XrayResults(plugin, entries, sender);

@@ -2,7 +2,9 @@ package dev.heliosares.auxprotect;
 
 import java.io.File;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
 import org.bukkit.block.Container;
@@ -29,6 +31,7 @@ import dev.heliosares.auxprotect.listeners.*;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Language;
 import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.heliosares.auxprotect.utils.YMLManager;
@@ -60,7 +63,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	private Economy econ;
 	private static AuxProtect instance;
 
-	SQLManager sqlManager;
+	private static SQLManager sqlManager;
 
 	public String update;
 	long lastCheckedForUpdate;
@@ -101,7 +104,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		} catch (Exception e) {
 			warning("Failed to parse version string: \"" + Bukkit.getBukkitVersion() + "\". Defaulting to 1.16");
 			SERVER_VERSION = 16;
-			e.printStackTrace();
+			print(e);
 		}
 		debug("Compatability version: " + SERVER_VERSION, 1);
 
@@ -143,13 +146,15 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 			@Override
 			public void run() {
-				boolean success = false;
-				if (mysql) {
-					success = sqlManager.connect(user, pass);
-				} else {
-					success = sqlManager.connect();
-				}
-				if (!success) {
+				try {
+					if (mysql) {
+						sqlManager.connect(user, pass);
+					} else {
+						sqlManager.connect();
+					}
+					sqlManager.count();
+				} catch (SQLException e) {
+					print(e);
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
 					setEnabled(false);
 					return;
@@ -157,16 +162,22 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 				for (Object command : getConfig().getList("purge-cmds")) {
 					String cmd = (String) command;
-					PurgeCommand purge = new PurgeCommand(AuxProtect.this);
 					String[] argsOld = cmd.split(" ");
 					String[] args = new String[argsOld.length + 1];
 					args[0] = "purge";
 					for (int i = 0; i < argsOld.length; i++) {
 						args[i + 1] = argsOld[i];
 					}
-					purge.purge(Bukkit.getConsoleSender(), args);
+					PurgeCommand.purge(AuxProtect.this, new MySender(Bukkit.getConsoleSender()), args);
 				}
-				sqlManager.count();
+
+				sqlManager.purgeUIDs();
+
+				try {
+					sqlManager.vacuum();
+				} catch (SQLException e) {
+					print(e);
+				}
 			}
 		}.runTaskAsynchronously(this);
 
@@ -239,7 +250,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					}
 				}
 			}
-		}.runTaskTimerAsynchronously(this, 10 * 20, 10 * 20);
+		}.runTaskTimerAsynchronously(this, 1 * 20, 10 * 20);
 
 		getServer().getPluginManager().registerEvents(new ProjectileListener(this), this);
 		getServer().getPluginManager().registerEvents(new EntityListener(this), this);
@@ -288,7 +299,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			}
 		} catch (Exception e) {
 			warning("Exception while hooking other plugins");
-			e.printStackTrace();
+			print(e);
 		}
 
 		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
@@ -325,9 +336,12 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 	@Override
 	public void onDisable() {
-		dbRunnable.run();
-		if (sqlManager != null)
+		if (dbRunnable != null) {
+			dbRunnable.run();
+		}
+		if (sqlManager != null) {
 			sqlManager.close();
+		}
 		dbRunnable = null;
 		sqlManager = null;
 	}
@@ -370,6 +384,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	}
 
 	public String formatMoney(double d) {
+		if (d <= 0) {
+			return "$0";
+		}
 		if (econ == null) {
 			return "$" + (Math.round(d * 100) / 100.0);
 		}
@@ -402,6 +419,11 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	}
 
 	@Override
+	public void print(Throwable t) {
+		getLogger().log(Level.WARNING, t.getMessage(), t);
+	}
+
+	@Override
 	public boolean isBungee() {
 		return false;
 	}
@@ -413,5 +435,20 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 	public APConfig getAPConfig() {
 		return config;
+	}
+
+	@Override
+	public void add(DbEntry dbEntry) {
+		dbRunnable.add(dbEntry);
+	}
+
+	@Override
+	public void runAsync(Runnable run) {
+		getServer().getScheduler().runTaskAsynchronously(this, run);
+	}
+
+	@Override
+	public void runSync(Runnable run) {
+		getServer().getScheduler().runTask(this, run);
 	}
 }

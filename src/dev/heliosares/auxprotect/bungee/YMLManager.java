@@ -31,7 +31,7 @@ public class YMLManager {
 			try (InputStream in = plugin.getResourceAsStream(fileName)) {
 				Files.copy(in, file.toPath());
 			} catch (IOException e) {
-				e.printStackTrace();
+				plugin.print(e);
 			}
 		}
 		reload();
@@ -56,7 +56,7 @@ public class YMLManager {
 			this.data = ConfigurationProvider.getProvider(YamlConfiguration.class)
 					.load(new File(plugin.getDataFolder(), fileName));
 		} catch (IOException e) {
-			e.printStackTrace();
+			plugin.print(e);
 		}
 	}
 }

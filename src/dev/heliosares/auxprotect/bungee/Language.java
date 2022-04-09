@@ -7,6 +7,7 @@ import net.md_5.bungee.config.Configuration;
 
 public class Language {
 	private Configuration lang;
+	
 	HashMap<String, String> langMap;
 
 	public Language(Configuration lang) {

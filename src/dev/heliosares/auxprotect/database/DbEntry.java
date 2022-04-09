@@ -1,7 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import java.util.UUID;
-
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
@@ -34,10 +32,13 @@ public class DbEntry {
 	public final int y;
 	public final int z;
 
-	public final String userUuid;
+	private String userUuid;
 	private String user;
-	public final String targetUuid;
+	private int uid;
+
+	private String targetUuid;
 	private String target;
+	private int target_id;
 
 	public DbEntry(String userUuid, EntryAction action, boolean state, String world, int x, int y, int z, String target,
 			String data) {
@@ -49,6 +50,19 @@ public class DbEntry {
 		this.x = x;
 		this.y = y;
 		this.z = z;
+		this.targetUuid = target;
+		this.data = data;
+	}
+
+	public DbEntry(String userUuid, EntryAction action, boolean state, String target, String data) {
+		this.time = DatabaseRunnable.getTime();
+		this.userUuid = userUuid;
+		this.action = action;
+		this.state = state;
+		this.world = null;
+		this.x = 0;
+		this.y = 0;
+		this.z = 0;
 		this.targetUuid = target;
 		this.data = data;
 	}
@@ -73,33 +87,107 @@ public class DbEntry {
 		this.data = data;
 	}
 
-	public String getUser(SQLManager sqlManager) {
+	public DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
+			String target, String data) {
+		this.time = time;
+		this.uid = uid;
+		this.action = action;
+		this.state = state;
+		this.world = world;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.targetUuid = target;
+		this.data = data;
+	}
+
+	public DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
+			int target_id, String data) {
+		this.time = time;
+		this.uid = uid;
+		this.action = action;
+		this.state = state;
+		this.world = world;
+		this.x = x;
+		this.y = y;
+		this.z = z;
+		this.target_id = target_id;
+		this.data = data;
+	}
+
+	public String getUser() {
 		if (user != null) {
 			return user;
 		}
-		if (!userUuid.startsWith("$") || userUuid.length() != 37) {
-			return user = userUuid;
+		if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+			return user = getUserUUID();
 		}
-		user = sqlManager.getUsernameFromUUID(userUuid);
+		user = SQLManager.getInstance().getUsernameFromUID(getUid());
 		if (user == null) {
-			user = userUuid;
+			user = getUserUUID();
 		}
 		return user;
+	}
+
+	public int getUid() {
+		if (uid > 0) {
+			return uid;
+		}
+		return uid = SQLManager.getInstance().getUIDFromUUID(getUserUUID(), true);
+	}
+
+	public int getTargetId() {
+		if (action.getTable().hasStringTarget()) {
+			return -1;
+		}
+		if (target_id > 0) {
+			return target_id;
+		}
+		return target_id = SQLManager.getInstance().getUIDFromUUID(getTargetUUID(), true);
 	}
 
 	public String getTarget() {
 		if (target != null) {
 			return target;
 		}
-		if (!targetUuid.startsWith("$") || targetUuid.length() != 37) {
-			return target = targetUuid;
+		if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
+			return target = getTargetUUID();
 		}
-		try {
-			target = Bukkit.getServer().getOfflinePlayer(UUID.fromString(targetUuid.substring(1))).getName();
-		} catch (NoClassDefFoundError e) {
-			target = targetUuid;
+		target = SQLManager.getInstance().getUsernameFromUID(getTargetId());
+		if (target == null) {
+			target = getTargetUUID();
 		}
 		return target;
+	}
+
+	public String getTargetUUID() {
+		if (targetUuid != null) {
+			return targetUuid;
+		}
+		if (target_id > 0) {
+			targetUuid = SQLManager.getInstance().getUUIDFromUID(target_id);
+		} else if (target_id == 0) {
+			return targetUuid = "";
+		}
+		if (targetUuid == null) {
+			targetUuid = "#null";
+		}
+		return targetUuid;
+	}
+
+	public String getUserUUID() {
+		if (userUuid != null) {
+			return userUuid;
+		}
+		if (uid > 0) {
+			userUuid = SQLManager.getInstance().getUUIDFromUID(uid);
+		} else if (uid == 0) {
+			return userUuid = "";
+		}
+		if (userUuid == null) {
+			userUuid = "#null";
+		}
+		return userUuid;
 	}
 
 	public double getBoxDistance(DbEntry entry) {

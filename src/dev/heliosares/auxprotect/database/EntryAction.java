@@ -17,7 +17,7 @@ public enum EntryAction {
 	// END DEFAULT (255)
 
 	// START SPAM(256)
-	POS(256), HURT(257), INV(258, 259), COMMAND(260), KILL(261), LAND(262), ELYTRA(263, 264),
+	POS(256), HURT(257), INV(258, 259), KILL(261), LAND(262), ELYTRA(263, 264),
 	// END SPAM(511)
 
 	// START IGNOREABANDONED(512)
@@ -31,8 +31,12 @@ public enum EntryAction {
 	// START INVENTORY (1024)
 	INVENTORY(1024), LAUNCH(1025), GRAB(1026), DROP(1027), PICKUP(1028), AHLIST(1029), AHBUY(1030),
 	// inventory doubles
-	ITEMFRAME(1152, 1153)
-	// END INVENTORY(1280)
+	ITEMFRAME(1152, 1153),
+	// END INVENTORY(1279)
+
+	// START COMMANDS (1280)
+	COMMAND(1280)
+	// END COMMANDS(1289)
 	;
 
 	public final boolean hasDual;
@@ -75,8 +79,10 @@ public enum EntryAction {
 	public boolean isBungee() {
 		switch (this) {
 		case MSG:
-			return true;
 		case COMMAND:
+		case IP:
+		case USERNAME:
+		case SESSION:
 			return true;
 		default:
 			break;
@@ -94,13 +100,13 @@ public enum EntryAction {
 		return true;
 	}
 
-	public TABLE getTable(boolean bungee) {
-		if (bungee) {
+	public TABLE getTable() {
+		/*if (bungee) {
 			if (this == USERNAME || this == IP) {
 				return TABLE.AUXPROTECT_LONGTERM;
 			}
 			return TABLE.AUXPROTECT;
-		}
+		}*/
 		if (id < 256) {
 			return TABLE.AUXPROTECT;
 		}
@@ -115,6 +121,9 @@ public enum EntryAction {
 		}
 		if (id < 1280) {
 			return TABLE.AUXPROTECT_INVENTORY;
+		}
+		if (id < 1290) {
+			return TABLE.AUXPROTECT_COMMANDS;
 		}
 		return null;
 	}

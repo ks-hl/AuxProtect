@@ -12,13 +12,13 @@ import org.bukkit.command.CommandSender;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.utils.MyPermission;
+import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 public class APCommand implements CommandExecutor {
 
 	private AuxProtect plugin;
 	public LookupCommand lookupCommand;
-	private PurgeCommand purgeCommand;
 	private TpCommand tpCommand;
 	private InvCommand invCommand;
 	private PlaytimeCommand playtimeCommand;
@@ -28,7 +28,6 @@ public class APCommand implements CommandExecutor {
 	public APCommand(AuxProtect plugin) {
 		this.plugin = plugin;
 		lookupCommand = new LookupCommand(plugin);
-		purgeCommand = new PurgeCommand(plugin);
 		tpCommand = new TpCommand(plugin);
 		invCommand = new InvCommand(plugin, this);
 		playtimeCommand = new PlaytimeCommand(plugin);
@@ -44,13 +43,14 @@ public class APCommand implements CommandExecutor {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
-				return lookupCommand.onCommand(sender, command, label, args);
+				return lookupCommand.onCommand(sender, args);
 			} else if (args[0].equalsIgnoreCase("purge")) {
 				if (!MyPermission.PURGE.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
-				return purgeCommand.onCommand(sender, command, label, args);
+				PurgeCommand.purge(plugin, new MySender(sender), args);
+				return true;
 			} else if (args[0].equalsIgnoreCase("pt") || args[0].equalsIgnoreCase("playtime")) {
 				if (!MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
@@ -167,7 +167,8 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 
-				sender.sendMessage("§7Rows: §9" + plugin.getSqlManager().getCount());
+				sender.sendMessage("§7Rows: §9" + plugin.getSqlManager().getCount() + " §7DB Version: §9"
+						+ plugin.getSqlManager().getVersion());
 				sender.sendMessage("§7Average lookup time: §9"
 						+ Math.round(plugin.getSqlManager().lookupTime.getMean() / 1000.0) / 1000.0 + "§7ms");
 				sender.sendMessage("§7Average record time per entry: §9"
@@ -201,7 +202,7 @@ public class APCommand implements CommandExecutor {
 					}
 				} catch (SQLException e) {
 					sender.sendMessage("§cAn error occured.");
-					e.printStackTrace();
+					plugin.print(e);
 					return true;
 				}
 				sender.sendMessage("§aSQL statement executed successfully.");

@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.listeners;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -38,7 +37,6 @@ import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PickupEntry;
-import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.MyPermission;
@@ -149,51 +147,12 @@ public class PlayerListener implements Listener {
 		logMoney(plugin, e.getPlayer(), "join");
 		String ip = e.getPlayer().getAddress().getHostString();
 		logSession(e.getPlayer(), true, "IP: " + ip);
-		plugin.getSqlManager().updateUsername(e.getPlayer().getUniqueId().toString(), e.getPlayer().getName());
 		new BukkitRunnable() {
 
 			@Override
 			public void run() {
-				HashMap<String, String> params = new HashMap<>();
-				params.put("user", "$" + e.getPlayer().getUniqueId());
-				params.put("action", "ip,username");
-
-				ArrayList<DbEntry> results = null;
-				try {
-					results = plugin.getSqlManager().lookup(params, null, false);
-				} catch (LookupException e1) {
-					plugin.warning(e1.toString());
-					return;
-				}
-				if (results == null)
-					return;
-				boolean newip = true;
-				String newestusername = "";
-				long highestusername = 0;
-				for (DbEntry entry : results) {
-					if (entry.getAction() == EntryAction.IP) {
-						if (!newip) {
-							continue;
-						}
-						if (entry.getTarget().equals(ip)) {
-							newip = false;
-						}
-					}
-					if (entry.getAction() == EntryAction.USERNAME) {
-						if (entry.getTime() > highestusername) {
-							highestusername = entry.getTime();
-							newestusername = entry.getTarget();
-						}
-					}
-				}
-				if (newip) {
-					plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.IP, false, "", 0,
-							0, 0, ip, ""));
-				}
-				if (!e.getPlayer().getName().equals(newestusername)) {
-					plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.USERNAME, false,
-							"", 0, 0, 0, e.getPlayer().getName(), ""));
-				}
+				plugin.getSqlManager().updateUsernameAndIP(e.getPlayer().getUniqueId().toString(),
+						e.getPlayer().getName(), ip);
 			}
 		}.runTaskAsynchronously(plugin);
 

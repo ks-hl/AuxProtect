@@ -48,7 +48,7 @@ public class YMLManager {
 				Files.copy(plugin.getResource(fileName + ".yml"), dfile.toPath());
 				reload();
 			} catch (IOException e) {
-				e.printStackTrace();
+				plugin.print(e);
 			}
 		}
 		save();
