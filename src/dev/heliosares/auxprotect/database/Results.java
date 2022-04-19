@@ -82,7 +82,7 @@ public class Results {
 					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTime() + "e"));
 
 			message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(),
-					plugin.translate(en.getAction().getLang(en.getState())), en.getTarget())).event((HoverEvent) null);
+					en.getAction().getText(plugin, en.getState()), en.getTarget())).event((HoverEvent) null);
 			String data = en.getData();
 			if (data != null && data.contains(InvSerialization.itemSeparator)) {
 				data = data.split(InvSerialization.itemSeparator)[0];
@@ -93,14 +93,14 @@ public class Results {
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
 			}
-			if (en.getAction() == EntryAction.INVENTORY) {
+			if (en.getAction().equals( EntryAction.INVENTORY)) {
 				if (MyPermission.INV.hasPermission(player)) {
 					message.append(" §a[View]")
 							.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 									String.format(commandPrefix + " inv %d", i)))
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
-			} else if (en.getAction() == EntryAction.KILL) {
+			} else if (en.getAction() .equals( EntryAction.KILL)) {
 				if (MyPermission.INV.hasPermission(player) && !en.getTarget().startsWith("#")) {
 					message.append(" §a[View Inv]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 							String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
@@ -113,9 +113,15 @@ public class Results {
 			}
 			if (en.world != null && !en.world.equals("$null")) {
 				String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", en.x, en.y, en.z, en.world);
+				if (en.getAction().getTable().hasLook()) {
+					tpCommand += String.format(" %d %d", en.pitch, en.yaw);
+				}
 				message.append(String.format("\n                §7§l^ §7(x%d/y%d/z%d/%s)", en.x, en.y, en.z, en.world))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));
+				if (en.getAction().getTable().hasLook()) {
+					message.append(String.format("§7 (p%s/y%d)", en.pitch, en.yaw));
+				}
 			}
 			player.sendMessage(message.create());
 		}

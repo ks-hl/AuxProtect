@@ -29,14 +29,14 @@ public class ChestShopListener implements Listener {
 		if (qty == 0) {
 			return;
 		}
-		String data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
-				+ ", shop: " + e.getOwnerAccount().getName();
+		String data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue()) + ", qty: " + qty + ", shop: "
+				+ e.getOwnerAccount().getName();
 		if (plugin.getEconomy() != null) {
 			data += ", balance: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getClient()));
 		}
 		// Client
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getClient()), EntryAction.SHOP, state,
-				e.getSign().getLocation(), e.getStock()[0].getType().toString().toLowerCase(), data));
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getClient()), EntryAction.SHOP, state, e.getSign().getLocation(),
+				e.getStock()[0].getType().toString().toLowerCase(), data));
 
 		data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
 				+ ", client: " + e.getClient().getName();
@@ -45,7 +45,7 @@ public class ChestShopListener implements Listener {
 					plugin.getEconomy().getBalance(Bukkit.getOfflinePlayer(e.getOwnerAccount().getUuid())));
 		}
 		// Owner
-		plugin.dbRunnable.add(new DbEntry("$" + e.getOwnerAccount().getUuid().toString(), EntryAction.SHOP, !state,
+		plugin.add(new DbEntry("$" + e.getOwnerAccount().getUuid().toString(), EntryAction.SHOP, !state,
 				e.getSign().getLocation(), e.getStock()[0].getType().toString().toLowerCase(), data));
 	}
 }

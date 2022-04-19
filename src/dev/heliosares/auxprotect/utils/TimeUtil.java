@@ -39,6 +39,13 @@ public class TimeUtil {
 	public static long convertTime(String timeStr) {
 		String builder = "";
 		long time = 0;
+		if (timeStr.endsWith("e")) {
+			try {
+				return Long.parseLong(timeStr.substring(0, timeStr.length() - 1));
+			} catch (NumberFormatException e) {
+			}
+			return -1;
+		}
 		for (char c : timeStr.toCharArray()) {
 			if (c >= '0' && c <= '9' || c == '.') {
 				builder += c;

@@ -63,7 +63,7 @@ public class InvCommand implements CommandExecutor {
 		if (entry == null) {
 			return true;
 		}
-		if (entry.getAction() == EntryAction.INVENTORY) {
+		if (entry.getAction().equals(EntryAction.INVENTORY)) {
 
 			String[] data = entry.getData().split(",");
 			final ItemStack[] storage = InvSerialization.toItemStackArray(data[0]);
@@ -107,7 +107,7 @@ public class InvCommand implements CommandExecutor {
 							targetO.sendMessage("§a" + player.getName() + " recovered your inventory from "
 									+ TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()) + " ago.");
 							targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-							plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.RECOVER, false,
+							plugin.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.RECOVER, false,
 									player.getLocation(), AuxProtect.getLabel(target), "force"));
 						}
 					}, "§2§lForce Recover Inventory", "", "§a§lDouble click", "",
@@ -157,7 +157,7 @@ public class InvCommand implements CommandExecutor {
 							targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
 						}
 						player.closeInventory();
-						plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.RECOVER, false,
+						plugin.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.RECOVER, false,
 								player.getLocation(), AuxProtect.getLabel(target), "regular"));
 					}
 				}, "§a§lRecover Inventory");

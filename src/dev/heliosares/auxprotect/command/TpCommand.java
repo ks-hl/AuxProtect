@@ -39,8 +39,13 @@ public class TpCommand implements CommandExecutor {
 			int y = Integer.parseInt(args[2]);
 			int z = Integer.parseInt(args[3]);
 			World world = plugin.getServer().getWorld(args[4]);
+			int pitch = 0, yaw = 180;
+			if (args.length == 7) {
+				pitch = Integer.parseInt(args[5]);
+				yaw = Integer.parseInt(args[6]);
+			}
 			if (world != null) {
-				final Location target = new Location(world, x + 0.5, y, z + 0.5);
+				final Location target = new Location(world, x + 0.5, y, z + 0.5, yaw, pitch);
 				player.teleport(target);
 				if (player.getGameMode() == GameMode.SPECTATOR) {
 					new BukkitRunnable() {

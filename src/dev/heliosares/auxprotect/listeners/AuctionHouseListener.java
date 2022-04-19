@@ -6,7 +6,6 @@ import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import com.spawnchunk.auctionhouse.AuctionHouse;
 import com.spawnchunk.auctionhouse.events.ListItemEvent;
 import com.spawnchunk.auctionhouse.events.PurchaseItemEvent;
 
@@ -17,12 +16,9 @@ import dev.heliosares.auxprotect.utils.InvSerialization;
 
 public class AuctionHouseListener implements Listener {
 	private final AuxProtect plugin;
-	@SuppressWarnings("unused")
-	private final AuctionHouse ah;
 
-	public AuctionHouseListener(AuxProtect plugin, AuctionHouse plugin2) {
+	public AuctionHouseListener(AuxProtect plugin) {
 		this.plugin = plugin;
-		this.ah = plugin2;
 	}
 
 	@EventHandler
@@ -37,7 +33,7 @@ public class AuctionHouseListener implements Listener {
 			}
 		}
 
-		plugin.dbRunnable.add(new DbEntry("$" + e.getSeller_UUID(), EntryAction.AHLIST, false, l,
+		plugin.add(new DbEntry("$" + e.getSeller_UUID(), EntryAction.AHLIST, false, l,
 				e.getItem().getType().toString().toLowerCase(),
 				plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
 	}
@@ -56,7 +52,7 @@ public class AuctionHouseListener implements Listener {
 			}
 		}
 
-		plugin.dbRunnable.add(new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AHBUY, false, l,
+		plugin.add(new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AHBUY, false, l,
 				e.getItem().getType().toString().toLowerCase(), "From " + e.getSeller().getName() + " for "
 						+ plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
 	}

@@ -61,6 +61,6 @@ public class InventoryListener implements Listener {
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(player), EntryAction.INV, state, location, label,
 				count + " items in inventory.");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 }

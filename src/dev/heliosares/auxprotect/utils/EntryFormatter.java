@@ -27,7 +27,7 @@ public class EntryFormatter {
 						"§7" + Instant.ofEpochMilli(en.getTime()).atZone(ZoneId.systemDefault()).format(formatter))));
 
 		message.append(String.format(" §f- §9%s §f%s §9%s§f §7%s", en.getUser(),
-				plugin.translate(en.getAction().getLang(en.getState())), en.getTarget(),
+				en.getAction().getText(plugin, en.getState()), en.getTarget(),
 				(en.getData() != null && en.getData().length() > 0) ? "(" + en.getData() + ")" : "") + "\n")
 				.event((HoverEvent) null);
 

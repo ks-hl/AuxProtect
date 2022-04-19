@@ -22,6 +22,7 @@ public class APCommand implements CommandExecutor {
 	private TpCommand tpCommand;
 	private InvCommand invCommand;
 	private PlaytimeCommand playtimeCommand;
+	private ActivityCommand activityCommand;
 	private XrayCommand xrayCommand;
 	private MoneyCommand moneyCommand;
 
@@ -31,6 +32,7 @@ public class APCommand implements CommandExecutor {
 		tpCommand = new TpCommand(plugin);
 		invCommand = new InvCommand(plugin, this);
 		playtimeCommand = new PlaytimeCommand(plugin);
+		activityCommand = new ActivityCommand(plugin);
 		xrayCommand = new XrayCommand(plugin);
 		moneyCommand = new MoneyCommand(plugin);
 	}
@@ -57,6 +59,12 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return playtimeCommand.onCommand(sender, command, label, args);
+			} else if (args[0].equalsIgnoreCase("activity")) {
+				if (!MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				return activityCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("money")) {
 				if (!MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
@@ -175,6 +183,7 @@ public class APCommand implements CommandExecutor {
 						+ Math.round(plugin.getSqlManager().putTimePerEntry.getMean() / 1000.0) / 1000.0 + "§7ms");
 				sender.sendMessage("§7Average record time per execution: §9"
 						+ Math.round(plugin.getSqlManager().putTimePerExec.getMean() / 1000.0) / 1000.0 + "§7ms");
+				sender.sendMessage("§7Queued Rows: §9" + plugin.queueSize());
 				return true;
 			} else if (args[0].equalsIgnoreCase("sql") || args[0].equalsIgnoreCase("sqlu")) {
 				if (!MyPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {

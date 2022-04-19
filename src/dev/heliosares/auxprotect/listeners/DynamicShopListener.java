@@ -27,13 +27,13 @@ public class DynamicShopListener implements Listener {
 		} else {
 			price = e.getNewSellPrice();
 		}
-		String data = "DS, " + plugin.formatMoney(price) + " each, QTY: " + item.getAmount();
+		String data = "DS, " + plugin.formatMoney(price * item.getAmount()) + ", QTY: " + item.getAmount();
 		if (plugin.getEconomy() != null) {
 			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getPlayer()));
 		}
 		data += ", stock: " + e.getNewStock();
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.SHOP, buy,
 				e.getPlayer().getLocation(), item.getType().toString().toLowerCase(), data);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 }

@@ -109,12 +109,12 @@ public class APBListener implements Listener {
 
 			@Override
 			public void run() {
-				plugin.getSqlManager().updateUsernameAndIP(e.getConnection().getUniqueId().toString(),
-						e.getConnection().getName(), ip);
+				plugin.getSqlManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
+						ip);
 			}
 		});
-		plugin.dbRunnable.add(new DbEntry("$" + e.getConnection().getUniqueId().toString(), EntryAction.SESSION, true,
-				"", "IP: " + ip));
+		plugin.dbRunnable.add(new DbEntry(AuxProtectBungee.getLabel(e.getConnection().getUniqueId()),
+				EntryAction.SESSION, true, "", "IP: " + ip));
 	}
 
 	@EventHandler

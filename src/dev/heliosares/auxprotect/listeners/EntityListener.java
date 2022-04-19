@@ -48,7 +48,7 @@ public class EntityListener implements Listener {
 
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.MOUNT, false,
 				e.getDismounted().getLocation(), AuxProtect.getLabel(e.getDismounted()), "");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -59,7 +59,7 @@ public class EntityListener implements Listener {
 
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.MOUNT, true,
 				e.getMount().getLocation(), AuxProtect.getLabel(e.getMount()), "");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -76,7 +76,7 @@ public class EntityListener implements Listener {
 				}
 				DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getDamager()), EntryAction.ITEMFRAME, false,
 						item.getLocation(), item.getItem().getType().toString().toLowerCase(), data);
-				plugin.dbRunnable.add(entry);
+				plugin.add(entry);
 				return;
 			}
 		}
@@ -115,7 +115,7 @@ public class EntityListener implements Listener {
 			action = EntryAction.KILL;
 		}
 		DbEntry entry = new DbEntry(sourceName, action, false, e.getEntity().getLocation(), targetName, itemname);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler
@@ -132,7 +132,7 @@ public class EntityListener implements Listener {
 				}
 				DbEntry entry = new DbEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false,
 						item.getLocation(), item.getItem().getType().toString().toLowerCase(), data);
-				plugin.dbRunnable.add(entry);
+				plugin.add(entry);
 				return;
 			}
 		}
@@ -162,14 +162,14 @@ public class EntityListener implements Listener {
 		}
 		DbEntry entry = new DbEntry("#env", reason, false, e.getEntity().getLocation(), targetName,
 				e.getCause().toString() + ", " + (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler
 	public void onPlayerDeath(PlayerDeathEvent e) {
 		DbEntry entry1 = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.INVENTORY, false,
 				e.getEntity().getLocation(), "death", InvSerialization.playerToBase64(e.getEntity()));
-		plugin.dbRunnable.add(entry1);
-		plugin.lastLogOfInventoryForUUID.put(e.getEntity().getUniqueId().toString(), System.currentTimeMillis());
+		plugin.add(entry1);
+		plugin.getAPPlayer(e.getEntity()).lastLoggedInventory = System.currentTimeMillis();
 	}
 }

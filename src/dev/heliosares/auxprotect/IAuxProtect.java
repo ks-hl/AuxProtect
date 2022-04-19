@@ -21,7 +21,7 @@ public interface IAuxProtect {
 	void debug(String msg, int verb);
 
 	void warning(String msg);
-	
+
 	void print(Throwable t);
 
 	boolean isBungee();

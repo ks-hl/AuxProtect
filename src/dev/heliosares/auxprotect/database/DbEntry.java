@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
 public class DbEntry {
@@ -32,63 +31,68 @@ public class DbEntry {
 	public final int y;
 	public final int z;
 
-	private String userUuid;
+	public final int pitch;
+	public final int yaw;
+
+	protected String userLabel;
 	private String user;
 	private int uid;
 
-	private String targetUuid;
+	private String targetLabel;
 	private String target;
 	private int target_id;
 
-	public DbEntry(String userUuid, EntryAction action, boolean state, String world, int x, int y, int z, String target,
-			String data) {
-		this.time = DatabaseRunnable.getTime();
-		this.userUuid = userUuid;
+	private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
+			int yaw, String targetLabel, String data) {
+		this.time = DatabaseRunnable.getTime(action.getTable());
+		this.userLabel = userLabel;
 		this.action = action;
 		this.state = state;
 		this.world = world;
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.targetUuid = target;
+		this.pitch = pitch;
+		this.yaw = yaw;
+		this.targetLabel = targetLabel;
 		this.data = data;
 	}
 
-	public DbEntry(String userUuid, EntryAction action, boolean state, String target, String data) {
-		this.time = DatabaseRunnable.getTime();
-		this.userUuid = userUuid;
-		this.action = action;
-		this.state = state;
-		this.world = null;
-		this.x = 0;
-		this.y = 0;
-		this.z = 0;
-		this.targetUuid = target;
-		this.data = data;
+	/**
+	 * 
+	 * @param userLabel
+	 * @param action
+	 * @param state
+	 * @param targetLabel
+	 * @param data
+	 */
+	public DbEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
+		this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data);
 	}
 
-	public DbEntry(String userUuid, EntryAction action, boolean state, Location location, String target,
+	/**
+	 * @param userLabel   The label of the user, provided by
+	 *                    AuxProtect#getLabel(Object) and
+	 *                    AuxProtectBungee#getLabel(Object) as applicable. This may
+	 *                    also be a generic string such as "#env"
+	 * 
+	 * @param state       Specifies the state of EntryAction (i.e +mount vs -mount),
+	 *                    if applicable, otherwise false.
+	 * 
+	 * @param targetLabel The label of the target, see userLabel for details.
+	 * 
+	 * @param data        Extra data about your entry. This is stored as plain text
+	 *                    so use sparingly.
+	 */
+	public DbEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel,
 			String suplmemental) {
-		this(userUuid, action, state, location.getWorld().getName(), location.getBlockX(), location.getBlockY(),
-				location.getBlockZ(), target, suplmemental);
+		this(userLabel, action, state, location.getWorld().getName(), location.getBlockX(), location.getBlockY(),
+				location.getBlockZ(), (int) Math.round(location.getPitch()), (int) Math.round(location.getYaw()),
+				targetLabel, suplmemental);
 	}
 
-	public DbEntry(long time, String userUuid, EntryAction action, boolean state, String world, int x, int y, int z,
-			String target, String data) {
-		this.time = time;
-		this.userUuid = userUuid;
-		this.action = action;
-		this.state = state;
-		this.world = world;
-		this.x = x;
-		this.y = y;
-		this.z = z;
-		this.targetUuid = target;
-		this.data = data;
-	}
-
-	public DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
-			String target, String data) {
+	protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
+			int pitch, int yaw, String target, int target_id, String data) {
 		this.time = time;
 		this.uid = uid;
 		this.action = action;
@@ -97,22 +101,16 @@ public class DbEntry {
 		this.x = x;
 		this.y = y;
 		this.z = z;
-		this.targetUuid = target;
-		this.data = data;
-	}
-
-	public DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
-			int target_id, String data) {
-		this.time = time;
-		this.uid = uid;
-		this.action = action;
-		this.state = state;
-		this.world = world;
-		this.x = x;
-		this.y = y;
-		this.z = z;
+		this.pitch = pitch;
+		this.yaw = yaw;
+		this.targetLabel = target;
 		this.target_id = target_id;
 		this.data = data;
+	}
+
+	public static DbEntry createXrayRecord(DbEntry en, int rating, String data) {
+		return new DbEntry(en.getTime(), en.getUid(), EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, 0, 180,
+				rating + "", -1, data);
 	}
 
 	public String getUser() {
@@ -161,33 +159,33 @@ public class DbEntry {
 	}
 
 	public String getTargetUUID() {
-		if (targetUuid != null) {
-			return targetUuid;
+		if (targetLabel != null) {
+			return targetLabel;
 		}
 		if (target_id > 0) {
-			targetUuid = SQLManager.getInstance().getUUIDFromUID(target_id);
+			targetLabel = SQLManager.getInstance().getUUIDFromUID(target_id);
 		} else if (target_id == 0) {
-			return targetUuid = "";
+			return targetLabel = "";
 		}
-		if (targetUuid == null) {
-			targetUuid = "#null";
+		if (targetLabel == null) {
+			targetLabel = "#null";
 		}
-		return targetUuid;
+		return targetLabel;
 	}
 
 	public String getUserUUID() {
-		if (userUuid != null) {
-			return userUuid;
+		if (userLabel != null) {
+			return userLabel;
 		}
 		if (uid > 0) {
-			userUuid = SQLManager.getInstance().getUUIDFromUID(uid);
+			userLabel = SQLManager.getInstance().getUUIDFromUID(uid);
 		} else if (uid == 0) {
-			return userUuid = "";
+			return userLabel = "";
 		}
-		if (userUuid == null) {
-			userUuid = "#null";
+		if (userLabel == null) {
+			userLabel = "#null";
 		}
-		return userUuid;
+		return userLabel;
 	}
 
 	public double getBoxDistance(DbEntry entry) {
@@ -203,12 +201,5 @@ public class DbEntry {
 
 	public double getDistanceSq(DbEntry entry) {
 		return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
-	}
-
-	public Location getLocation() {
-		if (world == null || world.equals("$null") || world.equals("null")) {
-			return null;
-		}
-		return new Location(Bukkit.getWorld(world), x, y, z);
 	}
 }

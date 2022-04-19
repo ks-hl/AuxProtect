@@ -23,7 +23,6 @@ import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.database.XrayResults;
 import dev.heliosares.auxprotect.database.SQLManager.LookupException;
-import dev.heliosares.auxprotect.database.SQLManager.TABLE;
 import dev.heliosares.auxprotect.utils.EntryFormatter;
 import dev.heliosares.auxprotect.utils.MyPermission;
 import dev.heliosares.auxprotect.utils.MySender;
@@ -132,7 +131,6 @@ public class XrayCommand implements CommandExecutor {
 				final int entryIndex_ = entryIndex;
 				final int rating_ = rating;
 				new BukkitRunnable() {
-					@SuppressWarnings("deprecation")
 					@Override
 					public void run() {
 
@@ -175,7 +173,7 @@ public class XrayCommand implements CommandExecutor {
 										sender.sendMessage(plugin.translate("xray-rate-overwrite"));
 										skipWarning = true;
 										for (DbEntry warn : localHits) {
-											plugin.getSqlManager().removeEntry(TABLE.AUXPROTECT, warn);
+											plugin.getSqlManager().removeEntry(warn);
 										}
 									} else if (args[args.length - 1].equalsIgnoreCase("-i")) {
 										sender.sendMessage(plugin.translate("xray-rate-ignore"));
@@ -227,11 +225,8 @@ public class XrayCommand implements CommandExecutor {
 									}
 								}
 							}
-							plugin.dbRunnable.add(new DbEntry(en.getTime(),
-									"$" + Bukkit.getOfflinePlayer(en.getUser()).getUniqueId().toString(),
-									EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, rating_ + "",
-									"Rated by " + sender.getName() + " on "
-											+ LocalDateTime.now().format(EntryFormatter.formatter)));
+							plugin.add(DbEntry.createXrayRecord(en, rating_, "Rated by " + sender.getName() + " on "
+									+ LocalDateTime.now().format(EntryFormatter.formatter)));
 							sender.sendMessage(plugin.translate("xray-rate-written"));
 							if (results_ != null) {
 								results_.showPage(entryIndex_ + 2, 1);
@@ -373,8 +368,7 @@ public class XrayCommand implements CommandExecutor {
 							uuid = player.getUniqueId().toString();
 						}
 						entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
-						entries.sort((o1, o2) -> o1.getLocation().getWorld().getName()
-								.compareTo(o2.getLocation().getWorld().getName()));
+						entries.sort((o1, o2) -> o1.world.compareTo(o2.world));
 						XrayResults result = new XrayResults(plugin, entries, sender);
 						result.showPage(1, 1);
 						XrayCommand.this.results.put(uuid, result);

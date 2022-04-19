@@ -2,8 +2,8 @@ package dev.heliosares.auxprotect;
 
 import java.io.File;
 import java.io.IOException;
-import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -16,13 +16,10 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import com.spawnchunk.auctionhouse.AuctionHouse;
-
 import net.milkbowl.vault.economy.Economy;
 import dev.heliosares.auxprotect.command.APCommand;
 import dev.heliosares.auxprotect.command.APCommandTab;
 import dev.heliosares.auxprotect.command.ClaimInvCommand;
-import dev.heliosares.auxprotect.command.PurgeCommand;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -31,17 +28,9 @@ import dev.heliosares.auxprotect.listeners.*;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Language;
 import dev.heliosares.auxprotect.utils.MyPermission;
-import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.heliosares.auxprotect.utils.YMLManager;
-
-/*-
- * TODO: 
- * 
- * better api
- * 
- * */
 
 public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	public static final char LEFT_ARROW = 9668;
@@ -52,11 +41,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		return instance;
 	}
 
-	public DatabaseRunnable dbRunnable;
+	protected DatabaseRunnable dbRunnable;
 	public static Language lang;
 	public int debug;
-	public HashMap<String, Long> lastLogOfInventoryForUUID = new HashMap<>();
-	public HashMap<String, Long> lastLogOfMoneyForUUID = new HashMap<>();
 	public YMLManager data;
 	public APConfig config;
 
@@ -79,7 +66,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void onEnable() {
 		instance = this;
-		AuxProtectApi.setInstance(this);
+
 		this.saveDefaultConfig();
 		this.reloadConfig();
 		this.getConfig().options().copyDefaults(true);
@@ -108,6 +95,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		}
 		debug("Compatability version: " + SERVER_VERSION, 1);
 
+		File sqliteFile = null;
 		boolean mysql = getConfig().getBoolean("MySQL.use", false);
 		String user = getConfig().getString("MySQL.username", "");
 		String pass = getConfig().getString("MySQL.password", "");
@@ -118,7 +106,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			String database = getConfig().getString("MySQL.database", "database");
 			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
 		} else {
-			File sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
+			sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
 			if (!sqliteFile.getParentFile().exists()) {
 				if (!sqliteFile.getParentFile().mkdirs()) {
 					this.getLogger().severe("Failed to create database directory.");
@@ -140,7 +128,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
 
-		sqlManager = new SQLManager(this, uri, getConfig().getString("MySQL.table-prefix"));
+		sqlManager = new SQLManager(this, uri, getConfig().getString("MySQL.table-prefix"), sqliteFile);
 
 		new BukkitRunnable() {
 
@@ -153,31 +141,25 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 						sqlManager.connect();
 					}
 					sqlManager.count();
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					print(e);
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
 					setEnabled(false);
 					return;
 				}
 
-				for (Object command : getConfig().getList("purge-cmds")) {
-					String cmd = (String) command;
-					String[] argsOld = cmd.split(" ");
-					String[] args = new String[argsOld.length + 1];
-					args[0] = "purge";
-					for (int i = 0; i < argsOld.length; i++) {
-						args[i + 1] = argsOld[i];
-					}
-					PurgeCommand.purge(AuxProtect.this, new MySender(Bukkit.getConsoleSender()), args);
-				}
-
-				sqlManager.purgeUIDs();
-
-				try {
-					sqlManager.vacuum();
-				} catch (SQLException e) {
-					print(e);
-				}
+				/*
+				 * for (Object command : getConfig().getList("purge-cmds")) { String cmd =
+				 * (String) command; String[] argsOld = cmd.split(" "); String[] args = new
+				 * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
+				 * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
+				 * PurgeCommand.purge(AuxProtect.this, new MySender(Bukkit.getConsoleSender()),
+				 * args); }
+				 * 
+				 * sqlManager.purgeUIDs();
+				 * 
+				 * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
+				 */
 			}
 		}.runTaskAsynchronously(this);
 
@@ -190,40 +172,105 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		getServer().getScheduler().runTaskTimerAsynchronously(this, dbRunnable, 60, 5);
 
 		new BukkitRunnable() {
-			long lastPos;
 
 			@Override
 			public void run() {
-				if (System.currentTimeMillis() - lastPos > config.posInterval) {
-					lastPos = System.currentTimeMillis();
-					for (Player player : Bukkit.getOnlinePlayers()) {
-						PlayerListener.logPos(AuxProtect.this, player, player.getLocation(), "");
+				synchronized (apPlayers) {
+					for (APPlayer apPlayer : apPlayers.values()) {
+						if (!apPlayer.player.isOnline()) {
+							continue;
+						}
+
+						if (config.inventoryInterval > 0) {
+							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory > config.inventoryInterval) {
+								apPlayer.lastLoggedInventory = System.currentTimeMillis();
+								dbRunnable.add(new DbEntry(AuxProtect.getLabel(apPlayer.player), EntryAction.INVENTORY,
+										false, apPlayer.player.getLocation(), "periodic",
+										InvSerialization.playerToBase64(apPlayer.player)));
+							}
+						}
+
+						if (config.moneyInterval > 0) {
+							if (System.currentTimeMillis() - apPlayer.lastLoggedMoney > config.moneyInterval) {
+								PlayerListener.logMoney(AuxProtect.this, apPlayer.player, "periodic");
+							}
+						}
+
+						if (config.posInterval > 0) {
+							if (apPlayer.lastMoved > apPlayer.lastLoggedPos
+									&& System.currentTimeMillis() - apPlayer.lastLoggedPos > config.posInterval) {
+								PlayerListener.logPos(AuxProtect.this, apPlayer, apPlayer.player,
+										apPlayer.player.getLocation(), "");
+							}
+						}
+
+						if (System.currentTimeMillis() - apPlayer.lastCheckedMovement > 1000) {
+							if (apPlayer.lastLocation != null
+									&& apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
+								apPlayer.moved += Math
+										.min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
+							}
+							apPlayer.lastLocation = apPlayer.player.getLocation();
+							apPlayer.lastCheckedMovement = System.currentTimeMillis();
+						}
+
+						if (apPlayer.lastLoggedActivity == 0) {
+							apPlayer.lastLoggedActivity = System.currentTimeMillis();
+						}
+						if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L) {
+							if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
+								apPlayer.activity[apPlayer.activityIndex] += 100;
+							}
+							apPlayer.activity[apPlayer.activityIndex] += Math.floor((apPlayer.moved + 7) / 10);
+
+							add(new DbEntry(AuxProtect.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
+									apPlayer.player.getLocation(), "",
+									(int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
+							apPlayer.lastLoggedActivity = System.currentTimeMillis();
+
+							int tallied = 0;
+							int inactive = 0;
+							for (double activity : apPlayer.activity) {
+								if (activity < 0) {
+									continue;
+								}
+								tallied++;
+								if (activity < 10) {
+									inactive++;
+								}
+							}
+							if (tallied >= 10 && (double) inactive / (double) tallied > 0.8) {
+								if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
+									apPlayer.lastNotifyInactive = System.currentTimeMillis();
+									String msg = String.format(lang.translate("inactive-alert"),
+											apPlayer.player.getName(), inactive, tallied);
+									for (Player player : Bukkit.getOnlinePlayers()) {
+										if (MyPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+											player.sendMessage(msg);
+										}
+									}
+									info(msg);
+									add(new DbEntry(AuxProtect.getLabel(apPlayer.player), EntryAction.ALERT, false,
+											apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+								}
+							}
+
+							apPlayer.activityIndex++;
+							if (apPlayer.activityIndex >= apPlayer.activity.length) {
+								apPlayer.activityIndex = 0;
+							}
+							apPlayer.activity[apPlayer.activityIndex] = 0;
+							apPlayer.moved = 0;
+						}
 					}
 				}
 			}
-		}.runTaskTimerAsynchronously(this, 20, 20);
+		}.runTaskTimerAsynchronously(this, 5, 5);
 
 		new BukkitRunnable() {
 
 			@Override
 			public void run() {
-				for (Player player : Bukkit.getOnlinePlayers()) {
-					if (config.inventoryInterval > 0) {
-						Long lastInv = lastLogOfInventoryForUUID.get(player.getUniqueId().toString());
-						if (lastInv == null || System.currentTimeMillis() - lastInv > config.inventoryInterval) {
-							lastLogOfInventoryForUUID.put(player.getUniqueId().toString(), System.currentTimeMillis());
-							dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.INVENTORY, false,
-									player.getLocation(), "periodic", InvSerialization.playerToBase64(player)));
-						}
-					}
-
-					if (config.moneyInterval > 0) {
-						Long lastMoney = lastLogOfMoneyForUUID.get(player.getUniqueId().toString());
-						if (lastMoney == null || System.currentTimeMillis() - lastMoney > config.moneyInterval) {
-							PlayerListener.logMoney(AuxProtect.this, player, "periodic");
-						}
-					}
-				}
 				if (config.checkforupdates && System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
 					lastCheckedForUpdate = System.currentTimeMillis();
 					debug("Checking for updates...", 1);
@@ -259,43 +306,57 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
 
 		try {
-			Plugin plugin = getServer().getPluginManager().getPlugin("ShopGuiPlus");
+			String name = "ShopGuiPlus";
+			Plugin plugin = getServer().getPluginManager().getPlugin(name);
 			if (plugin != null && plugin.isEnabled()) {
 				getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
-				info("ShopGUIPlus hooked");
-				Telemetry.reportHook("ShopGUIPlus");
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
 			}
 
-			plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI");
+			name = "EconomyShopGUI";
+			plugin = getServer().getPluginManager().getPlugin(name);
 			if (plugin == null) {
 				plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium");
 			}
 			if (plugin != null && plugin.isEnabled()) {
 				getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), this);
-				info("EconomyShopGUI hooked");
-				Telemetry.reportHook("EconomyShopGUI");
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
 			}
 
-			plugin = getServer().getPluginManager().getPlugin("DynamicShop");
+			name = "DynamicShop";
+			plugin = getServer().getPluginManager().getPlugin(name);
 			if (plugin != null && plugin.isEnabled()) {
 				getServer().getPluginManager().registerEvents(new DynamicShopListener(this), this);
-				info("DynamicShop hooked");
-				Telemetry.reportHook("DynamicShop");
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
 			}
 
-			plugin = getServer().getPluginManager().getPlugin("ChestShop");
+			name = "ChestShop";
+			plugin = getServer().getPluginManager().getPlugin(name);
 			if (plugin != null && plugin.isEnabled()) {
 				getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
-				info("ChestShop hooked");
-				Telemetry.reportHook("ChestShop");
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
 			}
 
-			plugin = getServer().getPluginManager().getPlugin("AuctionHouse");
-			if (plugin != null && plugin.isEnabled() && plugin instanceof AuctionHouse) {
-				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this, (AuctionHouse) plugin),
-						this);
-				info("AuctionHouse hooked");
-				Telemetry.reportHook("AuctionHouse");
+			name = "AuctionHouse";
+			plugin = getServer().getPluginManager().getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this), this);
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
 			}
 		} catch (Exception e) {
 			warning("Exception while hooking other plugins");
@@ -327,6 +388,25 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 					new Telemetry(AuxProtect.this, 14232);
 				}
 			}.runTaskLater(this, (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50);
+		}
+	}
+
+	private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+
+	public APPlayer getAPPlayer(Player player) {
+		synchronized (apPlayers) {
+			if (apPlayers.containsKey(player.getUniqueId())) {
+				return apPlayers.get(player.getUniqueId());
+			}
+			APPlayer apPlayer = new APPlayer(player);
+			apPlayers.put(player.getUniqueId(), apPlayer);
+			return apPlayer;
+		}
+	}
+
+	public void removeAPPlayer(Player player) {
+		synchronized (apPlayers) {
+			apPlayers.remove(player.getUniqueId());
 		}
 	}
 
@@ -384,6 +464,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	}
 
 	public String formatMoney(double d) {
+		if (!Double.isFinite(d)) {
+			return "NaN";
+		}
 		if (d <= 0) {
 			return "$0";
 		}
@@ -397,9 +480,13 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		if (o == null) {
 			return "#null";
 		}
+		if (o instanceof UUID) {
+			return "$" + ((UUID) o).toString();
+		}
 		if (o instanceof Player) {
 			return "$" + ((Player) o).getUniqueId().toString();
-		} else if (o instanceof Entity) {
+		}
+		if (o instanceof Entity) {
 			return "#" + ((Entity) o).getType().name().toLowerCase();
 		}
 		if (o instanceof Container) {
@@ -450,5 +537,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void runSync(Runnable run) {
 		getServer().getScheduler().runTask(this, run);
+	}
+
+	public int queueSize() {
+		return dbRunnable.queueSize();
 	}
 }

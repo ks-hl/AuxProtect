@@ -2,9 +2,10 @@ package dev.heliosares.auxprotect.database;
 
 public class XrayEntry extends DbEntry {
 
-	public XrayEntry(long time, String userUuid, EntryAction action, boolean state, String world, int x, int y, int z,
+	public XrayEntry(long time, String userLabel, EntryAction action, boolean state, String world, int x, int y, int z,
 			String target, String data) {
-		super(time, userUuid, action, state, world, x, y, z, target, data);
+		super(time, 0, action, state, world, x, y, z, 0, 0, target, -1, data);
+		super.userLabel = userLabel;
 		parent = null;
 	}
 

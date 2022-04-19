@@ -15,8 +15,7 @@ import org.bukkit.util.StringUtil;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.database.SQLManager.TABLE;
+import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.MyPermission;
 
 public class LookupCommandTab implements TabCompleter {
@@ -57,16 +56,21 @@ public class LookupCommandTab implements TabCompleter {
 			}
 		}
 		if (currentArg.startsWith("user:") || currentArg.startsWith("u:") || currentArg.startsWith("target:")) {
-			String split[] = currentArg.split(":");
-			String user = split[0] + ":";
+			int cutIndex = 0;
+			if (currentArg.contains(",")) {
+				cutIndex = currentArg.lastIndexOf(",");
+			} else {
+				cutIndex = currentArg.indexOf(":");
+
+			}
+			String user = currentArg.substring(0, cutIndex + 1);
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				possible.add(user + player.getName());
 			}
-			if (split.length > 1 && split[1].startsWith("#")) {
-				for (EntityType et : EntityType.values()) {
-					possible.add(user + "#" + et.toString().toLowerCase());
-				}
+			for (EntityType et : EntityType.values()) {
+				possible.add(user + "#" + et.toString().toLowerCase());
 			}
+			possible.add("#env");
 		}
 		if (currentArg.startsWith("target:")) {
 			for (Material material : Material.values()) {
@@ -76,7 +80,7 @@ public class LookupCommandTab implements TabCompleter {
 		if (MyPermission.ADMIN.hasPermission(sender)) {
 			possible.add("db:");
 			if (currentArg.startsWith("db:")) {
-				for (TABLE table : SQLManager.TABLE.values()) {
+				for (Table table : Table.values()) {
 					possible.add("db:" + table.toString());
 				}
 			}
@@ -120,6 +124,9 @@ public class LookupCommandTab implements TabCompleter {
 			}
 			possible.add("#bw");
 			possible.add("#count");
+			if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+				possible.add("#activity");
+			}
 		}
 
 		List<String> output = new ArrayList<>();

@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -18,13 +19,16 @@ import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
 public class PlayTimeSolver {
-	public static BaseComponent[] solvePlaytime(ArrayList<DbEntry> entries, int hours, String player) {
+	public static BaseComponent[] solvePlaytime(ArrayList<DbEntry> entries, long startTimeMillis, int hours,
+			String player) {
 		ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
-		if (hours > 340) {
-			message.append("Time period too long. Max 2 weeks.");
+		if (hours > 840) {
+			message.append("§cTime period too long. Max 5 weeks.");
 			return message.create();
 		}
-		LocalDateTime startTime = LocalDateTime.now().minusHours(hours).withMinute(0).withSecond(0).withNano(0);
+		LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
+				.withMinute(0).withSecond(0).withNano(0);
+		;
 		long firstTime = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 		long start = System.currentTimeMillis();
 		long login = 0;
@@ -131,7 +135,7 @@ public class PlayTimeSolver {
 			if (time.getHour() == 0) {
 				break;
 			}
-			message.append(AuxProtect.BLOCK+"").color(ChatColor.BLACK).event((HoverEvent) null);
+			message.append(AuxProtect.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
 		}
 		message.append(" " + LocalDateTime.now().format(formatterDate)).color(ChatColor.BLUE);
 		message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)

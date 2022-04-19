@@ -1,17 +1,17 @@
 package dev.heliosares.auxprotect.utils;
 
 import java.util.HashMap;
-import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import dev.heliosares.auxprotect.AuxProtect;
 
 public class Telemetry {
 	private final Metrics metrics;
-	private static final Map<String, Integer> hooks = new HashMap<>();
+	private static final HashMap<String, Boolean> hooks = new HashMap<>();
 
-	public static void reportHook(String name) {
-		hooks.put(name, 1);
+	public static void reportHook(String name, boolean state) {
+		hooks.put(name.toLowerCase(), state);
 	}
 
 	public Telemetry(AuxProtect plugin, int pluginId) {
@@ -40,11 +40,13 @@ public class Telemetry {
 			}
 		}));
 
-		metrics.addCustomChart(new Metrics.SimpleBarChart("hooks", new Callable<Map<String, Integer>>() {
-			@Override
-			public Map<String, Integer> call() throws Exception {
-				return hooks;
-			}
-		}));
+		for (Entry<String, Boolean> entry : hooks.entrySet()) {
+			metrics.addCustomChart(new Metrics.SimplePie("hook-" + entry.getKey(), new Callable<String>() {
+				@Override
+				public String call() throws Exception {
+					return entry.getValue() ? "Enabled" : "Disabled";
+				}
+			}));
+		}
 	}
 }

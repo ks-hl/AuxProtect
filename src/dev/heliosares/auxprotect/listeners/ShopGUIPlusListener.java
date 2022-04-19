@@ -19,16 +19,18 @@ public class ShopGUIPlusListener implements Listener {
 
 	@EventHandler
 	public void onShopPostTransactionEvent(ShopPostTransactionEvent e) {
+		if (e.getResult().getAmount() == 0) {
+			return;
+		}
 		ShopTransactionResult result = e.getResult();
 		boolean state = result.getShopAction() == ShopAction.BUY;
-		String data = "SGP, " + plugin.formatMoney(result.getPrice() / result.getAmount()) + " each, QTY: "
-				+ result.getAmount();
+		String data = "SGP, " + plugin.formatMoney(result.getPrice()) + ", QTY: " + result.getAmount();
 		if (plugin.getEconomy() != null) {
 			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(result.getPlayer()));
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(result.getPlayer()), EntryAction.SHOP, state,
 				result.getPlayer().getLocation(), result.getShopItem().getItem().getType().toString().toLowerCase(),
 				data);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 }

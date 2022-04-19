@@ -18,6 +18,8 @@ lookup-action-negate: '&cYou cannot negate actions.'
 lookup-action-perm: '&cYou do not have permission to lookup that action.'
 command-help-1: '&cYou don''t have a lookup to page through.'
 purge-purging: '&9Purging ''%s''...'
+purge-uids: '&9Purging unused UIDs...'
+purge-vacuum: '&9Condensing SQLite file...'
 purge-complete: '&9Purge complete.'
 purge-error: '&cAn error occured while purging.'
 purge-time: '&cThat purge is too short. Try a longer amount of time.'
@@ -51,6 +53,7 @@ xray-rate-ignore: '&9Ignoring existing entry.'
 xray-rate-conflic: '&cFound the following conflicting hits:'
 xray-rate-written: '&aRating successfully written.'
 xray-done: '&aYou''re all done with xray checks!'
+inactive-alert: '&8[&4Server&8] &e%s &7may be inactive. &e%d &7out of &e%d &7minutes inactive.'
 
 
 actions:
@@ -81,10 +84,14 @@ actions:
   recover: recovered inv of
   money: money
   pos: position
+  activity: activity
   hurt: hurt
   inv:
     p: opened
     n: closed
+  tp:
+    p: teleported to
+    n: teleported from
   command: executed
   kill: killed
   land: projectile landed

@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -45,7 +46,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	public Language lang;
 	public int debug;
 	SQLManager sqlManager;
-	public DatabaseRunnable dbRunnable;
+	protected DatabaseRunnable dbRunnable;
 	private static AuxProtectBungee instance;
 
 	public AuxProtectBungee() {
@@ -62,6 +63,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		langManager.load();
 		lang = new Language(langManager.getData());
 
+		File sqliteFile = null;
 		boolean mysql = config.getBoolean("MySQL.use", false);
 		String user = config.getString("MySQL.username", "");
 		String pass = config.getString("MySQL.password", "");
@@ -72,7 +74,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			String database = config.getString("MySQL.database", "database");
 			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
 		} else {
-			File sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
+			sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
 			if (!sqliteFile.getParentFile().exists()) {
 				if (!sqliteFile.getParentFile().mkdirs()) {
 					this.getLogger().severe("Failed to create database directory.");
@@ -93,7 +95,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			}
 			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
-		sqlManager = new SQLManager(this, uri, config.getString("MySQL.table-prefix"));
+		sqlManager = new SQLManager(this, uri, config.getString("MySQL.table-prefix"), sqliteFile);
 
 		runAsync(new Runnable() {
 
@@ -106,30 +108,23 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 						sqlManager.connect();
 					}
 					sqlManager.count();
-				} catch (SQLException e) {
+				} catch (Exception e) {
 					print(e);
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
 					onDisable();
 					return;
 				}
 
-				for (Object command : config.getList("purge-cmds")) {
-					String cmd = (String) command;
-					String[] argsOld = cmd.split(" ");
-					String[] args = new String[argsOld.length + 1];
-					args[0] = "purge";
-					for (int i = 0; i < argsOld.length; i++) {
-						args[i + 1] = argsOld[i];
-					}
-					PurgeCommand.purge(AuxProtectBungee.this, new MySender(getProxy().getConsole()), args);
-				}
-				sqlManager.purgeUIDs();
-
-				try {
-					sqlManager.vacuum();
-				} catch (SQLException e) {
-					print(e);
-				}
+				/*
+				 * for (Object command : config.getList("purge-cmds")) { String cmd = (String)
+				 * command; String[] argsOld = cmd.split(" "); String[] args = new
+				 * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
+				 * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
+				 * PurgeCommand.purge(AuxProtectBungee.this, new
+				 * MySender(getProxy().getConsole()), args); } sqlManager.purgeUIDs();
+				 * 
+				 * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
+				 */
 			}
 		});
 
@@ -258,10 +253,12 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		if (o == null) {
 			return "#null";
 		}
+		if (o instanceof UUID) {
+			return "$" + ((UUID) o).toString();
+		}
 		if (o instanceof ProxiedPlayer) {
 			return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
 		}
 		return "#null";
 	}
-
 }

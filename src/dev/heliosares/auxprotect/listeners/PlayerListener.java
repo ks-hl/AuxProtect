@@ -12,10 +12,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
+import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
@@ -23,6 +25,7 @@ import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
@@ -33,6 +36,7 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import dev.heliosares.auxprotect.APPlayer;
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -73,9 +77,12 @@ public class PlayerListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerInteractEntityEvent(PlayerInteractEntityEvent e) {
+		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+
 		if (e.isCancelled()) {
 			return;
 		}
+
 		ItemStack mainhand = e.getPlayer().getInventory().getItemInMainHand();
 		ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
 		if ((mainhand != null && mainhand.getType() == Material.WATER_BUCKET)
@@ -83,7 +90,7 @@ public class PlayerListener implements Listener {
 			if (mobs.contains(e.getRightClicked().getType())) {
 				DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
 						e.getRightClicked().getLocation(), AuxProtect.getLabel(e.getRightClicked()), "");
-				plugin.dbRunnable.add(entry);
+				plugin.add(entry);
 			}
 		}
 		if (e.getRightClicked() instanceof ItemFrame) {
@@ -100,7 +107,7 @@ public class PlayerListener implements Listener {
 					}
 					DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
 							item.getLocation(), added.getType().toString().toLowerCase(), data);
-					plugin.dbRunnable.add(entry);
+					plugin.add(entry);
 				}
 			}
 		}
@@ -108,11 +115,17 @@ public class PlayerListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerInteractEvent(PlayerInteractEvent e) {
+		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+
+		if (e.useInteractedBlock() == Result.DENY) {
+			return;
+		}
+
 		if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
 			if ((e.getItem() != null && e.getItem().getType() != null && buckets.contains(e.getItem().getType()))) {
 				DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.BUCKET, false,
 						e.getClickedBlock().getLocation(), e.getItem().getType().toString().toLowerCase(), "");
-				plugin.dbRunnable.add(entry);
+				plugin.add(entry);
 			}
 		}
 	}
@@ -124,7 +137,7 @@ public class PlayerListener implements Listener {
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.ELYTRA, e.isGliding(),
 				e.getEntity().getLocation(), "", "");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -139,11 +152,13 @@ public class PlayerListener implements Listener {
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
 				e.getPlayer().getLocation(), e.getItem().getType().toString().toLowerCase(), sup);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerJoinEvent(PlayerJoinEvent e) {
+		APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+		apPlayer.lastMoved = System.currentTimeMillis();
 		logMoney(plugin, e.getPlayer(), "join");
 		String ip = e.getPlayer().getAddress().getHostString();
 		logSession(e.getPlayer(), true, "IP: " + ip);
@@ -151,14 +166,13 @@ public class PlayerListener implements Listener {
 
 			@Override
 			public void run() {
-				plugin.getSqlManager().updateUsernameAndIP(e.getPlayer().getUniqueId().toString(),
-						e.getPlayer().getName(), ip);
+				plugin.getSqlManager().updateUsernameAndIP(e.getPlayer().getUniqueId(), e.getPlayer().getName(), ip);
 			}
 		}.runTaskAsynchronously(plugin);
 
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
 				e.getPlayer().getLocation(), "join", InvSerialization.playerToBase64(e.getPlayer())));
-		plugin.lastLogOfInventoryForUUID.put(e.getPlayer().getUniqueId().toString(), System.currentTimeMillis());
+		apPlayer.lastLoggedInventory = System.currentTimeMillis();
 
 		final String data = plugin.data.getData().getString("Recoverables." + e.getPlayer().getUniqueId().toString());
 		if (data != null) {
@@ -191,8 +205,16 @@ public class PlayerListener implements Listener {
 	}
 
 	@EventHandler
+	public void onPlayerMoveEvent(PlayerMoveEvent e) {
+		APPlayer player = plugin.getAPPlayer(e.getPlayer());
+		player.lastMoved = System.currentTimeMillis();
+	}
+
+	@EventHandler
 	public void onPlayerTeleport(PlayerTeleportEvent e) {
-		logPos(plugin, e.getPlayer(), e.getTo(), "tele");
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.TP, false, e.getFrom(), "", ""));
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.TP, true, e.getTo(), "", ""));
+		plugin.getAPPlayer(e.getPlayer()).lastLoggedPos = System.currentTimeMillis();
 		if (!plugin.config.inventoryOnWorldChange || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
 			return;
 		}
@@ -206,9 +228,9 @@ public class PlayerListener implements Listener {
 				if (newInventory.equals(inventory)) {
 					return;
 				}
-				plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
-						oldLocation, "worldchange", inventory));
-				plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+				plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false, oldLocation,
+						"worldchange", inventory));
+				plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
 						e.getPlayer().getLocation(), "worldchange", newInventory));
 			}
 
@@ -220,9 +242,10 @@ public class PlayerListener implements Listener {
 		logMoney(plugin, e.getPlayer(), "leave");
 		logSession(e.getPlayer(), false, "");
 
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
 				e.getPlayer().getLocation(), "quit", InvSerialization.playerToBase64(e.getPlayer())));
 
+		plugin.removeAPPlayer(e.getPlayer());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -230,21 +253,21 @@ public class PlayerListener implements Listener {
 		if (e.isCancelled()) {
 			return;
 		}
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.KICK, false,
-				e.getPlayer().getLocation(), "", e.getReason()));
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getPlayer().getLocation(),
+				"", e.getReason()));
 	}
 
 	public static void logMoney(AuxProtect plugin, Player player, String reason) {
 		if (plugin.getEconomy() == null) {
 			return;
 		}
-		plugin.lastLogOfMoneyForUUID.put(player.getUniqueId().toString(), System.currentTimeMillis());
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
-				reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
+		plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
+		plugin.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.MONEY, false, player.getLocation(), reason,
+				plugin.formatMoney(plugin.getEconomy().getBalance(player))));
 	}
 
 	protected void logSession(Player player, boolean login, String supp) {
-		plugin.dbRunnable.add(
+		plugin.add(
 				new DbEntry(AuxProtect.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "", supp));
 	}
 
@@ -256,7 +279,7 @@ public class PlayerListener implements Listener {
 
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.LEASH, true,
 				e.getEntity().getLocation(), AuxProtect.getLabel(e.getEntity()), "");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -276,19 +299,32 @@ public class PlayerListener implements Listener {
 
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.LEASH, false,
 				e.getEntity().getLocation(), AuxProtect.getLabel(e.getEntity()), tether ? "was tethered" : "");
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onPlayerRespawnEvent(PlayerRespawnEvent e) {
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.RESPAWN, false,
-				e.getRespawnLocation(), "", ""));
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.RESPAWN, false, e.getRespawnLocation(),
+				"", ""));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
 	public void onCommand(PlayerCommandPreprocessEvent e) {
-		plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
+		plugin.getAPPlayer(e.getPlayer()).addActivity(3);
+		if (e.isCancelled()) {
+			return;
+		}
+
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
 				e.getPlayer().getLocation(), e.getMessage(), ""));
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR)
+	public void onChat(AsyncPlayerChatEvent e) {
+		plugin.getAPPlayer(e.getPlayer()).addActivity(3);
+		if (e.isCancelled()) {
+			return;
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR)
@@ -301,12 +337,14 @@ public class PlayerListener implements Listener {
 			return;
 		}
 
+		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+
 		if (InvSerialization.isCustom(e.getItemDrop().getItemStack())) {
-			plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.DROP, false,
+			plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.DROP, false,
 					e.getPlayer().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
 					InvSerialization.toBase64(e.getItemDrop().getItemStack())));
 		} else {
-			plugin.dbRunnable.addPickup(new PickupEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.DROP, false,
+			plugin.add(new PickupEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.DROP, false,
 					e.getPlayer().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
 					e.getItemDrop().getItemStack().getAmount()));
 		}
@@ -318,19 +356,23 @@ public class PlayerListener implements Listener {
 		if (e.isCancelled()) {
 			return;
 		}
+
 		if (e.getEntity() instanceof Player) {
 			Player player = (Player) e.getEntity();
+
+			plugin.getAPPlayer(player).addActivity(1);
+
 			if (isChartMap(e.getItem().getItemStack()) && !MyPermission.LOOKUP_MONEY.hasPermission(player)) {
 				e.setCancelled(true);
 				e.getItem().remove();
 			}
 
 			if (InvSerialization.isCustom(e.getItem().getItemStack())) {
-				plugin.dbRunnable.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.PICKUP, false,
+				plugin.add(new DbEntry(AuxProtect.getLabel(player), EntryAction.PICKUP, false,
 						e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
 						InvSerialization.toBase64(e.getItem().getItemStack())));
 			} else {
-				plugin.dbRunnable.addPickup(new PickupEntry(AuxProtect.getLabel(player), EntryAction.PICKUP, false,
+				plugin.add(new PickupEntry(AuxProtect.getLabel(player), EntryAction.PICKUP, false,
 						e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
 						e.getItem().getItemStack().getAmount()));
 			}
@@ -351,8 +393,10 @@ public class PlayerListener implements Listener {
 		return false;
 	}
 
-	public static void logPos(AuxProtect auxProtect, Player player, Location location, String string) {
-		auxProtect.dbRunnable.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location,
-				string, "Y:" + Math.round(location.getYaw()) + " P:" + Math.round(location.getPitch())));
+	public static void logPos(AuxProtect auxProtect, APPlayer apPlayer, Player player, Location location,
+			String string) {
+		apPlayer.lastLoggedPos = System.currentTimeMillis();
+		auxProtect
+				.add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location, string, ""));
 	}
 }

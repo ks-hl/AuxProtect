@@ -87,6 +87,6 @@ public class ProjectileListener implements Listener {
 
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(shooter), action, false, shooter.getLocation(), targetName,
 				data == null ? "" : data);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 }

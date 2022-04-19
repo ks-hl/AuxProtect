@@ -24,13 +24,12 @@ public class EconomyShopGUIListener implements Listener {
 		}
 		ItemStack item = e.getItemStack();
 		boolean state = e.getTransactionMode().contains("BUY");
-		String data = "ESG, " + plugin.formatMoney(e.getPrice() / (double) item.getAmount()) + " each, QTY: "
-				+ item.getAmount();
+		String data = "ESG, " + plugin.formatMoney(e.getPrice()) + ", QTY: " + item.getAmount();
 		if (plugin.getEconomy() != null) {
 			data += ", bal: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getPlayer()));
 		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.SHOP, state,
 				e.getPlayer().getLocation(), item.getType().toString().toLowerCase(), data);
-		plugin.dbRunnable.add(entry);
+		plugin.add(entry);
 	}
 }

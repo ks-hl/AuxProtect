@@ -12,6 +12,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager.LookupException;
+import dev.heliosares.auxprotect.utils.ActivitySolver;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.MyPermission;
 import dev.heliosares.auxprotect.utils.MySender;
@@ -125,7 +126,9 @@ public class LookupCommand {
 				boolean xray = false;
 				boolean bw = false;
 				boolean money = false;
+				boolean activity = false;
 				long startTime = 0;
+				long endTime = System.currentTimeMillis();
 				for (int i = 1; i < args.length; i++) {
 					if (args[i].equalsIgnoreCase("#count")) {
 						count = true;
@@ -135,6 +138,13 @@ public class LookupCommand {
 						continue;
 					} else if (args[i].equalsIgnoreCase("#bw")) {
 						bw = true;
+						continue;
+					} else if (args[i].equalsIgnoreCase("#activity")) {
+						if (!MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+							sender.sendMessage(plugin.translate("no-permission-flag"));
+							return;
+						}
+						activity = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#pt")) {
 						if (!MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
@@ -184,26 +194,49 @@ public class LookupCommand {
 					String param = split[1];
 					if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("before")
 							|| token.equalsIgnoreCase("after")) {
-						if (param.endsWith("e")) {
-							long time = -1;
-							try {
-								time = Long.parseLong(param.substring(0, param.length() - 1));
-							} catch (NumberFormatException e) {
-							}
-							if (time < 0) {
+						if (param.contains("-")) {
+							String[] range = param.split("-");
+							if (range.length != 2) {
 								sender.sendMessage(
 										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 								return;
 							}
-							param = time + "";
+
+							long time1 = TimeUtil.convertTime(range[0]);
+							long time2 = TimeUtil.convertTime(range[1]);
+							if (time1 < 0 || time2 < 0) {
+								sender.sendMessage(
+										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
+								return;
+							}
+
+							if (!range[0].endsWith("e")) {
+								time1 = System.currentTimeMillis() - time1;
+							}
+							if (!range[1].endsWith("e")) {
+								time2 = System.currentTimeMillis() - time2;
+							}
+
+							startTime = Math.min(time1, time2);
+							endTime = Math.max(time1, time2);
+
+							params.put("before", endTime + "");
+							params.put("after", startTime + "");
+							continue;
+						}
+						long time = TimeUtil.convertTime(param);
+						if (time < 0) {
+							sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
+							return;
+						}
+						if (!param.endsWith("e")) {
+							time = System.currentTimeMillis() - time;
+						}
+						param = time + "";
+						if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("after")) {
+							startTime = time;
 						} else {
-							startTime = TimeUtil.convertTime(param);
-							if (startTime < 0) {
-								sender.sendMessage(
-										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-								return;
-							}
-							param = (System.currentTimeMillis() - startTime) + "";
+							endTime = time;
 						}
 					}
 					params.put(token, param.toLowerCase());
@@ -241,7 +274,7 @@ public class LookupCommand {
 						params.put("target", target);
 					}
 				}
-				if (playtime) {
+				if (playtime || activity) {
 					if (params.containsKey("user")) {
 						if (params.get("user").split(",").length > 1) {
 							sender.sendMessage(plugin.translate("lookup-playtime-toomanyusers"));
@@ -251,10 +284,18 @@ public class LookupCommand {
 						sender.sendMessage(plugin.translate("lookup-playtime-nouser"));
 						return;
 					}
+				}
+				if (playtime) {
 					if (params.containsKey("action")) {
 						params.remove("action");
-						params.put("action", "session");
 					}
+					params.put("action", "session");
+				}
+				if (activity) {
+					if (params.containsKey("action")) {
+						params.remove("action");
+					}
+					params.put("action", "activity");
 				}
 				sender.sendMessage(plugin.translate("lookup-looking"));
 				ArrayList<DbEntry> rs = null;
@@ -282,23 +323,35 @@ public class LookupCommand {
 					int dropcount = 0;
 					int pickupcount = 0;
 					for (DbEntry entry : rs) {
-						if (entry.getAction() == EntryAction.SHOP) {
+						if (entry.getAction().equals(EntryAction.SHOP)) {
 							String[] parts = entry.getData().split(", ");
 							if (parts.length >= 3) {
 								try {
-									double each = Double.parseDouble(parts[1].split(" ")[0].substring(1));
-									int qty = Integer.parseInt(parts[2].split(" ")[1]);
-									if (qty > 0) {
+									String valueStr = parts[1];
+									double value = -1;
+									if (!valueStr.contains(" each")
+											|| entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
+										valueStr = valueStr.replaceAll(" each", "");
+										value = Double.parseDouble(valueStr.substring(1));
+									} else {
+										double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
+										int qty = Integer.parseInt(parts[2].split(" ")[1]);
+										value = each * qty;
+									}
+									if (value > 0) {
 										if (entry.getState()) {
-											each *= -1;
+											value *= -1;
 										}
-										totalMoney += each * qty;
+										totalMoney += value;
 									}
 								} catch (Exception ignored) {
+									if (plugin.getDebug() > 0) {
+										plugin.print(ignored);
+									}
 								}
 							}
 						}
-						if (entry.getAction() == EntryAction.AHBUY) {
+						if (entry.getAction().equals(EntryAction.AHBUY)) {
 							String[] parts = entry.getData().split(" ");
 							try {
 								double each = Double.parseDouble(parts[parts.length - 1].substring(1));
@@ -306,7 +359,8 @@ public class LookupCommand {
 							} catch (Exception ignored) {
 							}
 						}
-						if (entry.getAction() == EntryAction.DROP || entry.getAction() == EntryAction.PICKUP) {
+						if (entry.getAction().equals(EntryAction.DROP)
+								|| entry.getAction().equals(EntryAction.PICKUP)) {
 							int quantity = -1;
 							try {
 								quantity = Integer.parseInt(entry.getData().substring(1));
@@ -314,7 +368,7 @@ public class LookupCommand {
 
 							}
 							if (quantity > 0) {
-								if (entry.getAction() == EntryAction.DROP) {
+								if (entry.getAction().equals(EntryAction.DROP)) {
 									dropcount += quantity;
 								} else {
 									pickupcount += quantity;
@@ -323,7 +377,10 @@ public class LookupCommand {
 						}
 					}
 					if (totalMoney != 0 && plugin instanceof AuxProtect) {
-						sender.sendMessage("§9" + ((AuxProtect) plugin).formatMoney(totalMoney));
+						boolean negative = totalMoney < 0;
+						totalMoney = Math.abs(totalMoney);
+						sender.sendMessage(
+								"§9" + (negative ? "-" : "") + ((AuxProtect) plugin).formatMoney(totalMoney));
 					}
 					String msg = "";
 					if (pickupcount > 0) {
@@ -348,8 +405,12 @@ public class LookupCommand {
 						sender.sendMessage(plugin.translate("playtime-toomanyusers"));
 						return;
 					}
-					sender.sendMessage(
-							PlayTimeSolver.solvePlaytime(rs, (int) Math.round(startTime / (1000 * 3600)), users));
+					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, startTime,
+							(int) Math.round((endTime - startTime) / (1000 * 3600)), users));
+				} else if (activity) {
+					String users = params.get("user");
+					sender.sendMessage(ActivitySolver.solveActivity(rs, startTime,
+							(int) Math.round((endTime - startTime) / 60000L), users));
 				} else if (xray) {
 					sender.sendMessage(XraySolver.solvePlaytime(rs, plugin));
 				} else if (money && !sender.isBungee()) {

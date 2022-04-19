@@ -24,7 +24,7 @@ public class XraySolver {
 			if (hits == null) {
 				hash.put(entry.getUserUUID(), hits = new ArrayList<>());
 			}
-			if (entry.getAction() == EntryAction.XRAYCHECK) {
+			if (entry.getAction().equals( EntryAction.XRAYCHECK)) {
 				hits.add(entry);
 			}
 		}

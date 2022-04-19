@@ -37,6 +37,9 @@ public class APCommandTab implements TabCompleter {
 				if (MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 					possible.add("playtime");
 				}
+				if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+					possible.add("activity");
+				}
 			}
 			if (MyPermission.ADMIN.hasPermission(sender)) {
 				possible.add("debug");
@@ -61,6 +64,8 @@ public class APCommandTab implements TabCompleter {
 				possible.addAll(moneyCommandTab.onTabComplete(sender, cmd, label, args));
 			} else if ((args[0].equalsIgnoreCase("playtime") || args[0].equalsIgnoreCase("pt"))
 					&& MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
+				possible.addAll(playtimeCommandTab.onTabComplete(sender, cmd, label, args));
+			} else if (args[0].equalsIgnoreCase("activity") && MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 				possible.addAll(playtimeCommandTab.onTabComplete(sender, cmd, label, args));
 			} else if ((args[0].equalsIgnoreCase("purge")) && MyPermission.PURGE.hasPermission(sender)) {
 				possible.addAll(purgeCommandTab.onTabComplete(sender, cmd, label, args));

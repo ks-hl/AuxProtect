@@ -1,6 +1,6 @@
-#AuxProtect
-#Developed by Heliosares
-#https://www.spigotmc.org/resources/auxprotect.99147/
+# AuxProtect
+# Developed by Heliosares
+# https://www.spigotmc.org/resources/auxprotect.99147/
 
 # MySQL functionality is experimental. Use with caution.
 # OLD LOGS WILL NOT BE MIGRATED.
@@ -11,12 +11,8 @@ MySQL:
   database: database
   username: username
   password: password
-#Prefix to be used for all table names. Editing this after creating your databases will cause all past data to be lost.
+# Prefix to be used for all table names. Editing this after creating your databases will cause all past data to be lost.
   table-prefix: ''
-purge-cmds:
-  - 'auxprotect 90d'
-  - 'auxprotect_spam 30d'
-  - 'auxprotect_inventory 30d'
 Actions:
   leash:
     Enabled: true
@@ -41,7 +37,7 @@ Actions:
     Interval: 600000
   pos:
     Enabled: true
-    Interval: 10000
+    Interval: 3000
   hurt:
     Enabled: true
   inv:
@@ -76,6 +72,6 @@ Actions:
     Enabled: true
   elytra:
     Enabled: true
-#Automatically check for updates and display notifications in game.
-#It's recommended to leave this enabled, as I'm constantly improving the plugin.
+# Automatically check for updates and display notifications in game.
+# It's recommended to leave this enabled, as I'm constantly improving the plugin.
 checkforupdates: true
