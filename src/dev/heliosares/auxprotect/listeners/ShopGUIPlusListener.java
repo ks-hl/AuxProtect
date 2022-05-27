@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.listeners;
 
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
 import dev.heliosares.auxprotect.AuxProtect;
@@ -17,7 +18,7 @@ public class ShopGUIPlusListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onShopPostTransactionEvent(ShopPostTransactionEvent e) {
 		if (e.getResult().getAmount() == 0) {
 			return;

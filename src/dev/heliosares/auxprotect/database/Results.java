@@ -81,8 +81,19 @@ public class Results {
 									+ "\n§7Click to copy epoch time.")))
 					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTime() + "e"));
 
-			message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(),
-					en.getAction().getText(plugin, en.getState()), en.getTarget())).event((HoverEvent) null);
+			// message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(),
+			// en.getAction().getText(plugin, en.getState()),
+			// en.getTarget())).event((HoverEvent) null);
+			message.append(" §f- ").event((HoverEvent) null);
+			HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+					new Text("Click to copy to clipboard"));
+			message.append("§9" + en.getUser()).event(clickToCopy)
+					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getUser()));
+			message.append(" §f" + en.getAction().getText(plugin, en.getState())).event((HoverEvent) null)
+					.event((ClickEvent) null);
+			message.append(" §9" + en.getTarget()).event(clickToCopy)
+					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTarget()));
+
 			String data = en.getData();
 			if (data != null && data.contains(InvSerialization.itemSeparator)) {
 				data = data.split(InvSerialization.itemSeparator)[0];
@@ -93,30 +104,33 @@ public class Results {
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
 			}
-			if (en.getAction().equals( EntryAction.INVENTORY)) {
+			if (en.getAction().equals(EntryAction.INVENTORY)) {
 				if (MyPermission.INV.hasPermission(player)) {
 					message.append(" §a[View]")
 							.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 									String.format(commandPrefix + " inv %d", i)))
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
-			} else if (en.getAction() .equals( EntryAction.KILL)) {
+			} else if (en.getAction().equals(EntryAction.KILL)) {
 				if (MyPermission.INV.hasPermission(player) && !en.getTarget().startsWith("#")) {
 					message.append(" §a[View Inv]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 							String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
 									en.getTarget(), en.getTime() + 50L, en.getTime() - 50L)))
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
-				message.append(" §7(" + data + ")");
+				message.append(" §7(" + data + ")").event(clickToCopy)
+						.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getData()));
 			} else if (data != null && data.length() > 0) {
-				message.append(" §7(" + data + ")");
+				message.append(" §7(" + data + ")").event(clickToCopy)
+						.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getData()));
 			}
 			if (en.world != null && !en.world.equals("$null")) {
 				String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", en.x, en.y, en.z, en.world);
 				if (en.getAction().getTable().hasLook()) {
 					tpCommand += String.format(" %d %d", en.pitch, en.yaw);
 				}
-				message.append(String.format("\n                §7§l^ §7(x%d/y%d/z%d/%s)", en.x, en.y, en.z, en.world))
+				message.append("\n                §7§l^ ").event((HoverEvent) null).event((ClickEvent) null);
+				message.append(String.format("§7(x%d/y%d/z%d/%s)", en.x, en.y, en.z, en.world))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));
 				if (en.getAction().getTable().hasLook()) {

@@ -37,11 +37,8 @@ public class ProjectileListener implements Listener {
 		whitelist.add(EntityType.ARROW);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onProjectileLaunchEvent(ProjectileLaunchEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		if (!(e.getEntity().getShooter() instanceof Player)) {
 			return;
 		}
@@ -51,7 +48,7 @@ public class ProjectileListener implements Listener {
 		logEntity(e.getEntity(), EntryAction.LAUNCH, true);
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onProjectileHit(ProjectileHitEvent e) {
 		if (e.getHitBlock() == null) {
 			return;
@@ -65,7 +62,7 @@ public class ProjectileListener implements Listener {
 		logEntity(e.getEntity(), EntryAction.LAND, false);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerPickupArrowEvent(PlayerPickupArrowEvent e) {
 		logEntity(e.getArrow(), EntryAction.GRAB, false);
 	}

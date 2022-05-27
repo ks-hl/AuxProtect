@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.listeners;
 
 import java.util.ArrayList;
 
+import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.ItemFrame;
@@ -16,7 +17,11 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
+import org.bukkit.inventory.EntityEquipment;
+import org.bukkit.inventory.EquipmentSlot;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import org.spigotmc.event.entity.EntityMountEvent;
@@ -40,33 +45,22 @@ public class EntityListener implements Listener {
 		blacklistedDamageCauses.add(DamageCause.ENTITY_SWEEP_ATTACK);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityDismountEvent(EntityDismountEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
-
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.MOUNT, false,
 				e.getDismounted().getLocation(), AuxProtect.getLabel(e.getDismounted()), "");
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityMountEvent(EntityMountEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
-
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.MOUNT, true,
 				e.getMount().getLocation(), AuxProtect.getLabel(e.getMount()), "");
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void entityDamageByEntityEvent(EntityDamageByEntityEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		if (e.getEntity() instanceof ItemFrame) {
 			final ItemFrame item = (ItemFrame) e.getEntity();
 			if (item.getItem() != null) {
@@ -112,13 +106,34 @@ public class EntityListener implements Listener {
 		EntryAction action = EntryAction.HURT;
 		if (e.getEntity() instanceof LivingEntity
 				&& ((LivingEntity) e.getEntity()).getHealth() - e.getFinalDamage() <= 0) {
-			action = EntryAction.KILL;
+			boolean totem = false;
+			LivingEntity livingEntity = (LivingEntity) e.getEntity();
+			EntityEquipment equip = livingEntity.getEquipment();
+			if (equip != null) {
+				ItemStack hand = equip.getItem(EquipmentSlot.HAND);
+				ItemStack offhand = equip.getItem(EquipmentSlot.OFF_HAND);
+				if (hand != null && hand.getType() == Material.TOTEM_OF_UNDYING) {
+					totem = true;
+				} else if (offhand != null && offhand.getType() == Material.TOTEM_OF_UNDYING) {
+					totem = true;
+				}
+			}
+			if (!totem) {
+				action = EntryAction.KILL;
+			}
 		}
 		DbEntry entry = new DbEntry(sourceName, action, false, e.getEntity().getLocation(), targetName, itemname);
 		plugin.add(entry);
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onResurrect(EntityResurrectEvent e) {
+		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.TOTEM, false,
+				e.getEntity().getLocation(), "", "");
+		plugin.add(entry);
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onHangingBreakEvent(HangingBreakEvent e) {
 		if (e.getCause() == RemoveCause.ENTITY) {
 			return;
@@ -139,11 +154,8 @@ public class EntityListener implements Listener {
 
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void entityDamageEvent(EntityDamageEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		if (e.getEntity().isDead()) {
 			return;
 		}

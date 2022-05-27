@@ -241,8 +241,8 @@ public class XrayCommand implements CommandExecutor {
 							new BukkitRunnable() {
 								@Override
 								public void run() {
-									Bukkit.getServer().dispatchCommand(sender, (String.format("ap tp %d %d %d %s",
-											newEnt.x, newEnt.y, newEnt.z, newEnt.world)));
+									Bukkit.getServer().dispatchCommand(sender, (String.format("ap tp %d %d %d %s %d %d",
+											newEnt.x, newEnt.y, newEnt.z, newEnt.world, 45, 0)));
 								}
 							}.runTask(plugin);
 						}
@@ -367,8 +367,8 @@ public class XrayCommand implements CommandExecutor {
 						if (player != null) {
 							uuid = player.getUniqueId().toString();
 						}
-						entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
 						entries.sort((o1, o2) -> o1.world.compareTo(o2.world));
+						entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
 						XrayResults result = new XrayResults(plugin, entries, sender);
 						result.showPage(1, 1);
 						XrayCommand.this.results.put(uuid, result);

@@ -11,6 +11,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
+import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
@@ -20,17 +21,22 @@ public class ActivitySolver {
 	public static BaseComponent[] solveActivity(ArrayList<DbEntry> entries, long lookupStartMillis, int minutes,
 			String player) {
 		ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
-		if (minutes > 120) {
-			message.append("Time period too long. Max 2 hours.");
+		if (minutes > 60 * 12) {
+			message.append("Time period too long. Max 12 hours.");
 			return message.create();
 		}
 		LocalDateTime startTime = Instant.ofEpochMilli(lookupStartMillis).atZone(ZoneId.systemDefault())
 				.toLocalDateTime().withSecond(0).withNano(0);
 		DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh:mm a");
+		DateTimeFormatter formatterHour = DateTimeFormatter.ofPattern("Ka");
 		final long startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
 		int[] counter = new int[minutes];
 		for (int i = 0; i < counter.length; i++) {
 			counter[i] = -1;
+		}
+		String line = "§7§m";
+		for (int i = 0; i < 14; i++) {
+			line += (char) 65293;
 		}
 		long lastTime = startMillis;
 		for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
@@ -65,13 +71,18 @@ public class ActivitySolver {
 			minute++;
 		}
 		int shiftMinutes = 0;
-		while ((counter.length + shiftMinutes) % 30 != 0) {
+		// while ((counter.length + shiftMinutes) % 30 != 0) {
+		for (int i = 0; i < (startTime.getMinute() % 30); i++) {
 			message.append(AuxProtect.BLOCK + "").color(ChatColor.BLACK);
 			shiftMinutes++;
 		}
 
 		for (int i = 0; i < counter.length; i++) {
 			LocalDateTime time = startTime.plusMinutes(i);
+			if (time.getMinute() == 0) {
+				message.append(line + String.format("§f %s ", time.format(formatterHour)) + line + "\n")
+						.event((ClickEvent) null).event((HoverEvent) null);
+			}
 
 			int activity = counter[i];
 
@@ -79,8 +90,10 @@ public class ActivitySolver {
 
 			if (activity < 0) {
 				hovertext += "§7Offline";
-			} else {
+			} else if (activity > 0) {
 				hovertext += "§7Activity Level §9" + activity;
+			} else {
+				hovertext += "§cNo Activity";
 			}
 
 			message.append(AuxProtect.BLOCK + "")
@@ -94,7 +107,7 @@ public class ActivitySolver {
 			} else if (activity == 0) {
 				message.color(ChatColor.of("#4e0808")); // Dark red
 			} else {
-				message.color(ChatColor.BLACK);
+				message.color(ChatColor.DARK_GRAY);
 			}
 			if ((i + 1 + shiftMinutes) % 30 == 0 && i < counter.length - 1) {
 				message.append("\n");

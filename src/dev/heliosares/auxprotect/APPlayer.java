@@ -12,8 +12,9 @@ public class APPlayer {
 	public long lastLoggedActivity;
 	public Location lastLocation;
 	public long lastCheckedMovement;
-	public double moved;
-	public double[] activity = new double[20];
+	public double movedAmountThisMinute;
+	public boolean hasMovedThisMinute;
+	public double[] activity = new double[30];
 	public int activityIndex;
 	public long lastNotifyInactive;
 

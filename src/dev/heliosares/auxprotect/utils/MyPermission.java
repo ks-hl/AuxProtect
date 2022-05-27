@@ -6,7 +6,8 @@ public enum MyPermission {
 	ADMIN("admin"), LOOKUP("lookup"), PURGE("purge"), TP("tp"), HELP("help"), LOOKUP_XRAY("lookup.xray"),
 	LOOKUP_XRAY_OVERWRITE("lookup.xray.overwrite"), LOOKUP_PLAYTIME("lookup.playtime"),
 	LOOKUP_ACTIVITY("lookup.activity"), INV("inv"), INV_EDIT("inv.edit"), INV_RECOVER("inv.recover"),
-	LOOKUP_MONEY("lookup.money"), SQL("sql"), NOTIFY_INACTIVE("notify.inactive");
+	LOOKUP_MONEY("lookup.money"), SQL("sql"), NOTIFY_INACTIVE("inactive.notify"), BYPASS_INACTIVE("inactive.bypass"),
+	LOOKUP_RETENTION("lookup.retention");
 
 	public final String node;
 

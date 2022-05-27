@@ -83,6 +83,7 @@ actions:
   kitpvpkill: kill
   recover: recovered inv of
   money: money
+  gamemode: switched gamemode to
   pos: position
   activity: activity
   hurt: hurt

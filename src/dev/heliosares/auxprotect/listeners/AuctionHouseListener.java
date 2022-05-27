@@ -5,6 +5,7 @@ import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import com.spawnchunk.auctionhouse.events.ListItemEvent;
 import com.spawnchunk.auctionhouse.events.PurchaseItemEvent;
@@ -21,7 +22,7 @@ public class AuctionHouseListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onListItemEvent(ListItemEvent e) {
 		Location l = null;
 		if (e.getSeller() instanceof Player) {
@@ -38,7 +39,7 @@ public class AuctionHouseListener implements Listener {
 				plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPurchaseItemEvent(PurchaseItemEvent e) {
 		Location l = null;
 		if (e.getBuyer() instanceof Player) {

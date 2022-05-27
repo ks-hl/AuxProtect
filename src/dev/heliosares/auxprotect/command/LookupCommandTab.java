@@ -127,6 +127,9 @@ public class LookupCommandTab implements TabCompleter {
 			if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 				possible.add("#activity");
 			}
+			if (MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+				possible.add("#retention");
+			}
 		}
 
 		List<String> output = new ArrayList<>();

@@ -2,16 +2,19 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.1-pre5</version>
+	<version>1.1-pre7</version>
 	<name>AuxProtect</name>
 	<build>
-		<directory>${testserver}/plugins</directory>
+		<finalName>${project.artifactId}-${project.version}</finalName>
 		<resources>
 			<resource>
 				<directory>${basedir}</directory>
 				<filtering>true</filtering>
 				<includes>
-					<include>*</include>
+					<include>plugin.yml</include>
+					<include>en-us.yml</include>
+					<include>config.yml</include>
+					<include>bungee.yml</include>
 				</includes>
 			</resource>
 		</resources>
@@ -21,8 +24,29 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.8.1</version>
 				<configuration>
-					<release>15</release>
+					<release>17</release>
 				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-antrun-plugin</artifactId>
+				<version>3.1.0</version>
+				<executions>
+					<execution>
+						<phase>package</phase>
+						<configuration>
+							<target>
+								<delete dir="${testserver}/plugins" includes="${project.artifactId}-*.jar" />
+								<copy todir="${testserver}/plugins">
+									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
+								</copy>
+							</target>
+						</configuration>
+						<goals>
+							<goal>run</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>
@@ -113,7 +137,7 @@
 			<artifactId>auctionhouse</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>
-			<systemPath>${jars}/AuctionHouse-1.18-3.1.jar</systemPath>
+			<systemPath>${jars}/AuctionHouse-1.18.2-3.2.2.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.github.7sat</groupId>
@@ -123,7 +147,7 @@
 		</dependency>
 	</dependencies>
 	<properties>
-		<jars>${env.USERPROFILE}/eclipse-workspace\jars</jars>
+		<jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
 		<testserver>${env.USERPROFILE}/Documents/TestServer/Test1/</testserver>
 	</properties>
 </project>

@@ -655,6 +655,28 @@ public class SQLManager {
 		return rowList;
 	}
 
+	public HashMap<Integer, String> getAllUids() throws SQLException {
+		HashMap<Integer, String> out = new HashMap<>();
+
+		synchronized (connection) {
+
+			String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + ";";
+			plugin.debug(stmt, 3);
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+				pstmt.setFetchSize(500);
+				try (ResultSet results = pstmt.executeQuery()) {
+					while (results.next()) {
+						int uid = results.getInt("uid");
+						String uuid = results.getString("uuid");
+						out.put(uid, uuid);
+					}
+				}
+			}
+		}
+
+		return out;
+	}
+
 	private void putRaw(Table table, ArrayList<Object[]> datas)
 			throws SQLException, ClassCastException, IndexOutOfBoundsException {
 		checkAsync();
@@ -1362,6 +1384,34 @@ public class SQLManager {
 			}
 		}
 		return null;
+	}
+
+	public HashMap<Long, String> getUsernamesFromUID(int uid) {
+		HashMap<Long, String> out = new HashMap<>();
+		String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString() + " WHERE action_id=? AND uid=?;";
+		plugin.debug(stmt, 3);
+		checkAsync();
+		synchronized (connection) {
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+				pstmt.setInt(1, EntryAction.USERNAME.id);
+				pstmt.setInt(2, uid);
+				try (ResultSet results = pstmt.executeQuery()) {
+					while (results.next()) {
+						long time = results.getLong("time");
+						String username = results.getString("target");
+						if (username != null) {
+							out.put(time, username);
+						}
+					}
+				} catch (SQLException e) {
+					plugin.print(e);
+				}
+			} catch (SQLException e) {
+				plugin.print(e);
+			}
+		}
+		
+		return out;
 	}
 
 	public int getUIDFromUsername(String username) {

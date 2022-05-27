@@ -20,6 +20,7 @@ import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
+import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -75,13 +76,9 @@ public class PlayerListener implements Listener {
 		mobs.add(EntityType.SALMON);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerInteractEntityEvent(PlayerInteractEntityEvent e) {
 		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
-
-		if (e.isCancelled()) {
-			return;
-		}
 
 		ItemStack mainhand = e.getPlayer().getInventory().getItemInMainHand();
 		ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
@@ -113,7 +110,7 @@ public class PlayerListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerInteractEvent(PlayerInteractEvent e) {
 		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
 
@@ -130,21 +127,21 @@ public class PlayerListener implements Listener {
 		}
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityToggleGlideEvent(EntityToggleGlideEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getEntity()), EntryAction.ELYTRA, e.isGliding(),
 				e.getEntity().getLocation(), "", "");
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerGameModeChangeEvent(PlayerGameModeChangeEvent e) {
+		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.GAMEMODE, false,
+				e.getPlayer().getLocation(), e.getNewGameMode().toString(), ""));
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onConsume(PlayerItemConsumeEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		String sup = "";
 		if (e.getItem().getType() == Material.POTION && e.getItem().getItemMeta() instanceof PotionMeta) {
 			PotionMeta pm = (PotionMeta) e.getItem().getItemMeta();
@@ -155,7 +152,7 @@ public class PlayerListener implements Listener {
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerJoinEvent(PlayerJoinEvent e) {
 		APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
 		apPlayer.lastMoved = System.currentTimeMillis();
@@ -204,13 +201,14 @@ public class PlayerListener implements Listener {
 		}
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerMoveEvent(PlayerMoveEvent e) {
 		APPlayer player = plugin.getAPPlayer(e.getPlayer());
 		player.lastMoved = System.currentTimeMillis();
+		player.hasMovedThisMinute = true;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerTeleport(PlayerTeleportEvent e) {
 		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.TP, false, e.getFrom(), "", ""));
 		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.TP, true, e.getTo(), "", ""));
@@ -237,7 +235,7 @@ public class PlayerListener implements Listener {
 		}.runTaskLater(plugin, 5);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerQuitEvent(PlayerQuitEvent e) {
 		logMoney(plugin, e.getPlayer(), "leave");
 		logSession(e.getPlayer(), false, "");
@@ -248,11 +246,8 @@ public class PlayerListener implements Listener {
 		plugin.removeAPPlayer(e.getPlayer());
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerKickEvent(PlayerKickEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getPlayer().getLocation(),
 				"", e.getReason()));
 	}
@@ -271,22 +266,15 @@ public class PlayerListener implements Listener {
 				new DbEntry(AuxProtect.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "", supp));
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerLeashEntityEvent(PlayerLeashEntityEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
-
 		DbEntry entry = new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.LEASH, true,
 				e.getEntity().getLocation(), AuxProtect.getLabel(e.getEntity()), "");
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerUnleashEntityEvent(PlayerUnleashEntityEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		if (!(e.getEntity() instanceof LivingEntity)) {
 			return;
 		}
@@ -302,36 +290,30 @@ public class PlayerListener implements Listener {
 		plugin.add(entry);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerRespawnEvent(PlayerRespawnEvent e) {
 		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.RESPAWN, false, e.getRespawnLocation(),
 				"", ""));
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onCommand(PlayerCommandPreprocessEvent e) {
-		plugin.getAPPlayer(e.getPlayer()).addActivity(3);
-		if (e.isCancelled()) {
-			return;
-		}
+		plugin.getAPPlayer(e.getPlayer()).addActivity(5);
 
 		plugin.add(new DbEntry(AuxProtect.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
 				e.getPlayer().getLocation(), e.getMessage(), ""));
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onChat(AsyncPlayerChatEvent e) {
-		plugin.getAPPlayer(e.getPlayer()).addActivity(3);
+		plugin.getAPPlayer(e.getPlayer()).addActivity(5);
 		if (e.isCancelled()) {
 			return;
 		}
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onDropEvent(PlayerDropItemEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		if (isChartMap(e.getItemDrop().getItemStack())) {
 			e.getItemDrop().remove();
 			return;
@@ -351,11 +333,8 @@ public class PlayerListener implements Listener {
 
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPickupEvent(EntityPickupItemEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 
 		if (e.getEntity() instanceof Player) {
 			Player player = (Player) e.getEntity();

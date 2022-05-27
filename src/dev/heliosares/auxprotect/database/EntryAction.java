@@ -47,6 +47,7 @@ public class EntryAction {
 	// SKIPPED 135
 	public static final EntryAction RECOVER = new EntryAction("recover", 136);
 	public static final EntryAction MONEY = new EntryAction("money", 137);
+	public static final EntryAction GAMEMODE = new EntryAction("gamemode", 138);
 	// END DEFAULT (255)
 
 	// START SPAM(256)
@@ -58,6 +59,7 @@ public class EntryAction {
 	public static final EntryAction LAND = new EntryAction("land", 262);
 	public static final EntryAction ELYTRA = new EntryAction("elytra", 263, 264);
 	public static final EntryAction ACTIVITY = new EntryAction("activity", 265);
+	public static final EntryAction TOTEM = new EntryAction("totem", 266);
 	// END SPAM(511)
 
 	// START IGNOREABANDONED(512)

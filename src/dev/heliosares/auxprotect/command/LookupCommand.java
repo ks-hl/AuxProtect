@@ -17,6 +17,7 @@ import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.MyPermission;
 import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
+import dev.heliosares.auxprotect.utils.RetentionSolver;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import dev.heliosares.auxprotect.utils.XraySolver;
 
@@ -127,6 +128,7 @@ public class LookupCommand {
 				boolean bw = false;
 				boolean money = false;
 				boolean activity = false;
+				boolean retention = false;
 				long startTime = 0;
 				long endTime = System.currentTimeMillis();
 				for (int i = 1; i < args.length; i++) {
@@ -159,6 +161,13 @@ public class LookupCommand {
 							return;
 						}
 						money = true;
+						continue;
+					} else if (args[i].equalsIgnoreCase("#retention")) {
+						if (!MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+							sender.sendMessage(plugin.translate("no-permission-flag"));
+							return;
+						}
+						retention = true;
 						continue;
 					}
 					String[] split = args[i].split(":");
@@ -430,6 +439,8 @@ public class LookupCommand {
 						return;
 					}
 
+				} else if (retention) {
+					RetentionSolver.showRetention(plugin, sender, rs, startTime, endTime);
 				} else {
 					String uuid = sender.getUniqueId().toString();
 					Results result = new Results(plugin, rs, sender, sender.isBungee() ? "apb" : "ap");

@@ -17,11 +17,8 @@ public class EconomyShopGUIListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPreTransactionEvent(PreTransactionEvent e) {
-		if (e.isCancelled()) {
-			return;
-		}
 		ItemStack item = e.getItemStack();
 		boolean state = e.getTransactionMode().contains("BUY");
 		String data = "ESG, " + plugin.formatMoney(e.getPrice()) + ", QTY: " + item.getAmount();

@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.listeners;
 
 import org.bukkit.Bukkit;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
@@ -19,7 +20,7 @@ public class ChestShopListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onShopPostTransactionEvent(TransactionEvent e) {
 		boolean state = e.getTransactionType() == TransactionType.BUY;
 		int qty = 0;

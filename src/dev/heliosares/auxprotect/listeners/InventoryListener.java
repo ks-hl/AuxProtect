@@ -23,15 +23,12 @@ public class InventoryListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onInventoryOpenEvent(InventoryOpenEvent e) {
-		if(e.isCancelled()) {
-			return;
-		}
 		log(e.getPlayer(), e.getInventory(), true);
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onInventoryCloseEvent(InventoryCloseEvent e) {
 		log(e.getPlayer(), e.getInventory(), false);
 	}

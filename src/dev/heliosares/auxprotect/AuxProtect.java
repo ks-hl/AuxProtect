@@ -207,7 +207,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 						if (System.currentTimeMillis() - apPlayer.lastCheckedMovement > 1000) {
 							if (apPlayer.lastLocation != null
 									&& apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
-								apPlayer.moved += Math
+								apPlayer.movedAmountThisMinute += Math
 										.min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
 							}
 							apPlayer.lastLocation = apPlayer.player.getLocation();
@@ -221,7 +221,13 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 							if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
 								apPlayer.activity[apPlayer.activityIndex] += 100;
 							}
-							apPlayer.activity[apPlayer.activityIndex] += Math.floor((apPlayer.moved + 7) / 10);
+							apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
+							apPlayer.movedAmountThisMinute = 0;
+
+							if (apPlayer.hasMovedThisMinute) {
+								apPlayer.addActivity(1);
+								apPlayer.hasMovedThisMinute = false;
+							}
 
 							add(new DbEntry(AuxProtect.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
 									apPlayer.player.getLocation(), "",
@@ -239,7 +245,8 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 									inactive++;
 								}
 							}
-							if (tallied >= 10 && (double) inactive / (double) tallied > 0.8) {
+							if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
+									&& !MyPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
 								if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
 									apPlayer.lastNotifyInactive = System.currentTimeMillis();
 									String msg = String.format(lang.translate("inactive-alert"),
@@ -260,7 +267,6 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 								apPlayer.activityIndex = 0;
 							}
 							apPlayer.activity[apPlayer.activityIndex] = 0;
-							apPlayer.moved = 0;
 						}
 					}
 				}

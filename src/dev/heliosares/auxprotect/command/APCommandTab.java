@@ -40,13 +40,16 @@ public class APCommandTab implements TabCompleter {
 				if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 					possible.add("activity");
 				}
+				if (MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+					possible.add("retention");
+				}
+				if (MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
+					possible.add("money");
+				}
 			}
 			if (MyPermission.ADMIN.hasPermission(sender)) {
 				possible.add("debug");
 				possible.add("stats");
-			}
-			if (MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
-				possible.add("money");
 			}
 			if (MyPermission.HELP.hasPermission(sender)) {
 				possible.add("help");

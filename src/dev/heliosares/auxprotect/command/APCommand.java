@@ -25,6 +25,7 @@ public class APCommand implements CommandExecutor {
 	private ActivityCommand activityCommand;
 	private XrayCommand xrayCommand;
 	private MoneyCommand moneyCommand;
+	private RetentionCommand retentionCommand;
 
 	public APCommand(AuxProtect plugin) {
 		this.plugin = plugin;
@@ -35,6 +36,7 @@ public class APCommand implements CommandExecutor {
 		activityCommand = new ActivityCommand(plugin);
 		xrayCommand = new XrayCommand(plugin);
 		moneyCommand = new MoneyCommand(plugin);
+		retentionCommand = new RetentionCommand(plugin);
 	}
 
 	@Override
@@ -71,6 +73,12 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return moneyCommand.onCommand(sender, command, label, args);
+			} else if (args[0].equalsIgnoreCase("retention")) {
+				if (!MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				return retentionCommand.onCommand(sender, command, label, args);
 			} else if ((args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray"))
 					&& plugin.config.isPrivate()) {
 				if (!MyPermission.LOOKUP_XRAY.hasPermission(sender)) {

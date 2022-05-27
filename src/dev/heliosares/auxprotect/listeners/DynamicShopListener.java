@@ -17,7 +17,7 @@ public class DynamicShopListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	@EventHandler(priority = EventPriority.MONITOR)
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onShopBuySellEvent(ShopBuySellEvent e) {
 		ItemStack item = e.getItemStack();
 		boolean buy = e.isBuy();
