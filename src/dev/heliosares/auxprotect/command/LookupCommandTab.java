@@ -19,10 +19,10 @@ import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.MyPermission;
 
 public class LookupCommandTab implements TabCompleter {
-	// private final AuxProtect plugin;
+	private final AuxProtect plugin;
 
 	public LookupCommandTab(AuxProtect plugin) {
-		// this.plugin = plugin;
+		this.plugin = plugin;
 	}
 
 	@Override
@@ -113,7 +113,7 @@ public class LookupCommandTab implements TabCompleter {
 		}
 
 		if (currentArg.startsWith("#")) {
-			if (MyPermission.LOOKUP_XRAY.hasPermission(sender)) {
+			if (MyPermission.LOOKUP_XRAY.hasPermission(sender) && plugin.config.isPrivate()) {
 				possible.add("#xray");
 			}
 			if (MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
@@ -124,10 +124,10 @@ public class LookupCommandTab implements TabCompleter {
 			}
 			possible.add("#bw");
 			possible.add("#count");
-			if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+			if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender) && plugin.config.isPrivate()) {
 				possible.add("#activity");
 			}
-			if (MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+			if (MyPermission.LOOKUP_RETENTION.hasPermission(sender) && plugin.config.isPrivate()) {
 				possible.add("#retention");
 			}
 		}

@@ -61,7 +61,7 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return playtimeCommand.onCommand(sender, command, label, args);
-			} else if (args[0].equalsIgnoreCase("activity")) {
+			} else if (args[0].equalsIgnoreCase("activity") && plugin.config.isPrivate()) {
 				if (!MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
@@ -73,7 +73,7 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return moneyCommand.onCommand(sender, command, label, args);
-			} else if (args[0].equalsIgnoreCase("retention")) {
+			} else if (args[0].equalsIgnoreCase("retention") && plugin.config.isPrivate()) {
 				if (!MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;

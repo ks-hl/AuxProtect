@@ -217,7 +217,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 						if (apPlayer.lastLoggedActivity == 0) {
 							apPlayer.lastLoggedActivity = System.currentTimeMillis();
 						}
-						if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L) {
+						if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
 							if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
 								apPlayer.activity[apPlayer.activityIndex] += 100;
 							}
@@ -378,6 +378,7 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 			EntryAction.CENSOR.setEnabled(false);
 			EntryAction.IGNOREABANDONED.setEnabled(false);
 			EntryAction.XRAYCHECK.setEnabled(false);
+			EntryAction.ACTIVITY.setEnabled(false);
 		}
 
 		if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {

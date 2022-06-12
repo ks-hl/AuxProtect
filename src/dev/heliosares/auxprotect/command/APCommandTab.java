@@ -12,14 +12,14 @@ import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.utils.MyPermission;
 
 public class APCommandTab implements TabCompleter {
-	// private final AuxProtect plugin;
+	private final AuxProtect plugin;
 	private final LookupCommandTab lookupCommandTab;
 	private final PurgeCommandTab purgeCommandTab;
 	private final PlaytimeCommandTab playtimeCommandTab;
 	private final MoneyCommandTab moneyCommandTab;
 
 	public APCommandTab(AuxProtect plugin) {
-		// this.plugin = plugin;
+		this.plugin = plugin;
 		this.lookupCommandTab = new LookupCommandTab(plugin);
 		this.purgeCommandTab = new PurgeCommandTab(plugin);
 		this.playtimeCommandTab = new PlaytimeCommandTab(plugin);
@@ -37,10 +37,10 @@ public class APCommandTab implements TabCompleter {
 				if (MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 					possible.add("playtime");
 				}
-				if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+				if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender) && plugin.config.isPrivate()) {
 					possible.add("activity");
 				}
-				if (MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+				if (MyPermission.LOOKUP_RETENTION.hasPermission(sender) && plugin.config.isPrivate()) {
 					possible.add("retention");
 				}
 				if (MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
