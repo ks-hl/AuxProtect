@@ -95,6 +95,7 @@ actions:
     n: teleported from
   command: executed
   kill: killed
+  totem: used totem
   land: projectile landed
   elytra:
     p: started flying

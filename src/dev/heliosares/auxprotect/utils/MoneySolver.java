@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
+import java.awt.Color;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -21,8 +22,7 @@ public class MoneySolver extends ChartRenderer {
 	private List<LocalDate> xDivs;
 
 	private MoneySolver(Player player, ArrayList<DbEntry> results, int time, String user) {
-		super(user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money",
-				(byte) (ChartRenderer.LIGHT_GRAY + 2), 100);
+		super(user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
 		long start = results.get(results.size() - 1).getTime();
 		long end = results.get(0).getTime();
 		long duration = end - start;
@@ -98,7 +98,7 @@ public class MoneySolver extends ChartRenderer {
 		double pixelsPerDiv = xSize / (double) xDivs.size();
 		int numberOfLabels = 3;
 		for (int x = 0; x < xDivs.size() + 1; x++) {
-			canvas.setPixel((int) Math.round(x * pixelsPerDiv + xShift) - 1, ySize + yShift + 2, BLACK);
+			canvas.setPixelColor((int) Math.round(x * pixelsPerDiv + xShift) - 1, ySize + yShift + 2, Color.BLACK);
 		}
 		double inc = xDivs.size() / (double) numberOfLabels;
 		double incP1 = (xDivs.size() + 1) / (double) numberOfLabels;
@@ -113,7 +113,8 @@ public class MoneySolver extends ChartRenderer {
 		}
 	}
 
-	public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time, String users) {
+	public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
+			String users) {
 		plugin.runSync(new Runnable() {
 			@Override
 			public void run() {
