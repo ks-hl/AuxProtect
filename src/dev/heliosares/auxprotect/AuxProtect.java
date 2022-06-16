@@ -85,8 +85,9 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		data.getData().set("lastloaded", System.currentTimeMillis());
 		data.save();
 
+		debug("Parsing: " + Bukkit.getBukkitVersion());
 		try {
-			SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("\\.")[1]);
+			SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("[\\.-]")[1]);
 		} catch (Exception e) {
 			warning("Failed to parse version string: \"" + Bukkit.getBukkitVersion() + "\". Defaulting to 1.16");
 			SERVER_VERSION = 16;
