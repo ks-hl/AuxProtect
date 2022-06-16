@@ -19,27 +19,19 @@ public enum MyPermission {
 		return player.hasPermission(node);
 	}
 
-	public boolean hasPermission(org.bukkit.command.CommandSender player) {
+	public boolean hasPermission(MySender player) {
 		return player.hasPermission(node);
 	}
 
-	public boolean hasPermission(MySender player) {
-		return player.hasPermission(node);
+	public boolean hasPermission(String dot, MySender player) {
+		return player.hasPermission(node + "." + dot);
 	}
 
 	public boolean hasPermission(net.md_5.bungee.api.CommandSender player) {
 		return player.hasPermission(node);
 	}
 
-	public boolean hasPermission(String dot, Player player) {
-		return player.hasPermission(node + "." + dot);
-	}
-
-	public boolean hasPermission(String dot, org.bukkit.command.CommandSender player) {
-		return player.hasPermission(node + "." + dot);
-	}
-
-	public boolean hasPermission(String dot, net.md_5.bungee.api.CommandSender player) {
-		return player.hasPermission(node + "." + dot);
+	public boolean hasPermission(org.bukkit.command.CommandSender player) {
+		return player.hasPermission(node);
 	}
 }

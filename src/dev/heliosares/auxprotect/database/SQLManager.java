@@ -902,9 +902,10 @@ public class SQLManager {
 				}
 				String build = "";
 				boolean escape = false;
+				final boolean allowEscape = key.equalsIgnoreCase("target") || key.equalsIgnoreCase("data");
 				ArrayList<String> values = new ArrayList<>();
 				for (char current : value.toCharArray()) {
-					if (current == '\\') {
+					if (allowEscape && current == '\\') {
 						escape = true;
 						continue;
 					}
@@ -970,12 +971,6 @@ public class SQLManager {
 							throw new LookupException(LookupExceptionType.UNKNOWN_ACTION,
 									String.format(plugin.translate("lookup-unknownaction"), param));
 						} else {
-							/*
-							 * TODO if (sender != null) { if
-							 * (!MyPermission.LOOKUP.hasPermission(action.toString().toLowerCase(), sender))
-							 * { sender.sendMessage(String.format(plugin.translate("lookup-action-perm"),
-							 * param)); return null; } }
-							 */
 							if (table == null) {
 								table = action.getTable();
 							} else {

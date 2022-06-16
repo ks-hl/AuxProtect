@@ -12,6 +12,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager.LookupException;
+import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.MyPermission;
@@ -202,7 +203,19 @@ public class LookupCommand {
 						return;
 					}
 					String param = split[1];
-					if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("before")
+					if (token.equalsIgnoreCase("action")) {
+						for (String actionStr : param.split(",")) {
+							EntryAction action = EntryAction.getAction(actionStr);
+							if (action == null) {
+								continue;
+							}
+							if (!MyPermission.LOOKUP.hasPermission("action." + action.toString().toLowerCase(),
+									sender)) {
+								sender.sendMessage(String.format(plugin.translate("lookup-action-perm"), param));
+								return;
+							}
+						}
+					} else if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("before")
 							|| token.equalsIgnoreCase("after")) {
 						if (param.contains("-")) {
 							String[] range = param.split("-");
@@ -252,8 +265,17 @@ public class LookupCommand {
 					params.put(token, param.toLowerCase());
 				}
 				if (params.size() < 1) {
-					sender.sendMessage(plugin.translate("purge-error-notenough"));
+					sender.sendMessage(plugin.translate("lookup-invalid-notenough"));
 					return;
+				}
+				if (!params.containsKey("action")) {
+					for (EntryAction action : EntryAction.values()) {
+						if (action.getTable() == Table.AUXPROTECT_MAIN && !MyPermission.LOOKUP
+								.hasPermission("action." + action.toString().toLowerCase(), sender)) {
+							sender.sendMessage(plugin.translate("lookup-action-none"));
+							return;
+						}
+					}
 				}
 				if (bw) {
 					String user = params.get("user");
