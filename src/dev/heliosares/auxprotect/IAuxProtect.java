@@ -37,4 +37,6 @@ public interface IAuxProtect {
 	public void runAsync(Runnable run);
 
 	public void runSync(Runnable runnable);
+	
+	public void reloadConfig();
 }

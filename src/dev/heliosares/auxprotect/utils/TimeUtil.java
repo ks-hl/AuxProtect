@@ -4,18 +4,18 @@ public class TimeUtil {
 	public static String millisToString(double millis) {
 		millis /= 1000.0;
 		if (millis < 60) {
-			return padDouble(roundToPlaces(millis, 2)) + "/s";
+			return padDouble(roundToPlaces(millis, 2)) + "s";
 		}
 		millis /= 60.0;
 		if (millis < 60) {
-			return padDouble(roundToPlaces(millis, 2)) + "/m";
+			return padDouble(roundToPlaces(millis, 2)) + "m";
 		}
 		millis /= 60.0;
 		if (millis < 24) {
-			return padDouble(roundToPlaces(millis, 2)) + "/h";
+			return padDouble(roundToPlaces(millis, 2)) + "h";
 		}
 		millis /= 24.0;
-		return padDouble(roundToPlaces(millis, 2)) + "/d";
+		return padDouble(roundToPlaces(millis, 2)) + "d";
 	}
 
 	private static String padDouble(double d) {

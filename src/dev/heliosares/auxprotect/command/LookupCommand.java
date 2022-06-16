@@ -34,6 +34,7 @@ public class LookupCommand {
 		validParams.add("after");
 		validParams.add("before");
 		validParams.add("target");
+		validParams.add("data");
 		validParams.add("time");
 		validParams.add("world");
 		validParams.add("user");

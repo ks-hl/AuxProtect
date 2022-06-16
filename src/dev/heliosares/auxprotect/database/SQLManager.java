@@ -855,6 +855,8 @@ public class SQLManager {
 			ArrayList<String> writeParams = new ArrayList<>();
 			ArrayList<String> targets = new ArrayList<>();
 			boolean targetNot = false;
+			ArrayList<String> datas = new ArrayList<>();
+			boolean dataNot = false;
 			if (exact && !params.containsKey("radius")) {
 				if (location == null) {
 					return null;
@@ -898,13 +900,46 @@ public class SQLManager {
 								plugin.translate("lookup-action-negate"));
 					}
 				}
-				for (String param : value.split(",")) {
+				String build = "";
+				boolean escape = false;
+				ArrayList<String> values = new ArrayList<>();
+				for (char current : value.toCharArray()) {
+					if (current == '\\') {
+						escape = true;
+						continue;
+					}
+					if (!escape && current == ',') {
+						values.add(build);
+						build = "";
+						continue;
+					}
+					if (escape && current != ',') {
+						build += '\\';
+					}
+					build += current;
+
+					if (escape) {
+						escape = false;
+					}
+				}
+				if (escape) {
+					build += '\\';
+				}
+				if (build.length() > 0) {
+					values.add(build);
+				}
+				for (String param : values) {
 					String theStmt = "";
 					if (key.equalsIgnoreCase("target")) {
 						if (not) {
 							targetNot = true;
 						}
 						targets.add(param);
+					} else if (key.equalsIgnoreCase("data")) {
+						if (not) {
+							dataNot = true;
+						}
+						datas.add(param);
 					} else if (key.equalsIgnoreCase("user")) {
 						int uid = this.getUIDFromUsername(param);
 						int altuid = this.getUIDFromUUID(param);
@@ -1037,6 +1072,34 @@ public class SQLManager {
 					dos.put("target", targetArray);
 				}
 			}
+			ArrayList<String> dataArray = new ArrayList<>();
+			for (String data : datas) {
+				String theStmt = "";
+				if (data.contains("*")) {
+					theStmt = "data LIKE ? OR data LIKE ?";
+					writeParams.add(data.replaceAll("-", " ").replaceAll("\\*", "%"));
+					writeParams.add(data.replaceAll("\\*", "%"));
+				} else {
+					if (theStmt.length() > 0) {
+						theStmt += " OR ";
+					}
+					theStmt += "lower(data) = ? OR lower(data) = ?";
+					writeParams.add(data.toLowerCase());
+					writeParams.add(data.toLowerCase().replaceAll("-", " "));
+
+				}
+
+				if (theStmt.length() > 0) {
+					dataArray.add(theStmt);
+				}
+			}
+			if (dataArray.size() > 0) {
+				if (dataNot) {
+					donts.put("data", dataArray);
+				} else {
+					dos.put("data", dataArray);
+				}
+			}
 			String stmt = "\nWHERE (";
 			int conditions = 0;
 			int i = 0;
@@ -1063,7 +1126,7 @@ public class SQLManager {
 			}
 			i = 0;
 			if (donts.size() > 0) {
-				if (donts.size() > 0) {
+				if (dos.size() > 0) {
 					stmt += " AND ";
 				}
 				stmt += "NOT (";
@@ -1410,7 +1473,7 @@ public class SQLManager {
 				plugin.print(e);
 			}
 		}
-		
+
 		return out;
 	}
 

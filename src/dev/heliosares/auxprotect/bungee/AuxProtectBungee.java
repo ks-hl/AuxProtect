@@ -42,7 +42,8 @@ import net.md_5.bungee.config.YamlConfiguration;
 
 @SuppressWarnings("unused")
 public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
-	protected Configuration config;
+	protected Configuration configurationFile;
+	public APConfig config;
 	public Language lang;
 	public int debug;
 	SQLManager sqlManager;
@@ -64,14 +65,14 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		lang = new Language(langManager.getData());
 
 		File sqliteFile = null;
-		boolean mysql = config.getBoolean("MySQL.use", false);
-		String user = config.getString("MySQL.username", "");
-		String pass = config.getString("MySQL.password", "");
+		boolean mysql = configurationFile.getBoolean("MySQL.use", false);
+		String user = configurationFile.getString("MySQL.username", "");
+		String pass = configurationFile.getString("MySQL.password", "");
 		String uri = "";
 		if (mysql) {
-			String host = config.getString("MySQL.host", "localhost");
-			String port = config.getString("MySQL.port", "3306");
-			String database = config.getString("MySQL.database", "database");
+			String host = configurationFile.getString("MySQL.host", "localhost");
+			String port = configurationFile.getString("MySQL.port", "3306");
+			String database = configurationFile.getString("MySQL.database", "database");
 			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
 		} else {
 			sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
@@ -95,7 +96,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			}
 			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
-		sqlManager = new SQLManager(this, uri, config.getString("MySQL.table-prefix"), sqliteFile);
+		sqlManager = new SQLManager(this, uri, configurationFile.getString("MySQL.table-prefix"), sqliteFile);
 
 		runAsync(new Runnable() {
 
@@ -164,11 +165,13 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			}
 		}
 		try {
-			config = ConfigurationProvider.getProvider(YamlConfiguration.class)
+			configurationFile = ConfigurationProvider.getProvider(YamlConfiguration.class)
 					.load(new File(getDataFolder(), "config.yml"));
 		} catch (IOException e) {
 			print(e);
 		}
+
+		config = new APConfig(configurationFile);
 	}
 
 	@Override
@@ -230,8 +233,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 
 	@Override
 	public APConfig getAPConfig() {
-		// TODO Implement APConfig
-		return null;
+		return config;
 	}
 
 	@Override
@@ -260,5 +262,10 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
 		}
 		return "#null";
+	}
+
+	@Override
+	public void reloadConfig() {
+		config = new APConfig(configurationFile);
 	}
 }

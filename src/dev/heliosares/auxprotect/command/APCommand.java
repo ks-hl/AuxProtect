@@ -174,7 +174,6 @@ public class APCommand implements CommandExecutor {
 				// plugin.config.save();
 				// plugin.saveConfig();
 				plugin.reloadConfig();
-				plugin.config.load();
 				sender.sendMessage("§aConfig reloaded");
 				return true;
 			} else if (args[0].equalsIgnoreCase("stats")) {

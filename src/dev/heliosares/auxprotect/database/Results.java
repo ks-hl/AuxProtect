@@ -78,13 +78,17 @@ public class Results {
 					en.getUser()))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
 							new Text(Instant.ofEpochMilli(en.getTime()).atZone(ZoneId.systemDefault()).format(formatter)
-									+ "\n§7Click to copy epoch time.")))
+									+ "\n§7Click to copy epoch time. (" + en.getTime() + "ms)")))
 					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTime() + "e"));
 
 			// message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(),
 			// en.getAction().getText(plugin, en.getState()),
 			// en.getTarget())).event((HoverEvent) null);
-			message.append(" §f- ").event((HoverEvent) null);
+			String actionColor = "§7-";
+			if (en.getAction().hasDual) {
+				actionColor = en.getState() ? "§a+" : "§c-";
+			}
+			message.append(" " + actionColor + " ").event((HoverEvent) null);
 			HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT,
 					new Text("Click to copy to clipboard"));
 			message.append("§9" + en.getUser()).event(clickToCopy)
@@ -111,6 +115,7 @@ public class Results {
 									String.format(commandPrefix + " inv %d", i)))
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
+				data = null;// So data doesn't print
 			} else if (en.getAction().equals(EntryAction.KILL)) {
 				if (MyPermission.INV.hasPermission(player) && !en.getTarget().startsWith("#")) {
 					message.append(" §a[View Inv]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
@@ -118,10 +123,9 @@ public class Results {
 									en.getTarget(), en.getTime() + 50L, en.getTime() - 50L)))
 							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 				}
-				message.append(" §7(" + data + ")").event(clickToCopy)
-						.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getData()));
-			} else if (data != null && data.length() > 0) {
-				message.append(" §7(" + data + ")").event(clickToCopy)
+			}
+			if (data != null && data.length() > 0) {
+				message.append(" §8[§7" + data + "§8]").event(clickToCopy)
 						.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getData()));
 			}
 			if (en.world != null && !en.world.equals("$null")) {
@@ -129,7 +133,7 @@ public class Results {
 				if (en.getAction().getTable().hasLook()) {
 					tpCommand += String.format(" %d %d", en.pitch, en.yaw);
 				}
-				message.append("\n                §7§l^ ").event((HoverEvent) null).event((ClickEvent) null);
+				message.append("\n                 ").event((HoverEvent) null).event((ClickEvent) null);
 				message.append(String.format("§7(x%d/y%d/z%d/%s)", en.x, en.y, en.z, en.world))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));

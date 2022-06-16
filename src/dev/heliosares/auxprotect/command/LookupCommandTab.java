@@ -42,6 +42,7 @@ public class LookupCommandTab implements TabCompleter {
 		possible.add("action:");
 		possible.add("world:");
 		possible.add("user:");
+		possible.add("data:");
 		if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
 			String action = currentArg.split(":")[0] + ":";
 			for (EntryAction eaction : EntryAction.values()) {

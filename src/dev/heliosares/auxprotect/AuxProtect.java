@@ -74,7 +74,6 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 		debug = getConfig().getInt("debug", 0);
 
 		config = new APConfig(this.getConfig());
-		config.load();
 
 		YMLManager langManager = new YMLManager("en-us", this);
 		langManager.load(true);
@@ -548,5 +547,11 @@ public class AuxProtect extends JavaPlugin implements IAuxProtect {
 
 	public int queueSize() {
 		return dbRunnable.queueSize();
+	}
+
+	@Override
+	public void reloadConfig() {
+		super.reloadConfig();
+		config = new APConfig(this.getConfig());
 	}
 }
