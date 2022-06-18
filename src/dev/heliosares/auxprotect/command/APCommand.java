@@ -181,9 +181,9 @@ public class APCommand implements CommandExecutor {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
-
-				sender.sendMessage("§7Rows: §9" + plugin.getSqlManager().getCount() + " §7DB Version: §9"
-						+ plugin.getSqlManager().getVersion());
+				sender.sendMessage(String.format("§7Rows: §9%d §7DB Version: §9%d §7Original Version: §9%d",
+						plugin.getSqlManager().getCount(), plugin.getSqlManager().getVersion(),
+						plugin.getSqlManager().getOriginalVersion()));
 				sender.sendMessage("§7Average lookup time: §9"
 						+ Math.round(plugin.getSqlManager().lookupTime.getMean() / 1000.0) / 1000.0 + "§7ms");
 				sender.sendMessage("§7Average record time per entry: §9"

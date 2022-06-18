@@ -46,6 +46,7 @@ public class SQLManager {
 	private BidiMapCache<Integer, String> usernames = new BidiMapCache<>(10000L, 10000L, true);
 	private HashMap<String, Integer> worlds = new HashMap<>();
 	private int version;
+	private int originalVersion;
 	public String holdingConnection;
 	public long holdingConnectionSince;
 	public MovingAverage putTimePerEntry = new MovingAverage(100);
@@ -72,6 +73,10 @@ public class SQLManager {
 
 	public int getVersion() {
 		return version;
+	}
+
+	public int getOriginalVersion() {
+		return originalVersion;
 	}
 
 	public boolean isMySQL() {
@@ -177,13 +182,18 @@ public class SQLManager {
 			plugin.debug(stmt, 3);
 			try (Statement statement = connection.createStatement()) {
 				try (ResultSet results = statement.executeQuery(stmt)) {
-					long versionTime = 0;
+					long newestVersionTime = 0;
+					long oldestVersionTime = Long.MAX_VALUE;
 					while (results.next()) {
 						long versionTime_ = results.getLong("time");
 						int version_ = results.getInt("version");
-						if (versionTime_ > versionTime) {
+						if (versionTime_ > newestVersionTime) {
 							version = version_;
-							versionTime = versionTime_;
+							newestVersionTime = versionTime_;
+						}
+						if (versionTime_ < oldestVersionTime) {
+							originalVersion = version_;
+							oldestVersionTime = versionTime_;
 						}
 						plugin.debug("Version at " + versionTime_ + " was v" + version_ + ".", 1);
 					}

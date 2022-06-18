@@ -21,7 +21,6 @@ public class Telemetry {
 			@Override
 			public Integer call() throws Exception {
 				int count = plugin.getSqlManager().getCount();
-				plugin.debug("Reporting usage to bStats. " + count + " entries.");
 				return count;
 			}
 		}));
@@ -37,6 +36,27 @@ public class Telemetry {
 			@Override
 			public String call() throws Exception {
 				return plugin.getSqlManager().isMySQL() ? "MySQL" : "SQLite";
+			}
+		}));
+
+		metrics.addCustomChart(new Metrics.SimplePie("db-version", new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				return plugin.getSqlManager().getVersion() + "";
+			}
+		}));
+
+		metrics.addCustomChart(new Metrics.SimplePie("db-original-version", new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				return plugin.getSqlManager().getOriginalVersion() + "";
+			}
+		}));
+
+		metrics.addCustomChart(new Metrics.SimplePie("updatechecker", new Callable<String>() {
+			@Override
+			public String call() throws Exception {
+				return plugin.getAPConfig().checkforupdates ? "Enabled" : "Disabled";
 			}
 		}));
 
