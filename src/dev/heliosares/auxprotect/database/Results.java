@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Random;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.IAuxProtect;
@@ -21,7 +22,7 @@ public class Results {
 	protected final ArrayList<DbEntry> entries;
 	protected final MySender player;
 	protected final DateTimeFormatter formatter;
-	private final IAuxProtect plugin;
+	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
 	final String commandPrefix;
@@ -60,15 +61,29 @@ public class Results {
 		showPage(page, perpage);
 	}
 
+	public void sendHeader() {
+		String headerColor = "§7";
+		String line = "§m";
+		for (int i = 0; i < 6; i++) {
+			line += (char) 65293;
+		}
+		line += "§7";
+		if (plugin.getAPConfig().isPrivate() && new Random().nextDouble() < 0.001) {
+			headerColor = "§f"; // The header had these mismatched colors for over a year of development until
+								// v1.1.3. This is a tribute to that screw up
+		}
+		player.sendMessage(headerColor + line + "  §9AuxProtect Results§7  " + line);
+	}
+
 	public void showPage(int page, int perpage_) {
-		int lastpage = getLastPage(perpage_);
+		int lastpage = getNumPages(perpage_);
 		if (page > lastpage || page < 1) {
 			player.sendMessage(plugin.translate("lookup-nopage"));
 			return;
 		}
 		perpage = perpage_;
 		prevpage = page;
-		player.sendMessage("§f------  §9AuxProtect Results§7  ------");
+		sendHeader();
 		for (int i = (page - 1) * perpage; i < (page) * perpage && i < entries.size(); i++) {
 			DbEntry en = entries.get(i);
 			ComponentBuilder message = new ComponentBuilder();
@@ -143,8 +158,12 @@ public class Results {
 			}
 			player.sendMessage(message.create());
 		}
+		sendArrowKeys(page, perpage_);
+	}
 
+	public void sendArrowKeys(int page, int perpage_) {
 		ComponentBuilder message = new ComponentBuilder();
+		int lastpage = getNumPages(perpage_);
 		message.append("§7(");
 		if (page > 1) {
 			message.append("§9§l" + AuxProtect.LEFT_ARROW + AuxProtect.LEFT_ARROW)
@@ -179,13 +198,12 @@ public class Results {
 			message.append("§8§l" + AuxProtect.RIGHT_ARROW + AuxProtect.RIGHT_ARROW);
 		}
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
-		message.append(String.format(plugin.translate("lookup-page-footer"), page,
-				(int) Math.ceil(entries.size() / (double) perpage), entries.size()));
+		message.append(
+				String.format(plugin.translate("lookup-page-footer"), page, getNumPages(perpage), entries.size()));
 		player.sendMessage(message.create());
-		return;
 	}
 
-	public int getLastPage(int perpage) {
+	public int getNumPages(int perpage) {
 		return (int) Math.ceil(entries.size() / (double) perpage);
 	}
 

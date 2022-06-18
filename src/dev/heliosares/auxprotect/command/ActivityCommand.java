@@ -17,11 +17,17 @@ public class ActivityCommand implements CommandExecutor {
 
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		if (args.length != 2) {
+		if (args.length != 2 && args.length != 3) {
 			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 			return true;
 		}
-		Bukkit.dispatchCommand(sender, String.format("ap lookup #activity user:%s time:2h action:activity", args[1]));
+		String cmd = String.format("ap lookup #activity user:%s action:activity time:", args[1]);
+		if (args.length > 2) {
+			cmd += args[2];
+		} else {
+			cmd += "2h";
+		}
+		Bukkit.dispatchCommand(sender, cmd);
 		return true;
 	}
 }

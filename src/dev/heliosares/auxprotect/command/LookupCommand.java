@@ -8,12 +8,12 @@ import org.bukkit.entity.Player;
 
 import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.utils.ActivitySolver;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.MyPermission;
 import dev.heliosares.auxprotect.utils.MySender;
@@ -104,7 +104,7 @@ public class LookupCommand {
 						if (first) {
 							page = 1;
 						} else if (last) {
-							page = result.getLastPage(result.perpage);
+							page = result.getNumPages(result.perpage);
 						} else if (next) {
 							page = result.prevpage + 1;
 						} else if (prev) {
@@ -440,9 +440,13 @@ public class LookupCommand {
 					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, startTime,
 							(int) Math.round((endTime - startTime) / (1000 * 3600)), users));
 				} else if (activity) {
-					String users = params.get("user");
-					sender.sendMessage(ActivitySolver.solveActivity(rs, startTime,
-							(int) Math.round((endTime - startTime) / 60000L), users));
+					String uuid = sender.getUniqueId().toString();
+					Results result = new ActivityResults(plugin, rs, sender);
+					result.showPage(result.getNumPages(4), 4);
+					results.put(uuid, result);
+//					String users = params.get("user");
+//					sender.sendMessage(ActivitySolver.solveActivity(rs, startTime,
+//							(int) Math.round((endTime - startTime) / 60000L), users));
 				} else if (xray) {
 					sender.sendMessage(XraySolver.solvePlaytime(rs, plugin));
 				} else if (money && !sender.isBungee()) {
