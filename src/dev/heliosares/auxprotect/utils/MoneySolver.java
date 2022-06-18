@@ -14,6 +14,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
+
+import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 
@@ -21,8 +23,8 @@ public class MoneySolver extends ChartRenderer {
 	private double[] values = new double[100];
 	private List<LocalDate> xDivs;
 
-	private MoneySolver(Player player, ArrayList<DbEntry> results, int time, String user) {
-		super(user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
+	private MoneySolver(AuxProtect plugin, Player player, ArrayList<DbEntry> results, int time, String user) {
+		super(plugin, user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
 		long start = results.get(results.size() - 1).getTime();
 		long end = results.get(0).getTime();
 		long duration = end - start;
@@ -98,7 +100,7 @@ public class MoneySolver extends ChartRenderer {
 		double pixelsPerDiv = xSize / (double) xDivs.size();
 		int numberOfLabels = 3;
 		for (int x = 0; x < xDivs.size() + 1; x++) {
-			canvas.setPixelColor((int) Math.round(x * pixelsPerDiv + xShift) - 1, ySize + yShift + 2, Color.BLACK);
+			setPixelColor(canvas, (int) Math.round(x * pixelsPerDiv + xShift) - 1, ySize + yShift + 2, Color.BLACK);
 		}
 		double inc = xDivs.size() / (double) numberOfLabels;
 		double incP1 = (xDivs.size() + 1) / (double) numberOfLabels;
@@ -115,10 +117,13 @@ public class MoneySolver extends ChartRenderer {
 
 	public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
 			String users) {
+		if (!(plugin instanceof AuxProtect)) {
+			return;
+		}
 		plugin.runSync(new Runnable() {
 			@Override
 			public void run() {
-				MoneySolver solver = new MoneySolver(player, results, time, users);
+				MoneySolver solver = new MoneySolver((AuxProtect) plugin, player, results, time, users);
 				player.getInventory().addItem(solver.asItem(player));
 			}
 		});

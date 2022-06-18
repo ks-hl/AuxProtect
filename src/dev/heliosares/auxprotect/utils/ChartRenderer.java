@@ -8,9 +8,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapCanvas;
+import org.bukkit.map.MapPalette;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
+
+import dev.heliosares.auxprotect.AuxProtect;
 
 public class ChartRenderer extends MapRenderer {
 
@@ -45,8 +48,10 @@ public class ChartRenderer extends MapRenderer {
 	private final int xDivs;
 	@SuppressWarnings("unused")
 	private final String[] xLabels;
+	private final AuxProtect plugin;
 
-	public ChartRenderer(String title, Color bgColor, int values) {
+	public ChartRenderer(AuxProtect plugin, String title, Color bgColor, int values) {
+		this.plugin = plugin;
 		this.title = title;
 		this.bgColor = bgColor;
 		this.values = new double[values];
@@ -92,7 +97,7 @@ public class ChartRenderer extends MapRenderer {
 	public void render(MapView view, MapCanvas canvas, Player player) {
 		for (int x = 0; x < map.length; x++) {
 			for (int y = 0; y < map[x].length; y++) {
-				canvas.setPixelColor(x, y, map[x][y]);
+				setPixelColor(canvas, x, y, map[x][y]);
 			}
 		}
 		canvas.drawText(2, 2, MinecraftFont.Font, title);
@@ -117,7 +122,7 @@ public class ChartRenderer extends MapRenderer {
 				break;
 			}
 			canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + "" + suffix);
-			canvas.setPixelColor(xShift - 2, yPos, Color.BLACK);
+			setPixelColor(canvas, xShift - 2, yPos, Color.BLACK);
 		}
 		drawXDivs(view, canvas, player);
 	}
@@ -172,5 +177,14 @@ public class ChartRenderer extends MapRenderer {
 			return null;
 		}
 		return i;
+	}
+
+	@SuppressWarnings("deprecation")
+	void setPixelColor(MapCanvas canvas, int x, int y, Color color) {
+		if (plugin.getCompatabilityVersion() >= 19) {
+			canvas.setPixelColor(x, y, color);
+		} else {
+			canvas.setPixel(x, y, MapPalette.matchColor(color));
+		}
 	}
 }
