@@ -2,6 +2,10 @@ package dev.heliosares.auxprotect.command;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
 
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -125,6 +129,7 @@ public class LookupCommand {
 
 				HashMap<String, String> params = new HashMap<>();
 				boolean count = false;
+				boolean count1 = false;
 				boolean playtime = false;
 				boolean xray = false;
 				boolean bw = false;
@@ -136,6 +141,9 @@ public class LookupCommand {
 				for (int i = 1; i < args.length; i++) {
 					if (args[i].equalsIgnoreCase("#count")) {
 						count = true;
+						continue;
+					} else if (args[i].equalsIgnoreCase("#count1") && plugin.getAPConfig().isPrivate()) {
+						count1 = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#xray")) {
 						xray = true;
@@ -209,8 +217,8 @@ public class LookupCommand {
 							if (action == null) {
 								continue;
 							}
-							if (!MyPermission.LOOKUP.hasPermission("action." + action.toString().toLowerCase(),
-									sender)) {
+							if (!MyPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase())
+									.hasPermission(sender)) {
 								sender.sendMessage(String.format(plugin.translate("lookup-action-perm"), param));
 								return;
 							}
@@ -270,8 +278,8 @@ public class LookupCommand {
 				}
 				if (!params.containsKey("action")) {
 					for (EntryAction action : EntryAction.values()) {
-						if (action.getTable() == Table.AUXPROTECT_MAIN && !MyPermission.LOOKUP
-								.hasPermission("action." + action.toString().toLowerCase(), sender)) {
+						if (action.getTable() == Table.AUXPROTECT_MAIN && !MyPermission.LOOKUP_ACTION
+								.dot(action.toString().toLowerCase()).hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("lookup-action-none"));
 							return;
 						}
@@ -426,6 +434,58 @@ public class LookupCommand {
 					}
 					if (msg.length() > 0) {
 						sender.sendMessage(msg);
+					}
+				} else if (count1) {
+					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
+					HashMap<String, Double> values = new HashMap<>();
+					HashMap<String, Integer> qtys = new HashMap<>();
+					for (DbEntry entry : rs) {
+						if (entry.getAction().equals(EntryAction.SHOP) && !entry.getState()) {
+							String[] parts = entry.getData().split(", ");
+							if (parts.length >= 3) {
+								try {
+									String valueStr = parts[1];
+									double value = -1;
+									int qty = 1;
+									if (!valueStr.contains(" each")
+											|| entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
+										valueStr = valueStr.replaceAll(" each", "");
+										value = Double.parseDouble(valueStr.substring(1));
+									} else {
+										double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
+										qty = Integer.parseInt(parts[2].split(" ")[1]);
+										value = each * qty;
+									}
+									if (value > 0) {
+										double currentvalue = 0;
+										if (values.containsKey(entry.getTarget())) {
+											currentvalue = values.get(entry.getTarget());
+										}
+										values.put(entry.getTarget(), value + currentvalue);
+
+										int currentqty = 0;
+										if (qtys.containsKey(entry.getTarget())) {
+											currentqty = qtys.get(entry.getTarget());
+										}
+										qtys.put(entry.getTarget(), qty + currentqty);
+									}
+								} catch (Exception ignored) {
+									if (plugin.getDebug() > 0) {
+										plugin.print(ignored);
+									}
+								}
+							}
+						}
+					}
+					Map<String, Double> sortedMap = values.entrySet().stream().sorted(Entry.comparingByValue()).collect(
+							Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+					int limit = 10;
+					Object[] objmap = sortedMap.entrySet().toArray();
+					for (int i = sortedMap.size() - 1; i >= sortedMap.size() - 1 - limit; i--) {
+						@SuppressWarnings("unchecked")
+						Entry<String, Double> entry = (Entry<String, Double>) objmap[i];
+						sender.sendMessage(entry.getKey() + ": $" + Math.round(entry.getValue() * 100) / 100.0 + " (x"
+								+ qtys.get(entry.getKey()) + ")");
 					}
 				} else if (playtime) {
 					String users = params.get("user");

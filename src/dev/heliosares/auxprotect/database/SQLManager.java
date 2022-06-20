@@ -220,7 +220,12 @@ public class SQLManager {
 			}
 
 			if (version < 5) {
-				execute("ALTER TABLE " + tablePrefix + "auxprotect RENAME TO " + Table.AUXPROTECT_MAIN.toString());
+				try {
+					execute("ALTER TABLE " + tablePrefix + "auxprotect RENAME TO " + Table.AUXPROTECT_MAIN.toString());
+				} catch (SQLException ignored) {
+					plugin.warning(
+							"Failed to rename auxprotect table for migration. This may cause errors. Migration continuing.");
+				}
 			}
 
 			if (version < 2 && !plugin.isBungee()) {
@@ -389,8 +394,12 @@ public class SQLManager {
 				}
 			}
 
-			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS.toString()
-					+ " (uuid varchar(255), uid INTEGER PRIMARY KEY AUTOINCREMENT);";
+			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS.toString();
+			if (this.isMySQL()) {
+				stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(255), PRIMARY KEY (uid));";
+			} else {
+				stmt += " (uuid varchar(255), uid INTEGER PRIMARY KEY AUTOINCREMENT);";
+			}
 			plugin.debug(stmt, 3);
 			execute(stmt);
 
@@ -428,8 +437,12 @@ public class SQLManager {
 		int rowcountformerge = 0;
 		plugin.info("Migrating database to v3. DO NOT INTERRUPT");
 		for (Table table : migrateTablesV3) {
-			rowcountformerge += count(table);
-			execute("ALTER TABLE " + table.toString() + " RENAME TO " + table.toString() + "_temp;");
+			try {
+				execute("ALTER TABLE " + table.toString() + " RENAME TO " + table.toString() + "_temp;");
+			} catch (Exception ignored) {
+				plugin.warning("Error renaming table, continuing anyway. This may cause errors.");
+			}
+			rowcountformerge += count(table + "_temp");
 			plugin.info(".");
 		}
 		plugin.info("Tables renamed");
@@ -1592,7 +1605,7 @@ public class SQLManager {
 			}
 			if (insert) {
 				stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid)\nVALUES (?)";
-				try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+				try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
 					pstmt.setString(1, uuid);
 					pstmt.execute();
 
@@ -1710,7 +1723,7 @@ public class SQLManager {
 				continue;
 			}
 			try {
-				total += count(table);
+				total += count(table.toString());
 			} catch (SQLException ignored) {
 			}
 		}
@@ -1718,12 +1731,12 @@ public class SQLManager {
 		count = total;
 	}
 
-	public int count(Table table) throws SQLException {
+	private int count(String table) throws SQLException {
 		String stmtStr = "";
 		if (mysql) {
-			stmtStr = "SELECT COUNT(*) FROM " + table.toString();
+			stmtStr = "SELECT COUNT(*) FROM " + table;
 		} else {
-			stmtStr = "SELECT COUNT(1) FROM " + table.toString();
+			stmtStr = "SELECT COUNT(1) FROM " + table;
 		}
 		plugin.debug(stmtStr, 5);
 		checkAsync();
