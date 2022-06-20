@@ -13,7 +13,7 @@ import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
-import dev.heliosares.auxprotect.AuxProtect;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class InvSerialization {
 	public static String playerToBase64(Player player) {
@@ -39,7 +39,7 @@ public class InvSerialization {
 			bukkitObjectOutputStream.close();
 			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
 		} catch (IOException e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}
@@ -54,7 +54,7 @@ public class InvSerialization {
 			bukkitObjectOutputStream.close();
 			return itemSeparator + Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
 		} catch (IOException e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}
@@ -87,7 +87,7 @@ public class InvSerialization {
 			bukkitObjectOutputStream.close();
 			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
 		} catch (IOException e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}
@@ -107,7 +107,7 @@ public class InvSerialization {
 			bukkitObjectInputStream.close();
 			return inventory;
 		} catch (Exception e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}
@@ -129,7 +129,7 @@ public class InvSerialization {
 			bukkitObjectInputStream.close();
 			return arrayOfItemStack;
 		} catch (Exception e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}
@@ -149,7 +149,7 @@ public class InvSerialization {
 			bukkitObjectInputStream.close();
 			return itemStack;
 		} catch (Exception e) {
-			AuxProtect.getInstance().print(e);
+			AuxProtectSpigot.getInstance().print(e);
 		}
 		return null;
 	}

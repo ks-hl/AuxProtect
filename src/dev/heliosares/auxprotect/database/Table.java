@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public enum Table {
 	AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_INVENTORY,

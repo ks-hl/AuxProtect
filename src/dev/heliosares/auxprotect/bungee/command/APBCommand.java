@@ -5,11 +5,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
-import dev.heliosares.auxprotect.command.LookupCommand;
-import dev.heliosares.auxprotect.command.PurgeCommand;
+import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.utils.MyPermission;
-import dev.heliosares.auxprotect.utils.MySender;
+import dev.heliosares.auxprotect.spigot.command.LookupCommand;
+import dev.heliosares.auxprotect.spigot.command.PurgeCommand;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.connection.ProxiedPlayer;

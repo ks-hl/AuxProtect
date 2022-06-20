@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
-import dev.heliosares.auxprotect.AuxProtect;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class Telemetry {
 	private final Metrics metrics;
@@ -14,7 +14,7 @@ public class Telemetry {
 		hooks.put(name.toLowerCase(), state);
 	}
 
-	public Telemetry(AuxProtect plugin, int pluginId) {
+	public Telemetry(AuxProtectSpigot plugin, int pluginId) {
 		metrics = new Metrics(plugin, pluginId);
 
 		metrics.addCustomChart(new Metrics.SingleLineChart("entries", new Callable<Integer>() {
@@ -28,7 +28,7 @@ public class Telemetry {
 		metrics.addCustomChart(new Metrics.SimplePie("private", new Callable<String>() {
 			@Override
 			public String call() throws Exception {
-				return plugin.config.isPrivate() ? "Private" : "Public";
+				return plugin.getAPConfig().isPrivate() ? "Private" : "Public";
 			}
 		}));
 
@@ -56,7 +56,7 @@ public class Telemetry {
 		metrics.addCustomChart(new Metrics.SimplePie("updatechecker", new Callable<String>() {
 			@Override
 			public String call() throws Exception {
-				return plugin.getAPConfig().checkforupdates ? "Enabled" : "Disabled";
+				return plugin.getAPConfig().shouldCheckForUpdates() ? "Enabled" : "Disabled";
 			}
 		}));
 

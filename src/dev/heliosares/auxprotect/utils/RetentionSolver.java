@@ -11,7 +11,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.DbEntry;
 
 public class RetentionSolver {

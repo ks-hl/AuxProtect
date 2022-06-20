@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import net.md_5.bungee.api.chat.BaseComponent;

@@ -6,11 +6,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Random;
 
-import dev.heliosares.auxprotect.AuxProtect;
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
-import dev.heliosares.auxprotect.utils.MyPermission;
-import dev.heliosares.auxprotect.utils.MySender;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -21,7 +21,7 @@ public class Results {
 
 	protected final ArrayList<DbEntry> entries;
 	protected final MySender player;
-	protected final DateTimeFormatter formatter;
+	public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
 	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
@@ -30,7 +30,6 @@ public class Results {
 	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player, String commandPrefix) {
 		this.entries = entries;
 		this.player = player;
-		this.formatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
 		this.plugin = plugin;
 		if (!commandPrefix.startsWith("/")) {
 			commandPrefix = "/" + commandPrefix;
@@ -57,10 +56,6 @@ public class Results {
 		return entries.get(i);
 	}
 
-	public void showPage(int page) {
-		showPage(page, perpage);
-	}
-
 	public void sendHeader() {
 		String headerColor = "§7";
 		String line = "§m";
@@ -75,6 +70,10 @@ public class Results {
 		player.sendMessage(headerColor + line + "  §9AuxProtect Results§7  " + line);
 	}
 
+	public void showPage(int page) {
+		showPage(page, perpage);
+	}
+
 	public void showPage(int page, int perpage_) {
 		int lastpage = getNumPages(perpage_);
 		if (page > lastpage || page < 1) {
@@ -86,116 +85,123 @@ public class Results {
 		sendHeader();
 		for (int i = (page - 1) * perpage; i < (page) * perpage && i < entries.size(); i++) {
 			DbEntry en = entries.get(i);
-			ComponentBuilder message = new ComponentBuilder();
-			plugin.debug(en.getTarget() + "(" + en.getTargetId() + "): " + en.getTargetUUID());
 
-			message.append(String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - en.getTime()),
-					en.getUser()))
-					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-							new Text(Instant.ofEpochMilli(en.getTime()).atZone(ZoneId.systemDefault()).format(formatter)
-									+ "\n§7Click to copy epoch time. (" + en.getTime() + "ms)")))
-					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTime() + "e"));
-
-			// message.append(String.format(" §f- §9%s §f%s §9%s§f", en.getUser(),
-			// en.getAction().getText(plugin, en.getState()),
-			// en.getTarget())).event((HoverEvent) null);
-			String actionColor = "§7-";
-			if (en.getAction().hasDual) {
-				actionColor = en.getState() ? "§a+" : "§c-";
-			}
-			message.append(" " + actionColor + " ").event((HoverEvent) null);
-			HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-					new Text("Click to copy to clipboard"));
-			message.append("§9" + en.getUser()).event(clickToCopy)
-					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getUser()));
-			message.append(" §f" + en.getAction().getText(plugin, en.getState())).event((HoverEvent) null)
-					.event((ClickEvent) null);
-			message.append(" §9" + en.getTarget()).event(clickToCopy)
-					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getTarget()));
-
-			String data = en.getData();
-			if (data != null && data.contains(InvSerialization.itemSeparator)) {
-				data = data.split(InvSerialization.itemSeparator)[0];
-				if (MyPermission.INV.hasPermission(player)) {
-					message.append(" §a[View]")
-							.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-									String.format(commandPrefix + " inv %d", i)))
-							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
-				}
-			}
-			if (en.getAction().equals(EntryAction.INVENTORY)) {
-				if (MyPermission.INV.hasPermission(player)) {
-					message.append(" §a[View]")
-							.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-									String.format(commandPrefix + " inv %d", i)))
-							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
-				}
-				data = null;// So data doesn't print
-			} else if (en.getAction().equals(EntryAction.KILL)) {
-				if (MyPermission.INV.hasPermission(player) && !en.getTarget().startsWith("#")) {
-					message.append(" §a[View Inv]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-							String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
-									en.getTarget(), en.getTime() + 50L, en.getTime() - 50L)))
-							.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
-				}
-			}
-			if (data != null && data.length() > 0) {
-				message.append(" §8[§7" + data + "§8]").event(clickToCopy)
-						.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, en.getData()));
-			}
-			if (en.world != null && !en.world.equals("$null")) {
-				String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", en.x, en.y, en.z, en.world);
-				if (en.getAction().getTable().hasLook()) {
-					tpCommand += String.format(" %d %d", en.pitch, en.yaw);
-				}
-				message.append("\n                 ").event((HoverEvent) null).event((ClickEvent) null);
-				message.append(String.format("§7(x%d/y%d/z%d/%s)", en.x, en.y, en.z, en.world))
-						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
-						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));
-				if (en.getAction().getTable().hasLook()) {
-					message.append(String.format("§7 (p%s/y%d)", en.pitch, en.yaw));
-				}
-			}
-			player.sendMessage(message.create());
+			sendEntry(en, i);
 		}
-		sendArrowKeys(page, perpage_);
+		sendArrowKeys(page);
 	}
 
-	public void sendArrowKeys(int page, int perpage_) {
+	public void sendEntry(DbEntry entry, int index) {
+		sendEntry(plugin, player, entry, index, commandPrefix);
+	}
+
+	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index, String commandPrefix) {
+
 		ComponentBuilder message = new ComponentBuilder();
-		int lastpage = getNumPages(perpage_);
+		plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
+
+		message.append(String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()),
+				entry.getUser()))
+				.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+						new Text(Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault())
+								.format(dateFormatter) + "\n§7Click to copy epoch time. (" + entry.getTime() + "ms)")))
+				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
+
+		String actionColor = "§7-";
+		if (entry.getAction().hasDual) {
+			actionColor = entry.getState() ? "§a+" : "§c-";
+		}
+		message.append(" " + actionColor + " ").event((HoverEvent) null);
+		HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to copy to clipboard"));
+		message.append("§9" + entry.getUser()).event(clickToCopy)
+				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
+		message.append(" §f" + entry.getAction().getText(plugin, entry.getState())).event((HoverEvent) null)
+				.event((ClickEvent) null);
+		message.append(" §9" + entry.getTarget()).event(clickToCopy)
+				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
+
+		String data = entry.getData();
+		if (data != null && data.contains(InvSerialization.itemSeparator)) {
+			data = data.split(InvSerialization.itemSeparator)[0];
+			if (MyPermission.INV.hasPermission(player)) {
+				message.append(" §a[View]")
+						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+								String.format(commandPrefix + " inv %d", index)))
+						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+			}
+		}
+		if (entry.getAction().equals(EntryAction.INVENTORY)) {
+			if (MyPermission.INV.hasPermission(player)) {
+				message.append(" §a[View]")
+						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+								String.format(commandPrefix + " inv %d", index)))
+						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+			}
+			data = null;// So data doesn't print
+		} else if (entry.getAction().equals(EntryAction.KILL)) {
+			if (MyPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
+				message.append(" §a[View Inv]")
+						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+								String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
+										entry.getTarget(), entry.getTime() + 50L, entry.getTime() - 50L)))
+						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+			}
+		}
+		if (data != null && data.length() > 0) {
+			message.append(" §8[§7" + data + "§8]").event(clickToCopy)
+					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
+		}
+		if (entry.world != null && !entry.world.equals("$null")) {
+			String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", entry.x, entry.y, entry.z, entry.world);
+			if (entry.getAction().getTable().hasLook()) {
+				tpCommand += String.format(" %d %d", entry.pitch, entry.yaw);
+			}
+			message.append("\n                 ").event((HoverEvent) null).event((ClickEvent) null);
+			message.append(String.format("§7(x%d/y%d/z%d/%s)", entry.x, entry.y, entry.z, entry.world))
+					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));
+			if (entry.getAction().getTable().hasLook()) {
+				message.append(String.format("§7 (p%s/y%d)", entry.pitch, entry.yaw));
+			}
+		}
+		player.sendMessage(message.create());
+	}
+
+	public void sendArrowKeys(int page) {
+		ComponentBuilder message = new ComponentBuilder();
+		int lastpage = getNumPages(perpage);
 		message.append("§7(");
 		if (page > 1) {
-			message.append("§9§l" + AuxProtect.LEFT_ARROW + AuxProtect.LEFT_ARROW)
+			message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW)
 					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + perpage))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§9Jump to First Page")));
 			message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
-			message.append("§9§l" + AuxProtect.LEFT_ARROW)
+			message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW)
 					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 							commandPrefix + " l " + (page - 1) + ":" + perpage))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Last Page")));
 		} else {
 			message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ""));
-			message.append("§8§l" + AuxProtect.LEFT_ARROW + AuxProtect.LEFT_ARROW).event((ClickEvent) null)
+			message.append("§8§l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW).event((ClickEvent) null)
 					.event((HoverEvent) null);
 			message.append(" ");
-			message.append("§8§l" + AuxProtect.LEFT_ARROW);
+			message.append("§8§l" + AuxProtectSpigot.LEFT_ARROW);
 		}
 		message.append("  ").event((ClickEvent) null).event((HoverEvent) null);
 		if (page < lastpage) {
-			message.append("§9§l" + AuxProtect.RIGHT_ARROW)
+			message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW)
 					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 							commandPrefix + " l " + (page + 1) + ":" + perpage))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Next Page")));
 			message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
-			message.append("§9§l" + AuxProtect.RIGHT_ARROW + AuxProtect.RIGHT_ARROW)
+			message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW)
 					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 							commandPrefix + " l " + lastpage + ":" + perpage))
 					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Jump to Last Page")));
 		} else {
-			message.append("§8§l" + AuxProtect.RIGHT_ARROW).event((ClickEvent) null).event((HoverEvent) null);
+			message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW).event((ClickEvent) null).event((HoverEvent) null);
 			message.append(" ");
-			message.append("§8§l" + AuxProtect.RIGHT_ARROW + AuxProtect.RIGHT_ARROW);
+			message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
 		}
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
 		message.append(

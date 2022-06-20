@@ -8,9 +8,9 @@ import java.util.ArrayList;
 
 import org.bukkit.Bukkit;
 
-import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -100,13 +100,13 @@ public class PlayTimeSolver {
 		DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("ddMMM");
 		DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh a");
 		for (int i = 0; i < startTime.getHour(); i++) {
-			message.append(AuxProtect.BLOCK + "").color(ChatColor.BLACK);
+			message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK);
 		}
 		double hourCount = 0;
 		for (int i = 0; i < counter.length; i++) {
 			LocalDateTime time = startTime.plusHours(i);
 			double count = counter[i];
-			message.append(AuxProtect.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(
+			message.append(AuxProtectSpigot.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(
 					"§9" + time.format(formatterDateTime) + "\n" + (Math.round(count * 60.0) + " §8min online"))));
 			if (count > 0.99) {
 				message.color(ChatColor.of("#ffffff"));
@@ -135,7 +135,7 @@ public class PlayTimeSolver {
 			if (time.getHour() == 0) {
 				break;
 			}
-			message.append(AuxProtect.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
+			message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
 		}
 		message.append(" " + LocalDateTime.now().format(formatterDate)).color(ChatColor.BLUE);
 		message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)

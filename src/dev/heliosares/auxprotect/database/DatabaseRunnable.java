@@ -6,7 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public class DatabaseRunnable implements Runnable {
 	private ConcurrentLinkedQueue<DbEntry> queue;

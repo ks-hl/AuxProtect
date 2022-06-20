@@ -13,7 +13,7 @@ import org.bukkit.map.MapRenderer;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
-import dev.heliosares.auxprotect.AuxProtect;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class ChartRenderer extends MapRenderer {
 
@@ -48,9 +48,9 @@ public class ChartRenderer extends MapRenderer {
 	private final int xDivs;
 	@SuppressWarnings("unused")
 	private final String[] xLabels;
-	private final AuxProtect plugin;
+	private final AuxProtectSpigot plugin;
 
-	public ChartRenderer(AuxProtect plugin, String title, Color bgColor, int values) {
+	public ChartRenderer(AuxProtectSpigot plugin, String title, Color bgColor, int values) {
 		this.plugin = plugin;
 		this.title = title;
 		this.bgColor = bgColor;

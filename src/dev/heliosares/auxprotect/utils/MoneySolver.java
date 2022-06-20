@@ -15,15 +15,15 @@ import org.bukkit.map.MapCanvas;
 import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
-import dev.heliosares.auxprotect.AuxProtect;
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class MoneySolver extends ChartRenderer {
 	private double[] values = new double[100];
 	private List<LocalDate> xDivs;
 
-	private MoneySolver(AuxProtect plugin, Player player, ArrayList<DbEntry> results, int time, String user) {
+	private MoneySolver(AuxProtectSpigot plugin, Player player, ArrayList<DbEntry> results, int time, String user) {
 		super(plugin, user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
 		long start = results.get(results.size() - 1).getTime();
 		long end = results.get(0).getTime();
@@ -117,13 +117,13 @@ public class MoneySolver extends ChartRenderer {
 
 	public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
 			String users) {
-		if (!(plugin instanceof AuxProtect)) {
+		if (!(plugin instanceof AuxProtectSpigot)) {
 			return;
 		}
 		plugin.runSync(new Runnable() {
 			@Override
 			public void run() {
-				MoneySolver solver = new MoneySolver((AuxProtect) plugin, player, results, time, users);
+				MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
 				player.getInventory().addItem(solver.asItem(player));
 			}
 		});

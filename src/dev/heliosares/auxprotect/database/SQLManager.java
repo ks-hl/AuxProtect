@@ -23,10 +23,10 @@ import org.bukkit.Location;
 
 import com.google.common.io.Files;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 import dev.heliosares.auxprotect.utils.MovingAverage;
-import dev.heliosares.auxprotect.utils.MySender;
 
 public class SQLManager {
 	private static SQLManager instance;

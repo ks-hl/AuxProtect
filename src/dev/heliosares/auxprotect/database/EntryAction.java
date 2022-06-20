@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import java.util.HashMap;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public class EntryAction {
 	private static HashMap<String, EntryAction> values = new HashMap<>();

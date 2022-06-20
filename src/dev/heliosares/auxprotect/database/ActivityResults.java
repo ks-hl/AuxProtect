@@ -5,9 +5,9 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 
-import dev.heliosares.auxprotect.IAuxProtect;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
-import dev.heliosares.auxprotect.utils.MySender;
 
 public class ActivityResults extends Results {
 
@@ -26,6 +26,13 @@ public class ActivityResults extends Results {
 
 	@Override
 	public void showPage(int page, int perpage_) {
+		int lastpage = getNumPages(perpage_);
+		if (page > lastpage || page < 1) {
+			player.sendMessage(plugin.translate("lookup-nopage"));
+			return;
+		}
+		perpage = perpage_;
+		prevpage = page;
 		super.sendHeader();
 
 		long millisperpage = perpage * 3600000L;
@@ -35,7 +42,7 @@ public class ActivityResults extends Results {
 		player.sendMessage(ActivitySolver.solveActivity(entries, Math.max(thisRangeEnd - millisperpage, rangeStart),
 				thisRangeEnd));
 
-		super.sendArrowKeys(page, perpage_);
+		super.sendArrowKeys(page);
 	}
 
 	@Override

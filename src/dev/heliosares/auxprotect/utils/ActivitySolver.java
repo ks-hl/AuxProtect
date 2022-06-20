@@ -9,9 +9,9 @@ import java.util.ArrayList;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
-import dev.heliosares.auxprotect.AuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -82,7 +82,7 @@ public class ActivitySolver {
 		int shiftMinutes = 0;
 		// while ((counter.length + shiftMinutes) % 30 != 0) {
 		for (int i = 0; i < (startTime.getMinute() % 30); i++) {
-			message.append(AuxProtect.BLOCK + "").color(ChatColor.BLACK);
+			message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK);
 			shiftMinutes++;
 		}
 
@@ -99,7 +99,7 @@ public class ActivitySolver {
 						.event((ClickEvent) null).event((HoverEvent) null);
 			}
 			if (millis < newestEntryAt) {
-				message.append(AuxProtect.BLOCK + "").event((HoverEvent) null).event((ClickEvent) null);
+				message.append(AuxProtectSpigot.BLOCK + "").event((HoverEvent) null).event((ClickEvent) null);
 				message.color(ChatColor.BLACK);
 			} else {
 
@@ -124,7 +124,7 @@ public class ActivitySolver {
 									locations[i].getWorld().getName()));
 				}
 
-				message.append(AuxProtect.BLOCK + "")
+				message.append(AuxProtectSpigot.BLOCK + "")
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hovertext))).event(clickevent);
 				if (activity >= 20) {
 					message.color(ChatColor.of("#1ecb0d")); // green
