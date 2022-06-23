@@ -6,14 +6,13 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import org.bukkit.block.Container;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-
-import com.Acrobot.ChestShop.ChestShop;
 
 import dev.heliosares.auxprotect.bungee.command.APBCommand;
 import dev.heliosares.auxprotect.core.APConfig;
@@ -22,13 +21,6 @@ import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.spigot.command.PurgeCommand;
-import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
-import dev.heliosares.auxprotect.spigot.listeners.EntityListener;
-import dev.heliosares.auxprotect.spigot.listeners.InventoryListener;
-import dev.heliosares.auxprotect.spigot.listeners.ProjectileListener;
-import dev.heliosares.auxprotect.spigot.listeners.ShopGUIPlusListener;
 import net.brcdev.shopgui.ShopGuiPlugin;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.ProxyServer;

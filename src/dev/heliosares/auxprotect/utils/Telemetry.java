@@ -5,6 +5,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.spigot.Metrics;
 
 public class Telemetry {
 	private final Metrics metrics;
