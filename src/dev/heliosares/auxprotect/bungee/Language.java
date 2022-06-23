@@ -7,7 +7,7 @@ import net.md_5.bungee.config.Configuration;
 
 public class Language {
 	private Configuration lang;
-	
+
 	HashMap<String, String> langMap;
 
 	public Language(Configuration lang) {
@@ -21,7 +21,7 @@ public class Language {
 		}
 		String message = lang.getString(namespace);
 		if (message == null)
-			return "[error:" + namespace + "]";
+			return null;
 		message = ColorTranslate.cc(message);
 		langMap.put(namespace, message);
 		return message;

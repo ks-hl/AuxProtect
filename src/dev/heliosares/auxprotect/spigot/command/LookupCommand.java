@@ -217,9 +217,10 @@ public class LookupCommand {
 							if (action == null) {
 								continue;
 							}
-							if (!MyPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase())
-									.hasPermission(sender)) {
-								sender.sendMessage(String.format(plugin.translate("lookup-action-perm"), param));
+							MyPermission actionNode = MyPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase());
+							if (!actionNode.hasPermission(sender)) {
+								sender.sendMessage(String.format(plugin.translate("lookup-action-perm") + " (%s)",
+										param, actionNode.node));
 								return;
 							}
 						}

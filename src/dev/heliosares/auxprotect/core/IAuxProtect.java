@@ -14,6 +14,8 @@ public interface IAuxProtect {
 
 	String translate(String key);
 
+// TODO	String translate(String key, Object... args);
+
 	void info(String msg);
 
 	void debug(String msg);

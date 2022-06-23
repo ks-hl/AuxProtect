@@ -187,8 +187,24 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	public String translate(String key) {
 		String translate = lang.translate(key);
 		debug(String.format("Translated \"%s\" TO \"%s\"", key, translate), 5);
+		if (translate == null) {
+			translate = "[error:" + key + "]";
+		}
 		return translate;
 	}
+//
+//	@Override
+//	public String translate(String key, Object... args) {
+//		String translate = lang.translate(key);
+//		boolean isNull = translate == null;
+//		if (isNull) {
+//			translate = "[error:" + key;
+//			for(int i = 0;i<args.length;i++) {
+//				translate+="";
+//			}
+//		}
+//		translate = String.format(translate, args);
+//	}
 
 	@Override
 	public void info(String string) {
