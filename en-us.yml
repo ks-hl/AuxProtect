@@ -82,6 +82,7 @@ actions:
   censor: was censored
   msg: messaged
   consume: consumed
+  tame: tamed
   kitpvpkill: kill
   recover: recovered inv of
   money: money

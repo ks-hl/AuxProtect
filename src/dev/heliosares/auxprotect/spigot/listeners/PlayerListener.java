@@ -14,12 +14,10 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
@@ -32,18 +30,14 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerUnleashEntityEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.map.MapRenderer;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.MyPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.PickupEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -70,6 +64,9 @@ public class PlayerListener implements Listener {
 		mobs.add(EntityType.PUFFERFISH);
 		if (plugin.getCompatabilityVersion() >= 17) {
 			mobs.add(EntityType.AXOLOTL);
+		}
+		if (plugin.getCompatabilityVersion() >= 19) {
+			mobs.add(EntityType.TADPOLE);
 		}
 		mobs.add(EntityType.TROPICAL_FISH);
 		mobs.add(EntityType.COD);
@@ -226,8 +223,8 @@ public class PlayerListener implements Listener {
 				if (newInventory.equals(inventory)) {
 					return;
 				}
-				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false, oldLocation,
-						"worldchange", inventory));
+				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
+						oldLocation, "worldchange", inventory));
 				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
 						e.getPlayer().getLocation(), "worldchange", newInventory));
 			}
@@ -248,8 +245,8 @@ public class PlayerListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerKickEvent(PlayerKickEvent e) {
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getPlayer().getLocation(),
-				"", e.getReason()));
+		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.KICK, false,
+				e.getPlayer().getLocation(), "", e.getReason()));
 	}
 
 	public static void logMoney(AuxProtectSpigot plugin, Player player, String reason) {
@@ -257,13 +254,13 @@ public class PlayerListener implements Listener {
 			return;
 		}
 		plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(), reason,
-				plugin.formatMoney(plugin.getEconomy().getBalance(player))));
+		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
+				reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
 	}
 
 	protected void logSession(Player player, boolean login, String supp) {
-		plugin.add(
-				new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "", supp));
+		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
+				supp));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -292,8 +289,8 @@ public class PlayerListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerRespawnEvent(PlayerRespawnEvent e) {
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RESPAWN, false, e.getRespawnLocation(),
-				"", ""));
+		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RESPAWN, false,
+				e.getRespawnLocation(), "", ""));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -310,66 +307,6 @@ public class PlayerListener implements Listener {
 		if (e.isCancelled()) {
 			return;
 		}
-	}
-
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onDropEvent(PlayerDropItemEvent e) {
-		if (isChartMap(e.getItemDrop().getItemStack())) {
-			e.getItemDrop().remove();
-			return;
-		}
-
-		plugin.getAPPlayer(e.getPlayer()).addActivity(1);
-
-		if (InvSerialization.isCustom(e.getItemDrop().getItemStack())) {
-			plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.DROP, false,
-					e.getPlayer().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
-					InvSerialization.toBase64(e.getItemDrop().getItemStack())));
-		} else {
-			plugin.add(new PickupEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.DROP, false,
-					e.getPlayer().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
-					e.getItemDrop().getItemStack().getAmount()));
-		}
-
-	}
-
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPickupEvent(EntityPickupItemEvent e) {
-
-		if (e.getEntity() instanceof Player) {
-			Player player = (Player) e.getEntity();
-
-			plugin.getAPPlayer(player).addActivity(1);
-
-			if (isChartMap(e.getItem().getItemStack()) && !MyPermission.LOOKUP_MONEY.hasPermission(player)) {
-				e.setCancelled(true);
-				e.getItem().remove();
-			}
-
-			if (InvSerialization.isCustom(e.getItem().getItemStack())) {
-				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.PICKUP, false,
-						e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
-						InvSerialization.toBase64(e.getItem().getItemStack())));
-			} else {
-				plugin.add(new PickupEntry(AuxProtectSpigot.getLabel(player), EntryAction.PICKUP, false,
-						e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
-						e.getItem().getItemStack().getAmount()));
-			}
-		}
-	}
-
-	public static boolean isChartMap(ItemStack item) {
-		if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
-			if (item.getItemMeta() instanceof MapMeta) {
-				MapMeta meta = (MapMeta) item.getItemMeta();
-				for (MapRenderer renderer : meta.getMapView().getRenderers()) {
-					if (renderer instanceof ChartRenderer) {
-						return true;
-					}
-				}
-			}
-		}
-		return false;
 	}
 
 	public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,

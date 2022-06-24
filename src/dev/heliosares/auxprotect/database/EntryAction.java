@@ -48,6 +48,7 @@ public class EntryAction {
 	public static final EntryAction RECOVER = new EntryAction("recover", 136);
 	public static final EntryAction MONEY = new EntryAction("money", 137);
 	public static final EntryAction GAMEMODE = new EntryAction("gamemode", 138);
+	public static final EntryAction TAME = new EntryAction("tame", 139);
 	// END DEFAULT (255)
 
 	// START SPAM(256)

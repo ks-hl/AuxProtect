@@ -14,21 +14,29 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
+import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.MapMeta;
+import org.bukkit.map.MapRenderer;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.entity.EntityTameEvent;
 import org.bukkit.projectiles.ProjectileSource;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import org.spigotmc.event.entity.EntityMountEvent;
 
+import dev.heliosares.auxprotect.core.MyPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.PickupEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
 public class EntityListener implements Listener {
@@ -183,5 +191,73 @@ public class EntityListener implements Listener {
 				e.getEntity().getLocation(), "death", InvSerialization.playerToBase64(e.getEntity()));
 		plugin.add(entry1);
 		plugin.getAPPlayer(e.getEntity()).lastLoggedInventory = System.currentTimeMillis();
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onDropEvent(EntityDropItemEvent e) {
+		if (e.getEntity() instanceof Player) {
+			plugin.getAPPlayer((Player) e.getEntity()).addActivity(1);
+
+			if (isChartMap(e.getItemDrop().getItemStack())) {
+				e.getItemDrop().remove();
+				return;
+			}
+		}
+
+		if (InvSerialization.isCustom(e.getItemDrop().getItemStack())) {
+			plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.DROP, false,
+					e.getEntity().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
+					InvSerialization.toBase64(e.getItemDrop().getItemStack())));
+		} else {
+			plugin.add(new PickupEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.DROP, false,
+					e.getEntity().getLocation(), e.getItemDrop().getItemStack().getType().toString().toLowerCase(),
+					e.getItemDrop().getItemStack().getAmount()));
+		}
+
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPickupEvent(EntityPickupItemEvent e) {
+		if (e.getEntity() instanceof Player) {
+			Player player = (Player) e.getEntity();
+
+			plugin.getAPPlayer(player).addActivity(1);
+
+			if (isChartMap(e.getItem().getItemStack()) && !MyPermission.LOOKUP_MONEY.hasPermission(player)) {
+				e.setCancelled(true);
+				e.getItem().remove();
+			}
+		}
+
+		if (InvSerialization.isCustom(e.getItem().getItemStack())) {
+			plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.PICKUP, false,
+					e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
+					InvSerialization.toBase64(e.getItem().getItemStack())));
+		} else {
+			plugin.add(new PickupEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.PICKUP, false,
+					e.getItem().getLocation(), e.getItem().getItemStack().getType().toString().toLowerCase(),
+					e.getItem().getItemStack().getAmount()));
+		}
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onTame(EntityTameEvent e) {
+		DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
+				e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
+		plugin.add(entry);
+	}
+
+	public static boolean isChartMap(ItemStack item) {
+		if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
+			if (item.getItemMeta() instanceof MapMeta) {
+				MapMeta meta = (MapMeta) item.getItemMeta();
+				for (MapRenderer renderer : meta.getMapView().getRenderers()) {
+					if (renderer instanceof ChartRenderer) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
 	}
 }
