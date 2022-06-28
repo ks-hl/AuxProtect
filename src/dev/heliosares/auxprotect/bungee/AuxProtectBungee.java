@@ -276,4 +276,9 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	public void reloadConfig() {
 		config = new APConfig(configurationFile);
 	}
+
+	@Override
+	public String getCommandPrefix() {
+		return "auxprotectbungee";
+	}
 }

@@ -41,4 +41,6 @@ public interface IAuxProtect {
 	public void runSync(Runnable runnable);
 
 	public void reloadConfig();
+	
+	public String getCommandPrefix();
 }

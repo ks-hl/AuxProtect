@@ -21,7 +21,8 @@ public class ActivityCommand implements CommandExecutor {
 			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 			return true;
 		}
-		String cmd = String.format("ap lookup #activity user:%s action:activity time:", args[1]);
+		String cmd = plugin.getCommandPrefix()
+				+ String.format(" lookup #activity user:%s action:activity time:", args[1]);
 		if (args.length > 2) {
 			cmd += args[2];
 		} else {

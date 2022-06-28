@@ -558,4 +558,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		super.reloadConfig();
 		config = new APConfig(this.getConfig());
 	}
+	
+	@Override
+	public String getCommandPrefix() {
+		return "auxprotect";
+	}
 }

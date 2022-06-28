@@ -15,7 +15,7 @@ public class ActivityResults extends Results {
 	private final long rangeEnd;
 
 	public ActivityResults(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player) {
-		super(plugin, entries, player, "auxprotect");
+		super(plugin, entries, player);
 
 		rangeEnd = entries.get(0).getTime();
 

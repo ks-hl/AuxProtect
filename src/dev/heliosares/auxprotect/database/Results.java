@@ -25,16 +25,13 @@ public class Results {
 	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
-	final String commandPrefix;
+	private static String commandPrefix;
 
-	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player, String commandPrefix) {
+	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player) {
 		this.entries = entries;
 		this.player = player;
 		this.plugin = plugin;
-		if (!commandPrefix.startsWith("/")) {
-			commandPrefix = "/" + commandPrefix;
-		}
-		this.commandPrefix = commandPrefix;
+		commandPrefix = "/" + plugin.getCommandPrefix();
 
 		boolean allNullWorld = true;
 		int count = 0;
@@ -92,10 +89,10 @@ public class Results {
 	}
 
 	public void sendEntry(DbEntry entry, int index) {
-		sendEntry(plugin, player, entry, index, commandPrefix);
+		sendEntry(plugin, player, entry, index);
 	}
 
-	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index, String commandPrefix) {
+	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index) {
 
 		ComponentBuilder message = new ComponentBuilder();
 		plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());

@@ -17,14 +17,19 @@ import org.bukkit.map.MinecraftFont;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class MoneySolver extends ChartRenderer {
 	private double[] values = new double[100];
 	private List<LocalDate> xDivs;
 
-	private MoneySolver(AuxProtectSpigot plugin, Player player, ArrayList<DbEntry> results, int time, String user) {
+	private MoneySolver(AuxProtectSpigot plugin, Player player, ArrayList<DbEntry> results, int time, String user)
+			throws IllegalArgumentException {
 		super(plugin, user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
+		if (results.size() < 3) {
+			throw new IllegalArgumentException();
+		}
 		long start = results.get(results.size() - 1).getTime();
 		long end = results.get(0).getTime();
 		long duration = end - start;
@@ -40,18 +45,26 @@ public class MoneySolver extends ChartRenderer {
 		for (int i = 0; i < 100; i++) {
 			while (true) {
 				DbEntry result = results.get(results.size() - 1 - resultsIndex);
+				if (!result.getAction().equals(EntryAction.MONEY)) {
+					continue;
+				}
 				if (result.getTime() > start + inc * i) {
 					break;
 				}
 				try {
-					currentMoney = Double.parseDouble(result.getData().substring(1).replaceAll(",", ""));
-				} catch (Exception e) {
-					try {
-						currentMoney = Double.parseDouble(result.getTargetUUID().substring(1).replaceAll(",", ""));
-					} catch (Exception e1) {
-						e1.printStackTrace();
-						return;
+					double multiplier = 1;
+					String parse = result.getData().replaceAll("[$,]", "").toLowerCase();
+					if (parse.endsWith("k")) {
+						multiplier = 1000;
+						parse = parse.substring(0, parse.length() - 1);
+					} else if (parse.endsWith("m")) {
+						multiplier = 1000000;
+						parse = parse.substring(0, parse.length() - 1);
 					}
+					currentMoney = Double.parseDouble(parse) * multiplier;
+				} catch (Exception e) {
+					plugin.print(e);
+					currentMoney = 0;
 				}
 				resultsIndex++;
 			}
@@ -123,8 +136,12 @@ public class MoneySolver extends ChartRenderer {
 		plugin.runSync(new Runnable() {
 			@Override
 			public void run() {
-				MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
-				player.getInventory().addItem(solver.asItem(player));
+				try {
+					MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
+					player.getInventory().addItem(solver.asItem(player));
+				} catch (IllegalArgumentException e) {
+					player.sendMessage(plugin.translate("lookup-noresults"));
+				}
 			}
 		});
 	}

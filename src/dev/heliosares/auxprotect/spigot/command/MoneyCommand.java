@@ -25,7 +25,8 @@ public class MoneyCommand implements CommandExecutor {
 		if (args.length == 3) {
 			time = args[2];
 		}
-		Bukkit.dispatchCommand(sender, String.format("ap lookup #money user:%s time:%s action:money", args[1], time));
+		Bukkit.dispatchCommand(sender, String
+				.format(plugin.getCommandPrefix() + " lookup #money user:%s time:%s action:money", args[1], time));
 		return true;
 	}
 }

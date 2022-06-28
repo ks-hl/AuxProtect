@@ -181,6 +181,9 @@ public class ChartRenderer extends MapRenderer {
 
 	@SuppressWarnings("deprecation")
 	void setPixelColor(MapCanvas canvas, int x, int y, Color color) {
+		if (color == null) {
+			color = bgColor;
+		}
 		if (plugin.getCompatabilityVersion() >= 19) {
 			canvas.setPixelColor(x, y, color);
 		} else {

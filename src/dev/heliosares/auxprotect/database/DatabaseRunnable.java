@@ -1,22 +1,20 @@
 package dev.heliosares.auxprotect.database;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public class DatabaseRunnable implements Runnable {
 	private ConcurrentLinkedQueue<DbEntry> queue;
-	private ConcurrentLinkedQueue<Runnable> lookupqueue;
 	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
 
 	public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
 		queue = new ConcurrentLinkedQueue<>();
-		lookupqueue = new ConcurrentLinkedQueue<>();
 		this.sqlManager = sqlManager;
 		this.plugin = plugin;
 	}
@@ -30,10 +28,6 @@ public class DatabaseRunnable implements Runnable {
 			return;
 		}
 		queue.add(entry);
-	}
-
-	public void scheduleLookup(Runnable runnable) {
-		lookupqueue.add(runnable);
 	}
 
 	private static HashMap<Table, Long> lastTimes = new HashMap<>();
@@ -79,23 +73,13 @@ public class DatabaseRunnable implements Runnable {
 			}
 			running = System.currentTimeMillis();
 
-			Runnable runnable;
-			while ((runnable = lookupqueue.poll()) != null) {
-				runnable.run();
-			}
-
 			checkPickupsForNew();
 
 			if (System.currentTimeMillis() - lastPolled > 3000 || queue.size() > 50) {
 				DbEntry entry;
 				long start = System.nanoTime();
-				ArrayList<DbEntry> entries = new ArrayList<>();
-				ArrayList<DbEntry> entriesLongterm = new ArrayList<>();
-				ArrayList<DbEntry> entriesAbandoned = new ArrayList<>();
-				ArrayList<DbEntry> entriesInventory = new ArrayList<>();
-				ArrayList<DbEntry> entriesCommands = new ArrayList<>();
-				ArrayList<DbEntry> entriesSpam = new ArrayList<>();
-				ArrayList<DbEntry> entriesPosition = new ArrayList<>();
+
+				HashMap<Table, ArrayList<DbEntry>> entriesHash = new HashMap<>();
 
 				lastPolled = System.currentTimeMillis();
 				while ((entry = queue.poll()) != null) {
@@ -114,73 +98,32 @@ public class DatabaseRunnable implements Runnable {
 						plugin.debug(debug, 2);
 					}
 
-					switch (entry.getAction().getTable()) {
-					case AUXPROTECT_ABANDONED:
-						entriesAbandoned.add(entry);
-						break;
-					case AUXPROTECT_INVENTORY:
-						entriesInventory.add(entry);
-						break;
-					case AUXPROTECT_SPAM:
-						entriesSpam.add(entry);
-						break;
-					case AUXPROTECT_LONGTERM:
-						entriesLongterm.add(entry);
-						break;
-					case AUXPROTECT_COMMANDS:
-						entriesCommands.add(entry);
-						break;
-					case AUXPROTECT_POSITION:
-						entriesPosition.add(entry);
-						break;
-					case AUXPROTECT_MAIN:
-						entries.add(entry);
-						break;
-					default:
-						plugin.warning("Unknown table " + entry.getAction().getTable().toString()
-								+ ". This is bad. (DatabaseRunnable)");
+					Table table = entry.getAction().getTable();
+
+					if (table == null) {
 						continue;
 					}
+
+					ArrayList<DbEntry> entriesList = entriesHash.get(table);
+					if (entriesList == null) {
+						entriesList = new ArrayList<>();
+					}
+					entriesList.add(entry);
+					entriesHash.put(table, entriesList);
 				}
 
-				try {
-					if (entries.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_MAIN, entries);
-						plugin.debug(debugLogStatement(start, entries.size(), Table.AUXPROTECT_MAIN), 1);
+				for (Entry<Table, ArrayList<DbEntry>> entryPair : entriesHash.entrySet()) {
+					try {
+						int size = entryPair.getValue().size();
+						if (size == 0) {
+							continue;
+						}
+						sqlManager.put(entryPair.getKey(), entryPair.getValue());
+						plugin.debug(debugLogStatement(start, size, entryPair.getKey()), 1);
 						start = System.nanoTime();
+					} catch (Exception e) {
+						plugin.print(e);
 					}
-					if (entriesAbandoned.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_ABANDONED, entriesAbandoned);
-						plugin.debug(debugLogStatement(start, entriesAbandoned.size(), Table.AUXPROTECT_ABANDONED), 1);
-						start = System.nanoTime();
-					}
-					if (entriesInventory.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_INVENTORY, entriesInventory);
-						plugin.debug(debugLogStatement(start, entriesInventory.size(), Table.AUXPROTECT_INVENTORY), 1);
-						start = System.nanoTime();
-					}
-					if (entriesSpam.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_SPAM, entriesSpam);
-						plugin.debug(debugLogStatement(start, entriesSpam.size(), Table.AUXPROTECT_SPAM), 1);
-						start = System.nanoTime();
-					}
-					if (entriesLongterm.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_LONGTERM, entriesLongterm);
-						plugin.debug(debugLogStatement(start, entriesLongterm.size(), Table.AUXPROTECT_LONGTERM), 1);
-						start = System.nanoTime();
-					}
-					if (entriesCommands.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_COMMANDS, entriesCommands);
-						plugin.debug(debugLogStatement(start, entriesCommands.size(), Table.AUXPROTECT_COMMANDS), 1);
-						start = System.nanoTime();
-					}
-					if (entriesPosition.size() > 0) {
-						sqlManager.put(Table.AUXPROTECT_POSITION, entriesPosition);
-						plugin.debug(debugLogStatement(start, entriesPosition.size(), Table.AUXPROTECT_POSITION), 1);
-						start = System.nanoTime();
-					}
-				} catch (SQLException e) {
-					plugin.print(e);
 				}
 			}
 		} catch (Exception e) {

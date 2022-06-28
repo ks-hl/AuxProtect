@@ -14,7 +14,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 public class XrayResults extends Results {
 
 	public XrayResults(IAuxProtect plugin, ArrayList<DbEntry> entries, CommandSender player) {
-		super(plugin, entries, new MySender(player), "ap");
+		super(plugin, entries, new MySender(player));
 	}
 
 	public DbEntry getEntry(int index) {

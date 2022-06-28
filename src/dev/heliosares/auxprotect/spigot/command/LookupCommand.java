@@ -531,7 +531,7 @@ public class LookupCommand {
 					RetentionSolver.showRetention(plugin, sender, rs, startTime, endTime);
 				} else {
 					String uuid = sender.getUniqueId().toString();
-					Results result = new Results(plugin, rs, sender, sender.isBungee() ? "apb" : "ap");
+					Results result = new Results(plugin, rs, sender);
 					result.showPage(1, 4);
 					results.put(uuid, result);
 				}

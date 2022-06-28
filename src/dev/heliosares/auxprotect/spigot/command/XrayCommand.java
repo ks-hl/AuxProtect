@@ -188,7 +188,7 @@ public class XrayCommand implements CommandExecutor {
 									boolean validWarning = false;
 									for (DbEntry warn : localHits) {
 										if (warn.getUserUUID().equals(en.getUserUUID())) {
-											Results.sendEntry(plugin, new MySender(sender), warn, 0, "auxprotect");
+											Results.sendEntry(plugin, new MySender(sender), warn, 0);
 											validWarning = true;
 										}
 									}
@@ -240,8 +240,9 @@ public class XrayCommand implements CommandExecutor {
 							new BukkitRunnable() {
 								@Override
 								public void run() {
-									Bukkit.getServer().dispatchCommand(sender, (String.format("ap tp %d %d %d %s %d %d",
-											newEnt.x, newEnt.y, newEnt.z, newEnt.world, 45, 0)));
+									Bukkit.getServer().dispatchCommand(sender,
+											(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d",
+													newEnt.x, newEnt.y, newEnt.z, newEnt.world, 45, 0)));
 								}
 							}.runTask(plugin);
 						}
