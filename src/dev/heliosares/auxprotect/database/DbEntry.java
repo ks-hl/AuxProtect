@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
+import javax.annotation.Nonnull;
+
 import org.bukkit.Location;
 
 public class DbEntry {
@@ -79,16 +81,20 @@ public class DbEntry {
 	 * @param state       Specifies the state of EntryAction (i.e +mount vs -mount),
 	 *                    if applicable, otherwise false.
 	 * 
+	 * @param location    Should not be null. Will throw NullPointerException
+	 * 
 	 * @param targetLabel The label of the target, see userLabel for details.
 	 * 
 	 * @param data        Extra data about your entry. This is stored as plain text
 	 *                    so use sparingly.
+	 * 
+	 * @throws NullPointerException
 	 */
-	public DbEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel,
-			String suplmemental) {
+	public DbEntry(String userLabel, EntryAction action, boolean state, @Nonnull Location location, String targetLabel,
+			String data) throws NullPointerException {
 		this(userLabel, action, state, location.getWorld().getName(), location.getBlockX(), location.getBlockY(),
 				location.getBlockZ(), (int) Math.round(location.getPitch()), (int) Math.round(location.getYaw()),
-				targetLabel, suplmemental);
+				targetLabel, data);
 	}
 
 	protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,

@@ -7,6 +7,8 @@ import java.util.UUID;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
@@ -187,8 +189,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory > config
 									.getInventoryInterval()) {
 								apPlayer.lastLoggedInventory = System.currentTimeMillis();
-								dbRunnable.add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.INVENTORY,
-										false, apPlayer.player.getLocation(), "periodic",
+								dbRunnable.add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player),
+										EntryAction.INVENTORY, false, apPlayer.player.getLocation(), "periodic",
 										InvSerialization.playerToBase64(apPlayer.player)));
 							}
 						}
@@ -260,8 +262,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 										}
 									}
 									info(msg);
-									add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
-											apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+									add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT,
+											false, apPlayer.player.getLocation(), "inactive",
+											inactive + "/" + tallied));
 								}
 							}
 
@@ -280,7 +283,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 			@Override
 			public void run() {
-				if (config.shouldCheckForUpdates() && System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
+				if (config.shouldCheckForUpdates()
+						&& System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
 					lastCheckedForUpdate = System.currentTimeMillis();
 					debug("Checking for updates...", 1);
 					String newVersion = UpdateChecker.getVersion(AuxProtectSpigot.this, 99147);
@@ -512,6 +516,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		if (o instanceof Container) {
 			return "#" + ((Container) o).getBlock().getType().toString().toLowerCase();
 		}
+		if (o instanceof Block) {
+			return "#" + ((Block) o).getType().toString().toLowerCase();
+		}
+		if (o instanceof Material) {
+			return "#" + ((Material) o).toString().toLowerCase();
+		}
 		return "#null";
 	}
 
@@ -568,7 +578,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		super.reloadConfig();
 		config = new APConfig(this.getConfig());
 	}
-	
+
 	@Override
 	public String getCommandPrefix() {
 		return "auxprotect";

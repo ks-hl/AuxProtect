@@ -2,8 +2,9 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import java.util.ArrayList;
 
+import org.bukkit.Location;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Projectile;
 import org.bukkit.entity.ThrowableProjectile;
 import org.bukkit.entity.ThrownPotion;
@@ -14,6 +15,7 @@ import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerPickupArrowEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.projectiles.BlockProjectileSource;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -39,13 +41,7 @@ public class ProjectileListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onProjectileLaunchEvent(ProjectileLaunchEvent e) {
-		if (!(e.getEntity().getShooter() instanceof Player)) {
-			return;
-		}
-		if (!whitelist.contains(e.getEntity().getType())) {
-			return;
-		}
-		logEntity(e.getEntity(), EntryAction.LAUNCH, true);
+		logEntity(null, e.getEntity(), EntryAction.LAUNCH, true);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -53,28 +49,43 @@ public class ProjectileListener implements Listener {
 		if (e.getHitBlock() == null) {
 			return;
 		}
-		if (!(e.getEntity().getShooter() instanceof Player)) {
-			return;
-		}
-		if (!whitelist.contains(e.getEntity().getType())) {
-			return;
-		}
-		logEntity(e.getEntity(), EntryAction.LAND, false);
+		logEntity(null, e.getEntity(), EntryAction.LAND, false);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPlayerPickupArrowEvent(PlayerPickupArrowEvent e) {
-		logEntity(e.getArrow(), EntryAction.GRAB, false);
+		logEntity(e.getPlayer(), e.getArrow(), EntryAction.GRAB, false);
 	}
 
-	private void logEntity(Projectile entity, EntryAction action, boolean logData) {
-		Player shooter = (Player) entity.getShooter();
-		String targetName = AuxProtectSpigot.getLabel(entity);
+	private void logEntity(LivingEntity actor, Projectile entity, EntryAction action, boolean logData) {
+		if (entity == null || !whitelist.contains(entity.getType())) {
+			return;
+		}
+		String actorLabel = null;
+		Location location = null;
+		if (actor == null) {
+			if (entity.getShooter() == null) {
+				return;
+			}
+			if (entity.getShooter() instanceof BlockProjectileSource) {
+				BlockProjectileSource shooter = (BlockProjectileSource) entity.getShooter();
+				actorLabel = AuxProtectSpigot.getLabel(shooter.getBlock());
+				location = shooter.getBlock().getLocation();
+			} else if (entity.getShooter() instanceof LivingEntity) {
+				LivingEntity shooter = (LivingEntity) entity.getShooter();
+				actorLabel = AuxProtectSpigot.getLabel(shooter);
+				location = shooter.getLocation();
+			} else {
+				return;
+			}
+		} else {
+			actorLabel = AuxProtectSpigot.getLabel(actor);
+			location = actor.getLocation();
+		}
 		ItemStack item = null;
 		if (entity instanceof ThrowableProjectile) {
 			item = ((ThrowableProjectile) entity).getItem();
-		}
-		if (entity instanceof ThrownPotion) {
+		} else if (entity instanceof ThrownPotion) {
 			item = ((ThrownPotion) entity).getItem();
 		}
 		String data = null;
@@ -82,7 +93,7 @@ public class ProjectileListener implements Listener {
 			data = InvSerialization.toBase64(item);
 		}
 
-		DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(shooter), action, false, shooter.getLocation(), targetName,
+		DbEntry entry = new DbEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity),
 				data == null ? "" : data);
 		plugin.add(entry);
 	}

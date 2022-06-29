@@ -7,8 +7,11 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
+import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.api.JobsExpGainEvent;
 import com.gamingmesh.jobs.api.JobsPrePaymentEvent;
+import com.gamingmesh.jobs.container.CurrencyType;
+import com.gamingmesh.jobs.container.Job;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -23,20 +26,51 @@ public class JobsListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onPay(JobsPrePaymentEvent e) {
-		logGain(e.getPlayer(), e.getJob().getName(), '$', e.getAmount());
+		logGain(e.getPlayer(), e.getJob(), CurrencyType.MONEY, e.getAmount());
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onXP(JobsExpGainEvent e) {
-		logGain(e.getPlayer(), e.getJob().getName(), 'x', e.getExp());
+		logGain(e.getPlayer(), e.getJob(), CurrencyType.EXP, e.getExp());
 	}
 
-	private void logGain(OfflinePlayer player, String job, char type, double value) {
-		Location location = null;
-		if (player instanceof Player) {
-			location = ((Player) player).getLocation();
+	private void logGain(OfflinePlayer oplayer, Job job, CurrencyType type, double value) {
+		if (value < 1E-4) {
+			return;
 		}
-		plugin.add(new JobsEntry(AuxProtectSpigot.getLabel(player), location, job, type, value));
+		Location location = null;
+		double boost = 1;
+		if (oplayer instanceof Player) {
+			Player player = (Player) oplayer;
+			location = player.getLocation();
+			try {
+				boost += Jobs.getPlayerManager().getBoost(Jobs.getPlayerManager().getJobsPlayer(player), job, type);
+			} catch (Exception e1) {
+				plugin.warning("Error while getting Jobs boost");
+				plugin.print(e1);
+			}
+		}
+		char typechar = '?';
+		switch (type) {
+		case MONEY:
+			typechar = '$';
+			break;
+		case EXP:
+			typechar = 'x';
+			break;
+		case POINTS:
+			typechar = '*';
+			break;
+		default:
+			break;
+		}
+		plugin.debug(String.format("Logging gain - Player:%s Job:%s Amount:%f Boost:%f", oplayer.getName(),
+				job.getName(), value, boost), 5);
+		if (location == null) {
+			plugin.add(new JobsEntry(AuxProtectSpigot.getLabel(oplayer), job.getName(), typechar, value));
+		} else {
+			plugin.add(new JobsEntry(AuxProtectSpigot.getLabel(oplayer), location, job.getName(), typechar, value));
+		}
 	}
 
 	public static class JobsEntry extends DbEntry {
@@ -46,6 +80,12 @@ public class JobsListener implements Listener {
 
 		public JobsEntry(String userLabel, Location location, String jobName, char type, double value) {
 			super(userLabel, EntryAction.JOBS, false, location, jobName, "");
+			this.value = value;
+			this.type = type;
+		}
+
+		public JobsEntry(String userLabel, String jobName, char type, double value) {
+			super(userLabel, EntryAction.JOBS, false, jobName, "");
 			this.value = value;
 			this.type = type;
 		}

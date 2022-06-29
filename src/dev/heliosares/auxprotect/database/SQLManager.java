@@ -151,7 +151,7 @@ public class SQLManager {
 	public void close() {
 		isConnected = false;
 		if (connection != null) {
-			checkAsync();
+			// checkAsync();
 			synchronized (connection) {
 				holdingConnectionSince = System.currentTimeMillis();
 				holdingConnection = "close";
