@@ -7,11 +7,20 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 public class DatabaseRunnable implements Runnable {
 	private ConcurrentLinkedQueue<DbEntry> queue;
 	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
+	private static HashMap<Table, Long> lastTimes = new HashMap<>();
+	private long running = 0;
+	private long lastWarn = 0;
+	private long lastPolled = 0;
+	private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
+	private static final long pickupCacheTime = 1500;
+	private ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
+	private static final long jobsCacheTime = 10000;
 
 	public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
 		queue = new ConcurrentLinkedQueue<>();
@@ -27,10 +36,12 @@ public class DatabaseRunnable implements Runnable {
 			this.addPickup((PickupEntry) entry);
 			return;
 		}
+		if (entry instanceof JobsEntry) {
+			this.addJobs((JobsEntry) entry);
+			return;
+		}
 		queue.add(entry);
 	}
-
-	private static HashMap<Table, Long> lastTimes = new HashMap<>();
 
 	public static synchronized long getTime(Table table) {
 		long time = System.currentTimeMillis();
@@ -45,11 +56,6 @@ public class DatabaseRunnable implements Runnable {
 	public int queueSize() {
 		return queue.size();
 	}
-
-	private long running = 0;
-	private long lastWarn = 0;
-
-	private long lastPolled = 0;
 
 	@Override
 	public void run() {
@@ -73,7 +79,7 @@ public class DatabaseRunnable implements Runnable {
 			}
 			running = System.currentTimeMillis();
 
-			checkPickupsForNew();
+			checkCache();
 
 			if (System.currentTimeMillis() - lastPolled > 3000 || queue.size() > 50) {
 				DbEntry entry;
@@ -140,31 +146,35 @@ public class DatabaseRunnable implements Runnable {
 				+ (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)";
 	}
 
-	private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
-
-	private void checkPickupsForNew() {
+	private void checkCache() {
 		synchronized (pickups) {
 			Iterator<PickupEntry> itr = pickups.iterator();
 			while (itr.hasNext()) {
 				PickupEntry next = itr.next();
-				if (next.getTime() < System.currentTimeMillis() - 1500) {
+				if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
 					queue.add(next);
 					pickups.remove(next);
+				}
+			}
+		}
+		synchronized (jobsentries) {
+			Iterator<JobsEntry> itr = jobsentries.iterator();
+			while (itr.hasNext()) {
+				JobsEntry next = itr.next();
+				if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
+					queue.add(next);
+					jobsentries.remove(next);
 				}
 			}
 		}
 	}
 
 	private void addPickup(PickupEntry entry) {
-		if (!entry.getAction().isEnabled()) {
-			return;
-		}
-
 		synchronized (pickups) {
 			Iterator<PickupEntry> itr = pickups.iterator();
 			while (itr.hasNext()) {
 				PickupEntry next = itr.next();
-				if (next.getTime() < System.currentTimeMillis() - 1500) {
+				if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
 					continue;
 				}
 				if (next.getAction() != entry.getAction()) {
@@ -182,6 +192,22 @@ public class DatabaseRunnable implements Runnable {
 				}
 			}
 			pickups.add(entry);
+		}
+	}
+
+	private void addJobs(JobsEntry entry) {
+		synchronized (jobsentries) {
+			Iterator<JobsEntry> itr = jobsentries.iterator();
+			while (itr.hasNext()) {
+				JobsEntry next = itr.next();
+				if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
+					continue;
+				}
+				if (next.add(entry)) {
+					return;
+				}
+			}
+			jobsentries.add(entry);
 		}
 	}
 }

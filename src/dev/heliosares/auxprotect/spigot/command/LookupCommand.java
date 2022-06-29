@@ -361,6 +361,7 @@ public class LookupCommand {
 				if (count) {
 					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
 					double totalMoney = 0;
+					double totalExp = 0;
 					int dropcount = 0;
 					int pickupcount = 0;
 					for (DbEntry entry : rs) {
@@ -391,16 +392,22 @@ public class LookupCommand {
 									}
 								}
 							}
-						}
-						if (entry.getAction().equals(EntryAction.AHBUY)) {
+						} else if (entry.getAction().equals(EntryAction.JOBS)) {
+							char type = entry.getData().charAt(0);
+							double value = Double.parseDouble(entry.getData().substring(1));
+							if (type == 'x') {
+								totalExp += value;
+							} else if (type == '$') {
+								totalMoney += value;
+							}
+						} else if (entry.getAction().equals(EntryAction.AHBUY)) {
 							String[] parts = entry.getData().split(" ");
 							try {
 								double each = Double.parseDouble(parts[parts.length - 1].substring(1));
 								totalMoney += each;
 							} catch (Exception ignored) {
 							}
-						}
-						if (entry.getAction().equals(EntryAction.DROP)
+						} else if (entry.getAction().equals(EntryAction.DROP)
 								|| entry.getAction().equals(EntryAction.PICKUP)) {
 							int quantity = -1;
 							try {
@@ -420,8 +427,11 @@ public class LookupCommand {
 					if (totalMoney != 0 && plugin instanceof AuxProtectSpigot) {
 						boolean negative = totalMoney < 0;
 						totalMoney = Math.abs(totalMoney);
-						sender.sendMessage(
-								"§9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+						sender.sendMessage("§fTotal Money: §9" + (negative ? "-" : "")
+								+ ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+					}
+					if (totalExp != 0) {
+						sender.sendMessage("§fTotal Experience: §9" + Math.round(totalExp * 100f) / 100f);
 					}
 					String msg = "";
 					if (pickupcount > 0) {

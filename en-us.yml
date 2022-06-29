@@ -88,6 +88,7 @@ actions:
   money: money
   gamemode: switched gamemode to
   pos: position
+  jobs: earned from job
   activity: activity
   hurt: hurt
   inv:

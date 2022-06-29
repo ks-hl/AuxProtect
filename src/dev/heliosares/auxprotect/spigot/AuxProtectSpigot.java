@@ -367,6 +367,16 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			} else {
 				Telemetry.reportHook(name, false);
 			}
+
+			name = "Jobs";
+			plugin = getServer().getPluginManager().getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new JobsListener(this), this);
+				info(name + " hooked");
+				Telemetry.reportHook(name, true);
+			} else {
+				Telemetry.reportHook(name, false);
+			}
 		} catch (Exception e) {
 			warning("Exception while hooking other plugins");
 			print(e);

@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.1.5-pre2</version>
+	<version>1.1.5-pre3</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -143,6 +143,12 @@
 			<groupId>com.github.7sat</groupId>
 			<artifactId>SSDynamicShop</artifactId>
 			<version>f99e33d4e4</version>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.github.Zrips</groupId>
+			<artifactId>Jobs</artifactId>
+			<version>4.17.2</version>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>
