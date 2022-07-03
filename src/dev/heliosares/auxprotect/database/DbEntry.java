@@ -8,25 +8,9 @@ public class DbEntry {
 
 	private final long time;
 
-	public long getTime() {
-		return time;
-	}
-
-	public EntryAction getAction() {
-		return action;
-	}
-
-	public boolean getState() {
-		return state;
-	}
-
-	public String getData() {
-		return data;
-	}
-
 	private final EntryAction action;
 	private final boolean state;
-	private final String data;
+	private String data;
 
 	public final String world;
 	public final int x;
@@ -117,6 +101,26 @@ public class DbEntry {
 	public static DbEntry createXrayRecord(DbEntry en, int rating, String data) {
 		return new DbEntry(en.getTime(), en.getUid(), EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, 0, 180,
 				rating + "", -1, data);
+	}
+
+	public long getTime() {
+		return time;
+	}
+
+	public EntryAction getAction() {
+		return action;
+	}
+
+	public boolean getState() {
+		return state;
+	}
+
+	public String getData() {
+		return data;
+	}
+
+	public void setData(String data) {
+		this.data = data;
 	}
 
 	public String getUser() {

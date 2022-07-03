@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public enum Table {
-	AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_INVENTORY,
+	AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
 	AUXPROTECT_COMMANDS, AUXPROTECT_POSITION,
 
 	AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION;
@@ -29,6 +29,7 @@ public enum Table {
 		case AUXPROTECT_SPAM:
 		case AUXPROTECT_LONGTERM:
 		case AUXPROTECT_ABANDONED:
+		case AUXPROTECT_XRAY:
 		case AUXPROTECT_INVENTORY:
 		case AUXPROTECT_COMMANDS:
 		case AUXPROTECT_POSITION:
@@ -45,6 +46,7 @@ public enum Table {
 		case AUXPROTECT_INVENTORY:
 		case AUXPROTECT_SPAM:
 		case AUXPROTECT_API:
+		case AUXPROTECT_XRAY:
 			return true;
 		default:
 			return false;
@@ -70,6 +72,7 @@ public enum Table {
 		switch (this) {
 		case AUXPROTECT_MAIN:
 		case AUXPROTECT_ABANDONED:
+		case AUXPROTECT_XRAY:
 		case AUXPROTECT_INVENTORY:
 		case AUXPROTECT_SPAM:
 		case AUXPROTECT_COMMANDS:
@@ -93,6 +96,7 @@ public enum Table {
 	public boolean hasActionId() {
 		switch (this) {
 		case AUXPROTECT_COMMANDS:
+		case AUXPROTECT_XRAY:
 			return false;
 		default:
 			return true;
@@ -126,29 +130,93 @@ public enum Table {
 			return "(time, uid, action_id, world_id, x, y, z, target_id)";
 		} else if (this == Table.AUXPROTECT_POSITION) {
 			return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id)";
+		} else if (this == Table.AUXPROTECT_XRAY) {
+			return "(time, uid, world_id, x, y, z, target_id, rating, data)";
 		}
 		return null;
 	}
 
-	public String getValuesTemplate(boolean bungee) {
+	public static String getValuesTemplate(int numColumns) {
+		if (numColumns <= 0) {
+			return null;
+		}
+		String output = "(";
+		for (int i = 0; i < numColumns; i++) {
+			if (i > 0) {
+				output += ", ";
+			}
+			output += "?";
+		}
+		output += ")";
+		return output;
+	}
+
+	public int getNumColumns(boolean bungee) {
 		if (this == Table.AUXPROTECT_LONGTERM) {
-			return "(?, ?, ?, ?)";
+			return 4;
 		} else if (this == Table.AUXPROTECT_COMMANDS) {
 			if (bungee) {
-				return "(?, ?, ?)";
+				return 3;
 			}
-			return "(?, ?, ?, ?, ?, ?, ?)";
+			return 7;
 		} else if (bungee) {
-			return "(?, ?, ?, ?, ?)";
+			return 5;
 		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_INVENTORY
 				|| this == Table.AUXPROTECT_API) {
-			return "(?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			return 9;
 		} else if (this == Table.AUXPROTECT_ABANDONED) {
-			return "(?, ?, ?, ?, ?, ?, ?, ?)";
+			return 8;
 		} else if (this == Table.AUXPROTECT_POSITION) {
-			return "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+			return 10;
+		} else if (this == Table.AUXPROTECT_XRAY) {
+			return 9;
 		}
-		return null;
+		return -1;
+	}
+
+	public String getValuesTemplate(boolean bungee) {
+		return getValuesTemplate(getNumColumns(bungee));
+	}
+
+	public String getSQLCreateString(IAuxProtect plugin) {
+		if (!this.hasAPEntries()) {
+			return null;
+		}
+		String stmt = "CREATE TABLE IF NOT EXISTS " + toString() + " (\n";
+		stmt += "    time BIGINT(255)";
+		stmt += ",\n    uid integer";
+		if (hasActionId()) {
+			stmt += ",\n    action_id SMALLINT";
+		}
+		if (!plugin.isBungee() && hasLocation()) {
+			stmt += ",\n    world_id SMALLINT";
+			stmt += ",\n    x INTEGER";
+			stmt += ",\n    y SMALLINT";
+			stmt += ",\n    z INTEGER";
+		}
+		if (hasLook()) {
+			stmt += ",\n    pitch SMALLINT";
+			stmt += ",\n    yaw SMALLINT";
+		}
+		if (hasStringTarget()) {
+			stmt += ",\n    target ";
+			if (this == AUXPROTECT_COMMANDS) {
+				stmt += "LONGTEXT";
+			} else {
+				stmt += "varchar(255)";
+			}
+		} else {
+			stmt += ",\n    target_id integer";
+		}
+		if (this == AUXPROTECT_XRAY) {
+			stmt += ",\n    rating SMALLINT";
+		}
+		if (hasData()) {
+			stmt += ",\n    data LONGTEXT";
+		}
+		stmt += "\n);";
+
+		return stmt;
 	}
 
 }

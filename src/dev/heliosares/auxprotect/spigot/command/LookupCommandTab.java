@@ -13,7 +13,7 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -78,7 +78,7 @@ public class LookupCommandTab implements TabCompleter {
 				possible.add("target:" + material.toString().toLowerCase());
 			}
 		}
-		if (MyPermission.ADMIN.hasPermission(sender)) {
+		if (APPermission.ADMIN.hasPermission(sender)) {
 			possible.add("db:");
 			if (currentArg.startsWith("db:")) {
 				for (Table table : Table.values()) {
@@ -114,21 +114,21 @@ public class LookupCommandTab implements TabCompleter {
 		}
 
 		if (currentArg.startsWith("#")) {
-			if (MyPermission.LOOKUP_XRAY.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
+			if (APPermission.LOOKUP_XRAY.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
 				possible.add("#xray");
 			}
-			if (MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
+			if (APPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 				possible.add("#pt");
 			}
-			if (MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
+			if (APPermission.LOOKUP_MONEY.hasPermission(sender)) {
 				possible.add("#money");
 			}
 			possible.add("#bw");
 			possible.add("#count");
-			if (MyPermission.LOOKUP_ACTIVITY.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
+			if (APPermission.LOOKUP_ACTIVITY.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
 				possible.add("#activity");
 			}
-			if (MyPermission.LOOKUP_RETENTION.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
+			if (APPermission.LOOKUP_RETENTION.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
 				possible.add("#retention");
 			}
 		}

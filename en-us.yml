@@ -52,10 +52,16 @@ playtime-nouser: '&cYou must specify a user for a playtime lookup.'
 xray-rate-cancelled: '&9Rating cancelled.'
 xray-rate-overwrite: '&9Overwrote existing entry.'
 xray-rate-ignore: '&9Ignoring existing entry.'
-xray-rate-conflic: '&cFound the following conflicting hits:'
+xray-rate-nochange: '&cThat is already the rating for that entry.'
 xray-rate-written: '&aRating successfully written.'
-xray-done: '&aYou''re all done with xray checks!'
+xray-done: '&aThere are no more xray checks!'
+xray-notfound: '&cNo results found at that time'
+xray-toomany: '&cToo many results found'
+xray-already-rated: '&cThis entry has already been rated. Would you like to rate anyway?'
+xray-click-to-change: '&aClick to rate'
 inactive-alert: '&8[&4Server&8] &e%s &7may be inactive. &e%d &7out of &e%d &7minutes inactive.'
+yes: 'Yes'
+no: 'No'
 
 
 actions:
@@ -86,6 +92,7 @@ actions:
   kitpvpkill: kill
   recover: recovered inv of
   money: money
+  pay: paid
   gamemode: switched gamemode to
   pos: position
   jobs: earned from job

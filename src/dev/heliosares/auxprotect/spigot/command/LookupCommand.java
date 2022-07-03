@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.spigot.command;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -11,7 +12,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -20,6 +21,7 @@ import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.RetentionSolver;
@@ -152,28 +154,28 @@ public class LookupCommand {
 						bw = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#activity")) {
-						if (!MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+						if (!APPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("no-permission-flag"));
 							return;
 						}
 						activity = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#pt")) {
-						if (!MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
+						if (!APPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("no-permission-flag"));
 							return;
 						}
 						playtime = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#money")) {
-						if (!MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
+						if (!APPermission.LOOKUP_MONEY.hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("no-permission-flag"));
 							return;
 						}
 						money = true;
 						continue;
 					} else if (args[i].equalsIgnoreCase("#retention")) {
-						if (!MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+						if (!APPermission.LOOKUP_RETENTION.hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("no-permission-flag"));
 							return;
 						}
@@ -201,7 +203,7 @@ public class LookupCommand {
 						break;
 					}
 					if (token.equalsIgnoreCase("db")) {
-						if (!MyPermission.ADMIN.hasPermission(sender)) {
+						if (!APPermission.ADMIN.hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("no-permission"));
 							return;
 						}
@@ -217,7 +219,7 @@ public class LookupCommand {
 							if (action == null) {
 								continue;
 							}
-							MyPermission actionNode = MyPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase());
+							APPermission actionNode = APPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase());
 							if (!actionNode.hasPermission(sender)) {
 								sender.sendMessage(String.format(plugin.translate("lookup-action-perm") + " (%s)",
 										param, actionNode.node));
@@ -234,9 +236,12 @@ public class LookupCommand {
 								return;
 							}
 
-							long time1 = TimeUtil.convertTime(range[0]);
-							long time2 = TimeUtil.convertTime(range[1]);
-							if (time1 < 0 || time2 < 0) {
+							long time1;
+							long time2;
+							try {
+								time1 = TimeUtil.stringToMillis(range[0]);
+								time2 = TimeUtil.stringToMillis(range[1]);
+							} catch (NumberFormatException e) {
 								sender.sendMessage(
 										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 								return;
@@ -256,7 +261,7 @@ public class LookupCommand {
 							params.put("after", startTime + "");
 							continue;
 						}
-						long time = TimeUtil.convertTime(param);
+						long time = TimeUtil.stringToMillis(param);
 						if (time < 0) {
 							sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 							return;
@@ -279,7 +284,7 @@ public class LookupCommand {
 				}
 				if (!params.containsKey("action")) {
 					for (EntryAction action : EntryAction.values()) {
-						if (action.getTable() == Table.AUXPROTECT_MAIN && !MyPermission.LOOKUP_ACTION
+						if (action.getTable() == Table.AUXPROTECT_MAIN && !APPermission.LOOKUP_ACTION
 								.dot(action.toString().toLowerCase()).hasPermission(sender)) {
 							sender.sendMessage(plugin.translate("lookup-action-none"));
 							return;
@@ -446,6 +451,7 @@ public class LookupCommand {
 					if (msg.length() > 0) {
 						sender.sendMessage(msg);
 					}
+					return;
 				} else if (count1) {
 					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
 					HashMap<String, Double> values = new HashMap<>();
@@ -498,6 +504,7 @@ public class LookupCommand {
 						sender.sendMessage(entry.getKey() + ": $" + Math.round(entry.getValue() * 100) / 100.0 + " (x"
 								+ qtys.get(entry.getKey()) + ")");
 					}
+					return;
 				} else if (playtime) {
 					String users = params.get("user");
 					if (users == null) {
@@ -510,16 +517,37 @@ public class LookupCommand {
 					}
 					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, startTime,
 							(int) Math.round((endTime - startTime) / (1000 * 3600)), users));
+					return;
 				} else if (activity) {
 					String uuid = sender.getUniqueId().toString();
 					Results result = new ActivityResults(plugin, rs, sender);
 					result.showPage(result.getNumPages(4), 4);
 					results.put(uuid, result);
-//					String users = params.get("user");
-//					sender.sendMessage(ActivitySolver.solveActivity(rs, startTime,
-//							(int) Math.round((endTime - startTime) / 60000L), users));
+					return;
 				} else if (xray) {
-					sender.sendMessage(XraySolver.solvePlaytime(rs, plugin));
+					boolean differentUsers = false;
+					int user = -1;
+					for (DbEntry entry : rs) {
+						if (user < 0) {
+							user = entry.getUid();
+							continue;
+						}
+						if (user != entry.getUid()) {
+							differentUsers = true;
+							break;
+						}
+					}
+					if (differentUsers) {
+						sender.sendMessage(XraySolver.solvePlaytime(rs, plugin));
+						return;
+					}
+					Iterator<DbEntry> it = rs.iterator();
+					while (it.hasNext()) {
+						XrayEntry entry = (XrayEntry) it.next();
+						if (entry.getRating() < 0) {
+							rs.remove(entry);
+						}
+					}
 				} else if (money && !sender.isBungee()) {
 					String users = params.get("user");
 					if (users == null) {
@@ -533,12 +561,11 @@ public class LookupCommand {
 					if (sender.getSender() instanceof Player) {
 						MoneySolver.showMoney(plugin, (Player) sender.getSender(), rs,
 								(int) Math.round(startTime / (1000 * 3600)), users);
-					} else {
-						return;
 					}
-
+					return;
 				} else if (retention) {
 					RetentionSolver.showRetention(plugin, sender, rs, startTime, endTime);
+					return;
 				} else {
 					String uuid = sender.getUniqueId().toString();
 					Results result = new Results(plugin, rs, sender);

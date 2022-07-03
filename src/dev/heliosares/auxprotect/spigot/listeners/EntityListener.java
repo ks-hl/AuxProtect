@@ -31,7 +31,7 @@ import org.bukkit.projectiles.ProjectileSource;
 import org.spigotmc.event.entity.EntityDismountEvent;
 import org.spigotmc.event.entity.EntityMountEvent;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PickupEntry;
@@ -223,7 +223,7 @@ public class EntityListener implements Listener {
 
 			plugin.getAPPlayer(player).addActivity(1);
 
-			if (isChartMap(e.getItem().getItemStack()) && !MyPermission.LOOKUP_MONEY.hasPermission(player)) {
+			if (isChartMap(e.getItem().getItemStack()) && !APPermission.LOOKUP_MONEY.hasPermission(player)) {
 				e.setCancelled(true);
 				e.getItem().remove();
 			}

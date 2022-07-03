@@ -8,7 +8,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Experience;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -26,7 +26,7 @@ public class ClaimInvCommand implements CommandExecutor {
 	@SuppressWarnings("deprecation")
 	@Override
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-		if (args.length == 1 && MyPermission.INV_RECOVER.hasPermission(sender)) {
+		if (args.length == 1 && APPermission.INV_RECOVER.hasPermission(sender)) {
 			OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
 			if (target == null) {
 				sender.sendMessage("§cPlayer not found.");

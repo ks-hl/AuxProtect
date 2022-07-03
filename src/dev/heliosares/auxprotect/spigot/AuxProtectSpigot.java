@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.spigot;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
 import java.util.logging.Level;
@@ -22,11 +23,12 @@ import net.milkbowl.vault.economy.Economy;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.command.APCommand;
 import dev.heliosares.auxprotect.spigot.command.APCommandTab;
 import dev.heliosares.auxprotect.spigot.command.ClaimInvCommand;
@@ -55,6 +57,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	private static AuxProtectSpigot instance;
 
 	private static SQLManager sqlManager;
+	private VeinManager veinManager;
 
 	public String update;
 	long lastCheckedForUpdate;
@@ -133,6 +136,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		}
 
 		sqlManager = new SQLManager(this, uri, getConfig().getString("MySQL.table-prefix"), sqliteFile);
+		veinManager = new VeinManager();
 
 		new BukkitRunnable() {
 
@@ -151,6 +155,20 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 					setEnabled(false);
 					return;
 				}
+				if (EntryAction.VEIN.isEnabled()) {
+					try {
+						ArrayList<DbEntry> veins = sqlManager
+								.getAllUnratedXrayRecords(System.currentTimeMillis() - (3600000L * 24L * 7L));
+						if (veins != null) {
+							for (DbEntry vein : veins) {
+								veinManager.add((XrayEntry) vein);
+							}
+						}
+					} catch (Exception e) {
+						print(e);
+						return;
+					}
+				}
 
 				/*
 				 * for (Object command : getConfig().getList("purge-cmds")) { String cmd =
@@ -167,13 +185,95 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			}
 		}.runTaskAsynchronously(this);
 
-		if (!setupEconomy()) {
-			getLogger().info("Not using vault");
-		}
-
 		dbRunnable = new DatabaseRunnable(this, sqlManager);
 
 		getServer().getScheduler().runTaskTimerAsynchronously(this, dbRunnable, 60, 5);
+
+		getServer().getPluginManager().registerEvents(new ProjectileListener(this), this);
+		getServer().getPluginManager().registerEvents(new EntityListener(this), this);
+		getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
+		getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
+		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
+
+		if (setupEconomy()) {
+			Telemetry.reportHook(this, "Vault", true);
+		} else {
+			Telemetry.reportHook(this, "Vault", false);
+		}
+
+		try {
+			String name = "ShopGuiPlus";
+			Plugin plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "EconomyShopGUI";
+			plugin = getPlugin(name);
+			if (plugin == null) {
+				plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium");
+			}
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "DynamicShop";
+			plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new DynamicShopListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "ChestShop";
+			plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "AuctionHouse";
+			plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "Jobs";
+			plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new JobsListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+		} catch (Exception e) {
+			warning("Exception while hooking other plugins");
+			print(e);
+		}
+
+		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
+		this.getCommand("auxprotect").setExecutor(new APCommand(this));
+		this.getCommand("auxprotect").setTabCompleter(new APCommandTab(this));
+
+		if (!config.isPrivate()) {
+			EntryAction.ALERT.setEnabled(false);
+			EntryAction.CENSOR.setEnabled(false);
+			EntryAction.IGNOREABANDONED.setEnabled(false);
+			EntryAction.XRAYCHECK.setEnabled(false);
+			EntryAction.ACTIVITY.setEnabled(false);
+		}
 
 		new BukkitRunnable() {
 
@@ -251,13 +351,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 								}
 							}
 							if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-									&& !MyPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
+									&& !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
 								if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
 									apPlayer.lastNotifyInactive = System.currentTimeMillis();
 									String msg = String.format(lang.translate("inactive-alert"),
 											apPlayer.player.getName(), inactive, tallied);
 									for (Player player : Bukkit.getOnlinePlayers()) {
-										if (MyPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+										if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
 											player.sendMessage(msg);
 										}
 									}
@@ -300,7 +400,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 							update = newVersion;
 							if (newUpdate) {
 								for (Player player : Bukkit.getOnlinePlayers()) {
-									if (MyPermission.ADMIN.hasPermission(player)) {
+									if (APPermission.ADMIN.hasPermission(player)) {
 										AuxProtectSpigot.this.tellAboutUpdate(player);
 									}
 								}
@@ -311,92 +411,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 				}
 			}
 		}.runTaskTimerAsynchronously(this, 1 * 20, 10 * 20);
-
-		getServer().getPluginManager().registerEvents(new ProjectileListener(this), this);
-		getServer().getPluginManager().registerEvents(new EntityListener(this), this);
-		getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
-		getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
-		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
-
-		try {
-			String name = "ShopGuiPlus";
-			Plugin plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-
-			name = "EconomyShopGUI";
-			plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin == null) {
-				plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium");
-			}
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-
-			name = "DynamicShop";
-			plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new DynamicShopListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-
-			name = "ChestShop";
-			plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-
-			name = "AuctionHouse";
-			plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-
-			name = "Jobs";
-			plugin = getServer().getPluginManager().getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new JobsListener(this), this);
-				info(name + " hooked");
-				Telemetry.reportHook(name, true);
-			} else {
-				Telemetry.reportHook(name, false);
-			}
-		} catch (Exception e) {
-			warning("Exception while hooking other plugins");
-			print(e);
-		}
-
-		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
-		this.getCommand("auxprotect").setExecutor(new APCommand(this));
-		this.getCommand("auxprotect").setTabCompleter(new APCommandTab(this));
-
-		if (!config.isPrivate()) {
-			EntryAction.ALERT.setEnabled(false);
-			EntryAction.CENSOR.setEnabled(false);
-			EntryAction.IGNOREABANDONED.setEnabled(false);
-			EntryAction.XRAYCHECK.setEnabled(false);
-			EntryAction.ACTIVITY.setEnabled(false);
-		}
 
 		if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
 			debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
@@ -413,6 +427,15 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 				}
 			}.runTaskLater(this, (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50);
 		}
+	}
+
+	private Plugin getPlugin(String name) {
+		for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+			if (plugin.getName().equalsIgnoreCase(name)) {
+				return plugin;
+			}
+		}
+		return null;
 	}
 
 	private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
@@ -520,7 +543,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			return "#" + ((Block) o).getType().toString().toLowerCase();
 		}
 		if (o instanceof Material) {
-			return "#" + ((Material) o).toString().toLowerCase();
+			return ((Material) o).toString().toLowerCase();
 		}
 		return "#null";
 	}
@@ -555,8 +578,17 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	@Override
-	public void add(DbEntry dbEntry) {
-		dbRunnable.add(dbEntry);
+	public void add(DbEntry entry) {
+		if (entry instanceof XrayEntry) {
+			if (veinManager.add((XrayEntry) entry)) {
+				return;
+			}
+		}
+		dbRunnable.add(entry);
+	}
+
+	public VeinManager getVeinManager() {
+		return veinManager;
 	}
 
 	@Override

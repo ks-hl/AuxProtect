@@ -13,7 +13,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Results;
@@ -80,7 +80,7 @@ public class InvCommand implements CommandExecutor {
 			Inventory inv = Bukkit.getServer().createInventory(pane, 54, target.getName() + " "
 					+ TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()) + " ago.");
 			pane.setInventory(inv);
-			if (MyPermission.INV_RECOVER.hasPermission(sender)) {
+			if (APPermission.INV_RECOVER.hasPermission(sender)) {
 				if (targetO != null) {
 					pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, new Runnable() {
 						private long lastClick = 0;

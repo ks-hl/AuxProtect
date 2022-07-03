@@ -31,13 +31,20 @@ public class PurgeCommand {
 			return;
 		}
 		final Table table = table_;
-		long time = TimeUtil.convertTime(args[2]);
+		long time_ = 0;
+		try {
+			time_ = TimeUtil.stringToMillis(args[2]);
+		} catch (NumberFormatException e) {
+			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
+			return;
+		}
 
-		if (time < 1000 * 3600 * 24 * 14) {
+		if (time_ < 1000 * 3600 * 24 * 14) {
 			sender.sendMessage(plugin.translate("purge-time"));
 			return;
 		}
 
+		final long time = time_;
 		sender.sendMessage(String.format(plugin.translate("purge-purging"), table == null ? "all" : table.toString()));
 		plugin.runAsync(new Runnable() {
 

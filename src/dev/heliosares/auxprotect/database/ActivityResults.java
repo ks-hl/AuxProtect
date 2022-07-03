@@ -39,8 +39,8 @@ public class ActivityResults extends Results {
 		// long thisRangeStart = rangeStart + (page - 1) * millisperpage;
 		long thisRangeEnd = rangeEnd - (getNumPages(perpage_) - page) * millisperpage;
 
-		player.sendMessage(ActivitySolver.solveActivity(entries, Math.max(thisRangeEnd - millisperpage, rangeStart),
-				thisRangeEnd));
+		player.sendMessage(ActivitySolver.solveActivity(getEntries(),
+				Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd));
 
 		super.sendArrowKeys(page);
 	}

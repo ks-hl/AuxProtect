@@ -1,9 +1,9 @@
 name: AuxProtect
-version: 1.1.5-pre4
+version: 1.1.5-pre5
 main: dev.heliosares.auxprotect.spigot.AuxProtectSpigot
 description: A plugin designed to supplement CoreProtect in a few ways.
 api-version: 1.13
-softdepend: [ShopGUIPlus, ChestShop, AuctionHouse, Vault, CoreProtect, EconomyShopGUI, EconomyShopGUI-Premium, DynamicShop]
+softdepend: [ShopGUIPlus, ChestShop, AuctionHouse, Vault, CoreProtect, EconomyShopGUI, EconomyShopGUI-Premium, DynamicShop, Jobs]
 
 commands:
     auxprotect:

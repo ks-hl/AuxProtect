@@ -7,9 +7,10 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -19,19 +20,17 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 public class Results {
 
-	protected final ArrayList<DbEntry> entries;
+	private final ArrayList<DbEntry> entries;
 	protected final MySender player;
 	public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
 	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
-	private static String commandPrefix;
 
 	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player) {
 		this.entries = entries;
 		this.player = player;
 		this.plugin = plugin;
-		commandPrefix = "/" + plugin.getCommandPrefix();
 
 		boolean allNullWorld = true;
 		int count = 0;
@@ -49,8 +48,12 @@ public class Results {
 		}
 	}
 
+	public ArrayList<DbEntry> getEntries() {
+		return entries;
+	}
+
 	public DbEntry get(int i) {
-		return entries.get(i);
+		return getEntries().get(i);
 	}
 
 	public void sendHeader() {
@@ -80,8 +83,8 @@ public class Results {
 		perpage = perpage_;
 		prevpage = page;
 		sendHeader();
-		for (int i = (page - 1) * perpage; i < (page) * perpage && i < entries.size(); i++) {
-			DbEntry en = entries.get(i);
+		for (int i = (page - 1) * perpage; i < (page) * perpage && i < getEntries().size(); i++) {
+			DbEntry en = getEntries().get(i);
 
 			sendEntry(en, i);
 		}
@@ -93,8 +96,9 @@ public class Results {
 	}
 
 	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index) {
-
+		String commandPrefix = "/" + plugin.getCommandPrefix();
 		ComponentBuilder message = new ComponentBuilder();
+
 		plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
 		message.append(String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()),
@@ -117,10 +121,28 @@ public class Results {
 		message.append(" §9" + entry.getTarget()).event(clickToCopy)
 				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
 
+		XrayEntry xray = null;
+		if (entry instanceof XrayEntry) {
+			xray = (XrayEntry) entry;
+			String rating = "§7Unrated";
+			if (xray.getRating() >= 0) {
+				rating = xray.getRating() + "";
+			}
+			String color = VeinManager.getSeverityColor(xray.getRating());
+			message.append(String.format(" §8[%s%s§8]", color, rating)).event(new ClickEvent(
+					ClickEvent.Action.RUN_COMMAND, "/" + plugin.getCommandPrefix() + " xray rate " + entry.getTime()));
+			String hover = "";
+			if (xray.getRating() >= 0) {
+				hover += color + VeinManager.getSeverityDescription(xray.getRating());
+			}
+			hover += "\n\n" + plugin.translate("xray-click-to-change");
+			message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
+		}
+
 		String data = entry.getData();
 		if (data != null && data.contains(InvSerialization.itemSeparator)) {
 			data = data.split(InvSerialization.itemSeparator)[0];
-			if (MyPermission.INV.hasPermission(player)) {
+			if (APPermission.INV.hasPermission(player)) {
 				message.append(" §a[View]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 								String.format(commandPrefix + " inv %d", index)))
@@ -128,7 +150,7 @@ public class Results {
 			}
 		}
 		if (entry.getAction().equals(EntryAction.INVENTORY)) {
-			if (MyPermission.INV.hasPermission(player)) {
+			if (APPermission.INV.hasPermission(player)) {
 				message.append(" §a[View]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 								String.format(commandPrefix + " inv %d", index)))
@@ -136,7 +158,7 @@ public class Results {
 			}
 			data = null;// So data doesn't print
 		} else if (entry.getAction().equals(EntryAction.KILL)) {
-			if (MyPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
+			if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
 				message.append(" §a[View Inv]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 								String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
@@ -165,6 +187,7 @@ public class Results {
 	}
 
 	public void sendArrowKeys(int page) {
+		String commandPrefix = "/" + plugin.getCommandPrefix();
 		ComponentBuilder message = new ComponentBuilder();
 		int lastpage = getNumPages(perpage);
 		message.append("§7(");
@@ -202,15 +225,15 @@ public class Results {
 		}
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
 		message.append(
-				String.format(plugin.translate("lookup-page-footer"), page, getNumPages(perpage), entries.size()));
+				String.format(plugin.translate("lookup-page-footer"), page, getNumPages(perpage), getEntries().size()));
 		player.sendMessage(message.create());
 	}
 
 	public int getNumPages(int perpage) {
-		return (int) Math.ceil(entries.size() / (double) perpage);
+		return (int) Math.ceil(getEntries().size() / (double) perpage);
 	}
 
 	public int getSize() {
-		return entries.size();
+		return getEntries().size();
 	}
 }

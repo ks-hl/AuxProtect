@@ -26,11 +26,7 @@ public class EntryAction {
 		return null;
 	}
 
-	// START MISC
-	public static final EntryAction VEIN = new EntryAction("vein", -1);
-	// END MISC
-
-	// START DEFAULT (0)
+	// START MAIN (0)
 	public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
 	public static final EntryAction SESSION = new EntryAction("session", 4, 5);
 	public static final EntryAction KICK = new EntryAction("kick", 6);
@@ -50,7 +46,8 @@ public class EntryAction {
 	public static final EntryAction GAMEMODE = new EntryAction("gamemode", 138);
 	public static final EntryAction TAME = new EntryAction("tame", 139);
 	public static final EntryAction JOBS = new EntryAction("jobs", 140);
-	// END DEFAULT (255)
+	public static final EntryAction PAY = new EntryAction("pay", 141);
+	// END MAIN (255)
 
 	// START SPAM(256)
 	// SKIPPED 256
@@ -92,6 +89,10 @@ public class EntryAction {
 	public static final EntryAction POS = new EntryAction("pos", 1290);
 	public static final EntryAction TP = new EntryAction("tp", 1291, 1292);
 	// END POSITION(1299)
+
+	// START XRAY (1300)
+	public static final EntryAction VEIN = new EntryAction("vein", 1300);
+	// END XRAY(1309)
 
 	public final boolean hasDual;
 	public final int id;
@@ -195,6 +196,9 @@ public class EntryAction {
 		if (id < 1300) {
 			return Table.AUXPROTECT_POSITION;
 		}
+		if (id < 1310) {
+			return Table.AUXPROTECT_XRAY;
+		}
 		if (id > 10000) {
 			return Table.AUXPROTECT_API;
 		}
@@ -209,9 +213,6 @@ public class EntryAction {
 	}
 
 	public boolean isEnabled() {
-		if (this == VEIN) {
-			return false;
-		}
 		return enabled;
 	}
 

@@ -11,7 +11,12 @@ public class Telemetry {
 	private final Metrics metrics;
 	private static final HashMap<String, Boolean> hooks = new HashMap<>();
 
-	public static void reportHook(String name, boolean state) {
+	public static void reportHook(AuxProtectSpigot plugin, String name, boolean state) {
+		if (state) {
+			plugin.info(name + " hooked");
+		} else {
+			plugin.debug(name + " not hooked");
+		}
 		hooks.put(name.toLowerCase(), state);
 	}
 

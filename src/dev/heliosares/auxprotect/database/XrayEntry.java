@@ -1,28 +1,56 @@
 package dev.heliosares.auxprotect.database;
 
+import java.util.ArrayList;
+
+import org.bukkit.Location;
+import org.bukkit.entity.Player;
+
 public class XrayEntry extends DbEntry {
 
-	public XrayEntry(long time, String userLabel, EntryAction action, boolean state, String world, int x, int y, int z,
-			String target, String data) {
-		super(time, 0, action, state, world, x, y, z, 0, 0, target, -1, data);
-		super.userLabel = userLabel;
-		parent = null;
+	private short rating;
+	public Player viewer;
+	public long viewingStarted;
+
+	public XrayEntry(String user, Location location, String block) {
+		super(user, EntryAction.VEIN, false, location, block, "");
+		this.rating = -1;
 	}
 
-	private XrayEntry parent;
-
-	public void setParent(XrayEntry parent) {
-		this.parent = parent;
+	public XrayEntry(long time, int uid, String world, int x, int y, int z, int target_id, short rating, String data) {
+		super(time, uid, EntryAction.VEIN, false, world, x, y, z, 0, 0, null, target_id, data);
+		this.rating = rating;
 	}
 
-	public XrayEntry getParent() {
-		if (parent == null)
-			return this;
-		return parent;
+	private ArrayList<XrayEntry> children = new ArrayList<>();
+
+	public boolean add(XrayEntry entry) {
+		return this.add(entry, new ArrayList<>());
 	}
 
-	public boolean hasParent() {
-		return parent != null;
+	private boolean add(XrayEntry other, ArrayList<XrayEntry> visited) {
+		if (!visited.add(this)) {
+			return false;
+		}
+
+		if (Math.abs(other.getTime() - this.getTime()) < 3600000L && Math.abs(other.x - this.x) <= 2
+				&& Math.abs(other.y - this.y) <= 2 && Math.abs(other.z - this.z) <= 2 && other.world.equals(this.world)
+				&& this.getTarget().equals(other.getTarget())) {
+			children.add(other);
+			return true;
+		}
+		for (XrayEntry child : children) {
+			if (child.add(other, visited)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
+	public short getRating() {
+		return rating;
+	}
+
+	public void setRating(short rating) {
+		this.rating = rating;
+	}
 }

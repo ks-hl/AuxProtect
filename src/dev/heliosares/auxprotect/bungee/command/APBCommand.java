@@ -5,7 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.command.LookupCommand;
@@ -53,14 +53,14 @@ public class APBCommand extends Command implements TabExecutor {
 
 		if (args.length > 0) {
 			if (args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l")) {
-				if (!MyPermission.LOOKUP.hasPermission(sender)) {
+				if (!APPermission.LOOKUP.hasPermission(sender)) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
 				LookupCommand.onCommand(plugin, new MySender(sender), args);
 				return;
 			} else if (args[0].equalsIgnoreCase("help")) {
-				if (!MyPermission.HELP.hasPermission(sender)) {
+				if (!APPermission.HELP.hasPermission(sender)) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
@@ -72,14 +72,14 @@ public class APBCommand extends Command implements TabExecutor {
 				return;
 			} else if (args[0].equalsIgnoreCase("info")) {
 				AuxProtectBungee.tell(sender,
-						"§9AuxProtect" + (MyPermission.ADMIN.hasPermission(sender)
+						"§9AuxProtect" + (APPermission.ADMIN.hasPermission(sender)
 								? (" §7v" + plugin.getDescription().getVersion())
 								: ""));
 
 				AuxProtectBungee.tell(sender, "§7Developed by §9Heliosares");
 				return;
 			} else if (args[0].equalsIgnoreCase("debug")) {
-				if (!MyPermission.ADMIN.hasPermission(sender)) {
+				if (!APPermission.ADMIN.hasPermission(sender)) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
@@ -105,7 +105,7 @@ public class APBCommand extends Command implements TabExecutor {
 						"Debug " + (verbosity > 0 ? "§aenabled. §7Level: " + verbosity : "§cdisabled."));
 				return;
 			} else if (args[0].equalsIgnoreCase("sql")) {
-				if (!MyPermission.SQL.hasPermission(sender)) {
+				if (!APPermission.SQL.hasPermission(sender)) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
@@ -127,7 +127,7 @@ public class APBCommand extends Command implements TabExecutor {
 				AuxProtectBungee.tell(sender, "§aSQL statement executed successfully.");
 				return;
 			} else if (args[0].equalsIgnoreCase("purge")) {
-				if (!MyPermission.PURGE.hasPermission(sender)) {
+				if (!APPermission.PURGE.hasPermission(sender)) {
 					AuxProtectBungee.tell(sender, plugin.lang.translate("no-permission"));
 					return;
 				}
@@ -147,23 +147,23 @@ public class APBCommand extends Command implements TabExecutor {
 		String currentArg = args[args.length - 1];
 
 		if (args.length == 1) {
-			if (MyPermission.LOOKUP.hasPermission(sender)) {
+			if (APPermission.LOOKUP.hasPermission(sender)) {
 				possible.add("lookup");
 			}
-			if (MyPermission.ADMIN.hasPermission(sender)) {
+			if (APPermission.ADMIN.hasPermission(sender)) {
 				possible.add("debug");
 			}
-			if (MyPermission.HELP.hasPermission(sender)) {
+			if (APPermission.HELP.hasPermission(sender)) {
 				possible.add("help");
 			}
-			if (MyPermission.PURGE.hasPermission(sender)) {
+			if (APPermission.PURGE.hasPermission(sender)) {
 				possible.add("purge");
 			}
 			possible.add("info");
 		}
 		if (args.length >= 2) {
 			if ((args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l"))
-					&& MyPermission.LOOKUP.hasPermission(sender)) {
+					&& APPermission.LOOKUP.hasPermission(sender)) {
 				possible.add("time:");
 				possible.add("target:");
 				possible.add("action:");
@@ -214,7 +214,7 @@ public class APBCommand extends Command implements TabExecutor {
 					arg = arg.substring(0, arg.indexOf(":") + 1);
 					possible.remove(arg);
 				}
-			} else if ((args[0].equalsIgnoreCase("help")) && MyPermission.HELP.hasPermission(sender)) {
+			} else if ((args[0].equalsIgnoreCase("help")) && APPermission.HELP.hasPermission(sender)) {
 				possible.add("lookup");
 				possible.add("purge");
 			}

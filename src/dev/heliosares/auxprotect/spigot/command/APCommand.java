@@ -10,7 +10,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.TimeUtil;
@@ -43,63 +43,63 @@ public class APCommand implements CommandExecutor {
 	public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
 		if (args.length > 0) {
 			if (args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l")) {
-				if (!MyPermission.LOOKUP.hasPermission(sender)) {
+				if (!APPermission.LOOKUP.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return lookupCommand.onCommand(sender, args);
 			} else if (args[0].equalsIgnoreCase("purge")) {
-				if (!MyPermission.PURGE.hasPermission(sender)) {
+				if (!APPermission.PURGE.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				PurgeCommand.purge(plugin, new MySender(sender), args);
 				return true;
 			} else if (args[0].equalsIgnoreCase("pt") || args[0].equalsIgnoreCase("playtime")) {
-				if (!MyPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
+				if (!APPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return playtimeCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("activity") && plugin.getAPConfig().isPrivate()) {
-				if (!MyPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
+				if (!APPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return activityCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("money")) {
-				if (!MyPermission.LOOKUP_MONEY.hasPermission(sender)) {
+				if (!APPermission.LOOKUP_MONEY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return moneyCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("retention") && plugin.getAPConfig().isPrivate()) {
-				if (!MyPermission.LOOKUP_RETENTION.hasPermission(sender)) {
+				if (!APPermission.LOOKUP_RETENTION.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return retentionCommand.onCommand(sender, command, label, args);
 			} else if ((args[0].equalsIgnoreCase("x") || args[0].equalsIgnoreCase("xray"))
 					&& plugin.getAPConfig().isPrivate()) {
-				if (!MyPermission.LOOKUP_XRAY.hasPermission(sender)) {
+				if (!APPermission.LOOKUP_XRAY.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return xrayCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("tp")) {
-				if (!MyPermission.TP.hasPermission(sender)) {
+				if (!APPermission.TP.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return tpCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("inv")) {
-				if (!MyPermission.INV.hasPermission(sender)) {
+				if (!APPermission.INV.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
 				return invCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("debug")) {
-				if (!MyPermission.ADMIN.hasPermission(sender)) {
+				if (!APPermission.ADMIN.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -126,7 +126,7 @@ public class APCommand implements CommandExecutor {
 				sender.sendMessage("Debug " + (verbosity > 0 ? "§aenabled. §7Level: " + verbosity : "§cdisabled."));
 				return true;
 			} else if (args[0].equalsIgnoreCase("help")) {
-				if (!MyPermission.HELP.hasPermission(sender)) {
+				if (!APPermission.HELP.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -140,7 +140,7 @@ public class APCommand implements CommandExecutor {
 				sendInfo(sender);
 				return true;
 			} else if (args[0].equalsIgnoreCase("t") || args[0].equalsIgnoreCase("time")) {
-				if (!MyPermission.LOOKUP.hasPermission(sender)) {
+				if (!APPermission.LOOKUP.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -152,8 +152,10 @@ public class APCommand implements CommandExecutor {
 				} else if (args.length == 2) {
 					if (args[1].startsWith("+") || args[1].startsWith("-")) {
 						boolean add = args[1].startsWith("+");
-						long time = TimeUtil.convertTime(args[1].substring(1));
-						if (time <= 0) {
+						long time;
+						try {
+							time = TimeUtil.stringToMillis(args[1].substring(1));
+						} catch (NumberFormatException e) {
 							sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 							return true;
 						}
@@ -167,7 +169,7 @@ public class APCommand implements CommandExecutor {
 				sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 				return true;
 			} else if (args[0].equalsIgnoreCase("reload")) {
-				if (!MyPermission.ADMIN.hasPermission(sender)) {
+				if (!APPermission.ADMIN.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -177,7 +179,7 @@ public class APCommand implements CommandExecutor {
 				sender.sendMessage("§aConfig reloaded");
 				return true;
 			} else if (args[0].equalsIgnoreCase("stats")) {
-				if (!MyPermission.ADMIN.hasPermission(sender)) {
+				if (!APPermission.ADMIN.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -193,7 +195,7 @@ public class APCommand implements CommandExecutor {
 				sender.sendMessage("§7Queued Rows: §9" + plugin.queueSize());
 				return true;
 			} else if (args[0].equalsIgnoreCase("sql") || args[0].equalsIgnoreCase("sqlu")) {
-				if (!MyPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
+				if (!APPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
 					sender.sendMessage(plugin.translate("no-permission"));
 					return true;
 				}
@@ -229,7 +231,7 @@ public class APCommand implements CommandExecutor {
 			}
 		}
 		sendInfo(sender);
-		if (MyPermission.HELP.hasPermission(sender)) {
+		if (APPermission.HELP.hasPermission(sender)) {
 			sender.sendMessage("§7Do §9/ap help§7 for more info.");
 		}
 		return true;
@@ -237,9 +239,9 @@ public class APCommand implements CommandExecutor {
 
 	private void sendInfo(CommandSender sender) {
 		sender.sendMessage("§9AuxProtect"
-				+ (MyPermission.ADMIN.hasPermission(sender) ? (" §7v" + plugin.getDescription().getVersion()) : ""));
+				+ (APPermission.ADMIN.hasPermission(sender) ? (" §7v" + plugin.getDescription().getVersion()) : ""));
 		sender.sendMessage("§7Developed by §9Heliosares");
-		if (MyPermission.ADMIN.hasPermission(sender)) {
+		if (APPermission.ADMIN.hasPermission(sender)) {
 			sender.sendMessage("§7§ohttps://www.spigotmc.org/resources/auxprotect.99147/");
 		}
 	}

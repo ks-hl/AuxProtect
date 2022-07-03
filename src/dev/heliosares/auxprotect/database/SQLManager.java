@@ -18,6 +18,8 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import javax.annotation.Nullable;
+
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
@@ -242,111 +244,117 @@ public class SQLManager {
 				rowcountformerge = this.migrateToV3Part1();
 			}
 
-			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_MAIN.toString() + " (\n";
-			stmt += "    time BIGINT(255),\n";
-			stmt += "    uid integer,\n";
-			stmt += "    action_id SMALLINT,\n";
-			if (!plugin.isBungee()) {
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-			}
-			stmt += "    target_id integer,\n";
-			stmt += "    data LONGTEXT\n";
-			stmt += ");";
-			execute(stmt);
-
-			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API.toString() + " (\n";
-			stmt += "    time BIGINT(255),\n";
-			stmt += "    uid integer,\n";
-			stmt += "    action_id SMALLINT,\n";
-			if (!plugin.isBungee()) {
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-			}
-			stmt += "    target_id integer,\n";
-			stmt += "    data LONGTEXT\n";
-			stmt += ");";
-			execute(stmt);
-
-			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LONGTERM.toString() + " (\n";
-			stmt += "    time BIGINT(255),\n";
-			stmt += "    uid integer,\n";
-			stmt += "    action_id SMALLINT,\n";
-			stmt += "    target varchar(255)\n";
-			stmt += ");";
-			execute(stmt);
-
-			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_COMMANDS.toString() + " (\n";
-			stmt += "    time BIGINT(255),\n";
-			stmt += "    uid integer,\n";
-			if (!plugin.isBungee()) {
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-			}
-			stmt += "    target LONGTEXT\n";
-			stmt += ");";
-			execute(stmt);
-
-			if (!plugin.isBungee()) {
-				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVENTORY.toString() + " (\n";
-				stmt += "    time BIGINT(255),\n";
-				stmt += "    uid integer,\n";
-				stmt += "    action_id SMALLINT,\n";
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-				stmt += "    target_id integer,\n";
-				stmt += "    data LONGTEXT\n";
-				stmt += ");";
-				execute(stmt);
-
-				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_SPAM.toString() + " (\n";
-				stmt += "    time BIGINT(255),\n";
-				stmt += "    uid integer,\n";
-				stmt += "    action_id SMALLINT,\n";
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-				stmt += "    target_id integer,\n";
-				stmt += "    data LONGTEXT\n";
-				stmt += ");";
-				execute(stmt);
-
-				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_POSITION.toString() + " (\n";
-				stmt += "    time BIGINT(255),\n";
-				stmt += "    uid integer,\n";
-				stmt += "    action_id SMALLINT,\n";
-				stmt += "    world_id SMALLINT,\n";
-				stmt += "    x INTEGER,\n";
-				stmt += "    y SMALLINT,\n";
-				stmt += "    z INTEGER,\n";
-				stmt += "    pitch SMALLINT,\n";
-				stmt += "    yaw SMALLINT,\n";
-				stmt += "    target_id integer\n";
-				stmt += ");";
-				execute(stmt);
-
-				if (plugin.getAPConfig().isPrivate()) {
-					stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_ABANDONED.toString() + " (\n";
-					stmt += "    time BIGINT(255),\n";
-					stmt += "    uid integer,\n";
-					stmt += "    action_id SMALLINT,\n";
-					stmt += "    world_id SMALLINT,\n";
-					stmt += "    x INTEGER,\n";
-					stmt += "    y SMALLINT,\n";
-					stmt += "    z INTEGER,\n";
-					stmt += "    target_id integer\n";
-					stmt += ");";
-					execute(stmt);
+			for (Table table : Table.values()) {
+				if (table.hasAPEntries()) {
+					execute(table.getSQLCreateString(plugin));
 				}
+			}
+
+//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_MAIN.toString() + " (\n";
+//			stmt += "    time BIGINT(255),\n";
+//			stmt += "    uid integer,\n";
+//			stmt += "    action_id SMALLINT,\n";
+//			if (!plugin.isBungee()) {
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//			}
+//			stmt += "    target_id integer,\n";
+//			stmt += "    data LONGTEXT\n";
+//			stmt += ");";
+//			execute(stmt);
+//
+//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API.toString() + " (\n";
+//			stmt += "    time BIGINT(255),\n";
+//			stmt += "    uid integer,\n";
+//			stmt += "    action_id SMALLINT,\n";
+//			if (!plugin.isBungee()) {
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//			}
+//			stmt += "    target_id integer,\n";
+//			stmt += "    data LONGTEXT\n";
+//			stmt += ");";
+//			execute(stmt);
+//
+//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LONGTERM.toString() + " (\n";
+//			stmt += "    time BIGINT(255),\n";
+//			stmt += "    uid integer,\n";
+//			stmt += "    action_id SMALLINT,\n";
+//			stmt += "    target varchar(255)\n";
+//			stmt += ");";
+//			execute(stmt);
+//
+//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_COMMANDS.toString() + " (\n";
+//			stmt += "    time BIGINT(255),\n";
+//			stmt += "    uid integer,\n";
+//			if (!plugin.isBungee()) {
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//			}
+//			stmt += "    target LONGTEXT\n";
+//			stmt += ");";
+//			execute(stmt);
+//
+			if (!plugin.isBungee()) {
+//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVENTORY.toString() + " (\n";
+//				stmt += "    time BIGINT(255),\n";
+//				stmt += "    uid integer,\n";
+//				stmt += "    action_id SMALLINT,\n";
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//				stmt += "    target_id integer,\n";
+//				stmt += "    data LONGTEXT\n";
+//				stmt += ");";
+//				execute(stmt);
+//
+//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_SPAM.toString() + " (\n";
+//				stmt += "    time BIGINT(255),\n";
+//				stmt += "    uid integer,\n";
+//				stmt += "    action_id SMALLINT,\n";
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//				stmt += "    target_id integer,\n";
+//				stmt += "    data LONGTEXT\n";
+//				stmt += ");";
+//				execute(stmt);
+//
+//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_POSITION.toString() + " (\n";
+//				stmt += "    time BIGINT(255),\n";
+//				stmt += "    uid integer,\n";
+//				stmt += "    action_id SMALLINT,\n";
+//				stmt += "    world_id SMALLINT,\n";
+//				stmt += "    x INTEGER,\n";
+//				stmt += "    y SMALLINT,\n";
+//				stmt += "    z INTEGER,\n";
+//				stmt += "    pitch SMALLINT,\n";
+//				stmt += "    yaw SMALLINT,\n";
+//				stmt += "    target_id integer\n";
+//				stmt += ");";
+//				execute(stmt);
+//
+//				if (plugin.getAPConfig().isPrivate()) {
+//					stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_ABANDONED.toString() + " (\n";
+//					stmt += "    time BIGINT(255),\n";
+//					stmt += "    uid integer,\n";
+//					stmt += "    action_id SMALLINT,\n";
+//					stmt += "    world_id SMALLINT,\n";
+//					stmt += "    x INTEGER,\n";
+//					stmt += "    y SMALLINT,\n";
+//					stmt += "    z INTEGER,\n";
+//					stmt += "    target_id integer\n";
+//					stmt += ");";
+//					execute(stmt);
+//				}
 
 				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS.toString()
 						+ " (name varchar(255), wid SMALLINT);";
@@ -426,6 +434,7 @@ public class SQLManager {
 			isMigrating = false;
 			holdingConnectionSince = 0;
 		}
+
 	}
 
 	private int migrateToV3Part1() throws SQLException {
@@ -777,7 +786,8 @@ public class SQLManager {
 			holdingConnectionSince = System.currentTimeMillis();
 			holdingConnection = "put";
 			String stmt = "INSERT INTO " + table.toString() + " ";
-			String inc = table.getValuesTemplate(plugin.isBungee());
+			int numColumns = table.getNumColumns(plugin.isBungee());
+			String inc = Table.getValuesTemplate(numColumns);
 			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
 			final boolean hasData = table.hasData();
 			final boolean hasAction = table.hasActionId();
@@ -796,6 +806,7 @@ public class SQLManager {
 
 				int i = 1;
 				for (DbEntry dbEntry : entries) {
+					int prior = i;
 					// statement.setString(i++, table);
 					statement.setLong(i++, dbEntry.getTime());
 					statement.setInt(i++, getUIDFromUUID(dbEntry.getUserUUID(), true));
@@ -826,8 +837,18 @@ public class SQLManager {
 					} else {
 						statement.setInt(i++, getUIDFromUUID(dbEntry.getTargetUUID(), true));
 					}
+					if (dbEntry instanceof XrayEntry) {
+						statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
+					}
 					if (hasData) {
 						statement.setString(i++, dbEntry.getData());
+					}
+					if (i - prior != numColumns) {
+						plugin.warning("Incorrect number of columns provided inserting action "
+								+ dbEntry.getAction().toString() + " into " + table.toString());
+						plugin.warning(i - prior + " =/= " + numColumns);
+						plugin.warning("Statement: " + stmt);
+						throw new IllegalArgumentException();
 					}
 				}
 
@@ -865,7 +886,6 @@ public class SQLManager {
 
 	public ArrayList<DbEntry> lookup(HashMap<String, String> params, Location location, boolean exact)
 			throws LookupException {
-		long start = System.nanoTime();
 		if (!isConnected)
 			return null;
 
@@ -1173,105 +1193,14 @@ public class SQLManager {
 				stmt += ")";
 			}
 
-			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
-			final boolean hasData = table.hasData();
-			final boolean hasAction = table.hasActionId();
-			final boolean hasLook = table.hasLook();
 			if (table == Table.AUXPROTECT_WORLDS) {
 				return null;
 			} else {
 				stmt = "SELECT * FROM " + table.toString() + stmt;
 			}
 			stmt += "\nORDER BY time DESC\nLIMIT " + (MAX_LOOKUP_SIZE + 1) + ";";
-			plugin.debug(stmt, 3);
-			ArrayList<DbEntry> output = new ArrayList<>();
-			long parseStart;
-			checkAsync();
-			synchronized (connection) {
-				holdingConnectionSince = System.currentTimeMillis();
-				holdingConnection = "lookup";
-				long lookupStart = System.currentTimeMillis();
-				try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
 
-					pstmt.setFetchSize(500);
-					for (int i1 = 0; i1 < writeParams.size(); i1++) {
-						String param = writeParams.get(i1);
-						pstmt.setString(i1 + 1, param);
-					}
-					try (ResultSet rs = pstmt.executeQuery()) {
-
-						int count = 0;
-						parseStart = System.currentTimeMillis();
-						while (rs.next()) {
-							long time = rs.getLong("time");
-							int uid = rs.getInt("uid");
-							int action_id = -1;
-							if (hasAction) {
-								action_id = rs.getInt("action_id");
-							} else if (table == Table.AUXPROTECT_COMMANDS) {
-								action_id = EntryAction.COMMAND.id;
-							}
-							String world = null;
-							int x = 0, y = 0, z = 0;
-							if (hasLocation) {
-								world = this.getWorld(rs.getInt("world_id"));
-								x = rs.getInt("x");
-								y = rs.getInt("y");
-								z = rs.getInt("z");
-							}
-
-							int pitch = 0, yaw = 180;
-							if (hasLook) {
-								pitch = rs.getInt("pitch");
-								yaw = rs.getInt("yaw");
-							}
-
-							String data = null;
-							if (hasData) {
-								data = rs.getString("data");
-							}
-							EntryAction entryAction = EntryAction.getAction(action_id);
-							if (entryAction == null) {
-								plugin.debug("Unknown action_id: " + action_id, 1);
-								continue;
-							}
-							boolean state = false;
-							if (entryAction.hasDual && entryAction.id != action_id) {
-								state = true;
-							}
-							DbEntry entry = null;
-							String target = null;
-							int target_id = -1;
-							if (table.hasStringTarget()) {
-								target = rs.getString("target");
-							} else {
-								target_id = rs.getInt("target_id");
-							}
-							entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
-									target_id, data);
-
-							output.add(entry);
-							if (++count >= MAX_LOOKUP_SIZE) {
-								throw new LookupException(LookupExceptionType.TOO_MANY,
-										String.format(plugin.translate("lookup-toomany"), count));
-							}
-						}
-					}
-				} catch (SQLException e) {
-					plugin.warning("Error while executing command");
-					plugin.warning("SQL Code: " + stmt);
-					plugin.print(e);
-					holdingConnectionSince = 0;
-					throw new LookupException(LookupExceptionType.GENERAL, plugin.translate("lookup-error"));
-				}
-				plugin.debug("Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: "
-						+ (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms",
-						1);
-
-				holdingConnectionSince = 0;
-				this.lookupTime.addData(System.nanoTime() - start);
-				return output;
-			}
+			return lookup(table, stmt, writeParams);
 		} catch (Exception e) {
 			if (e instanceof LookupException) {
 				throw e;
@@ -1280,6 +1209,124 @@ public class SQLManager {
 			plugin.print(e);
 			holdingConnectionSince = 0;
 			throw new LookupException(LookupExceptionType.GENERAL, plugin.translate("lookup-error"));
+		}
+	}
+
+	/**
+	 * Performs a SQL Lookup in the table provided with the statement provided.
+	 * 
+	 * @param table       The table being utilized. This is not user in the
+	 *                    statement and is merely provided for entry parsing
+	 * @param stmt        The statement to be executed
+	 * @param writeParams An in-order array of parameters to be inserted into ? of
+	 *                    stmt
+	 * @return An ArrayList of the DbEntry's meeting the provided conditions
+	 * @throws LookupException
+	 */
+	public ArrayList<DbEntry> lookup(Table table, String stmt, @Nullable ArrayList<String> writeParams)
+			throws LookupException {
+		final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
+		final boolean hasData = table.hasData();
+		final boolean hasAction = table.hasActionId();
+		final boolean hasLook = table.hasLook();
+		long start = System.nanoTime();
+		plugin.debug(stmt, 3);
+
+		ArrayList<DbEntry> output = new ArrayList<>();
+		long parseStart;
+		checkAsync();
+		synchronized (connection) {
+			holdingConnectionSince = System.currentTimeMillis();
+			holdingConnection = "lookup";
+			long lookupStart = System.currentTimeMillis();
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+
+				pstmt.setFetchSize(500);
+				if (writeParams != null) {
+					for (int i1 = 0; i1 < writeParams.size(); i1++) {
+						String param = writeParams.get(i1);
+						pstmt.setString(i1 + 1, param);
+					}
+				}
+				try (ResultSet rs = pstmt.executeQuery()) {
+
+					int count = 0;
+					parseStart = System.currentTimeMillis();
+					while (rs.next()) {
+						long time = rs.getLong("time");
+						int uid = rs.getInt("uid");
+						int action_id = -1;
+						if (hasAction) {
+							action_id = rs.getInt("action_id");
+						} else if (table == Table.AUXPROTECT_COMMANDS) {
+							action_id = EntryAction.COMMAND.id;
+						} else if (table == Table.AUXPROTECT_XRAY) {
+							action_id = EntryAction.VEIN.id;
+						}
+						String world = null;
+						int x = 0, y = 0, z = 0;
+						if (hasLocation) {
+							world = this.getWorld(rs.getInt("world_id"));
+							x = rs.getInt("x");
+							y = rs.getInt("y");
+							z = rs.getInt("z");
+						}
+
+						int pitch = 0, yaw = 180;
+						if (hasLook) {
+							pitch = rs.getInt("pitch");
+							yaw = rs.getInt("yaw");
+						}
+
+						String data = null;
+						if (hasData) {
+							data = rs.getString("data");
+						}
+						EntryAction entryAction = EntryAction.getAction(action_id);
+						if (entryAction == null) {
+							plugin.debug("Unknown action_id: " + action_id, 1);
+							continue;
+						}
+						boolean state = false;
+						if (entryAction.hasDual && entryAction.id != action_id) {
+							state = true;
+						}
+						DbEntry entry = null;
+						String target = null;
+						int target_id = -1;
+						if (table.hasStringTarget()) {
+							target = rs.getString("target");
+						} else {
+							target_id = rs.getInt("target_id");
+						}
+						if (table == Table.AUXPROTECT_XRAY) {
+							short rating = rs.getShort("rating");
+							entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
+						} else {
+							entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
+									target_id, data);
+						}
+
+						output.add(entry);
+						if (++count >= MAX_LOOKUP_SIZE) {
+							throw new LookupException(LookupExceptionType.TOO_MANY,
+									String.format(plugin.translate("lookup-toomany"), count));
+						}
+					}
+				}
+			} catch (SQLException e) {
+				plugin.warning("Error while executing command");
+				plugin.warning("SQL Code: " + stmt);
+				plugin.print(e);
+				holdingConnectionSince = 0;
+				throw new LookupException(LookupExceptionType.GENERAL, plugin.translate("lookup-error"));
+			}
+			plugin.debug("Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: "
+					+ (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms", 1);
+
+			holdingConnectionSince = 0;
+			this.lookupTime.addData(System.nanoTime() - start);
+			return output;
 		}
 	}
 
@@ -1321,25 +1368,27 @@ public class SQLManager {
 		}
 	}
 
-	public void removeEntry(DbEntry entry) {
+	public void updateXrayEntry(XrayEntry entry) throws SQLException {
 		if (!isConnected)
 			return;
-		String stmt = "DELETE FROM " + entry.getAction().getTable().toString()
-				+ "\nWHERE time = ? AND uid = ? AND action_id = ?;";
+		String stmt = "UPDATE " + entry.getAction().getTable().toString();
+		stmt += "\nSET rating=?, data=?";
+		stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
 
 		plugin.debug(stmt, 3);
 		checkAsync();
 		synchronized (connection) {
-			try {
-				PreparedStatement statement = connection.prepareStatement(stmt);
-
+			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
 				int i = 1;
+				statement.setShort(i++, entry.getRating());
+				statement.setString(i++, entry.getData());
 				statement.setLong(i++, entry.getTime());
 				statement.setInt(i++, entry.getUid());
-				statement.setInt(i++, entry.getAction().getId(entry.getState()));
-				statement.executeUpdate();
-			} catch (SQLException e) {
-				plugin.print(e);
+				statement.setInt(i++, entry.getTargetId());
+				if (statement.executeUpdate() > 1) {
+					plugin.warning("Updated multiple entries when updating the following entry:");
+					Results.sendEntry(plugin, new MySender(Bukkit.getConsoleSender()), entry, 0);
+				}
 			}
 		}
 	}
@@ -1625,6 +1674,20 @@ public class SQLManager {
 		}
 
 		return -1;
+	}
+
+	public ArrayList<DbEntry> getAllUnratedXrayRecords(long since) {
+		checkAsync();
+		String stmt = "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE rating=-1";
+		if (since > 0) {
+			stmt += " AND time>" + since;
+		}
+		try {
+			return lookup(Table.AUXPROTECT_XRAY, stmt, null);
+		} catch (LookupException e) {
+			plugin.print(e);
+		}
+		return null;
 	}
 
 	public String getUUIDFromUID(int uid) {

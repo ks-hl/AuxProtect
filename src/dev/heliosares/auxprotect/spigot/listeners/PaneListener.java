@@ -10,7 +10,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
 
-import dev.heliosares.auxprotect.core.MyPermission;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
@@ -29,7 +29,7 @@ public class PaneListener implements Listener {
 		if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane) {
 			Pane pane = (Pane) e.getInventory().getHolder();
 			if (pane.type == Type.SHOW) {
-				if (!MyPermission.INV_EDIT.hasPermission(e.getWhoClicked())) {
+				if (!APPermission.INV_EDIT.hasPermission(e.getWhoClicked())) {
 					e.setCancelled(true);
 				}
 				if (e.getInventory().equals(e.getClickedInventory())) {
