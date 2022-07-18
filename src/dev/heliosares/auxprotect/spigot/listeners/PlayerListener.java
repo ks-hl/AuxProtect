@@ -345,8 +345,14 @@ public class PlayerListener implements Listener {
 		if (!xrayMaterialsChecked.contains(e.getBlock().getType())) {
 			return;
 		}
-		plugin.add(new XrayEntry(AuxProtectSpigot.getLabel(e.getPlayer()), e.getBlock().getLocation(),
-				AuxProtectSpigot.getLabel(e.getBlock().getType())));
+		final XrayEntry entry = new XrayEntry(AuxProtectSpigot.getLabel(e.getPlayer()), e.getBlock().getLocation(),
+				AuxProtectSpigot.getLabel(e.getBlock().getType()));
+		new BukkitRunnable() {
+			@Override
+			public void run() {
+				plugin.add(entry);
+			}
+		}.runTaskAsynchronously(plugin);
 	}
 
 	public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,

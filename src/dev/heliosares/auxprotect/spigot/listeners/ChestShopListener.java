@@ -36,8 +36,8 @@ public class ChestShopListener implements Listener {
 			data += ", balance: " + plugin.formatMoney(plugin.getEconomy().getBalance(e.getClient()));
 		}
 		// Client
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getClient()), EntryAction.SHOP, state, e.getSign().getLocation(),
-				e.getStock()[0].getType().toString().toLowerCase(), data));
+		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getClient()), EntryAction.SHOP, state,
+				e.getSign().getLocation(), e.getStock()[0].getType().toString().toLowerCase(), data));
 
 		data = "CS, " + plugin.formatMoney(e.getExactPrice().doubleValue() / (double) qty) + " each, qty: " + qty
 				+ ", client: " + e.getClient().getName();

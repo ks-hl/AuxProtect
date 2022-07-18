@@ -36,6 +36,7 @@ public class EntryAction {
 
 	public static final EntryAction ALERT = new EntryAction("alert", 128);
 	public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
+	@Deprecated
 	public static final EntryAction XRAYCHECK = new EntryAction("xraycheck", 130);
 	public static final EntryAction CENSOR = new EntryAction("censor", 132);
 	public static final EntryAction MSG = new EntryAction("msg", 133);

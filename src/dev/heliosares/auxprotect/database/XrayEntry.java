@@ -33,8 +33,8 @@ public class XrayEntry extends DbEntry {
 		}
 
 		if (Math.abs(other.getTime() - this.getTime()) < 3600000L && Math.abs(other.x - this.x) <= 2
-				&& Math.abs(other.y - this.y) <= 2 && Math.abs(other.z - this.z) <= 2 && other.world.equals(this.world)
-				&& this.getTarget().equals(other.getTarget())) {
+				&& Math.abs(other.y - this.y) <= 2 && Math.abs(other.z - this.z) <= 2
+				&& other.world.equals(this.world)) {
 			children.add(other);
 			return true;
 		}

@@ -61,59 +61,69 @@ public class XrayCommand implements CommandExecutor {
 
 			boolean skip = args[1].equalsIgnoreCase("skip");
 			if (args[1].equalsIgnoreCase("rate") || skip) {
-				if (args.length < 3) {
+				if (args.length < 2) {
 					sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 					sender.sendMessage("§c/ap xray rate <time-of-entry> <rating -1 - 3>");// TODO lang
 					return true;
 				}
-				long time;
-				String timestr = args[2];
-				if (timestr.endsWith("e")) {
-					timestr = timestr.substring(0, timestr.length() - 1);
-				}
-				try {
-					time = Long.parseLong(timestr);
-				} catch (NumberFormatException e) {
-					sender.sendMessage(plugin.translate("lookup-invalid-syntax"));// TODO specificity
-					return true;
-				}
-				if (time < 0 || time > System.currentTimeMillis()) {
-					sender.sendMessage(plugin.translate("lookup-invalid-syntax"));// TODO specificity
-					return true;
-				}
 
-				if (skip) {
-					if (plugin.getVeinManager().skip(player, time)) {
-						nextEntry(player, auto);
+				long time_ = 0;
+				if (!args[2].equalsIgnoreCase("current") || skip) {
+					String timestr = args[2];
+					if (timestr.endsWith("e")) {
+						timestr = timestr.substring(0, timestr.length() - 1);
+					}
+					try {
+						time_ = Long.parseLong(timestr);
+					} catch (NumberFormatException e) {
+						sender.sendMessage(plugin.translate("lookup-invalid-syntax"));// TODO specificity
 						return true;
 					}
-					sender.sendMessage(plugin.translate("xray-notfound"));
-					return true;
+					if (time_ < 0 || time_ > System.currentTimeMillis()) {
+						sender.sendMessage(plugin.translate("lookup-invalid-syntax"));// TODO specificity
+						return true;
+					}
+
+					if (skip) {
+						if (plugin.getVeinManager().skip(player, time_)) {
+							nextEntry(player, auto);
+							return true;
+						}
+						sender.sendMessage(plugin.translate("xray-notfound"));
+						return true;
+					}
 				}
+
+				final long time = time_;
 
 				new BukkitRunnable() {
 
 					@Override
 					public void run() {
-						ArrayList<DbEntry> entries;
-						try {
-							entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
-									"SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
-						} catch (LookupException e) {
-							plugin.print(e);
-							sender.sendMessage(e.errorMessage);
-							return;
-						}
-						if (entries.size() > 1 && !override) {
-							sender.sendMessage(plugin.translate("xray-toomany"));
-							return;
-						}
-						if (entries.size() == 0 && !override) {
-							sender.sendMessage(plugin.translate("xray-notfound"));
-							return;
-						}
+						XrayEntry entry = null;
+						if (time > 0) {
+							ArrayList<DbEntry> entries;
+							try {
+								entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
+										"SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
+							} catch (LookupException e) {
+								plugin.print(e);
+								sender.sendMessage(e.errorMessage);
+								return;
+							}
+							if (entries.size() > 1 && !override) {
+								sender.sendMessage(plugin.translate("xray-toomany"));
+								return;
+							}
+							if (entries.size() == 0 && !override) {
+								sender.sendMessage(plugin.translate("xray-notfound"));
+								return;
+							}
 
-						XrayEntry entry = (XrayEntry) entries.get(0);
+							entry = (XrayEntry) entries.get(0);
+						} else {
+							entry = plugin.getVeinManager().current(player);
+						}
 
 						if (args.length >= 4) {
 							short rating;
@@ -125,6 +135,10 @@ public class XrayCommand implements CommandExecutor {
 							}
 							if (rating < -1 || rating > 3) {
 								sender.sendMessage(plugin.translate("lookup-invalid-syntax"));// TODO specificity
+								return;
+							}
+							if (entry == null) {
+								executeCommandSync(plugin, player, "ap xray");
 								return;
 							}
 							if (entry.getRating() >= 0 && !override) {
@@ -169,7 +183,7 @@ public class XrayCommand implements CommandExecutor {
 								nextEntry(player, true);
 							}
 						} else {
-							XrayResults.nextRecord(plugin, player, entry, auto);
+							XrayResults.sendEntry(plugin, player, entry, auto);
 						}
 					}
 				}.runTaskAsynchronously(plugin);
@@ -192,6 +206,13 @@ public class XrayCommand implements CommandExecutor {
 				return true;
 			}
 		} else {
+			XrayEntry current = plugin.getVeinManager().current(player);
+			if (current != null) {
+				executeCommandSync(plugin, player, String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d",
+						current.x, current.y, current.z, current.world, 45, 0));
+				XrayResults.sendEntry(plugin, player, current, true);
+				return true;
+			}
 			nextEntry(player, true);
 			return true;
 		}
@@ -204,14 +225,17 @@ public class XrayCommand implements CommandExecutor {
 			return;
 		}
 		final XrayEntry entry = en;
+		executeCommandSync(plugin, player, String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", entry.x,
+				entry.y, entry.z, entry.world, 45, 0));
+		XrayResults.sendEntry(plugin, player, en, auto);
+	}
+
+	private static void executeCommandSync(AuxProtectSpigot plugin, CommandSender sender, String command) {
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				Bukkit.getServer().dispatchCommand(player,
-						(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", entry.x, entry.y, entry.z,
-								entry.world, 45, 0)));
+				Bukkit.getServer().dispatchCommand(sender, command);
 			}
 		}.runTask(plugin);
-		XrayResults.nextRecord(plugin, player, en, auto);
 	}
 }

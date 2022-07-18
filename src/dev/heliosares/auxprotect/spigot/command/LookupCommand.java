@@ -228,8 +228,10 @@ public class LookupCommand {
 						}
 					} else if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("before")
 							|| token.equalsIgnoreCase("after")) {
-						if (param.contains("-")) {
-							String[] range = param.split("-");
+						boolean plusminus = param.contains("+-");
+						boolean minus = param.contains("-");
+						if (minus) { // || plusminus unnecessary because they both have '-'
+							String[] range = param.split("\\+?-");
 							if (range.length != 2) {
 								sender.sendMessage(
 										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
@@ -254,15 +256,27 @@ public class LookupCommand {
 								time2 = System.currentTimeMillis() - time2;
 							}
 
-							startTime = Math.min(time1, time2);
-							endTime = Math.max(time1, time2);
+							if (plusminus) {
+								startTime = time1 - time2;
+								endTime = time1 + time2;
+							} else {
+								startTime = Math.min(time1, time2);
+								endTime = Math.max(time1, time2);
+							}
 
 							params.put("before", endTime + "");
 							params.put("after", startTime + "");
 							continue;
 						}
-						long time = TimeUtil.stringToMillis(param);
-						if (time < 0) {
+						long time;
+						try {
+							time = TimeUtil.stringToMillis(param);
+							if (time < 0) {
+								sender.sendMessage(
+										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
+								return;
+							}
+						} catch (NumberFormatException e) {
 							sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 							return;
 						}
@@ -538,14 +552,14 @@ public class LookupCommand {
 						}
 					}
 					if (differentUsers) {
-						sender.sendMessage(XraySolver.solvePlaytime(rs, plugin));
+						sender.sendMessage(XraySolver.solve(rs, plugin));
 						return;
 					}
 					Iterator<DbEntry> it = rs.iterator();
 					while (it.hasNext()) {
 						XrayEntry entry = (XrayEntry) it.next();
 						if (entry.getRating() < 0) {
-							rs.remove(entry);
+							it.remove();
 						}
 					}
 				} else if (money && !sender.isBungee()) {
@@ -571,6 +585,10 @@ public class LookupCommand {
 					Results result = new Results(plugin, rs, sender);
 					result.showPage(1, 4);
 					results.put(uuid, result);
+				}
+
+				if (xray) {
+					sender.sendMessage(XraySolver.solve(rs, plugin));
 				}
 			}
 		};

@@ -68,6 +68,9 @@ public class TimeUtil {
 			time += Double.parseDouble(builder) * modifier;
 			builder = "";
 		}
+		if (builder.length() > 0) {
+			time += Double.parseDouble(builder);
+		}
 		return time;
 	}
 }

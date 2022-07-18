@@ -16,7 +16,7 @@ public class XrayResults {
 		sender.sendMessage("§f------  §9AuxProtect Xray Check Results§7  ------");
 	}
 
-	public static void nextRecord(AuxProtectSpigot plugin, Player player, XrayEntry en, boolean auto) {
+	public static void sendEntry(AuxProtectSpigot plugin, Player player, XrayEntry en, boolean auto) {
 		MySender sender = new MySender(player);
 		sendHeader(sender);
 

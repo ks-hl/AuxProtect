@@ -30,14 +30,12 @@ public class VeinManager {
 	public XrayEntry next(Player player) {
 		XrayEntry current = current(player);
 		if (current != null) {
-			AuxProtectSpigot.getInstance().warning("remove");
 			remove(current);
 		}
 		synchronized (entries) {
 			ArrayList<Long> skipped = this.skipped.get(player);
 			for (XrayEntry entry : entries) {
 				if (skipped != null && skipped.contains(entry.getTime())) {
-					AuxProtectSpigot.getInstance().warning("skip");
 					continue;
 				}
 				if (entry.viewer != null) {
@@ -120,7 +118,7 @@ public class VeinManager {
 	}
 
 	public static String getSeverityColor(int severity) {
-		switch (severity) {// TODO lang
+		switch (severity) {
 		case -1:
 			return "§7";
 		case 0:

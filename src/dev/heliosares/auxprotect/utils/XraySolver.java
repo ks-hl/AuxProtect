@@ -6,6 +6,7 @@ import java.util.HashMap;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -15,7 +16,7 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 public class XraySolver {
 
-	public static BaseComponent[] solvePlaytime(ArrayList<DbEntry> entries, IAuxProtect plugin) {
+	public static BaseComponent[] solve(ArrayList<DbEntry> entries, IAuxProtect plugin) {
 		ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
 		HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
 		for (int i = entries.size() - 1; i >= 0; i--) {
@@ -24,46 +25,45 @@ public class XraySolver {
 			if (hits == null) {
 				hash.put(entry.getUserUUID(), hits = new ArrayList<>());
 			}
-			if (entry.getAction().equals( EntryAction.XRAYCHECK)) {
+			if (entry.getAction().equals(EntryAction.VEIN)) {
 				hits.add(entry);
 			}
 		}
 
 		for (ArrayList<DbEntry> entries1 : hash.values()) {
-			double score = 0;
+			int score = 0;
 			for (DbEntry entry : entries1) {
-				if (entry.getTarget().equals("1")) {
-					score += 1;
-				} else if (entry.getTarget().equals("2")) {
-					score += 2;
-				} else if (entry.getTarget().equals("3")) {
-					score += 3;
+				short rating = ((XrayEntry) entry).getRating();
+				if (rating > 0) {
+					score += rating;
 				}
 			}
-			if (score >= 6) {
+			if (score >= 6 || hash.size() == 1) {
 				String user = entries1.get(0).getUser();
 				String tooltip = "§4Hits for '" + user + "':\n";
 				for (DbEntry entry : entries1) {
-					switch (entry.getTarget()) {
-					case "1":
+					short severity = ((XrayEntry) entry).getRating();
+					switch (severity) {
+					case 1:
 						tooltip += "§e";
 						break;
-					case "2":
+					case 2:
 						tooltip += "§c";
 						break;
-					case "3":
+					case 3:
 						tooltip += "§4";
 						break;
 					default:
 						continue;
 					}
 					tooltip += "\n" + TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime())
-							+ " ago, severity " + entry.getTarget();
+							+ " ago, severity " + severity;
 				}
-				message.append("§4§l" + user + "§c - score " + score + " / 6.0")
+
+				message.append(String.format("§4§l%s§c - score %d / 6", user, score))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(tooltip)))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-								String.format("/ap lookup action:xraycheck target:1,2,3 user:%s", user)));
+								String.format("/ap lookup action:vein #xray target:1,2,3 user:%s", user)));
 				message.append("\n").event((ClickEvent) null).event((HoverEvent) null);
 			}
 		}

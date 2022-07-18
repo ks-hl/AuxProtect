@@ -271,7 +271,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			EntryAction.ALERT.setEnabled(false);
 			EntryAction.CENSOR.setEnabled(false);
 			EntryAction.IGNOREABANDONED.setEnabled(false);
-			EntryAction.XRAYCHECK.setEnabled(false);
+			EntryAction.VEIN.setEnabled(false);
 			EntryAction.ACTIVITY.setEnabled(false);
 		}
 
