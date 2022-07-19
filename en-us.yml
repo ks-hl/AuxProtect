@@ -84,6 +84,7 @@ actions:
     n: unmounted
   alert: may be hacking
   respawn: respawned
+  lightning: struck lightning
   xraycheck: xray check
   censor: was censored
   msg: messaged
