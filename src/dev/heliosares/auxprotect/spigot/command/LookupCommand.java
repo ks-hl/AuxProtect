@@ -2,10 +2,12 @@ package dev.heliosares.auxprotect.spigot.command;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.bukkit.Location;
@@ -539,19 +541,11 @@ public class LookupCommand {
 					results.put(uuid, result);
 					return;
 				} else if (xray) {
-					boolean differentUsers = false;
-					int user = -1;
+					Set<Integer> users = new HashSet<>();
 					for (DbEntry entry : rs) {
-						if (user < 0) {
-							user = entry.getUid();
-							continue;
-						}
-						if (user != entry.getUid()) {
-							differentUsers = true;
-							break;
-						}
+						users.add(entry.getUid());
 					}
-					if (differentUsers) {
+					if (users.size() > 1) {
 						sender.sendMessage(XraySolver.solve(rs, plugin));
 						return;
 					}
@@ -580,12 +574,11 @@ public class LookupCommand {
 				} else if (retention) {
 					RetentionSolver.showRetention(plugin, sender, rs, startTime, endTime);
 					return;
-				} else {
-					String uuid = sender.getUniqueId().toString();
-					Results result = new Results(plugin, rs, sender);
-					result.showPage(1, 4);
-					results.put(uuid, result);
 				}
+				String uuid = sender.getUniqueId().toString();
+				Results result = new Results(plugin, rs, sender);
+				result.showPage(1, 4);
+				results.put(uuid, result);
 
 				if (xray) {
 					sender.sendMessage(XraySolver.solve(rs, plugin));

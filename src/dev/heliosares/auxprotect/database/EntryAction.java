@@ -48,6 +48,7 @@ public class EntryAction {
 	public static final EntryAction TAME = new EntryAction("tame", 139);
 	public static final EntryAction JOBS = new EntryAction("jobs", 140);
 	public static final EntryAction PAY = new EntryAction("pay", 141);
+	public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
 	// END MAIN (255)
 
 	// START SPAM(256)

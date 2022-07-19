@@ -17,8 +17,6 @@ import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.hanging.HangingBreakEvent;
-import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
@@ -139,27 +137,6 @@ public class EntityListener implements Listener {
 		DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.TOTEM, false,
 				e.getEntity().getLocation(), "", "");
 		plugin.add(entry);
-	}
-
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onHangingBreakEvent(HangingBreakEvent e) {
-		if (e.getCause() == RemoveCause.ENTITY) {
-			return;
-		}
-		if (e.getEntity() instanceof ItemFrame) {
-			final ItemFrame item = (ItemFrame) e.getEntity();
-			if (item.getItem() != null) {
-				String data = "";
-				if (InvSerialization.isCustom(item.getItem())) {
-					data = InvSerialization.toBase64(item.getItem());
-				}
-				DbEntry entry = new DbEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false,
-						item.getLocation(), item.getItem().getType().toString().toLowerCase(), data);
-				plugin.add(entry);
-				return;
-			}
-		}
-
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

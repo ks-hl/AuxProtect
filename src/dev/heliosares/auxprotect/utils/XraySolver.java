@@ -63,7 +63,7 @@ public class XraySolver {
 				message.append(String.format("§4§l%s§c - score %d / 6", user, score))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(tooltip)))
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-								String.format("/ap lookup action:vein #xray target:1,2,3 user:%s", user)));
+								String.format("/ap lookup action:vein #xray user:%s", user)));
 				message.append("\n").event((ClickEvent) null).event((HoverEvent) null);
 			}
 		}
