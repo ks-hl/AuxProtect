@@ -916,6 +916,10 @@ public class SQLManager {
 						dos_ = new ArrayList<>();
 						dos.put(key, dos_);
 					}
+					if (value.endsWith("e")) {
+						dos_.add("time = " + value.substring(0, value.length() - 1));
+						continue;
+					}
 					dos_.add("time >= " + value);
 					continue;
 				} else if (key.equalsIgnoreCase("before")) {

@@ -270,6 +270,10 @@ public class LookupCommand {
 							params.put("after", startTime + "");
 							continue;
 						}
+						if (token.equalsIgnoreCase("time") && param.endsWith("e")) {
+							params.put(token, param.toLowerCase());
+							continue;
+						}
 						long time;
 						try {
 							time = TimeUtil.stringToMillis(param);
@@ -282,9 +286,8 @@ public class LookupCommand {
 							sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
 							return;
 						}
-						if (!param.endsWith("e")) {
-							time = System.currentTimeMillis() - time;
-						}
+						time = System.currentTimeMillis() - time;
+
 						param = time + "";
 						if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("after")) {
 							startTime = time;
