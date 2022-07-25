@@ -101,6 +101,7 @@ public class EntityListener implements Listener {
 
 		if (source instanceof Player) {
 			Player sourcePl = (Player) source;
+			plugin.getAPPlayer(sourcePl).addActivity(0.25);
 			itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
 		}
 
