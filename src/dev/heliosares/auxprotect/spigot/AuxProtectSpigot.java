@@ -12,6 +12,7 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
@@ -267,6 +268,29 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
 		this.getCommand("auxprotect").setExecutor(new APCommand(this));
 		this.getCommand("auxprotect").setTabCompleter(new APCommandTab(this));
+
+		new BukkitRunnable() {
+
+			@Override
+			public void run() {
+				checkcommand("auxprotect");
+				checkcommand("ap");
+				checkcommand("claiminv");
+			}
+
+			private void checkcommand(String commandlbl) {
+				PluginCommand command = getCommand(commandlbl);
+				if (command == null || !command.getPlugin().equals(AuxProtectSpigot.this)) {
+					String output = "Command '" + commandlbl + "' taken by ";
+					if (command == null) {
+						output += "an unknown plugin.";
+					} else {
+						output += command.getPlugin().getName() + ".";
+					}
+					warning(output);
+				}
+			}
+		}.runTaskLater(this, 60);
 
 		if (!config.isPrivate()) {
 			EntryAction.ALERT.setEnabled(false);
