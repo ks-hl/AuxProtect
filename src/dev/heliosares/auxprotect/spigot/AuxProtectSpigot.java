@@ -65,6 +65,17 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 	long lastloaded;
 
+	private ClaimInvCommand claiminvcommand;
+	private APCommand apcommand;
+
+	public ClaimInvCommand getClaiminvcommand() {
+		return claiminvcommand;
+	}
+
+	public APCommand getApcommand() {
+		return apcommand;
+	}
+
 	private int SERVER_VERSION;
 
 	public int getCompatabilityVersion() {
@@ -196,6 +207,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
 		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
 		getServer().getPluginManager().registerEvents(new WorldListener(this), this);
+		getServer().getPluginManager().registerEvents(new CommandListener(this), this);
 
 		if (setupEconomy()) {
 			Telemetry.reportHook(this, "Vault", true);
@@ -265,8 +277,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			print(e);
 		}
 
-		this.getCommand("claiminv").setExecutor(new ClaimInvCommand(this));
-		this.getCommand("auxprotect").setExecutor(new APCommand(this));
+		this.getCommand("claiminv").setExecutor(claiminvcommand = new ClaimInvCommand(this));
+		this.getCommand("auxprotect").setExecutor(apcommand = new APCommand(this));
 		this.getCommand("auxprotect").setTabCompleter(new APCommandTab(this));
 
 		new BukkitRunnable() {
@@ -288,6 +300,14 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 						output += command.getPlugin().getName() + ".";
 					}
 					warning(output);
+					if (config.isOverrideCommands()) {
+						warning("Attempting to re-register tab completer.");
+						getCommand("auxprotect").setTabCompleter(new APCommandTab(AuxProtectSpigot.this));
+						getCommand("ap").setTabCompleter(new APCommandTab(AuxProtectSpigot.this));
+					} else {
+						warning("If this is causing issues, try enabling 'OverrideCommands' in the config.");
+					}
+
 				}
 			}
 		}.runTaskLater(this, 60);

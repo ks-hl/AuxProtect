@@ -13,6 +13,7 @@ public class APConfig {
 	private long posInterval;
 	private long inventoryInterval;
 	private long moneyInterval;
+	private boolean overrideCommands;
 
 	public boolean isInventoryOnWorldChange() {
 		return inventoryOnWorldChange;
@@ -38,6 +39,10 @@ public class APConfig {
 		return privateRelease;
 	}
 
+	public boolean isOverrideCommands() {
+		return overrideCommands;
+	}
+
 	public APConfig(FileConfiguration config) {
 		privateRelease = config.getBoolean("private");
 		checkforupdates = config.getBoolean("checkforupdates", true);
@@ -49,6 +54,7 @@ public class APConfig {
 			boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", true);
 			action.setEnabled(enabled);
 		}
+		overrideCommands = config.getBoolean("OverrideCommands");
 	}
 
 	public APConfig(Configuration config) {

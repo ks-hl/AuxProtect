@@ -13,6 +13,9 @@ MySQL:
   password: password
 # Prefix to be used for all table names. Editing this after creating your databases will cause all past data to be lost.
   table-prefix: ''
+# Use this to force all commands within auxprotect to override all other plugin's commands.
+# You only need to enable this if another plugin is interfering. 
+OverrideCommands: false
 Actions:
   leash:
     Enabled: true
