@@ -219,6 +219,10 @@ public class EntryAction {
 	}
 
 	public void setEnabled(boolean state) {
+		if (this.equals(USERNAME)) { // Don't allow this to be disabled.
+			enabled = true;
+			return;
+		}
 		this.enabled = state;
 	}
 

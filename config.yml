@@ -53,8 +53,6 @@ Actions:
     Enabled: true
   ip:
     Enabled: true
-  username:
-    Enabled: true
   inventory:
     Enabled: true
     WorldChange: false
