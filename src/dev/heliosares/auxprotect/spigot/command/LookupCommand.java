@@ -254,14 +254,13 @@ public class LookupCommand {
 							if (!range[0].endsWith("e")) {
 								time1 = System.currentTimeMillis() - time1;
 							}
-							if (!range[1].endsWith("e")) {
-								time2 = System.currentTimeMillis() - time2;
-							}
-
 							if (plusminus) {
 								startTime = time1 - time2;
 								endTime = time1 + time2;
 							} else {
+								if (!range[1].endsWith("e")) {
+									time2 = System.currentTimeMillis() - time2;
+								}
 								startTime = Math.min(time1, time2);
 								endTime = Math.max(time1, time2);
 							}
