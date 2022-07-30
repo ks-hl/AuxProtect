@@ -53,7 +53,8 @@ public class TpCommand implements CommandExecutor {
 
 						@Override
 						public void run() {
-							if (tries++ >= 5 || player.getLocation().distance(target) < 2) {
+							if (tries++ >= 5 || (player.getWorld().equals(target.getWorld())
+									&& player.getLocation().distance(target) < 2)) {
 								this.cancel();
 								return;
 							}

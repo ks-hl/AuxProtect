@@ -21,7 +21,7 @@ public class WorldListener implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockBreak(LightningStrikeEvent e) {
+	public void onLightningStrikeEvent(LightningStrikeEvent e) {
 		plugin.add(new DbEntry("#env", EntryAction.LIGHTNING, false, e.getLightning().getLocation(), "",
 				e.getLightning().isEffect() ? "effect" : ""));
 	}

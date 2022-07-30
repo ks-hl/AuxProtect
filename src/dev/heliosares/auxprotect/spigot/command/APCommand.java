@@ -163,6 +163,11 @@ public class APCommand implements CommandExecutor {
 								"§9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
 						sender.sendMessage("§7"
 								+ LocalDateTime.now().plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
+						sender.sendMessage(
+								String.format("§7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
+						sender.sendMessage(String.format("§7%s %s", TimeUtil.millisToStringExtended(time),
+								add ? "from now" : "ago"));
+
 						return true;
 					}
 				}

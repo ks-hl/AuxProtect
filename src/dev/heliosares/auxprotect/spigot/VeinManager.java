@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.database.XrayEntry;
 
 public class VeinManager {
 	private ArrayList<XrayEntry> entries = new ArrayList<>();
+	private ArrayList<XrayEntry> ignoredentries = new ArrayList<>();
 	private HashMap<Player, ArrayList<Long>> skipped = new HashMap<>();
 
 	/**
@@ -20,9 +21,18 @@ public class VeinManager {
 					return true;
 				}
 			}
+			for (XrayEntry other : ignoredentries) {
+				if (other.add(entry)) {
+					return true;
+				}
+			}
+			if (entry.getRating() == -2) {
+				ignoredentries.add(entry);
+				return false;
+			}
 			entries.add(entry);
-			entries.sort((o1, o2) -> o1.world.compareTo(o2.world));
 			entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
+			entries.sort((o1, o2) -> o1.world.compareTo(o2.world));
 		}
 		return false;
 	}
@@ -102,6 +112,8 @@ public class VeinManager {
 
 	public static String getSeverityDescription(int severity) {
 		switch (severity) {// TODO lang
+		case -2:
+			return "ignored";
 		case -1:
 			return "unrated";
 		case 0:
@@ -119,8 +131,9 @@ public class VeinManager {
 
 	public static String getSeverityColor(int severity) {
 		switch (severity) {
+		case -2:
 		case -1:
-			return "§7";
+			return "§5";
 		case 0:
 			return "§a";
 		case 1:

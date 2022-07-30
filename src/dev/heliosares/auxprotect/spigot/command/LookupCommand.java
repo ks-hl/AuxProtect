@@ -48,6 +48,7 @@ public class LookupCommand {
 		validParams.add("world");
 		validParams.add("user");
 		validParams.add("radius");
+		validParams.add("rating");
 		validParams.add("db");
 		results = new HashMap<>();
 	}
@@ -298,7 +299,6 @@ public class LookupCommand {
 				}
 				if (params.size() < 1) {
 					sender.sendMessage(plugin.translate("lookup-invalid-notenough"));
-					return;
 				}
 				if (!params.containsKey("action")) {
 					for (EntryAction action : EntryAction.values()) {
@@ -360,6 +360,19 @@ public class LookupCommand {
 						params.remove("action");
 					}
 					params.put("action", "activity");
+				}
+				if (params.containsKey("rating")) {
+					if (params.containsKey("action")) {
+						for (String string : params.get("action").split(",")) {
+							if (!string.equalsIgnoreCase("vein")) {
+								sender.sendMessage(plugin.translate("lookup-rating-wrong"));
+								return;
+							}
+						}
+					} else {
+						params.put("action", "vein");
+					}
+
 				}
 				sender.sendMessage(plugin.translate("lookup-looking"));
 				ArrayList<DbEntry> rs = null;

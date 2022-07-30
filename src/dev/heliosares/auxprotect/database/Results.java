@@ -124,8 +124,12 @@ public class Results {
 		XrayEntry xray = null;
 		if (entry instanceof XrayEntry) {
 			xray = (XrayEntry) entry;
-			String rating = "§7Unrated";
-			if (xray.getRating() >= 0) {
+			String rating = null;
+			if (xray.getRating() == -2) {
+				rating = "§5Ignored";
+			} else if (xray.getRating() == -1) {
+				rating = "§7Unrated";
+			} else {
 				rating = xray.getRating() + "";
 			}
 			String color = VeinManager.getSeverityColor(xray.getRating());
@@ -133,9 +137,9 @@ public class Results {
 					ClickEvent.Action.RUN_COMMAND, "/" + plugin.getCommandPrefix() + " xray rate " + entry.getTime()));
 			String hover = "";
 			if (xray.getRating() >= 0) {
-				hover += color + VeinManager.getSeverityDescription(xray.getRating());
+				hover += color + VeinManager.getSeverityDescription(xray.getRating()) + "\n\n";
 			}
-			hover += "\n\n" + plugin.translate("xray-click-to-change");
+			hover += plugin.translate("xray-click-to-change");
 			message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
 		}
 

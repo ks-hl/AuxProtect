@@ -38,6 +38,42 @@ public class TimeUtil {
 		return padDouble(roundToPlaces(millis, 2)) + "d";
 	}
 
+	public static String millisToStringExtended(long time) {
+		time /= 1000;
+		int days = (int) (time / (60 * 60 * 24));
+		int hours = (int) ((time / (60 * 60)) % 24);
+		int minutes = (int) ((time / 60) % 60);
+		int seconds = (int) (time % 60);
+		String playtimeMsg = "";
+		boolean started = false;
+		if (days > 0) {
+			playtimeMsg += days + "d";
+			started = true;
+		}
+		if (hours > 0) {
+			if (started) {
+				playtimeMsg += " ";
+			}
+			playtimeMsg += " " + hours + "h";
+			started = true;
+		}
+		if (minutes > 0) {
+			if (started) {
+				playtimeMsg += " ";
+			}
+			playtimeMsg += " " + minutes + "m";
+			started = true;
+		}
+		if (seconds > 0) {
+			if (started) {
+				playtimeMsg += " ";
+			}
+			playtimeMsg += " " + seconds + "s";
+			started = true;
+		}
+		return playtimeMsg;
+	}
+
 	public static long stringToMillis(String timeStr) throws NumberFormatException {
 		String builder = "";
 		long time = 0;

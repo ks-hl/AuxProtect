@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -18,7 +17,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.Event.Result;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
@@ -42,7 +40,6 @@ import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -332,27 +329,6 @@ public class PlayerListener implements Listener {
 		if (e.isCancelled()) {
 			return;
 		}
-	}
-
-	private final ArrayList<Material> xrayMaterialsChecked = new ArrayList<Material>(
-			Arrays.asList(Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE, Material.ANCIENT_DEBRIS));// TODO config
-
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onBlockBreak(BlockBreakEvent e) {
-		if (APPermission.XRAY_EXEMPT.hasPermission(e.getPlayer())) {
-			return;
-		}
-		if (!xrayMaterialsChecked.contains(e.getBlock().getType())) {
-			return;
-		}
-		final XrayEntry entry = new XrayEntry(AuxProtectSpigot.getLabel(e.getPlayer()), e.getBlock().getLocation(),
-				AuxProtectSpigot.getLabel(e.getBlock().getType()));
-		new BukkitRunnable() {
-			@Override
-			public void run() {
-				plugin.add(entry);
-			}
-		}.runTaskAsynchronously(plugin);
 	}
 
 	public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,

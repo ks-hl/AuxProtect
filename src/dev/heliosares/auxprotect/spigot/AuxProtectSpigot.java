@@ -208,6 +208,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
 		getServer().getPluginManager().registerEvents(new WorldListener(this), this);
 		getServer().getPluginManager().registerEvents(new CommandListener(this), this);
+		getServer().getPluginManager().registerEvents(new XrayListener(this), this);
 
 		if (setupEconomy()) {
 			Telemetry.reportHook(this, "Vault", true);
