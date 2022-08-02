@@ -100,10 +100,15 @@ public class LookupCommandTab implements TabCompleter {
 				possible.add("world:" + world.getName());
 			}
 		}
-		if (currentArg.startsWith("b"))
-			possible.add("before:");
 		if (currentArg.startsWith("rat"))
 			possible.add("rating:");
+		if (currentArg.matches("rating:-?")) {
+			for (int i = -2; i <= 3; i++) {
+				possible.add("rating:" + i);
+			}
+		}
+		if (currentArg.startsWith("b"))
+			possible.add("before:");
 		if (currentArg.startsWith("a"))
 			possible.add("after:");
 

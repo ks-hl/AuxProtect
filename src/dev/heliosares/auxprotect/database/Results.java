@@ -165,8 +165,8 @@ public class Results {
 			if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
 				message.append(" §a[View Inv]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-								String.format(commandPrefix + " l u:%s a:inventory target:death before:%de after:%de",
-										entry.getTarget(), entry.getTime() + 50L, entry.getTime() - 50L)))
+								String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-50e",
+										entry.getTarget(), entry.getTime())))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 			}
 		}

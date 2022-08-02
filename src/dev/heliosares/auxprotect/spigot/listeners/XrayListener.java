@@ -24,6 +24,18 @@ import dev.heliosares.auxprotect.utils.PerPlayerManager;
 
 public class XrayListener implements Listener {
 
+	private static final ArrayList<Material> NETHER_CHECK = new ArrayList<Material>(
+			Arrays.asList(Material.ANCIENT_DEBRIS));// TODO config
+	private static final int NETHER_MAXY = 128;
+
+	private static final ArrayList<Material> OVERWORLD_CHECK = new ArrayList<Material>(
+			Arrays.asList(Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE));// TODO config
+	private static final int OVERWORLD_MAXY = 16;
+
+	private static final int NON_ORE_RADIUS = 10;
+	private static final int ORE_RADIUS = 5;
+	private static final int NON_ORE_THRESHOLD = 2;
+
 	private AuxProtectSpigot plugin;
 
 	public XrayListener(AuxProtectSpigot plugin) {
@@ -84,14 +96,6 @@ public class XrayListener implements Listener {
 		}
 	}
 
-	private static final ArrayList<Material> NETHER_CHECK = new ArrayList<Material>(
-			Arrays.asList(Material.ANCIENT_DEBRIS));// TODO config
-	private static final int NETHER_MAXY = 128;
-
-	private static final ArrayList<Material> OVERWORLD_CHECK = new ArrayList<Material>(
-			Arrays.asList(Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE));// TODO config
-	private static final int OVERWORLD_MAXY = 16;
-
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onBlockBreak(BlockBreakEvent e) {
 		if (!EntryAction.VEIN.isEnabled()) {
@@ -124,7 +128,7 @@ public class XrayListener implements Listener {
 			// Make sure we aren't actively logging a vein here.
 			boolean nearbyOres = false;
 			for (Block b : hist.oreBlock) {
-				if (comparedistance(e.getBlock(), b, 5)) {
+				if (comparedistance(e.getBlock(), b, ORE_RADIUS)) {
 					nearbyOres = true;
 					break;
 				}
@@ -136,18 +140,19 @@ public class XrayListener implements Listener {
 		}
 
 		// Don't log if a non-ore block hasn't been broken within 20 blocks
-		boolean nearbyNonOres = false;
+		int nearbyNonOres = 0;
 		for (Block b : hist.nonOreBlock) {
-			if (comparedistance(e.getBlock(), b, 10)) {
-				nearbyNonOres = true;
-				break;
+			if (comparedistance(e.getBlock(), b, NON_ORE_RADIUS)) {
+				if (nearbyNonOres++ >= NON_ORE_THRESHOLD) {
+					break;
+				}
 			}
 		}
 
 		hist.addBlock(e.getBlock(), true);
 		final XrayEntry entry = new XrayEntry(AuxProtectSpigot.getLabel(e.getPlayer()), e.getBlock().getLocation(),
 				AuxProtectSpigot.getLabel(e.getBlock().getType()));
-		if (!nearbyNonOres) {
+		if (nearbyNonOres < NON_ORE_THRESHOLD) {
 			entry.setRating((short) -2);
 		}
 		new BukkitRunnable() {
