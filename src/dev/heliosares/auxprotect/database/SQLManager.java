@@ -99,9 +99,11 @@ public class SQLManager {
 			tablePrefix = prefix;
 		}
 		this.sqliteFile = sqliteFile;
+		plugin.info("innit");
 	}
 
 	public void connect(String user, String pass) throws SQLException, IOException {
+		plugin.info("connecting");
 		boolean driver = false;
 		if (!driver)
 			try {
@@ -1391,7 +1393,7 @@ public class SQLManager {
 				statement.setInt(i++, entry.getTargetId());
 				if (statement.executeUpdate() > 1) {
 					plugin.warning("Updated multiple entries when updating the following entry:");
-					Results.sendEntry(plugin, new MySender(Bukkit.getConsoleSender()), entry, 0);
+					Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0);
 				}
 			}
 		}

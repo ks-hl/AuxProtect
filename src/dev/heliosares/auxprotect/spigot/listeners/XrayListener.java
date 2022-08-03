@@ -24,12 +24,10 @@ import dev.heliosares.auxprotect.utils.PerPlayerManager;
 
 public class XrayListener implements Listener {
 
-	private static final ArrayList<Material> NETHER_CHECK = new ArrayList<Material>(
-			Arrays.asList(Material.ANCIENT_DEBRIS));// TODO config
+	private static final ArrayList<Material> NETHER_CHECK = new ArrayList<>();// TODO config
 	private static final int NETHER_MAXY = 128;
 
-	private static final ArrayList<Material> OVERWORLD_CHECK = new ArrayList<Material>(
-			Arrays.asList(Material.DIAMOND_ORE, Material.DEEPSLATE_DIAMOND_ORE));// TODO config
+	private static final ArrayList<Material> OVERWORLD_CHECK = new ArrayList<>();// TODO config
 	private static final int OVERWORLD_MAXY = 16;
 
 	private static final int NON_ORE_RADIUS = 10;
@@ -54,6 +52,13 @@ public class XrayListener implements Listener {
 				}
 			}
 		}.runTaskTimerAsynchronously(plugin, 20 * 60 * 5, 20 * 60 * 5);
+
+		NETHER_CHECK.add(Material.ANCIENT_DEBRIS);
+
+		OVERWORLD_CHECK.add(Material.DIAMOND_ORE);
+		if (plugin.getCompatabilityVersion() >= 17) {
+			OVERWORLD_CHECK.add(Material.DEEPSLATE_DIAMOND_ORE);
+		}
 	}
 
 	PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());

@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.1.6</version>
+	<version>1.1.7-pre1</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -36,8 +36,12 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<delete dir="${testserver}/plugins" includes="${project.artifactId}-*.jar" />
-								<copy todir="${testserver}/plugins">
+								<delete dir="${testserver}/Test1/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
+								<copy todir="${testserver}/Test1/plugins">
+									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
+								</copy>
+								<delete dir="${testserver}/Proxy/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
+								<copy todir="${testserver}/Proxy/plugins">
 									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
 								</copy>
 							</target>
@@ -71,13 +75,16 @@
 			<id>playpro-repo</id>
 			<url>https://maven.playpro.com</url>
 		</repository>
-
+		<repository>
+			<id>essentials-repo</id>
+			<url>https://repo.essentialsx.net/releases/</url>
+		</repository>
 	</repositories>
 	<dependencies>
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.19-R0.1-SNAPSHOT</version>
+			<version>1.19.1-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
@@ -151,9 +158,15 @@
 			<version>4.17.2</version>
 			<scope>provided</scope>
 		</dependency>
+		<dependency>
+			<groupId>net.essentialsx</groupId>
+			<artifactId>EssentialsX</artifactId>
+			<version>2.19.4</version>
+			<scope>provided</scope>
+		</dependency>
 	</dependencies>
 	<properties>
 		<jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
-		<testserver>${env.USERPROFILE}/Documents/TestServer/Test1/</testserver>
+		<testserver>${env.USERPROFILE}/Documents/TestServer</testserver>
 	</properties>
 </project>

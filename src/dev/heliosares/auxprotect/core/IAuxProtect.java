@@ -43,4 +43,6 @@ public interface IAuxProtect {
 	public void reloadConfig();
 	
 	public String getCommandPrefix();
+	
+	public MySender getConsoleSender();
 }

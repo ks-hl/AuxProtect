@@ -4,15 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.sql.SQLException;
 import java.util.UUID;
-import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
-
-import org.bukkit.block.Container;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.Player;
 
 import dev.heliosares.auxprotect.bungee.command.APBCommand;
 import dev.heliosares.auxprotect.core.APConfig;
@@ -21,9 +15,7 @@ import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
-import net.brcdev.shopgui.ShopGuiPlugin;
 import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.ProxyServer;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Listener;
@@ -32,7 +24,6 @@ import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;
 import net.md_5.bungee.config.YamlConfiguration;
 
-@SuppressWarnings("unused")
 public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	protected Configuration configurationFile;
 	public APConfig config;
@@ -280,5 +271,10 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	@Override
 	public String getCommandPrefix() {
 		return "auxprotectbungee";
+	}
+
+	@Override
+	public MySender getConsoleSender() {
+		return new MySender(this.getProxy().getConsole());
 	}
 }

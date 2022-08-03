@@ -24,6 +24,7 @@ import net.milkbowl.vault.economy.Economy;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -269,6 +270,15 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			plugin = getPlugin(name);
 			if (plugin != null && plugin.isEnabled()) {
 				getServer().getPluginManager().registerEvents(new JobsListener(this), this);
+				Telemetry.reportHook(this, name, true);
+			} else {
+				Telemetry.reportHook(this, name, false);
+			}
+
+			name = "Essentials";
+			plugin = getPlugin(name);
+			if (plugin != null && plugin.isEnabled()) {
+				getServer().getPluginManager().registerEvents(new EssentialsListener(this), this);
 				Telemetry.reportHook(this, name, true);
 			} else {
 				Telemetry.reportHook(this, name, false);
@@ -660,5 +670,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public String getCommandPrefix() {
 		return "auxprotect";
+	}
+
+	@Override
+	public MySender getConsoleSender() {
+		return new MySender(this.getServer().getConsoleSender());
 	}
 }
