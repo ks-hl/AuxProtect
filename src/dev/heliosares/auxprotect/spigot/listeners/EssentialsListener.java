@@ -17,27 +17,25 @@ public class EssentialsListener implements Listener {
 		this.plugin = plugin;
 	}
 
+	@SuppressWarnings("deprecation")
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onTransactionEvent(TransactionEvent e) {
-//		if (e.getRequester().getPlayer() == null && e.getRequester().getDisplayName() == null) {
-//			return;
-//		}
-//		String label = null;
-//		Location loc = null;
-//		if (e.getRequester().getPlayer() != null) {
-//			loc = e.getRequester().getPlayer().getLocation();
-//			label = AuxProtectSpigot.getLabel(e.getRequester().getPlayer());
-//		} else {
-//			label = "#server";
-//		}
-//
-//		IUser target = e.getTarget();
-//		if (loc == null) {
-//			plugin.add(new DbEntry(label, EntryAction.PAY, false, AuxProtectSpigot.getLabel(target.getBase()),
-//					"$" + e.getAmount().doubleValue()));
-//		} else {
-//			plugin.add(new DbEntry(label, EntryAction.PAY, false, loc,
-//					AuxProtectSpigot.getLabel(e.getTarget().getBase()), "$" + e.getAmount().doubleValue()));
-//		}
+		String label = null;
+		Location loc = null;
+		if (e.getRequester().getPlayer() != null) {
+			loc = e.getRequester().getPlayer().getLocation();
+			label = AuxProtectSpigot.getLabel(e.getRequester().getPlayer());
+		} else {
+			label = "#server";
+		}
+
+		IUser target = e.getTarget();
+		String amount = plugin.formatMoney(e.getAmount().doubleValue());
+		if (loc == null) {
+			plugin.add(new DbEntry(label, EntryAction.PAY, false, AuxProtectSpigot.getLabel(target.getBase()), amount));
+		} else {
+			plugin.add(new DbEntry(label, EntryAction.PAY, false, loc,
+					AuxProtectSpigot.getLabel(e.getTarget().getBase()), amount));
+		}
 	}
 }
