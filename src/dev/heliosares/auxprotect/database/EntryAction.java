@@ -80,7 +80,7 @@ public class EntryAction {
 	public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
 	public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
 	public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
-	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
+	//public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
 	public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
 	// END INVENTORY(1279)
 
