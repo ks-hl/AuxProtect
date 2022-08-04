@@ -34,7 +34,7 @@ public class AuctionHouseListener implements Listener {
 			}
 		}
 
-		plugin.add(new DbEntry("$" + e.getSeller_UUID(), EntryAction.AHLIST, false, l,
+		plugin.add(new DbEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
 				e.getItem().getType().toString().toLowerCase(),
 				plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
 	}
@@ -53,7 +53,7 @@ public class AuctionHouseListener implements Listener {
 			}
 		}
 
-		plugin.add(new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AHBUY, false, l,
+		plugin.add(new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
 				e.getItem().getType().toString().toLowerCase(), "From " + e.getSeller().getName() + " for "
 						+ plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
 	}

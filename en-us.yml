@@ -124,5 +124,6 @@ actions:
   itemframe:
     p: add itemframe
     n: remove itemframe
-  ahlist: listed on ah
-  ahbuy: bought from ah
+  auctionlist: listed on auction
+  auctionbuy: bought from auction
+  auctionbid: bid

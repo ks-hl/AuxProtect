@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.UUID;

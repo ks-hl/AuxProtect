@@ -436,7 +436,7 @@ public class LookupCommand {
 							} else if (type == '$') {
 								totalMoney += value;
 							}
-						} else if (entry.getAction().equals(EntryAction.AHBUY)) {
+						} else if (entry.getAction().equals(EntryAction.AUCTIONBUY)) {
 							String[] parts = entry.getData().split(" ");
 							try {
 								double each = Double.parseDouble(parts[parts.length - 1].substring(1));
