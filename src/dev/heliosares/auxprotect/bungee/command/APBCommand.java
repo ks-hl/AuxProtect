@@ -21,7 +21,7 @@ public class APBCommand extends Command implements TabExecutor {
 	private AuxProtectBungee plugin;
 
 	public APBCommand(AuxProtectBungee plugin) {
-		super("apb");
+		super(plugin.getCommandPrefix());
 		this.plugin = plugin;
 	}
 

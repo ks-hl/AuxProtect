@@ -7,6 +7,7 @@ import java.util.ArrayList;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
 
 public class ActivityResults extends Results {
@@ -14,8 +15,8 @@ public class ActivityResults extends Results {
 	private final long rangeStart;
 	private final long rangeEnd;
 
-	public ActivityResults(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player) {
-		super(plugin, entries, player);
+	public ActivityResults(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player, Parameters params) {
+		super(plugin, entries, player, params);
 
 		rangeEnd = entries.get(0).getTime();
 

@@ -128,6 +128,16 @@ public class XrayListener implements Listener {
 		}
 		BlockHistory hist = blockhistory.get(e.getPlayer());
 
+		boolean anykindofore = e.getBlock().getType().toString().endsWith("_ORE");
+
+		// Any kind of ore that is not being checked by the checker for the given world.
+		// This completely ignores redstone ore and such so when players dig through
+		// those
+		// ores and happen to find valuables, it is not logged.
+		if (!ore && anykindofore) {
+			// TODO return;
+		}
+
 		if (!ore) {
 			// Make sure we aren't actively logging a vein here.
 			boolean nearbyOres = false;

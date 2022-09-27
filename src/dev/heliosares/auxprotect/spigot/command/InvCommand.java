@@ -20,6 +20,7 @@ import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Experience;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import dev.heliosares.auxprotect.utils.Pane.Type;
@@ -64,22 +65,29 @@ public class InvCommand implements CommandExecutor {
 			return true;
 		}
 		if (entry.getAction().equals(EntryAction.INVENTORY)) {
-
-			String[] data = entry.getData().split(",");
-			final ItemStack[] storage = InvSerialization.toItemStackArray(data[0]);
-			final ItemStack[] armor = InvSerialization.toItemStackArray(data[1]);
-			final ItemStack[] extra = InvSerialization.toItemStackArray(data[2]);
+			PlayerInventoryRecord inv_ = null;
+			try {
+				inv_ = InvSerialization.toPlayerInventory(entry.getBlob());
+			} catch (Exception e1) {
+				plugin.warning("Error serializing inventory lookup");
+				plugin.print(e1);
+				sender.sendMessage(plugin.translate("error"));
+				return true;
+			}
+			final PlayerInventoryRecord inv = inv_;
 			OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
 			final Player targetO = target.getPlayer();
 			Pane enderpane = new Pane(Type.SHOW);
-			final Inventory ender = InvSerialization.toInventory(data[3], enderpane,
-					target.getName() + "'" + (target.getName().endsWith("s") ? "" : "s") + " enderchest");
-			enderpane.setInventory(ender);
+
+			Inventory enderinv = Bukkit.getServer().createInventory(enderpane, 27, target.getName() + " Ender Chest - "
+					+ TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()) + " ago.");
+			enderinv.setContents(inv.ender());
 
 			Pane pane = new Pane(Type.SHOW);
-			Inventory inv = Bukkit.getServer().createInventory(pane, 54, target.getName() + " "
+			Inventory mainInv = Bukkit.getServer().createInventory(pane, 54, target.getName() + " "
 					+ TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()) + " ago.");
-			pane.setInventory(inv);
+			pane.setInventory(mainInv);
+
 			if (APPermission.INV_RECOVER.hasPermission(sender)) {
 				if (targetO != null) {
 					pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, new Runnable() {
@@ -92,12 +100,11 @@ public class InvCommand implements CommandExecutor {
 								return;
 							}
 
-							targetO.getInventory().setStorageContents(storage);
-							targetO.getInventory().setArmorContents(armor);
-							targetO.getInventory().setExtraContents(extra);
+							targetO.getInventory().setStorageContents(inv.storage());
+							targetO.getInventory().setArmorContents(inv.armor());
+							targetO.getInventory().setExtraContents(inv.extra());
 							try {
-								System.out.println(data[4]);
-								Experience.setExp(targetO, Integer.parseInt(data[4]));
+								Experience.setExp(targetO, inv.exp());
 							} catch (Exception e) {
 								player.sendMessage("§cUnable to recover experience.");
 							}
@@ -124,20 +131,23 @@ public class InvCommand implements CommandExecutor {
 					public void run() {
 						ItemStack[] output = new ItemStack[45];
 						for (int i = 0; i < output.length; i++) {
-							output[i] = inv.getItem(i);
+							output[i] = mainInv.getItem(i);
 						}
-						String recover = InvSerialization.toBase64(output);
+						String recover = null;
+						try {
+							recover = InvSerialization.toBase64(InvSerialization.toByteArray(output));
+						} catch (Exception e1) {
+							plugin.warning("Error serializing inventory recovery");
+							plugin.print(e1);
+							sender.sendMessage(plugin.translate("error"));
+						}
+						// TODO Implemented for future use...
+						plugin.data.getData().set("Recoverables." + target.getUniqueId().toString() + ".time",
+								System.currentTimeMillis());
 						plugin.data.getData().set("Recoverables." + target.getUniqueId().toString() + ".inv", recover);
-						if (data.length >= 5) {
-							try {
-								plugin.data.getData().set("Recoverables." + target.getUniqueId().toString() + ".xp",
-										Integer.parseInt(data[4]));
-							} catch (NumberFormatException e) {
-								plugin.getLogger()
-										.warning("Unable to save EXP: " + data[4] + " for " + target.getName());
-							}
-						} else {
-							player.sendMessage("§cUnable to recover experience.");
+						if (inv.exp() > 0) {
+							plugin.data.getData().set("Recoverables." + target.getUniqueId().toString() + ".xp",
+									inv.exp());
 						}
 						plugin.data.save();
 						player.sendMessage("§aYou recovered " + target.getName() + "'"
@@ -162,56 +172,59 @@ public class InvCommand implements CommandExecutor {
 					}
 				}, "§a§lRecover Inventory");
 			}
-			if (data.length >= 5) {
-				pane.addButton(51, Material.GREEN_STAINED_GLASS_PANE, null, "§2§lPlayer had " + data[4] + "xp");
-			} else {
-				pane.addButton(51, Material.GREEN_STAINED_GLASS_PANE, null, "§8§lNo XP data");
-			}
-			pane.addButton(52, Material.BLACK_STAINED_GLASS_PANE, new Runnable() {
-
-				@Override
-				public void run() {
-					player.openInventory(ender);
-				}
-			}, "§8§lView Enderchest");
-			pane.addButton(53, Material.RED_STAINED_GLASS_PANE, new Runnable() {
+			int space = 53;
+			pane.addButton(space--, Material.RED_STAINED_GLASS_PANE, new Runnable() {
 
 				@Override
 				public void run() {
 					player.closeInventory();
 				}
 			}, "§c§lClose");
+			pane.addButton(space--, Material.BLACK_STAINED_GLASS_PANE, new Runnable() {
+
+				@Override
+				public void run() {
+					player.openInventory(enderinv);
+				}
+			}, "§8§lView Enderchest");
+			// TODO backpack goes here
+			pane.addButton(space--, Material.GREEN_STAINED_GLASS_PANE, null,
+					inv.exp() >= 0 ? ("§2§lPlayer had " + inv.exp() + "xp") : "§8§lNo XP data");
 
 			int i1 = 0;
-			for (int i = 9; i < storage.length; i++) {
-				if (storage[i] != null)
-					inv.setItem(i1, storage[i]);
+			for (int i = 9; i < inv.storage().length; i++) {
+				if (inv.storage()[i] != null)
+					mainInv.setItem(i1, inv.storage()[i]);
 				i1++;
 			}
 			for (int i = 0; i < 9; i++) {
-				if (storage[i] != null)
-					inv.setItem(i1, storage[i]);
+				if (inv.storage()[i] != null)
+					mainInv.setItem(i1, inv.storage()[i]);
 				i1++;
 			}
-			for (int i = armor.length - 1; i >= 0; i--) {
-				if (armor[i] != null)
-					inv.setItem(i1, armor[i]);
+			for (int i = inv.armor().length - 1; i >= 0; i--) {
+				if (inv.armor()[i] != null)
+					mainInv.setItem(i1, inv.armor()[i]);
 				i1++;
 			}
-			for (int i = 0; i < extra.length; i++) {
-				inv.setItem(i1, extra[i]);
+			for (int i = 0; i < inv.extra().length; i++) {
+				if (inv.extra()[i] != null)
+					mainInv.setItem(i1, inv.extra()[i]);
 				i1++;
 			}
-			player.openInventory(inv);
-		} else if (entry.getData().contains(InvSerialization.itemSeparator)) {
-			String data = entry.getData().substring(entry.getData().indexOf(InvSerialization.itemSeparator));
-			ItemStack item = InvSerialization.toItemStack(data);
+			player.openInventory(mainInv);
+		} else if (entry.hasBlob()) {
 			Pane pane = new Pane(Type.SHOW);
-			Inventory inv = Bukkit.createInventory(pane, 9, "Item Viewer");
-			pane.setInventory(inv);
-			inv.addItem(item);
-			player.openInventory(inv);
-
+			try {
+				Inventory inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
+				pane.setInventory(inv);
+				player.openInventory(inv);
+			} catch (Exception e1) {
+				plugin.warning("Error serializing itemviewer");
+				plugin.print(e1);
+				sender.sendMessage(plugin.translate("error"));
+				return true;
+			}
 		}
 		return true;
 	}

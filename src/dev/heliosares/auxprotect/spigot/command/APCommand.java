@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.spigot.command;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -9,8 +10,10 @@ import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Player;
 
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.TimeUtil;
@@ -26,6 +29,7 @@ public class APCommand implements CommandExecutor {
 	private XrayCommand xrayCommand;
 	private MoneyCommand moneyCommand;
 	private RetentionCommand retentionCommand;
+	private WatchCommand watchCommand;
 
 	public APCommand(AuxProtectSpigot plugin) {
 		this.plugin = plugin;
@@ -37,6 +41,7 @@ public class APCommand implements CommandExecutor {
 		xrayCommand = new XrayCommand(plugin);
 		moneyCommand = new MoneyCommand(plugin);
 		retentionCommand = new RetentionCommand(plugin);
+		watchCommand = new WatchCommand(plugin);
 	}
 
 	@Override
@@ -48,6 +53,12 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return lookupCommand.onCommand(sender, args);
+			} else if (args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w")) {
+				if (!APPermission.WATCH.hasPermission(sender)) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				return watchCommand.onCommand(sender, args);
 			} else if (args[0].equalsIgnoreCase("purge")) {
 				if (!APPermission.PURGE.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
@@ -98,6 +109,33 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return invCommand.onCommand(sender, command, label, args);
+			} else if (args[0].equalsIgnoreCase("saveinv")) {
+				if (!APPermission.INV_SAVE.hasPermission(sender)) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				if (args.length != 2) {
+					sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
+					return true;
+				}
+				Player target = Bukkit.getPlayer(args[1]);
+				APPlayer apTarget = null;
+				if (target != null) {
+					apTarget = plugin.getAPPlayer(target);
+				}
+				if (apTarget == null) {
+					sender.sendMessage(String.format(plugin.translate("lookup-playernotfound"), args[1]));
+					return true;
+				}
+				if (!APPermission.ADMIN.hasPermission(sender)
+						&& System.currentTimeMillis() - apTarget.lastLoggedInventory < 10000L) {
+					sender.sendMessage(plugin.translate("inv-toosoon"));
+					return true;
+				}
+				long time = apTarget.logInventory("manual");
+				sender.sendMessage(String.format(plugin.translate("inv-manual-success"), target.getName(),
+						target.getName().endsWith("s") ? "" : "s", time + "e"));
+				return true;
 			} else if (args[0].equalsIgnoreCase("debug")) {
 				if (!APPermission.ADMIN.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));
@@ -199,6 +237,26 @@ public class APCommand implements CommandExecutor {
 						+ Math.round(plugin.getSqlManager().putTimePerExec.getMean() / 1000.0) / 1000.0 + "§7ms");
 				sender.sendMessage("§7Queued Rows: §9" + plugin.queueSize());
 				return true;
+			} else if (args[0].equalsIgnoreCase("backup")) {
+				if (!APPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				plugin.runAsync(new Runnable() {
+
+					@Override
+					public void run() {
+						String backup = null;
+						try {
+							backup = plugin.getSqlManager().backup();
+						} catch (IOException e) {
+							plugin.print(e);
+							return;
+						}
+						sender.sendMessage("Backup created: " + backup);
+					}
+				});
+				return true;
 			} else if (args[0].equalsIgnoreCase("sql") || args[0].equalsIgnoreCase("sqlu")) {
 				if (!APPermission.SQL.hasPermission(sender) || !sender.equals(Bukkit.getConsoleSender())) {
 					sender.sendMessage(plugin.translate("no-permission"));
@@ -208,27 +266,36 @@ public class APCommand implements CommandExecutor {
 				for (int i = 1; i < args.length; i++) {
 					msg += args[i] + " ";
 				}
-				try {
-					if (args[0].equalsIgnoreCase("sql")) {
-						plugin.getSqlManager().execute(msg.trim());
-					} else {
-						List<List<String>> results = plugin.getSqlManager().executeUpdate(msg.trim());
-						if (results != null) {
-							for (List<String> result : results) {
-								String line = "";
-								for (String part : result) {
-									line += part + ", ";
+				final String stmt = msg.trim();
+				plugin.runAsync(new Runnable() {
+
+					@Override
+					public void run() {
+						sender.sendMessage("§aRunning...");
+						try {
+							if (args[0].equalsIgnoreCase("sql")) {
+								plugin.getSqlManager().execute(stmt);
+							} else {
+								List<List<String>> results = plugin.getSqlManager().executeUpdate(stmt);
+								if (results != null) {
+									for (List<String> result : results) {
+										String line = "";
+										for (String part : result) {
+											line += part + ", ";
+										}
+										sender.sendMessage(line);
+									}
 								}
-								sender.sendMessage(line);
 							}
+						} catch (SQLException e) {
+							sender.sendMessage("§cAn error occured.");
+							plugin.print(e);
+							return;
 						}
+						sender.sendMessage("§aSQL statement executed successfully.");
 					}
-				} catch (SQLException e) {
-					sender.sendMessage("§cAn error occured.");
-					plugin.print(e);
-					return true;
-				}
-				sender.sendMessage("§aSQL statement executed successfully.");
+				});
+
 				return true;
 			} else {
 				sender.sendMessage(plugin.translate("unknown-subcommand"));

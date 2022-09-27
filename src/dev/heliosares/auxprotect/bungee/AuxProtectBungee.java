@@ -270,7 +270,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 
 	@Override
 	public String getCommandPrefix() {
-		return "auxprotectbungee";
+		return "apb";
 	}
 
 	@Override

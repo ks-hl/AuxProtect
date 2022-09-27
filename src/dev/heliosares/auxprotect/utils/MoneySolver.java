@@ -53,7 +53,7 @@ public class MoneySolver extends ChartRenderer {
 				}
 				try {
 					double multiplier = 1;
-					String parse = result.getData().replaceAll("[$,]", "").toLowerCase();
+					String parse = result.getData().replaceAll("[^\\d.]", "").toLowerCase();
 					if (parse.endsWith("k")) {
 						multiplier = 1000;
 						parse = parse.substring(0, parse.length() - 1);

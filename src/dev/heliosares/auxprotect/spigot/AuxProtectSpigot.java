@@ -34,8 +34,8 @@ import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.command.APCommand;
 import dev.heliosares.auxprotect.spigot.command.APCommandTab;
 import dev.heliosares.auxprotect.spigot.command.ClaimInvCommand;
+import dev.heliosares.auxprotect.spigot.command.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.*;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Language;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
@@ -344,10 +344,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 						if (config.getInventoryInterval() > 0) {
 							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory > config
 									.getInventoryInterval()) {
-								apPlayer.lastLoggedInventory = System.currentTimeMillis();
-								dbRunnable.add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player),
-										EntryAction.INVENTORY, false, apPlayer.player.getLocation(), "periodic",
-										InvSerialization.playerToBase64(apPlayer.player)));
+								apPlayer.logInventory("periodic");
 							}
 						}
 
@@ -434,6 +431,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 				}
 			}
 		}.runTaskTimerAsynchronously(this, 5, 5);
+		new BukkitRunnable() {
+
+			@Override
+			public void run() {
+				WatchCommand.tick(AuxProtectSpigot.this);
+			}
+		}.runTaskTimerAsynchronously(this, 1, 1);
 
 		new BukkitRunnable() {
 
@@ -501,7 +505,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			if (apPlayers.containsKey(player.getUniqueId())) {
 				return apPlayers.get(player.getUniqueId());
 			}
-			APPlayer apPlayer = new APPlayer(player);
+			APPlayer apPlayer = new APPlayer(this, player);
 			apPlayers.put(player.getUniqueId(), apPlayer);
 			return apPlayer;
 		}
@@ -519,10 +523,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 	@Override
 	public void onDisable() {
-		if (dbRunnable != null) {
-			dbRunnable.run();
-		}
 		if (sqlManager != null) {
+			if (dbRunnable != null && sqlManager.isConnected()) {
+				dbRunnable.run();
+			}
 			sqlManager.close();
 		}
 		dbRunnable = null;

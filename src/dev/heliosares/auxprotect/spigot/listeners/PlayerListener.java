@@ -1,6 +1,8 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -95,11 +97,16 @@ public class PlayerListener implements Listener {
 				}
 				if (added != null && added.getType() != Material.AIR) {
 					String data = "";
-					if (InvSerialization.isCustom(added)) {
-						data = InvSerialization.toBase64(added);
-					}
 					DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
 							item.getLocation(), added.getType().toString().toLowerCase(), data);
+					if (InvSerialization.isCustom(added)) {
+						try {
+							entry.setBlob(InvSerialization.toByteArray(added));
+						} catch (Exception e1) {
+							plugin.warning("Error serializing itemframe");
+							plugin.print(e1);
+						}
+					}
 					plugin.add(entry);
 				}
 			}
@@ -163,9 +170,7 @@ public class PlayerListener implements Listener {
 			}
 		}.runTaskAsynchronously(plugin);
 
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
-				e.getPlayer().getLocation(), "join", InvSerialization.playerToBase64(e.getPlayer())));
-		apPlayer.lastLoggedInventory = System.currentTimeMillis();
+		apPlayer.logInventory("join");
 
 		final String data = plugin.data.getData().getString("Recoverables." + e.getPlayer().getUniqueId().toString());
 		if (data != null) {
@@ -208,27 +213,38 @@ public class PlayerListener implements Listener {
 	public void onPlayerTeleport(PlayerTeleportEvent e) {
 		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, false, e.getFrom(), "", ""));
 		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, true, e.getTo(), "", ""));
-		plugin.getAPPlayer(e.getPlayer()).lastLoggedPos = System.currentTimeMillis();
+		APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+		apPlayer.lastLoggedPos = System.currentTimeMillis();
 		if (!plugin.getAPConfig().isInventoryOnWorldChange() || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
 			return;
 		}
-		final String inventory = InvSerialization.playerToBase64(e.getPlayer());
-		final Location oldLocation = e.getPlayer().getLocation().clone();
+		byte[] inventory_ = null;
+		try {
+			inventory_ = InvSerialization.playerToByteArray(e.getPlayer());
+		} catch (Exception e1) {
+			plugin.warning("Error serializing inventory for teleport");
+			plugin.print(e1);
+		}
+		final byte[] inventory = inventory_;
 
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				String newInventory = InvSerialization.playerToBase64(e.getPlayer());
-				if (newInventory.equals(inventory)) {
+				byte[] newInventory = null;
+				try {
+					newInventory = InvSerialization.playerToByteArray(e.getPlayer());
+				} catch (Exception e1) {
+					plugin.warning("Error serializing inventory for teleport");
+					plugin.print(e1);
+				}
+				if (Arrays.equals(inventory, newInventory)) {
 					return;
 				}
-				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
-						oldLocation, "worldchange", inventory));
-				plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
-						e.getPlayer().getLocation(), "worldchange", newInventory));
+				apPlayer.logInventory("worldchange", e.getFrom(), inventory);
+				apPlayer.logInventory("worldchange", e.getTo(), newInventory);
 			}
 
-		}.runTaskLater(plugin, 5);
+		}.runTaskLater(plugin, 3);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -236,8 +252,7 @@ public class PlayerListener implements Listener {
 		logMoney(plugin, e.getPlayer(), "leave");
 		logSession(e.getPlayer(), false, "");
 
-		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.INVENTORY, false,
-				e.getPlayer().getLocation(), "quit", InvSerialization.playerToBase64(e.getPlayer())));
+		plugin.getAPPlayer(e.getPlayer()).logInventory("quit");
 
 		plugin.removeAPPlayer(e.getPlayer());
 	}

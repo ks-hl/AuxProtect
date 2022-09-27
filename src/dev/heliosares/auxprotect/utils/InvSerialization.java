@@ -16,47 +16,65 @@ import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class InvSerialization {
-	public static String playerToBase64(Player player) {
-		String str1 = toBase64(player.getInventory().getStorageContents());
-		String str2 = toBase64(player.getInventory().getArmorContents());
-		String str3 = toBase64(player.getInventory().getExtraContents());
-		String str4 = toBase64(player.getEnderChest());
 
-		return str1 + "," + str2 + "," + str3 + "," + str4 + "," + Experience.getTotalExp(player);
+	// TODO implement
+	// TODO maybe simplify?
+	// TODO identify type
+	public static byte[] toByteArray(ItemStack... array) throws IOException {
+		if (array == null || array.length == 0) {
+			return null;
+		}
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
+
+			stream.writeInt(array.length);
+
+			for (ItemStack itemStack : array) {
+				stream.writeObject(itemStack);
+			}
+			return byteArrayOutputStream.toByteArray();
+		}
 	}
 
-	public static String toBase64(ItemStack[] paramArrayOfItemStack) {
-		try {
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			BukkitObjectOutputStream bukkitObjectOutputStream = new BukkitObjectOutputStream(byteArrayOutputStream);
+	public static byte[] toByteArray(Inventory inventory) throws IOException {
+		return toByteArray(inventory.getContents());
+	}
 
-			bukkitObjectOutputStream.writeInt(paramArrayOfItemStack.length);
+	public static Inventory toInventory(byte[] bytes, InventoryHolder holder, String title)
+			throws ClassNotFoundException, IOException {
+		ItemStack[] contents = toItemStackArray(bytes);
+		if (contents == null) {
+			return null;
+		}
+		int size = (int) Math.ceil(contents.length / 9.0) * 9;
+		Inventory inventory = Bukkit.getServer().createInventory(holder, size, title);
+		inventory.setContents(contents);
+		return inventory;
+	}
 
-			for (ItemStack itemStack : paramArrayOfItemStack) {
-				bukkitObjectOutputStream.writeObject(itemStack);
+	public static ItemStack[] toItemStackArray(byte[] bytes) throws ClassNotFoundException, IOException {
+		if (bytes == null) {
+			return null;
+		}
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+			int size = 1;
+			try {
+				size = stream.readInt();
+			} catch (Exception ignored) {
+			}
+			if (size < 1) {
+				AuxProtectSpigot.getInstance().warning("Empty BLOB");
+				return new ItemStack[0];
+			}
+			ItemStack[] arrayOfItemStack = new ItemStack[size];
+
+			for (int i = 0; i < arrayOfItemStack.length; i++) {
+				arrayOfItemStack[i] = (ItemStack) stream.readObject();
 			}
 
-			bukkitObjectOutputStream.close();
-			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException e) {
-			AuxProtectSpigot.getInstance().print(e);
+			return arrayOfItemStack;
 		}
-		return null;
-	}
-
-	public static String toBase64(ItemStack paramItemStack) {
-		try {
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			BukkitObjectOutputStream bukkitObjectOutputStream = new BukkitObjectOutputStream(byteArrayOutputStream);
-
-			bukkitObjectOutputStream.writeObject(paramItemStack);
-
-			bukkitObjectOutputStream.close();
-			return itemSeparator + Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException e) {
-			AuxProtectSpigot.getInstance().print(e);
-		}
-		return null;
 	}
 
 	public static boolean isCustom(ItemStack i) {
@@ -73,84 +91,137 @@ public class InvSerialization {
 		return false;
 	}
 
-	public static String toBase64(Inventory paramInventory) {
-		try {
-			ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-			BukkitObjectOutputStream bukkitObjectOutputStream = new BukkitObjectOutputStream(byteArrayOutputStream);
+	public static byte[] playerToByteArray(Player player) throws IOException {
+		if (player == null) {
+			return null;
+		}
+		return playerToByteArray(new PlayerInventoryRecord(player.getInventory().getStorageContents(),
+				player.getInventory().getArmorContents(), player.getInventory().getExtraContents(),
+				player.getEnderChest().getContents(), Experience.getTotalExp(player)));
+	}
 
-			bukkitObjectOutputStream.writeInt(paramInventory.getSize());
+	public static byte[] playerToByteArray(PlayerInventoryRecord record) throws IOException {
+		if (record == null) {
+			return null;
+		}
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
 
-			for (byte b = 0; b < paramInventory.getSize(); b++) {
-				bukkitObjectOutputStream.writeObject(paramInventory.getItem(b));
+			stream.writeInt(record.storage().length);
+			for (ItemStack item : record.storage()) {
+				stream.writeObject(item);
 			}
 
-			bukkitObjectOutputStream.close();
-			return Base64Coder.encodeLines(byteArrayOutputStream.toByteArray());
-		} catch (IOException e) {
-			AuxProtectSpigot.getInstance().print(e);
-		}
-		return null;
-	}
-
-	public static Inventory toInventory(String paramString, InventoryHolder holder, String title) {
-		try {
-			ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(Base64Coder.decodeLines(paramString));
-			BukkitObjectInputStream bukkitObjectInputStream = new BukkitObjectInputStream(byteArrayInputStream);
-			int filesize = bukkitObjectInputStream.readInt();
-			int size = (int) Math.ceil(filesize / 9.0) * 9;
-			Inventory inventory = Bukkit.getServer().createInventory(holder, size, title);
-
-			for (byte b = 0; b < filesize; b++) {
-				inventory.setItem(b, (ItemStack) bukkitObjectInputStream.readObject());
+			stream.writeInt(record.armor().length);
+			for (ItemStack item : record.armor()) {
+				stream.writeObject(item);
 			}
 
-			bukkitObjectInputStream.close();
-			return inventory;
-		} catch (Exception e) {
-			AuxProtectSpigot.getInstance().print(e);
-		}
-		return null;
-	}
-
-	public static Inventory toInventory(String paramString) {
-		return toInventory(paramString, null, "Inventory");
-	}
-
-	public static ItemStack[] toItemStackArray(String paramString) {
-		try {
-			ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(Base64Coder.decodeLines(paramString));
-			BukkitObjectInputStream bukkitObjectInputStream = new BukkitObjectInputStream(byteArrayInputStream);
-			ItemStack[] arrayOfItemStack = new ItemStack[bukkitObjectInputStream.readInt()];
-
-			for (byte b = 0; b < arrayOfItemStack.length; b++) {
-				arrayOfItemStack[b] = (ItemStack) bukkitObjectInputStream.readObject();
+			stream.writeInt(record.extra().length);
+			for (ItemStack item : record.extra()) {
+				stream.writeObject(item);
 			}
 
-			bukkitObjectInputStream.close();
-			return arrayOfItemStack;
-		} catch (Exception e) {
-			AuxProtectSpigot.getInstance().print(e);
+			stream.writeInt(record.ender().length);
+			for (ItemStack item : record.ender()) {
+				stream.writeObject(item);
+			}
+
+			stream.writeInt(record.exp());
+			stream.flush(); // This little boi took me at least 2 hours to figure out...
+
+			byte[] out = byteArrayOutputStream.toByteArray();
+//			AuxProtectSpigot.getInstance().debug("Serialized inventory to " + out.length + "B");
+//			if (AuxProtectSpigot.getInstance().getDebug() > 0) {
+//				debug(out);
+//			}
+			return out;
 		}
-		return null;
 	}
 
-	public static final String itemSeparator = ",ITEM,";
+	public static record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,
+			ItemStack[] ender, int exp) {
+	}
 
-	public static ItemStack toItemStack(String paramString) {
-		if (paramString.startsWith(itemSeparator)) {
-			paramString = paramString.substring(itemSeparator.length());
+//	public static void debug(byte[] bytes) {
+//		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+//		System.out.println("Debug Byte[] Dump:");
+//		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+//			boolean keep = true;
+//			while (keep) {
+//				keep = false;
+//				try {
+//					System.out.println(stream.readInt());
+//					keep = true;
+//				} catch (Exception e) {
+//
+//				}
+//				try {
+//					Object o = stream.readObject();
+//					String out = "null";
+//					if (o != null) {
+//						out = o.toString();
+//						if (out.length() > 50) {
+//							out = out.substring(0, 50);
+//						}
+//					}
+//					System.out.println(out);
+//					keep = true;
+//				} catch (Exception e) {
+//
+//				}
+//			}
+//		} catch (Exception e) {
+//		}
+//		System.out.println("EOF");
+//	}
+
+	public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
+
+		ItemStack[][] contents = new ItemStack[4][];
+		int exp = 0;
+
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+			for (int i = 0; i < contents.length; i++) {
+				int size = stream.readInt();
+				contents[i] = new ItemStack[size];
+				for (int i1 = 0; i1 < size; i1++) {
+					contents[i][i1] = (ItemStack) stream.readObject();
+				}
+			}
+			exp = stream.readInt();
 		}
-		try {
-			ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(Base64Coder.decodeLines(paramString));
-			BukkitObjectInputStream bukkitObjectInputStream = new BukkitObjectInputStream(byteArrayInputStream);
+		return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3], exp);
+	}
 
-			ItemStack itemStack = (ItemStack) bukkitObjectInputStream.readObject();
+	@Deprecated
+	public static final String ITEM_SEPARATOR = ",ITEM,";
 
-			bukkitObjectInputStream.close();
-			return itemStack;
-		} catch (Exception e) {
-			AuxProtectSpigot.getInstance().print(e);
+	@Deprecated
+	public static PlayerInventoryRecord toPlayer(String base64) throws IOException, ClassNotFoundException {
+		String[] parts = base64.split(",");
+		ItemStack[][] contents = new ItemStack[4][];
+		for (int i = 0; i < contents.length; i++) {
+			contents[i] = InvSerialization.toItemStackArray(parts[i]);
 		}
-		return null;
+
+		return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3],
+				Integer.parseInt(parts[4]));
+	}
+
+	public static String toBase64(byte[] bytes) {
+		return Base64Coder.encodeLines(bytes);
+	}
+
+	@Deprecated
+	public static Inventory toInventory(String base64, InventoryHolder holder, String title)
+			throws IOException, ClassNotFoundException {
+		return toInventory(Base64Coder.decodeLines(base64), holder, title);
+	}
+
+	@Deprecated
+	public static ItemStack[] toItemStackArray(String base64) throws IOException, ClassNotFoundException {
+		return toItemStackArray(Base64Coder.decodeLines(base64));
 	}
 }

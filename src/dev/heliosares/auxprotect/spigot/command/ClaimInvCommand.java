@@ -61,7 +61,15 @@ public class ClaimInvCommand implements CommandExecutor {
 			if (xp > 0) {
 				Experience.giveExp(player, xp);
 			}
-			Inventory inv = InvSerialization.toInventory(data, new Pane(Type.CLAIM), "Inventory Claim");
+			Inventory inv = null;
+			try {
+				inv = InvSerialization.toInventory(data, new Pane(Type.CLAIM), "Inventory Claim");
+			} catch (Exception e1) {
+				plugin.warning("Error serializing inventory claim");
+				plugin.print(e1);
+				sender.sendMessage(plugin.translate("error"));
+				return true;
+			}
 			player.openInventory(inv);
 			plugin.data.getData().set("Recoverables." + player.getUniqueId().toString(), null);
 			plugin.data.save();

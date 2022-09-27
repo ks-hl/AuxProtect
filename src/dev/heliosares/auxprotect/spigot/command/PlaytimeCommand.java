@@ -21,7 +21,7 @@ public class PlaytimeCommand implements CommandExecutor {
 			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 			return true;
 		}
-		String cmd = String.format(plugin.getCommandPrefix() +" lookup #pt user:%s time:2w action:session", args[1]);
+		String cmd = String.format(plugin.getCommandPrefix() + " lookup #pt user:%s action:session time:", args[1]);
 		if (args.length > 2) {
 			cmd += args[2];
 		} else {

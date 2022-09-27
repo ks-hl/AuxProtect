@@ -88,13 +88,17 @@ public class ProjectileListener implements Listener {
 		} else if (entity instanceof ThrownPotion) {
 			item = ((ThrownPotion) entity).getItem();
 		}
-		String data = null;
-		if (item != null && logData && InvSerialization.isCustom(item)) {
-			data = InvSerialization.toBase64(item);
-		}
 
-		DbEntry entry = new DbEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity),
-				data == null ? "" : data);
+		DbEntry entry = new DbEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity), "");
+
+		if (item != null && logData && InvSerialization.isCustom(item)) {
+			try {
+				entry.setBlob(InvSerialization.toByteArray(item));
+			} catch (Exception e1) {
+				plugin.warning("Error serializing projectile");
+				plugin.print(e1);
+			}
+		}
 		plugin.add(entry);
 	}
 }

@@ -24,11 +24,14 @@ public class APPermission {
 	public static final APPermission XRAY_EXEMPT = XRAY.dot("exempt");
 
 	public static final APPermission INV = ROOT.dot("inv");
+	public static final APPermission INV_SAVE = INV.dot("save");
 	public static final APPermission INV_EDIT = INV.dot("edit");
 	public static final APPermission INV_RECOVER = INV.dot("recover");
 
 	public static final APPermission NOTIFY_INACTIVE = new APPermission("inactive.notify");
 	public static final APPermission BYPASS_INACTIVE = new APPermission("inactive.bypass");
+
+	public static final APPermission WATCH = ROOT.dot("watch");
 
 	public final String node;
 

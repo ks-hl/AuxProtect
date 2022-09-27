@@ -20,7 +20,7 @@ public class XrayResults {
 		MySender sender = new MySender(player);
 		sendHeader(sender);
 
-		Results.sendEntry(plugin, sender, en, -1);
+		Results.sendEntry(plugin, sender, en, -1, true, true);
 
 		ComponentBuilder message = new ComponentBuilder();
 		String xraycmd = "/ap xray rate %de %d";

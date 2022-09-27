@@ -4,52 +4,34 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Map.Entry;
+import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Results;
-import dev.heliosares.auxprotect.database.SQLManager.LookupException;
+import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.RetentionSolver;
-import dev.heliosares.auxprotect.utils.TimeUtil;
 import dev.heliosares.auxprotect.utils.XraySolver;
 
 public class LookupCommand {
 
 	private final IAuxProtect plugin;
 
-	private static final ArrayList<String> validParams;
 	static final HashMap<String, Results> results;
 
 	static {
-		validParams = new ArrayList<>();
-		validParams.add("action");
-		validParams.add("after");
-		validParams.add("before");
-		validParams.add("target");
-		validParams.add("data");
-		validParams.add("time");
-		validParams.add("world");
-		validParams.add("user");
-		validParams.add("radius");
-		validParams.add("rating");
-		validParams.add("db");
 		results = new HashMap<>();
 	}
 
@@ -66,6 +48,10 @@ public class LookupCommand {
 	public static void onCommand(IAuxProtect plugin, MySender sender, String[] args) {
 		if (args.length < 2) {
 			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
+			return;
+		}
+		if (!plugin.getSqlManager().isConnected()) {
+			sender.sendMessage(plugin.translate("database-busy"));
 			return;
 		}
 		Runnable run = new Runnable() {
@@ -132,269 +118,49 @@ public class LookupCommand {
 					}
 				}
 
-				HashMap<String, String> params = new HashMap<>();
-				boolean count = false;
-				boolean count1 = false;
-				boolean playtime = false;
-				boolean xray = false;
-				boolean bw = false;
-				boolean money = false;
-				boolean activity = false;
-				boolean retention = false;
-				long startTime = 0;
-				long endTime = System.currentTimeMillis();
-				for (int i = 1; i < args.length; i++) {
-					if (args[i].equalsIgnoreCase("#count")) {
-						count = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#count1") && plugin.getAPConfig().isPrivate()) {
-						count1 = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#xray")) {
-						xray = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#bw")) {
-						bw = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#activity")) {
-						if (!APPermission.LOOKUP_ACTIVITY.hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("no-permission-flag"));
-							return;
-						}
-						activity = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#pt")) {
-						if (!APPermission.LOOKUP_PLAYTIME.hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("no-permission-flag"));
-							return;
-						}
-						playtime = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#money")) {
-						if (!APPermission.LOOKUP_MONEY.hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("no-permission-flag"));
-							return;
-						}
-						money = true;
-						continue;
-					} else if (args[i].equalsIgnoreCase("#retention")) {
-						if (!APPermission.LOOKUP_RETENTION.hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("no-permission-flag"));
-							return;
-						}
-						retention = true;
-						continue;
-					}
-					String[] split = args[i].split(":");
+				Parameters params = null;
+				try {
+					params = Parameters.parse(plugin, sender, args);
+				} catch (Exception e) {
+					sender.sendMessage(e.getMessage());
+					return;
+				}
 
-					String token = split[0];
-					switch (token.toLowerCase()) {
-					case "a":
-						token = "action";
-						break;
-					case "u":
-						token = "user";
-						break;
-					case "t":
-						token = "time";
-						break;
-					case "r":
-						token = "radius";
-						break;
-					case "w":
-						token = "world";
-						break;
-					}
-					if (token.equalsIgnoreCase("db")) {
-						if (!APPermission.ADMIN.hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("no-permission"));
-							return;
-						}
-					}
-					if (split.length != 2 || !validParams.contains(token)) {
-						sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-						return;
-					}
-					String param = split[1];
-					if (token.equalsIgnoreCase("action")) {
-						for (String actionStr : param.split(",")) {
-							EntryAction action = EntryAction.getAction(actionStr);
-							if (action == null) {
-								continue;
-							}
-							APPermission actionNode = APPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase());
-							if (!actionNode.hasPermission(sender)) {
-								sender.sendMessage(String.format(plugin.translate("lookup-action-perm") + " (%s)",
-										param, actionNode.node));
-								return;
-							}
-						}
-					} else if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("before")
-							|| token.equalsIgnoreCase("after")) {
-						boolean plusminus = param.contains("+-");
-						boolean minus = param.contains("-");
-						if (minus) { // || plusminus unnecessary because they both have '-'
-							String[] range = param.split("\\+?-");
-							if (range.length != 2) {
-								sender.sendMessage(
-										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-								return;
-							}
-
-							long time1;
-							long time2;
-							try {
-								time1 = TimeUtil.stringToMillis(range[0]);
-								time2 = TimeUtil.stringToMillis(range[1]);
-							} catch (NumberFormatException e) {
-								sender.sendMessage(
-										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-								return;
-							}
-
-							if (!range[0].endsWith("e")) {
-								time1 = System.currentTimeMillis() - time1;
-							}
-							if (plusminus) {
-								startTime = time1 - time2;
-								endTime = time1 + time2;
-							} else {
-								if (!range[1].endsWith("e")) {
-									time2 = System.currentTimeMillis() - time2;
-								}
-								startTime = Math.min(time1, time2);
-								endTime = Math.max(time1, time2);
-							}
-
-							params.put("before", endTime + "");
-							params.put("after", startTime + "");
-							continue;
-						}
-						if (token.equalsIgnoreCase("time") && param.endsWith("e")) {
-							params.put(token, param.toLowerCase());
-							continue;
-						}
-						long time;
-						try {
-							time = TimeUtil.stringToMillis(param);
-							if (time < 0) {
-								sender.sendMessage(
-										String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-								return;
-							}
-						} catch (NumberFormatException e) {
-							sender.sendMessage(String.format(plugin.translate("lookup-invalid-parameter"), args[i]));
-							return;
-						}
-						time = System.currentTimeMillis() - time;
-
-						param = time + "";
-						if (token.equalsIgnoreCase("time") || token.equalsIgnoreCase("after")) {
-							startTime = time;
-						} else {
-							endTime = time;
-						}
-					}
-					params.put(token, param.toLowerCase());
-				}
-				if (params.size() < 1) {
-					sender.sendMessage(plugin.translate("lookup-invalid-notenough"));
-				}
-				if (!params.containsKey("action")) {
-					for (EntryAction action : EntryAction.values()) {
-						if (action.getTable() == Table.AUXPROTECT_MAIN && !APPermission.LOOKUP_ACTION
-								.dot(action.toString().toLowerCase()).hasPermission(sender)) {
-							sender.sendMessage(plugin.translate("lookup-action-none"));
-							return;
-						}
-					}
-				}
-				if (bw) {
-					String user = params.get("user");
-					final String targetOld = params.get("target");
-					String target = params.get("target");
-					if (user == null) {
-						user = "";
-					}
-					if (target == null) {
-						target = "";
-					}
-					if (user.length() > 0) {
-						if (targetOld != null && targetOld.length() > 0) {
-							target += ",";
-						}
-						target += user;
-					}
-					if (targetOld != null && targetOld.length() > 0) {
-						if (user.length() > 0) {
-							user += ",";
-						}
-						user += targetOld;
-					}
-					if (user.length() > 0) {
-						params.put("user", user);
-					}
-					if (target.length() > 0) {
-						params.put("target", target);
-					}
-				}
-				if (playtime || activity) {
-					if (params.containsKey("user")) {
-						if (params.get("user").split(",").length > 1) {
-							sender.sendMessage(plugin.translate("lookup-playtime-toomanyusers"));
-							return;
-						}
-					} else {
-						sender.sendMessage(plugin.translate("lookup-playtime-nouser"));
-						return;
-					}
-				}
-				if (playtime) {
-					if (params.containsKey("action")) {
-						params.remove("action");
-					}
-					params.put("action", "session");
-				}
-				if (activity) {
-					if (params.containsKey("action")) {
-						params.remove("action");
-					}
-					params.put("action", "activity");
-				}
-				if (params.containsKey("rating")) {
-					if (params.containsKey("action")) {
-						for (String string : params.get("action").split(",")) {
-							if (!string.equalsIgnoreCase("vein")) {
-								sender.sendMessage(plugin.translate("lookup-rating-wrong"));
-								return;
-							}
-						}
-					} else {
-						params.put("action", "vein");
-					}
-
-				}
 				sender.sendMessage(plugin.translate("lookup-looking"));
+
+				int count = 0;
+				try {
+					count = plugin.getSqlManager().getLookupManager().count(params);
+				} catch (LookupManager.LookupException e) {
+					sender.sendMessage(e.getMessage());
+					return;
+				}
+				if (params.getFlags().contains(Flag.COUNT_ONLY)) {
+					sender.sendMessage(String.format(plugin.translate("lookup-count"), count));
+					return;
+				}
+				if (count == 0) {
+					sender.sendMessage(plugin.translate("lookup-noresults"));
+					return;
+				}
+				if (count > SQLManager.MAX_LOOKUP_SIZE) {
+					sender.sendMessage(
+							String.format(plugin.translate("lookup-toomany"), count, SQLManager.MAX_LOOKUP_SIZE));
+					return;
+				}
+
 				ArrayList<DbEntry> rs = null;
 				try {
-					if (sender.isBungee()) {
-						rs = plugin.getSqlManager().lookup(params, null, false);
-					} else {
-						Location location = null;
-						if (sender.getSender() instanceof Player) {
-							location = ((Player) sender.getSender()).getLocation();
-						}
-						rs = plugin.getSqlManager().lookup(params, location, false);
-					}
-				} catch (LookupException e) {
-					sender.sendMessage(e.errorMessage);
+					rs = plugin.getSqlManager().getLookupManager().lookup(params);
+				} catch (LookupManager.LookupException e) {
+					sender.sendMessage(e.getMessage());
 					return;
 				}
 				if (rs == null || rs.size() == 0) {
 					sender.sendMessage(plugin.translate("lookup-noresults"));
 					return;
 				}
-				if (count) {
+				if (params.getFlags().contains(Flag.COUNT)) {
 					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
 					double totalMoney = 0;
 					double totalExp = 0;
@@ -483,79 +249,81 @@ public class LookupCommand {
 						sender.sendMessage(msg);
 					}
 					return;
-				} else if (count1) {
-					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
-					HashMap<String, Double> values = new HashMap<>();
-					HashMap<String, Integer> qtys = new HashMap<>();
-					for (DbEntry entry : rs) {
-						if (entry.getAction().equals(EntryAction.SHOP) && !entry.getState()) {
-							String[] parts = entry.getData().split(", ");
-							if (parts.length >= 3) {
-								try {
-									String valueStr = parts[1];
-									double value = -1;
-									int qty = 1;
-									if (!valueStr.contains(" each")
-											|| entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
-										valueStr = valueStr.replaceAll(" each", "");
-										value = Double.parseDouble(valueStr.substring(1));
-									} else {
-										double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
-										qty = Integer.parseInt(parts[2].split(" ")[1]);
-										value = each * qty;
-									}
-									if (value > 0) {
-										double currentvalue = 0;
-										if (values.containsKey(entry.getTarget())) {
-											currentvalue = values.get(entry.getTarget());
-										}
-										values.put(entry.getTarget(), value + currentvalue);
-
-										int currentqty = 0;
-										if (qtys.containsKey(entry.getTarget())) {
-											currentqty = qtys.get(entry.getTarget());
-										}
-										qtys.put(entry.getTarget(), qty + currentqty);
-									}
-								} catch (Exception ignored) {
-									if (plugin.getDebug() > 0) {
-										plugin.print(ignored);
-									}
-								}
-							}
-						}
-					}
-					Map<String, Double> sortedMap = values.entrySet().stream().sorted(Entry.comparingByValue()).collect(
-							Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-					int limit = 10;
-					Object[] objmap = sortedMap.entrySet().toArray();
-					for (int i = sortedMap.size() - 1; i >= sortedMap.size() - 1 - limit; i--) {
-						@SuppressWarnings("unchecked")
-						Entry<String, Double> entry = (Entry<String, Double>) objmap[i];
-						sender.sendMessage(entry.getKey() + ": $" + Math.round(entry.getValue() * 100) / 100.0 + " (x"
-								+ qtys.get(entry.getKey()) + ")");
-					}
-					return;
-				} else if (playtime) {
-					String users = params.get("user");
-					if (users == null) {
+				}
+//				else if (params.getFlags().contains(Flag.COUNT1)) {
+//					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
+//					HashMap<String, Double> values = new HashMap<>();
+//					HashMap<String, Integer> qtys = new HashMap<>();
+//					for (DbEntry entry : rs) {
+//						if (entry.getAction().equals(EntryAction.SHOP) && !entry.getState()) {
+//							String[] parts = entry.getData().split(", ");
+//							if (parts.length >= 3) {
+//								try {
+//									String valueStr = parts[1];
+//									double value = -1;
+//									int qty = 1;
+//									if (!valueStr.contains(" each")
+//											|| entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
+//										valueStr = valueStr.replaceAll(" each", "");
+//										value = Double.parseDouble(valueStr.substring(1));
+//									} else {
+//										double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
+//										qty = Integer.parseInt(parts[2].split(" ")[1]);
+//										value = each * qty;
+//									}
+//									if (value > 0) {
+//										double currentvalue = 0;
+//										if (values.containsKey(entry.getTarget())) {
+//											currentvalue = values.get(entry.getTarget());
+//										}
+//										values.put(entry.getTarget(), value + currentvalue);
+//
+//										int currentqty = 0;
+//										if (qtys.containsKey(entry.getTarget())) {
+//											currentqty = qtys.get(entry.getTarget());
+//										}
+//										qtys.put(entry.getTarget(), qty + currentqty);
+//									}
+//								} catch (Exception ignored) {
+//									if (plugin.getDebug() > 0) {
+//										plugin.print(ignored);
+//									}
+//								}
+//							}
+//						}
+//					}
+//					Map<String, Double> sortedMap = values.entrySet().stream().sorted(Entry.comparingByValue()).collect(
+//							Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+//					int limit = 10;
+//					Object[] objmap = sortedMap.entrySet().toArray();
+//					for (int i = sortedMap.size() - 1; i >= sortedMap.size() - 1 - limit; i--) {
+//						@SuppressWarnings("unchecked")
+//						Entry<String, Double> entry = (Entry<String, Double>) objmap[i];
+//						sender.sendMessage(entry.getKey() + ": $" + Math.round(entry.getValue() * 100) / 100.0 + " (x"
+//								+ qtys.get(entry.getKey()) + ")");
+//					}
+//					return;
+//				}
+				else if (params.getFlags().contains(Flag.PT)) {
+					List<String> users = params.getUsers();
+					if (users.size() == 0) {
 						sender.sendMessage(plugin.translate("playtime-nouser"));
 						return;
 					}
-					if (users.contains(",")) {
+					if (users.size() > 1) {
 						sender.sendMessage(plugin.translate("playtime-toomanyusers"));
 						return;
 					}
-					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, startTime,
-							(int) Math.round((endTime - startTime) / (1000 * 3600)), users));
+					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(),
+							(int) Math.round((params.time_created - params.getAfter()) / (1000 * 3600)), users.get(0)));
 					return;
-				} else if (activity) {
+				} else if (params.getFlags().contains(Flag.ACTIVITY)) {
 					String uuid = sender.getUniqueId().toString();
-					Results result = new ActivityResults(plugin, rs, sender);
+					Results result = new ActivityResults(plugin, rs, sender, params);
 					result.showPage(result.getNumPages(4), 4);
 					results.put(uuid, result);
 					return;
-				} else if (xray) {
+				} else if (params.getFlags().contains(Flag.XRAY)) {
 					Set<Integer> users = new HashSet<>();
 					for (DbEntry entry : rs) {
 						users.add(entry.getUid());
@@ -571,31 +339,31 @@ public class LookupCommand {
 							it.remove();
 						}
 					}
-				} else if (money && !sender.isBungee()) {
-					String users = params.get("user");
-					if (users == null) {
+				} else if (params.getFlags().contains(Flag.MONEY) && !sender.isBungee()) {
+					List<String> users = params.getUsers();
+					if (users.size() == 0) {
 						sender.sendMessage(plugin.translate("playtime-nouser"));
 						return;
 					}
-					if (users.contains(",")) {
+					if (users.size() > 1) {
 						sender.sendMessage(plugin.translate("playtime-toomanyusers"));
 						return;
 					}
 					if (sender.getSender() instanceof Player) {
 						MoneySolver.showMoney(plugin, (Player) sender.getSender(), rs,
-								(int) Math.round(startTime / (1000 * 3600)), users);
+								(int) Math.round(params.getAfter() / (1000 * 3600)), users.get(0));
 					}
 					return;
-				} else if (retention) {
-					RetentionSolver.showRetention(plugin, sender, rs, startTime, endTime);
+				} else if (params.getFlags().contains(Flag.RETENTION)) {
+					RetentionSolver.showRetention(plugin, sender, rs, params.getAfter(), params.getBefore());
 					return;
 				}
 				String uuid = sender.getUniqueId().toString();
-				Results result = new Results(plugin, rs, sender);
+				Results result = new Results(plugin, rs, sender, params);
 				result.showPage(1, 4);
 				results.put(uuid, result);
 
-				if (xray) {
+				if (params.getFlags().contains(Flag.XRAY)) {
 					sender.sendMessage(XraySolver.solve(rs, plugin));
 				}
 			}

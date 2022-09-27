@@ -3,9 +3,11 @@ package dev.heliosares.auxprotect.spigot.command;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.bukkit.Bukkit;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 import org.bukkit.util.StringUtil;
 
 import dev.heliosares.auxprotect.core.APPermission;
@@ -47,6 +49,12 @@ public class APCommandTab implements TabCompleter {
 					possible.add("money");
 				}
 			}
+			if (APPermission.WATCH.hasPermission(sender)) {
+				possible.add("watch");
+			}
+			if (APPermission.INV_SAVE.hasPermission(sender)) {
+				possible.add("saveinv");
+			}
 			if (APPermission.ADMIN.hasPermission(sender)) {
 				possible.add("debug");
 				possible.add("stats");
@@ -60,8 +68,9 @@ public class APCommandTab implements TabCompleter {
 			possible.add("info");
 		}
 		if (args.length >= 2) {
-			if ((args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l"))
-					&& APPermission.LOOKUP.hasPermission(sender)) {
+			if ((args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l")
+					|| args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w"))
+					&& (APPermission.LOOKUP.hasPermission(sender) || APPermission.WATCH.hasPermission(sender))) {
 				possible.addAll(lookupCommandTab.onTabComplete(sender, cmd, label, args));
 			} else if (args[0].equalsIgnoreCase("money") && APPermission.LOOKUP_MONEY.hasPermission(sender)) {
 				possible.addAll(moneyCommandTab.onTabComplete(sender, cmd, label, args));
@@ -75,6 +84,10 @@ public class APCommandTab implements TabCompleter {
 			} else if ((args[0].equalsIgnoreCase("help")) && APPermission.HELP.hasPermission(sender)) {
 				possible.add("lookup");
 				possible.add("purge");
+			} else if (args[0].equalsIgnoreCase("saveinv") && APPermission.INV_SAVE.hasPermission(sender)) {
+				for (Player player : Bukkit.getOnlinePlayers()) {
+					possible.add(player.getName());
+				}
 			}
 		}
 

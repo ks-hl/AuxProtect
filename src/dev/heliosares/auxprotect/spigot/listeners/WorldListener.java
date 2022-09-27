@@ -34,12 +34,16 @@ public class WorldListener implements Listener {
 		if (e.getEntity() instanceof ItemFrame) {
 			final ItemFrame item = (ItemFrame) e.getEntity();
 			if (item.getItem() != null) {
-				String data = "";
-				if (InvSerialization.isCustom(item.getItem())) {
-					data = InvSerialization.toBase64(item.getItem());
-				}
 				DbEntry entry = new DbEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false,
-						item.getLocation(), item.getItem().getType().toString().toLowerCase(), data);
+						item.getLocation(), item.getItem().getType().toString().toLowerCase(), "");
+				if (InvSerialization.isCustom(item.getItem())) {
+					try {
+						entry.setBlob(InvSerialization.toByteArray(item.getItem()));
+					} catch (Exception e1) {
+						plugin.warning("Error serializing itemframe");
+						plugin.print(e1);
+					}
+				}
 				plugin.add(entry);
 				return;
 			}

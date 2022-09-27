@@ -7,6 +7,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.spigot.command.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 public class DatabaseRunnable implements Runnable {
@@ -29,6 +30,7 @@ public class DatabaseRunnable implements Runnable {
 	}
 
 	public void add(DbEntry entry) {
+		WatchCommand.notify(entry);
 		if (!entry.getAction().isEnabled()) {
 			return;
 		}

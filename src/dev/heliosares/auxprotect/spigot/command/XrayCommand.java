@@ -14,8 +14,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Results;
-import dev.heliosares.auxprotect.database.SQLManager.LookupException;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.database.XrayResults;
@@ -106,9 +106,9 @@ public class XrayCommand implements CommandExecutor {
 							try {
 								entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
 										"SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
-							} catch (LookupException e) {
+							} catch (LookupManager.LookupException e) {
 								plugin.print(e);
-								sender.sendMessage(e.errorMessage);
+								sender.sendMessage(e.getMessage());
 								return;
 							}
 							if (entries.size() > 1 && !override) {

@@ -9,9 +9,10 @@ import java.util.Random;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -26,8 +27,9 @@ public class Results {
 	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
+	private final Parameters params;
 
-	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player) {
+	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player, Parameters params) {
 		this.entries = entries;
 		this.player = player;
 		this.plugin = plugin;
@@ -46,6 +48,7 @@ public class Results {
 		if (allNullWorld) {
 			perpage = 10;
 		}
+		this.params = params;
 	}
 
 	public ArrayList<DbEntry> getEntries() {
@@ -92,21 +95,29 @@ public class Results {
 	}
 
 	public void sendEntry(DbEntry entry, int index) {
-		sendEntry(plugin, player, entry, index);
+		sendEntry(plugin, player, entry, index, true, !params.getFlags().contains(Flag.HIDE_COORDS));
 	}
 
-	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index) {
+	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index, boolean time,
+			boolean coords) {
 		String commandPrefix = "/" + plugin.getCommandPrefix();
 		ComponentBuilder message = new ComponentBuilder();
 
 		plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
-		message.append(String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()),
-				entry.getUser()))
-				.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-						new Text(Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault())
-								.format(dateFormatter) + "\n§7Click to copy epoch time. (" + entry.getTime() + "ms)")))
-				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
+		if (time) {
+			String msg = "";
+			if (System.currentTimeMillis() - entry.getTime() < 55) {
+				msg = "§7Just Now";
+			} else {
+				msg = String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()),
+						entry.getUser());
+			}
+			message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+					new Text(Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault()).format(dateFormatter)
+							+ "\n§7Click to copy epoch time. (" + entry.getTime() + "ms)")))
+					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
+		}
 
 		String actionColor = "§7-";
 		if (entry.getAction().hasDual) {
@@ -144,8 +155,7 @@ public class Results {
 		}
 
 		String data = entry.getData();
-		if (data != null && data.contains(InvSerialization.itemSeparator)) {
-			data = data.split(InvSerialization.itemSeparator)[0];
+		if (entry.hasBlob()) {
 			if (APPermission.INV.hasPermission(player)) {
 				message.append(" §a[View]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
@@ -153,19 +163,11 @@ public class Results {
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 			}
 		}
-		if (entry.getAction().equals(EntryAction.INVENTORY)) {
-			if (APPermission.INV.hasPermission(player)) {
-				message.append(" §a[View]")
-						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-								String.format(commandPrefix + " inv %d", index)))
-						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
-			}
-			data = null;// So data doesn't print
-		} else if (entry.getAction().equals(EntryAction.KILL)) {
+		if (entry.getAction().equals(EntryAction.KILL)) {
 			if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
 				message.append(" §a[View Inv]")
 						.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-								String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-50e",
+								String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
 										entry.getTarget(), entry.getTime())))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
 			}
@@ -174,7 +176,7 @@ public class Results {
 			message.append(" §8[§7" + data + "§8]").event(clickToCopy)
 					.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
 		}
-		if (entry.world != null && !entry.world.equals("$null")) {
+		if (entry.world != null && !entry.world.equals("$null") && coords) {
 			String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", entry.x, entry.y, entry.z, entry.world);
 			if (entry.getAction().getTable().hasLook()) {
 				tpCommand += String.format(" %d %d", entry.pitch, entry.yaw);

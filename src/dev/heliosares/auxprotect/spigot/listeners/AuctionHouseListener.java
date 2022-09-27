@@ -33,10 +33,15 @@ public class AuctionHouseListener implements Listener {
 				l = new Location(world, 0, 0, 0);
 			}
 		}
-
-		plugin.add(new DbEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
-				e.getItem().getType().toString().toLowerCase(),
-				plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
+		DbEntry entry = new DbEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
+				e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()));
+		try {
+			entry.setBlob(InvSerialization.toByteArray(e.getItem()));
+		} catch (Exception e1) {
+			plugin.warning("Error serializing auction listing");
+			plugin.print(e1);
+		}
+		plugin.add(entry);
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -53,8 +58,15 @@ public class AuctionHouseListener implements Listener {
 			}
 		}
 
-		plugin.add(new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
-				e.getItem().getType().toString().toLowerCase(), "From " + e.getSeller().getName() + " for "
-						+ plugin.formatMoney(e.getPrice()) + InvSerialization.toBase64(e.getItem())));
+		DbEntry entry = new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
+				e.getItem().getType().toString().toLowerCase(),
+				"From " + e.getSeller().getName() + " for " + plugin.formatMoney(e.getPrice()));
+		try {
+			entry.setBlob(InvSerialization.toByteArray(e.getItem()));
+		} catch (Exception e1) {
+			plugin.warning("Error serializing auction purchase");
+			plugin.print(e1);
+		}
+		plugin.add(entry);
 	}
 }

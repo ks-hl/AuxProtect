@@ -28,6 +28,9 @@ public class DbEntry {
 	private String target;
 	private int target_id;
 
+	private boolean hasBlob;
+	private byte[] blob;
+
 	private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
 			int yaw, String targetLabel, String data) {
 		this.time = DatabaseRunnable.getTime(action.getTable());
@@ -212,5 +215,24 @@ public class DbEntry {
 
 	public double getDistanceSq(DbEntry entry) {
 		return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
+	}
+
+	public byte[] getBlob() {
+		if (blob == null) {
+			blob = SQLManager.getInstance().getBlob(this);
+		}
+		return blob;
+	}
+
+	public void setBlob(byte[] blob) {
+		this.blob = blob;
+	}
+
+	public boolean hasBlob() {
+		return hasBlob || blob != null;
+	}
+
+	public void setHasBlob() {
+		hasBlob = true;
 	}
 }

@@ -2,6 +2,8 @@ package dev.heliosares.auxprotect.database;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.sql.Blob;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -12,6 +14,7 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
@@ -32,16 +35,15 @@ import dev.heliosares.auxprotect.utils.MovingAverage;
 
 public class SQLManager {
 	private static SQLManager instance;
-	public static final int DBVERSION = 5;
-	private static final int MAX_LOOKUP_SIZE = 500000;
+	public static final int DBVERSION = 6;
+	public static final int MAX_LOOKUP_SIZE = 500000;
 
-	private Connection connection;
+	Connection connection;
 	private String targetString;
 	private final IAuxProtect plugin;
 	private static String tablePrefix;
 	private boolean mysql;
 	private boolean isConnected;
-	private boolean isMigrating;
 	private int nextWid;
 	private int nextActionId = 10000;
 	private BidiMapCache<Integer, String> uuids = new BidiMapCache<>(10000L, 10000L, true);
@@ -54,8 +56,14 @@ public class SQLManager {
 	public MovingAverage putTimePerEntry = new MovingAverage(100);
 	public MovingAverage putTimePerExec = new MovingAverage(100);
 	public MovingAverage lookupTime = new MovingAverage(100);
-	private int count;
+	int rowcount;
 	private final File sqliteFile;
+	private final LookupManager lookupmanager;
+	private final MigrationManager migrationmanager;
+
+	public LookupManager getLookupManager() {
+		return lookupmanager;
+	}
 
 	public static SQLManager getInstance() {
 		return instance;
@@ -66,7 +74,7 @@ public class SQLManager {
 	}
 
 	public int getCount() {
-		return count;
+		return rowcount;
 	}
 
 	public boolean isConnected() {
@@ -88,7 +96,9 @@ public class SQLManager {
 	public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile) {
 		instance = this;
 		this.plugin = plugin;
+		this.lookupmanager = new LookupManager(this, plugin);
 		this.targetString = target;
+		this.migrationmanager = new MigrationManager(this, plugin);
 		if (prefix == null || prefix.length() == 0) {
 			tablePrefix = "";
 		} else {
@@ -99,7 +109,6 @@ public class SQLManager {
 			tablePrefix = prefix;
 		}
 		this.sqliteFile = sqliteFile;
-		plugin.info("innit");
 	}
 
 	public void connect(String user, String pass) throws SQLException, IOException {
@@ -137,7 +146,7 @@ public class SQLManager {
 		try {
 			init();
 		} catch (Exception e) {
-			if (isMigrating) {
+			if (migrationmanager.isMigrating()) {
 				plugin.warning(
 						"Error while migrating database. This database will likely not work with the current version. You will need to restore a backup (plugins/AuxProtect/database/backups) and try again. Please contact the plugin developer if you are unable to complete migration.");
 			}
@@ -169,16 +178,32 @@ public class SQLManager {
 		}
 	}
 
+	public String backup() throws IOException {
+		if (mysql) {
+			return null;
+		}
+		checkAsync();
+		synchronized (connection) {
+			File backup = new File(sqliteFile.getParentFile(),
+					"backups/backup-v" + version + "-" + System.currentTimeMillis() + ".db");
+			if (!backup.getParentFile().exists()) {
+				backup.getParentFile().mkdirs();
+			}
+			Files.copy(sqliteFile, backup);
+			return backup.getAbsolutePath();
+		}
+	}
+
 	private void init() throws SQLException, IOException {
 		checkAsync();
 		synchronized (connection) {
 			holdingConnectionSince = System.currentTimeMillis();
 			holdingConnection = "init";
 
-			try {
-				execute("ALTER TABLE version RENAME TO " + Table.AUXPROTECT_VERSION.toString());
-			} catch (SQLException ignored) {
-			}
+//			try {
+//				execute("ALTER TABLE version RENAME TO " + Table.AUXPROTECT_VERSION.toString());
+//			} catch (SQLException ignored) {
+//			}
 
 			execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);");
 
@@ -205,161 +230,24 @@ public class SQLManager {
 			}
 
 			if (version < 1) {
-				execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-						+ System.currentTimeMillis() + "," + (version = DBVERSION) + ")");
+				setVersion(DBVERSION);
 			}
 
-			if (version < DBVERSION) {
-				plugin.info("Outdated DB Version: " + version + ". Migrating..");
-				isMigrating = true;
-				if (!mysql) {
-					File backup = new File(sqliteFile.getParentFile(),
-							"backups/backup-v" + version + "-" + System.currentTimeMillis() + ".db");
-					plugin.info("Creating pre-migration database backup: " + backup.getAbsolutePath());
-					if (!backup.getParentFile().exists()) {
-						backup.getParentFile().mkdirs();
-					}
-					Files.copy(sqliteFile, backup);
-				}
-			}
-
-			if (version < 5) {
-				try {
-					execute("ALTER TABLE " + tablePrefix + "auxprotect RENAME TO " + Table.AUXPROTECT_MAIN.toString());
-				} catch (SQLException ignored) {
-					plugin.warning(
-							"Failed to rename auxprotect table for migration. This may cause errors. Migration continuing.");
-				}
-			}
-
-			if (version < 2 && !plugin.isBungee()) {
-				plugin.info("Migrating database to v2");
-				execute("ALTER TABLE worlds RENAME TO auxprotect_worlds;");
-
-				execute("\"INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-						+ System.currentTimeMillis() + "," + (version = 2) + ")");
-				plugin.info("Done migrating.");
-			}
-			int rowcountformerge = 0;
-
-			if (version < 3) {
-				rowcountformerge = this.migrateToV3Part1();
-			}
+			migrationmanager.preTables();
 
 			for (Table table : Table.values()) {
 				if (table.hasAPEntries()) {
 					execute(table.getSQLCreateString(plugin));
 				}
 			}
-
-//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_MAIN.toString() + " (\n";
-//			stmt += "    time BIGINT(255),\n";
-//			stmt += "    uid integer,\n";
-//			stmt += "    action_id SMALLINT,\n";
-//			if (!plugin.isBungee()) {
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//			}
-//			stmt += "    target_id integer,\n";
-//			stmt += "    data LONGTEXT\n";
-//			stmt += ");";
-//			execute(stmt);
-//
-//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API.toString() + " (\n";
-//			stmt += "    time BIGINT(255),\n";
-//			stmt += "    uid integer,\n";
-//			stmt += "    action_id SMALLINT,\n";
-//			if (!plugin.isBungee()) {
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//			}
-//			stmt += "    target_id integer,\n";
-//			stmt += "    data LONGTEXT\n";
-//			stmt += ");";
-//			execute(stmt);
-//
-//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LONGTERM.toString() + " (\n";
-//			stmt += "    time BIGINT(255),\n";
-//			stmt += "    uid integer,\n";
-//			stmt += "    action_id SMALLINT,\n";
-//			stmt += "    target varchar(255)\n";
-//			stmt += ");";
-//			execute(stmt);
-//
-//			stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_COMMANDS.toString() + " (\n";
-//			stmt += "    time BIGINT(255),\n";
-//			stmt += "    uid integer,\n";
-//			if (!plugin.isBungee()) {
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//			}
-//			stmt += "    target LONGTEXT\n";
-//			stmt += ");";
-//			execute(stmt);
 //
 			if (!plugin.isBungee()) {
-//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVENTORY.toString() + " (\n";
-//				stmt += "    time BIGINT(255),\n";
-//				stmt += "    uid integer,\n";
-//				stmt += "    action_id SMALLINT,\n";
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//				stmt += "    target_id integer,\n";
-//				stmt += "    data LONGTEXT\n";
-//				stmt += ");";
-//				execute(stmt);
-//
-//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_SPAM.toString() + " (\n";
-//				stmt += "    time BIGINT(255),\n";
-//				stmt += "    uid integer,\n";
-//				stmt += "    action_id SMALLINT,\n";
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//				stmt += "    target_id integer,\n";
-//				stmt += "    data LONGTEXT\n";
-//				stmt += ");";
-//				execute(stmt);
-//
-//				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_POSITION.toString() + " (\n";
-//				stmt += "    time BIGINT(255),\n";
-//				stmt += "    uid integer,\n";
-//				stmt += "    action_id SMALLINT,\n";
-//				stmt += "    world_id SMALLINT,\n";
-//				stmt += "    x INTEGER,\n";
-//				stmt += "    y SMALLINT,\n";
-//				stmt += "    z INTEGER,\n";
-//				stmt += "    pitch SMALLINT,\n";
-//				stmt += "    yaw SMALLINT,\n";
-//				stmt += "    target_id integer\n";
-//				stmt += ");";
-//				execute(stmt);
-//
-//				if (plugin.getAPConfig().isPrivate()) {
-//					stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_ABANDONED.toString() + " (\n";
-//					stmt += "    time BIGINT(255),\n";
-//					stmt += "    uid integer,\n";
-//					stmt += "    action_id SMALLINT,\n";
-//					stmt += "    world_id SMALLINT,\n";
-//					stmt += "    x INTEGER,\n";
-//					stmt += "    y SMALLINT,\n";
-//					stmt += "    z INTEGER,\n";
-//					stmt += "    target_id integer\n";
-//					stmt += ");";
-//					execute(stmt);
-//				}
+				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVBLOB.toString();
+				stmt += " (time BIGINT(255), blob MEDIUMBLOB);";
+				execute(stmt);
 
-				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS.toString()
-						+ " (name varchar(255), wid SMALLINT);";
+				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS.toString();
+				stmt += " (name varchar(255), wid SMALLINT);";
 				execute(stmt);
 
 				stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS.toString() + ";";
@@ -413,239 +301,75 @@ public class SQLManager {
 			plugin.debug(stmt, 3);
 			execute(stmt);
 
-			if (version < 3) {
-				migrateToV3Part2(rowcountformerge);
-			}
+			migrationmanager.postTables();
 
-			if (version < 4) {
-				migrateToV4();
-			}
-
-			if (version < 5) {
-				execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-						+ System.currentTimeMillis() + "," + (version = 5) + ")");
-			}
-
-			plugin.debug("Purging temporary tables");
-			for (Table table : Table.values()) {
-				execute("DROP TABLE IF EXISTS " + table.toString() + "temp;");
-				execute("DROP TABLE IF EXISTS " + table.toString() + "_temp;");
-			}
-
-			plugin.debug("init done.", 1);
-			isMigrating = false;
+			plugin.debug("init done.");
 			holdingConnectionSince = 0;
 		}
-
 	}
 
-	private int migrateToV3Part1() throws SQLException {
-		Table[] migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
-				Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY };
-		if (plugin.isBungee()) {
-			migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM };
-		}
-		int rowcountformerge = 0;
-		plugin.info("Migrating database to v3. DO NOT INTERRUPT");
-		for (Table table : migrateTablesV3) {
-			try {
-				execute("ALTER TABLE " + table.toString() + " RENAME TO " + table.toString() + "_temp;");
-			} catch (Exception ignored) {
-				plugin.warning("Error renaming table, continuing anyway. This may cause errors.");
-			}
-			rowcountformerge += count(table + "_temp");
-			plugin.info(".");
-		}
-		plugin.info("Tables renamed");
-		return rowcountformerge;
+	void setVersion(int version) throws SQLException {
+		execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (" + System.currentTimeMillis()
+				+ "," + (this.version = version) + ")");
+		plugin.info("Done migrating to version " + version);
 	}
 
-	private void migrateToV3Part2(int rowcountformerge) throws SQLException {
-		Table[] migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
-				Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY };
-		if (plugin.isBungee()) {
-			migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM };
+	private Set<Integer> getAllDistinctUIDs(Table table) throws SQLException {
+		boolean hasTargetId = !table.hasStringTarget() && table != Table.AUXPROTECT_UIDS;
+		String[] columns = new String[hasTargetId ? 2 : 1];
+		columns[0] = "uid";
+		if (hasTargetId) {
+			columns[1] = "target_id";
 		}
-		plugin.info("Merging data into new tables...");
-		int progress = 0;
-		int count = 0;
-
-		for (Table table : migrateTablesV3) {
-			ArrayList<Object[]> output = new ArrayList<>();
-			ArrayList<Object[]> commands = new ArrayList<>();
-			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
-			final boolean hasData = table.hasData();
-			final boolean hasStringTarget = table.hasStringTarget();
-			plugin.info("Merging table: " + table.toString());
-			String stmt = "SELECT * FROM " + table.toString() + "_temp;";
+		Set<Integer> inUseUids = new HashSet<>();
+		for (String column : columns) {
+			String stmt = "SELECT DISTINCT " + column + " FROM " + table.toString();
 			plugin.debug(stmt, 3);
 			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
 				pstmt.setFetchSize(500);
 				try (ResultSet results = pstmt.executeQuery()) {
 					while (results.next()) {
-						ArrayList<Object> entry = new ArrayList<>();
-						entry.add(results.getLong("time"));
-						entry.add(this.getUIDFromUUID(results.getString("user"), true));
-						int action_id = results.getInt("action_id");
-						if (action_id != 260) {
-							entry.add(action_id);
-						}
-						if (hasLocation) {
-							entry.add(results.getInt("world_id"));
-							entry.add(results.getInt("x"));
-							entry.add(results.getInt("y"));
-							entry.add(results.getInt("z"));
-						}
-						String target = results.getString("target");
-						if (hasStringTarget || action_id == 260) {
-							entry.add(target);
-						} else {
-							entry.add(this.getUIDFromUUID(target, true));
-						}
-						if (hasData) {
-							entry.add(results.getString("data"));
-						}
-
-						if (action_id == 260) {
-							commands.add(entry.toArray(new Object[0]));
-						} else {
-							output.add(entry.toArray(new Object[0]));
-						}
-						if (output.size() >= 5000) {
-							this.putRaw(table, output);
-							output.clear();
-						}
-						if (commands.size() >= 5000) {
-							this.putRaw(Table.AUXPROTECT_COMMANDS, commands);
-							commands.clear();
-						}
-						count++;
-						int progressPercentage = (int) Math.floor((double) count / rowcountformerge * 100);
-						if (progressPercentage / 5 > progress) {
-							progress = progressPercentage / 5;
-							plugin.info("Migration " + progress * 5 + "% complete. (" + count + "/" + rowcountformerge
-									+ "). DO NOT INTERRUPT");
-						}
+						int uid = results.getInt(column);
+						inUseUids.add(uid);
 					}
 				}
 			}
-			if (output.size() > 0) {
-				this.putRaw(table, output);
-			}
-			if (commands.size() > 0) {
-				this.putRaw(Table.AUXPROTECT_COMMANDS, commands);
-			}
 		}
-
-		execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (" + System.currentTimeMillis()
-				+ "," + (version = 3) + ")");
-		plugin.info("Done migrating.");
-	}
-
-	private void migrateToV4() throws SQLException {
-		plugin.info("Migrating database to v4. DO NOT INTERRUPT");
-		if (!plugin.isBungee()) {
-			ArrayList<Object[]> output = new ArrayList<>();
-			String stmt = "SELECT * FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;";
-			plugin.debug(stmt, 3);
-			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-				pstmt.setFetchSize(500);
-				try (ResultSet results = pstmt.executeQuery()) {
-					while (results.next()) {
-						ArrayList<Object> entry = new ArrayList<>();
-						entry.add(results.getLong("time"));
-						entry.add(results.getInt("uid"));
-						entry.add(EntryAction.POS.id);
-						entry.add(results.getInt("world_id"));
-						entry.add(results.getInt("x"));
-						entry.add(results.getInt("y"));
-						entry.add(results.getInt("z"));
-						String data = results.getString("data");
-
-						try {
-							String parts[] = data.split("[^\\d-]+");
-							entry.add(Integer.parseInt(parts[2]));
-							entry.add(Integer.parseInt(parts[1]));
-						} catch (Exception e) {
-							plugin.print(e);
-						}
-
-						entry.add(results.getInt("target_id"));
-						output.add(entry.toArray(new Object[0]));
-
-						if (output.size() >= 5000) {
-							this.putRaw(Table.AUXPROTECT_POSITION, output);
-							output.clear();
-						}
-					}
-				}
-			}
-			if (output.size() > 0) {
-				this.putRaw(Table.AUXPROTECT_POSITION, output);
-			}
-			plugin.info("Deleting old entries.");
-			execute("DELETE FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;");
-		}
-		execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (" + System.currentTimeMillis()
-				+ "," + (version = 4) + ")");
-		plugin.info("Done migrating.");
+		return inUseUids;
 	}
 
 	public void purgeUIDs() throws SQLException {
-		Set<Integer> inUseUids = new HashSet<>();
-		Set<Integer> savedUids = new HashSet<>();
-
 		synchronized (connection) {
-			for (Table table : new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
-					Table.AUXPROTECT_POSITION, Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY,
-					Table.AUXPROTECT_UIDS }) {
-				if (!table.exists(plugin)) {
+			Set<Integer> inUseUids = new HashSet<>();
+			for (Table table : Table.values()) {
+				if (!table.hasAPEntries() || !table.exists(plugin)) {
 					continue;
 				}
 
-				boolean hasTargetId = !table.hasStringTarget() && table != Table.AUXPROTECT_UIDS;
-				String stmt = "SELECT uid" + (hasTargetId ? ", target_id" : "") + " FROM " + table.toString() + ";";
-				plugin.debug(stmt, 3);
-				try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-					pstmt.setFetchSize(500);
-					try (ResultSet results = pstmt.executeQuery()) {
-						while (results.next()) {
-							int uid = results.getInt("uid");
-							if (table == Table.AUXPROTECT_UIDS) {
-								savedUids.add(uid);
-								continue;
-							}
-							inUseUids.add(uid);
-							if (hasTargetId) {
-								int target_id = results.getInt("target_id");
-								inUseUids.add(target_id);
-							}
-						}
-					}
-				}
+				inUseUids.addAll(getAllDistinctUIDs(table));
 			}
-			plugin.debug(savedUids.size() + " saved UIDS");
-			plugin.debug(inUseUids.size() + " in use UIDS");
+			Set<Integer> savedUids = getAllDistinctUIDs(Table.AUXPROTECT_UIDS);
+			plugin.debug(savedUids.size() + " total UIDs");
+			plugin.debug(inUseUids.size() + " currently in use UIDs");
+			savedUids.removeAll(inUseUids);
+			plugin.debug("Purging " + savedUids.size() + " UIDs");
 			int i = 0;
-			final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE ";
+			final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uid IN ";
 			String stmt = "";
 			for (int uid : savedUids) {
-				if (inUseUids.contains(uid)) {
-					continue;
-				}
 				if (!stmt.isEmpty()) {
-					stmt += " OR ";
+					stmt += ",";
 				}
 				plugin.debug("Purging UID " + uid, 5);
-				stmt += "uid=" + uid;
-				if (++i >= 900) {
-					execute(hdr + stmt);
+				stmt += uid;
+				if (++i >= 1000) {
+					execute(hdr + "(" + stmt + ")");
 					stmt = "";
 					i = 0;
 				}
 			}
 			if (!stmt.isEmpty())
-				execute(hdr + stmt);
+				execute(hdr + "(" + stmt + ")");
 		}
 	}
 
@@ -665,7 +389,7 @@ public class SQLManager {
 		}
 	}
 
-	public List<List<String>> executeUpdate(String string) throws SQLException {
+	public List<List<String>> executeUpdate(String string, String... args) throws SQLException {
 		plugin.debug(string, 2);
 		final List<List<String>> rowList = new LinkedList<List<String>>();
 		checkAsync();
@@ -689,96 +413,8 @@ public class SQLManager {
 		return rowList;
 	}
 
-	public HashMap<Integer, String> getAllUids() throws SQLException {
-		HashMap<Integer, String> out = new HashMap<>();
-
-		synchronized (connection) {
-
-			String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + ";";
-			plugin.debug(stmt, 3);
-			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-				pstmt.setFetchSize(500);
-				try (ResultSet results = pstmt.executeQuery()) {
-					while (results.next()) {
-						int uid = results.getInt("uid");
-						String uuid = results.getString("uuid");
-						out.put(uid, uuid);
-					}
-				}
-			}
-		}
-
-		return out;
-	}
-
-	private void putRaw(Table table, ArrayList<Object[]> datas)
-			throws SQLException, ClassCastException, IndexOutOfBoundsException {
-		checkAsync();
-		synchronized (connection) {
-			holdingConnectionSince = System.currentTimeMillis();
-			holdingConnection = "put";
-			String stmt = "INSERT INTO " + table.toString() + " ";
-			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
-			final boolean hasData = table.hasData();
-			final boolean hasAction = table.hasActionId();
-			final boolean hasLook = table.hasLook();
-			stmt += table.getValuesHeader(plugin.isBungee());
-			String inc = table.getValuesTemplate(plugin.isBungee());
-			stmt += " VALUES";
-			for (int i = 0; i < datas.size(); i++) {
-				stmt += "\n" + inc;
-				if (i + 1 == datas.size()) {
-					stmt += ";";
-				} else {
-					stmt += ",";
-				}
-			}
-			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-
-				int i = 1;
-				for (Object[] data : datas) {
-					int y = 0;
-					try {
-						// statement.setString(i++, table);
-						statement.setLong(i++, (long) data[y++]);
-						statement.setInt(i++, (int) data[y++]);
-
-						if (hasAction) {
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasLocation) {
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasLook) {
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (table.hasStringTarget()) {
-							statement.setString(i++, (String) data[y++]);
-						} else {
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasData) {
-							statement.setString(i++, (String) data[y++]);
-						}
-					} catch (Exception e) {
-						String error = "";
-						for (Object o : data) {
-							error += o + ", ";
-						}
-						plugin.warning(error + "\nError at index " + y);
-						throw e;
-					}
-				}
-
-				statement.executeUpdate();
-			}
-			count += datas.size();
-			holdingConnectionSince = 0;
-		}
+	public Connection getConnection() {
+		return connection;
 	}
 
 	protected void put(Table table, ArrayList<DbEntry> entries) throws SQLException {
@@ -804,6 +440,7 @@ public class SQLManager {
 					stmt += ",";
 				}
 			}
+			HashMap<Long, byte[]> blobsToLog = new HashMap<>();
 			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
 
 				int i = 1;
@@ -845,6 +482,12 @@ public class SQLManager {
 					if (hasData) {
 						statement.setString(i++, dbEntry.getData());
 					}
+					if (table.hasBlob()) {
+						statement.setBoolean(i++, dbEntry.hasBlob());
+						if (dbEntry.hasBlob()) {
+							blobsToLog.put(dbEntry.getTime(), dbEntry.getBlob());
+						}
+					}
 					if (i - prior != numColumns) {
 						plugin.warning("Incorrect number of columns provided inserting action "
 								+ dbEntry.getAction().toString() + " into " + table.toString());
@@ -856,38 +499,103 @@ public class SQLManager {
 
 				statement.executeUpdate();
 			}
+			if (table.hasBlob() && blobsToLog.size() > 0) {
+				putBlobs(blobsToLog);
+			}
 
-			count += entries.size();
+			rowcount += entries.size();
 			holdingConnectionSince = 0;
 			this.putTimePerEntry.addData((System.nanoTime() - start) / (double) entries.size());
 			this.putTimePerExec.addData(System.nanoTime() - start);
 		}
 	}
 
-	public enum LookupExceptionType {
-		SYNTAX, PLAYER_NOT_FOUND, ACTION_NEGATE, UNKNOWN_ACTION, ACTION_INCOMPATIBLE, UNKNOWN_WORLD, UNKNOWN_TABLE,
-		GENERAL, TOO_MANY
+	private String getSize(double bytes) {
+		int oom = 0;
+		while (bytes > 1024) {
+			bytes /= 1024;
+			oom++;
+		}
+		String out = "";
+		switch (oom) {
+		case 0:
+			out = "B";
+			break;
+		case 1:
+			out = "KB";
+			break;
+		case 2:
+			out = "MB";
+			break;
+		case 3:
+			out = "GB";
+			break;
+		case 4:
+			out = "TB";
+			break;
+		}
+		return (Math.round(bytes * 100.0) / 100.0) + " " + out;
 	}
 
-	public static class LookupException extends Exception {
-		private static final long serialVersionUID = -8329753973868577238L;
-
-		public final LookupExceptionType error;
-		public final String errorMessage;
-
-		private LookupException(LookupExceptionType error, String errorMessage) {
-			this.error = error;
-			this.errorMessage = errorMessage;
+	void putBlobs(HashMap<Long, byte[]> blobsToLog) throws SQLException {
+		plugin.debug("Logging " + blobsToLog.size() + " blobs");
+		HashMap<Long, byte[]> subBlobs = new HashMap<>();
+		int size = 0;
+		Iterator<Entry<Long, byte[]>> it = blobsToLog.entrySet().iterator();
+		while (it.hasNext()) {
+			Entry<Long, byte[]> entry = it.next();
+			if (entry.getValue() == null || entry.getValue().length == 0) {
+				continue;
+			}
+			if (size + entry.getValue().length > 16777215 || subBlobs.size() >= 1000) {
+				if (subBlobs.size() == 0) {
+					plugin.warning("Blob too big. Skipping. " + entry.getKey() + "e");
+					continue;
+				}
+				plugin.debug("Logging " + subBlobs.size() + " blobs, " + getSize(size));
+				putBlobs_(subBlobs);
+				subBlobs.clear();
+				size = 0;
+			}
+			size += entry.getValue().length;
+			subBlobs.put(entry.getKey(), entry.getValue());
 		}
-
-		@Override
-		public String toString() {
-			return error.toString() + ": " + errorMessage;
+		if (!subBlobs.isEmpty()) {
+			plugin.debug("Logging " + subBlobs.size() + " blobs, " + getSize(size));
+			putBlobs_(subBlobs);
 		}
 	}
 
+	private void putBlobs_(HashMap<Long, byte[]> blobsToLog) throws SQLException {
+		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, blob) VALUES ";
+		for (int i = 0; i < blobsToLog.size(); i++) {
+			stmt += "\n(?, ?),";
+		}
+
+		try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
+			int i = 1;
+			for (Entry<Long, byte[]> entry : blobsToLog.entrySet()) {
+				plugin.debug("blob: " + entry.getKey(), 5);
+				statement.setLong(i++, entry.getKey());
+				if (mysql) {
+					Blob blob = connection.createBlob();
+					blob.setBytes(1, entry.getValue());
+					statement.setBlob(i++, blob);
+				} else {
+					statement.setBytes(i++, entry.getValue());
+				}
+			}
+
+			statement.executeUpdate();
+		}
+	}
+
+	/**
+	 * Replaced with LookupManager#lookup
+	 */
+	@Deprecated
 	public ArrayList<DbEntry> lookup(HashMap<String, String> params, Location location, boolean exact)
-			throws LookupException {
+			throws LookupManager.LookupException {
 		if (!isConnected)
 			return null;
 
@@ -936,7 +644,7 @@ public class SQLManager {
 					try {
 						forcedTable = Table.valueOf(value.toUpperCase());
 					} catch (IllegalArgumentException e) {
-						throw new LookupException(LookupExceptionType.SYNTAX,
+						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.SYNTAX,
 								plugin.translate("lookup-invalid-syntax"));
 					}
 					continue;
@@ -945,7 +653,7 @@ public class SQLManager {
 				if (not) {
 					value = value.substring(1);
 					if (key.equalsIgnoreCase("action")) {
-						throw new LookupException(LookupExceptionType.ACTION_NEGATE,
+						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.ACTION_NEGATE,
 								plugin.translate("lookup-action-negate"));
 					}
 				}
@@ -1000,7 +708,7 @@ public class SQLManager {
 						} else if (altuid > 0) {
 							theStmt = "uid = '" + altuid + "'";
 						} else {
-							throw new LookupException(LookupExceptionType.PLAYER_NOT_FOUND,
+							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
 									String.format(plugin.translate("lookup-playernotfound"), param));
 
 						}
@@ -1017,14 +725,15 @@ public class SQLManager {
 						}
 						EntryAction action = EntryAction.getAction(param);
 						if (action == null || !action.isEnabled()) {
-							throw new LookupException(LookupExceptionType.UNKNOWN_ACTION,
+							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.UNKNOWN_ACTION,
 									String.format(plugin.translate("lookup-unknownaction"), param));
 						} else {
 							if (table == null) {
 								table = action.getTable();
 							} else {
 								if (table != action.getTable()) {
-									throw new LookupException(LookupExceptionType.ACTION_INCOMPATIBLE,
+									throw new LookupManager.LookupException(
+											LookupManager.LookupExceptionType.ACTION_INCOMPATIBLE,
 											plugin.translate("lookup-incompatible-tables"));
 								}
 							}
@@ -1041,7 +750,7 @@ public class SQLManager {
 					} else if (key.equalsIgnoreCase("world")) {
 						int wid = getWID(param);
 						if (wid == -1) {
-							throw new LookupException(LookupExceptionType.UNKNOWN_WORLD,
+							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.UNKNOWN_WORLD,
 									String.format(plugin.translate("lookup-unknown-world"), param));
 						}
 						theStmt = "world_id = " + getWID(param);
@@ -1101,7 +810,7 @@ public class SQLManager {
 					} else if (altuid > 0) {
 						theStmt = "target_id = '" + altuid + "'";
 					} else {
-						throw new LookupException(LookupExceptionType.PLAYER_NOT_FOUND,
+						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
 								String.format(plugin.translate("lookup-playernotfound"), target));
 					}
 				}
@@ -1130,7 +839,6 @@ public class SQLManager {
 					theStmt += "lower(data) = ? OR lower(data) = ?";
 					writeParams.add(data.toLowerCase());
 					writeParams.add(data.toLowerCase().replaceAll("-", " "));
-
 				}
 
 				if (theStmt.length() > 0) {
@@ -1208,13 +916,14 @@ public class SQLManager {
 
 			return lookup(table, stmt, writeParams);
 		} catch (Exception e) {
-			if (e instanceof LookupException) {
+			if (e instanceof LookupManager.LookupException) {
 				throw e;
 			}
 			plugin.warning("Error while executing command");
 			plugin.print(e);
 			holdingConnectionSince = 0;
-			throw new LookupException(LookupExceptionType.GENERAL, plugin.translate("lookup-error"));
+			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
+					plugin.translate("lookup-error"));
 		}
 	}
 
@@ -1227,10 +936,10 @@ public class SQLManager {
 	 * @param writeParams An in-order array of parameters to be inserted into ? of
 	 *                    stmt
 	 * @return An ArrayList of the DbEntry's meeting the provided conditions
-	 * @throws LookupException
+	 * @throws LookupManager.LookupException
 	 */
 	public ArrayList<DbEntry> lookup(Table table, String stmt, @Nullable ArrayList<String> writeParams)
-			throws LookupException {
+			throws LookupManager.LookupException {
 		final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
 		final boolean hasData = table.hasData();
 		final boolean hasAction = table.hasActionId();
@@ -1249,9 +958,10 @@ public class SQLManager {
 
 				pstmt.setFetchSize(500);
 				if (writeParams != null) {
-					for (int i1 = 0; i1 < writeParams.size(); i1++) {
-						String param = writeParams.get(i1);
-						pstmt.setString(i1 + 1, param);
+					int i1 = 1;
+					plugin.debug("writeParamsSize: " + writeParams.size());
+					for (String param : writeParams) {
+						pstmt.setString(i1++, param);
 					}
 				}
 				try (ResultSet rs = pstmt.executeQuery()) {
@@ -1312,10 +1022,13 @@ public class SQLManager {
 							entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
 									target_id, data);
 						}
+						if (table.hasBlob() && rs.getBoolean("hasblob")) {
+							entry.setHasBlob();
+						}
 
 						output.add(entry);
 						if (++count >= MAX_LOOKUP_SIZE) {
-							throw new LookupException(LookupExceptionType.TOO_MANY,
+							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.TOO_MANY,
 									String.format(plugin.translate("lookup-toomany"), count));
 						}
 					}
@@ -1325,7 +1038,8 @@ public class SQLManager {
 				plugin.warning("SQL Code: " + stmt);
 				plugin.print(e);
 				holdingConnectionSince = 0;
-				throw new LookupException(LookupExceptionType.GENERAL, plugin.translate("lookup-error"));
+				throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
+						plugin.translate("lookup-error"));
 			}
 			plugin.debug("Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: "
 					+ (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms", 1);
@@ -1344,7 +1058,7 @@ public class SQLManager {
 		}
 		if (table == null) {
 			for (Table table1 : Table.values()) {
-				if (!table1.hasAPEntries()) {
+				if (!table1.hasAPEntries() && table1 != Table.AUXPROTECT_INVBLOB) {
 					continue;
 				}
 				if (!table1.exists(plugin)) {
@@ -1393,7 +1107,7 @@ public class SQLManager {
 				statement.setInt(i++, entry.getTargetId());
 				if (statement.executeUpdate() > 1) {
 					plugin.warning("Updated multiple entries when updating the following entry:");
-					Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0);
+					Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
 				}
 			}
 		}
@@ -1606,7 +1320,7 @@ public class SQLManager {
 				plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
 				pstmt.execute();
 				worlds.put(world, nextWid);
-				count++;
+				rowcount++;
 				return nextWid++;
 			} catch (SQLException e) {
 				plugin.print(e);
@@ -1669,7 +1383,7 @@ public class SQLManager {
 							int uid = result.getInt(1);
 							uuids.put(uid, uuid);
 							plugin.debug("New UUID: " + uuid + ":" + uid, 3);
-							count++;
+							rowcount++;
 							return uid++;
 						}
 					}
@@ -1690,7 +1404,7 @@ public class SQLManager {
 		}
 		try {
 			return lookup(Table.AUXPROTECT_XRAY, stmt, null);
-		} catch (LookupException e) {
+		} catch (LookupManager.LookupException e) {
 			plugin.print(e);
 		}
 		return null;
@@ -1792,15 +1506,19 @@ public class SQLManager {
 				continue;
 			}
 			try {
-				total += count(table.toString());
+				total += count(table);
 			} catch (SQLException ignored) {
 			}
 		}
 		plugin.debug("Counted all tables. " + total + " rows.");
-		count = total;
+		rowcount = total;
 	}
 
-	private int count(String table) throws SQLException {
+	int count(Table table) throws SQLException {
+		return count(table.toString());
+	}
+
+	int count(String table) throws SQLException {
 		String stmtStr = "";
 		if (mysql) {
 			stmtStr = "SELECT COUNT(*) FROM " + table;
@@ -1825,12 +1543,36 @@ public class SQLManager {
 		return -1;
 	}
 
+	public byte[] getBlob(DbEntry entry) {
+		String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB.toString() + " WHERE time=?;";
+		plugin.debug(stmt, 3);
+		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+			pstmt.setLong(1, entry.getTime());
+			try (ResultSet results = pstmt.executeQuery()) {
+				if (results.next()) {
+					if (mysql) {
+						try (InputStream in = results.getBlob("blob").getBinaryStream()) {
+							return in.readAllBytes();
+						}
+					} else {
+						return results.getBytes("blob");
+					}
+				}
+			}
+		} catch (SQLException e) {
+			plugin.print(e);
+		} catch (IOException e) {
+			plugin.print(e);
+		}
+		return null;
+	}
+
 	public void cleanup() {
 		usernames.cleanup();
 		uuids.cleanup();
 	}
 
-	private boolean checkAsync() {
+	boolean checkAsync() {
 		if (plugin.isBungee()) {
 			return true;
 		}

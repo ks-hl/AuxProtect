@@ -6,7 +6,7 @@ public enum Table {
 	AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
 	AUXPROTECT_COMMANDS, AUXPROTECT_POSITION,
 
-	AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION;
+	AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB;
 
 	@Override
 	public String toString() {
@@ -123,9 +123,10 @@ public enum Table {
 			return "(time, uid, world_id, x, y, z, target)";
 		} else if (bungee) {
 			return "(time, uid, action_id, target_id, data)";
-		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_INVENTORY
-				|| this == Table.AUXPROTECT_API) {
+		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API) {
 			return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
+		} else if (this == Table.AUXPROTECT_INVENTORY) {
+			return "(time, uid, action_id, world_id, x, y, z, target_id, data, hasblob)";
 		} else if (this == Table.AUXPROTECT_ABANDONED) {
 			return "(time, uid, action_id, world_id, x, y, z, target_id)";
 		} else if (this == Table.AUXPROTECT_POSITION) {
@@ -154,24 +155,31 @@ public enum Table {
 	public int getNumColumns(boolean bungee) {
 		if (this == Table.AUXPROTECT_LONGTERM) {
 			return 4;
-		} else if (this == Table.AUXPROTECT_COMMANDS) {
+		}
+		if (this == Table.AUXPROTECT_COMMANDS) {
 			if (bungee) {
 				return 3;
 			}
 			return 7;
-		} else if (bungee) {
-			return 5;
-		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_INVENTORY
-				|| this == Table.AUXPROTECT_API) {
-			return 9;
-		} else if (this == Table.AUXPROTECT_ABANDONED) {
-			return 8;
-		} else if (this == Table.AUXPROTECT_POSITION) {
-			return 10;
-		} else if (this == Table.AUXPROTECT_XRAY) {
-			return 9;
 		}
-		return -1;
+		if (bungee) {
+			return 5;
+		}
+
+		switch (this) {
+		case AUXPROTECT_ABANDONED:
+			return 8;
+		case AUXPROTECT_MAIN:
+		case AUXPROTECT_SPAM:
+		case AUXPROTECT_API:
+		case AUXPROTECT_XRAY:
+			return 9;
+		case AUXPROTECT_POSITION:
+		case AUXPROTECT_INVENTORY:
+			return 10;
+		default:
+			return -1;
+		}
 	}
 
 	public String getValuesTemplate(boolean bungee) {
@@ -183,7 +191,7 @@ public enum Table {
 			return null;
 		}
 		String stmt = "CREATE TABLE IF NOT EXISTS " + toString() + " (\n";
-		stmt += "    time BIGINT(255)";
+		stmt += "    time BIGINT";
 		stmt += ",\n    uid integer";
 		if (hasActionId()) {
 			stmt += ",\n    action_id SMALLINT";
@@ -214,9 +222,19 @@ public enum Table {
 		if (hasData()) {
 			stmt += ",\n    data LONGTEXT";
 		}
+		if (hasBlob()) {
+			stmt += ",\n    hasblob BOOL";
+		}
 		stmt += "\n);";
 
 		return stmt;
+	}
+
+	public boolean hasBlob() {
+		if (this == AUXPROTECT_INVENTORY) {
+			return true;
+		}
+		return false;
 	}
 
 }

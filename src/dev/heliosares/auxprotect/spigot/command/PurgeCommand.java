@@ -14,6 +14,10 @@ public class PurgeCommand {
 			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
 			return;
 		}
+		if (!plugin.getSqlManager().isConnected()) {
+			sender.sendMessage(plugin.translate("database-busy"));
+			return;
+		}
 
 		Table table_ = null;
 		if (!args[1].equalsIgnoreCase("all")) {

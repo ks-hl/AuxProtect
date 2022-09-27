@@ -74,5 +74,12 @@ public class Telemetry {
 				}
 			}));
 		}
+		
+//		metrics.addCustomChart(new Metrics.SimplePie("entriespersecond", new Callable<String>() {
+//			@Override
+//			public String call() throws Exception {
+//				return entry.getValue() ? "Enabled" : "Disabled";
+//			}
+//		}));
 	}
 }

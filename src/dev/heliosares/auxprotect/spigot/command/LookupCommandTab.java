@@ -29,11 +29,26 @@ public class LookupCommandTab implements TabCompleter {
 	public List<String> onTabComplete(CommandSender sender, Command cmd, String label, String[] args) {
 		List<String> possible = new ArrayList<>();
 		String currentArg = args[args.length - 1];
+		boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
+		boolean watch = args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w");
+		if (lookup && !APPermission.LOOKUP.hasPermission(sender)) {
+			return null;
+		}
+		if (watch && !APPermission.WATCH.hasPermission(sender)) {
+			return null;
+		}
 		if (args.length == 2) {
-			possible.add("next");
-			possible.add("prev");
-			possible.add("first");
-			possible.add("last");
+			if (lookup) {
+				possible.add("next");
+				possible.add("prev");
+				possible.add("first");
+				possible.add("last");
+			}
+			if (watch) {
+				possible.add("remove");
+				possible.add("clear");
+				possible.add("list");
+			}
 		}
 
 		possible.add("radius:");
@@ -132,6 +147,10 @@ public class LookupCommandTab implements TabCompleter {
 			}
 			possible.add("#bw");
 			possible.add("#count");
+			if (currentArg.startsWith("#cou"))
+				possible.add("#count-only");
+			if (currentArg.startsWith("#hide"))
+				possible.add("#hide-coords");
 			if (APPermission.LOOKUP_ACTIVITY.hasPermission(sender) && plugin.getAPConfig().isPrivate()) {
 				possible.add("#activity");
 			}
