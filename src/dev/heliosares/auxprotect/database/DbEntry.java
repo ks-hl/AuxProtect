@@ -101,12 +101,6 @@ public class DbEntry {
 		this.data = data;
 	}
 
-	@Deprecated
-	public static DbEntry createXrayRecord(DbEntry en, int rating, String data) {
-		return new DbEntry(en.getTime(), en.getUid(), EntryAction.XRAYCHECK, false, en.world, en.x, en.y, en.z, 0, 180,
-				rating + "", -1, data);
-	}
-
 	public long getTime() {
 		return time;
 	}

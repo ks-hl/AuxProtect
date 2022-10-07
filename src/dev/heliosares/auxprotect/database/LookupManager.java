@@ -10,8 +10,7 @@ import dev.heliosares.auxprotect.core.Parameters;
 
 public class LookupManager {
 	public enum LookupExceptionType {
-		SYNTAX, PLAYER_NOT_FOUND, ACTION_NEGATE, UNKNOWN_ACTION, ACTION_INCOMPATIBLE, UNKNOWN_WORLD, UNKNOWN_TABLE,
-		GENERAL, TOO_MANY
+		SYNTAX, PLAYER_NOT_FOUND, ACTION_NEGATE, UNKNOWN_ACTION, ACTION_INCOMPATIBLE, UNKNOWN_WORLD, GENERAL, TOO_MANY
 	}
 
 	public static class LookupException extends Exception {

@@ -671,20 +671,29 @@ public class Parameters {
 		this.negateUser = negateUser;
 	}
 
-	public void setUsers(List<String> users) {
-		this.uids = users;
+	public void setUsers(String... users) {
+		this.users.clear();
+		for (String user : users) {
+			this.users.add(user);
+		}
 	}
 
-	public void setActions(List<Integer> actions) {
-		this.actions = actions;
+	public void setActions(int... actions) {
+		this.actions.clear();
+		for (int action : actions) {
+			this.actions.add(action);
+		}
 	}
 
 	public void setNegateTarget(boolean negateTarget) {
 		this.negateTarget = negateTarget;
 	}
 
-	public void setTargets(List<String> targets) {
-		this.targets = targets;
+	public void setTargets(String... targets) {
+		this.targets.clear();
+		for (String target : targets) {
+			this.targets.add(target);
+		}
 	}
 
 	public void setNegateData(boolean negateData) {
@@ -693,6 +702,13 @@ public class Parameters {
 
 	public void setDatas(List<String> datas) {
 		this.datas = datas;
+	}
+
+	public void setDatas(String... datas) {
+		this.datas.clear();
+		for (String data : datas) {
+			this.datas.add(data);
+		}
 	}
 
 	public void setTable(Table table) {
@@ -715,12 +731,18 @@ public class Parameters {
 		this.negateWorld = negateWorld;
 	}
 
-	public void setWorld(List<String> world) {
-		this.worlds = world;
+	public void setWorlds(String... worlds) {
+		this.worlds.clear();
+		for (String world : worlds) {
+			this.worlds.add(world);
+		}
 	}
 
-	public void setFlags(List<Flag> flags) {
-		this.flags = flags;
+	public void setFlags(Flag... flags) {
+		this.flags.clear();
+		for (Flag flag : flags) {
+			this.flags.add(flag);
+		}
 	}
 
 	public void setRatings(List<Short> ratings) {

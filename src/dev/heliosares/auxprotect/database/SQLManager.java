@@ -1384,7 +1384,7 @@ public class SQLManager {
 							uuids.put(uid, uuid);
 							plugin.debug("New UUID: " + uuid + ":" + uid, 3);
 							rowcount++;
-							return uid++;
+							return uid;
 						}
 					}
 				} catch (SQLException e) {

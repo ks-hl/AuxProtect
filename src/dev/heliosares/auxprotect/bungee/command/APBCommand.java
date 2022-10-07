@@ -225,7 +225,7 @@ public class APBCommand extends Command implements TabExecutor {
 		return output;
 	}
 
-	public static void copyPartialMatches(String arg, List<String> possible, List<String> output) {
+	private static void copyPartialMatches(String arg, List<String> possible, List<String> output) {
 		arg = arg.toLowerCase();
 		for (String poss : possible) {
 			if (poss.toLowerCase().startsWith(arg)) {

@@ -36,8 +36,7 @@ public class EntryAction {
 
 	public static final EntryAction ALERT = new EntryAction("alert", 128);
 	public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
-	@Deprecated
-	public static final EntryAction XRAYCHECK = new EntryAction("xraycheck", 130);
+//	public static final EntryAction XRAYCHECK = new EntryAction("xraycheck", 130);
 	public static final EntryAction CENSOR = new EntryAction("censor", 132);
 	public static final EntryAction MSG = new EntryAction("msg", 133);
 	public static final EntryAction CONSUME = new EntryAction("consume", 134);
@@ -80,7 +79,9 @@ public class EntryAction {
 	public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
 	public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
 	public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
-	//public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
+//	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
+	public static final EntryAction BREAK = new EntryAction("break", 1032);
+
 	public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
 	// END INVENTORY(1279)
 
