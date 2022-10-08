@@ -24,6 +24,12 @@ public class APBListener implements Listener {
 		this.plugin = plugin;
 	}
 
+	private void handlePM(ProxiedPlayer from, ProxiedPlayer to, String msg) {
+		DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(from), EntryAction.MSG, false,
+				AuxProtectBungee.getLabel(to), msg);
+		plugin.dbRunnable.add(entry);
+	}
+
 	@EventHandler
 	public void chatEvent(ChatEvent e) {
 		if (e.getSender() instanceof ProxiedPlayer) {
@@ -37,29 +43,20 @@ public class APBListener implements Listener {
 						|| e.getMessage().toLowerCase().startsWith("/tell ")
 						|| e.getMessage().toLowerCase().startsWith("/whisper ")
 						|| e.getMessage().toLowerCase().startsWith("/chat ")) {
-					msg(player, e.getMessage().substring(5).split(" "));
+					msg(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
 				} else if (e.getMessage().toLowerCase().startsWith("/r ")
 						|| e.getMessage().toLowerCase().startsWith("/reply ")
 						|| e.getMessage().toLowerCase().startsWith("/respond ")) {
-					r(player, e.getMessage().substring(3).split(" "));
+					r(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
 				}
-			}
-			if (Events.PMToggle.containsKey(player.getUniqueId())) {
-
+			} else if (Events.PMToggle.containsKey(player.getUniqueId())) {
 				String message = e.getMessage();
-
-				if (!e.isCommand()) {
-
-					if (ProxyServer.getInstance().getPlayer((UUID) Events.PMToggle.get(player.getUniqueId())) != null) {
-
-						ProxiedPlayer target = ProxyServer.getInstance()
-								.getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
-						DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
-								AuxProtectBungee.getLabel(target), message);
-						plugin.dbRunnable.add(entry);
-					}
-
+				if (ProxyServer.getInstance().getPlayer((UUID) Events.PMToggle.get(player.getUniqueId())) != null) {
+					ProxiedPlayer target = ProxyServer.getInstance()
+							.getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
+					handlePM(player, target, message);
 				}
+
 			}
 		}
 	}
@@ -67,12 +64,10 @@ public class APBListener implements Listener {
 	public void msg(ProxiedPlayer player, String[] args) {
 		if (args.length > 1) {
 			String message = MultiChatUtil.getMessageFromArgs(args, 1);
-			if (ProxyServer.getInstance().getPlayer(args[0]) != null) {
-				ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
+			ProxiedPlayer target = ProxyServer.getInstance().getPlayer(args[0]);
+			if (target != null) {
 
-				DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
-						AuxProtectBungee.getLabel(target), message);
-				plugin.dbRunnable.add(entry);
+				handlePM(player, target, message);
 			}
 		}
 	}
@@ -81,13 +76,11 @@ public class APBListener implements Listener {
 		if (args.length >= 1) {
 			String message = MultiChatUtil.getMessageFromArgs(args);
 			if (MultiChat.lastmsg.containsKey(player.getUniqueId())) {
-				if (ProxyServer.getInstance().getPlayer((UUID) MultiChat.lastmsg.get(player.getUniqueId())) != null) {
-					ProxiedPlayer target = ProxyServer.getInstance()
-							.getPlayer((UUID) MultiChat.lastmsg.get(player.getUniqueId()));
+				ProxiedPlayer target = ProxyServer.getInstance()
+						.getPlayer((UUID) MultiChat.lastmsg.get(player.getUniqueId()));
+				if (target != null) {
 
-					DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.MSG, false,
-							AuxProtectBungee.getLabel(target), message);
-					plugin.dbRunnable.add(entry);
+					handlePM(player, target, message);
 				}
 			}
 		}

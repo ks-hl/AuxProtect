@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.1.7-pre1</version>
+	<version>1.1.7.1</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -144,7 +144,7 @@
 			<artifactId>auctionhouse</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>
-			<systemPath>${jars}/AuctionHouse-1.18.2-3.2.2.jar</systemPath>
+			<systemPath>${jars}/AuctionHouse-1.19-3.3.1.jar</systemPath>
 		</dependency>
 		<dependency>
 			<groupId>com.github.7sat</groupId>

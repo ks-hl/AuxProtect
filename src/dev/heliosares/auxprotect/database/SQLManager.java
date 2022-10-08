@@ -243,7 +243,7 @@ public class SQLManager {
 //
 			if (!plugin.isBungee()) {
 				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVBLOB.toString();
-				stmt += " (time BIGINT(255), blob MEDIUMBLOB);";
+				stmt += " (time BIGINT(255), `blob` MEDIUMBLOB);";
 				execute(stmt);
 
 				stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS.toString();
