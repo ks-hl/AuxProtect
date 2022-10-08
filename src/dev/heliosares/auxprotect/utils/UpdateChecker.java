@@ -24,7 +24,7 @@ public class UpdateChecker {
 	}
 
 	public static Integer[] versionAsIntArray(String version) {
-		String[] parts = version.split("[\\.|\\-]+");
+		String[] parts = version.split("[\\.\\-]+");
 		if (version.startsWith("v")) {
 			version = version.substring(1);
 		}

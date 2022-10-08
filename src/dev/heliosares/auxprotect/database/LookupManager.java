@@ -44,7 +44,7 @@ public class LookupManager {
 		for (int i = 1; i < sqlstmts.length; i++) {
 			writeparams.add(sqlstmts[i]);
 		}
-		String stmt = "SELECT * FROM " + params.getTable().name();
+		String stmt = "SELECT * FROM " + params.getTable().toString();
 		if (sqlstmts[0].length() > 1) {
 			stmt += "\nWHERE " + sqlstmts[0];
 		}
@@ -59,7 +59,7 @@ public class LookupManager {
 		for (int i = 1; i < sqlstmts.length; i++) {
 			writeparams.add(sqlstmts[i]);
 		}
-		String stmt = "SELECT COUNT() FROM " + params.getTable().name();
+		String stmt = sql.getCountStmt(params.getTable().toString());
 		if (sqlstmts[0].length() > 1) {
 			stmt += "\nWHERE " + sqlstmts[0];
 		}

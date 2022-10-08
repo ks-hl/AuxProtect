@@ -398,6 +398,9 @@ public class SQLManager {
 				try (ResultSet rs = statement.executeQuery(string)) {
 					final ResultSetMetaData meta = rs.getMetaData();
 					final int columnCount = meta.getColumnCount();
+					for (int i = 0; i < columnCount; i++) {
+						//TODO
+					}
 					while (rs.next()) {
 						final List<String> columnList = new LinkedList<String>();
 						rowList.add(columnList);
@@ -567,7 +570,7 @@ public class SQLManager {
 	}
 
 	private void putBlobs_(HashMap<Long, byte[]> blobsToLog) throws SQLException {
-		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, blob) VALUES ";
+		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, `blob`) VALUES ";
 		for (int i = 0; i < blobsToLog.size(); i++) {
 			stmt += "\n(?, ?),";
 		}
@@ -1517,14 +1520,17 @@ public class SQLManager {
 	int count(Table table) throws SQLException {
 		return count(table.toString());
 	}
+	
+	public String getCountStmt(String table) {
+		if (mysql) {
+			return "SELECT COUNT(*) FROM " + table;
+		} else {
+			return "SELECT COUNT(1) FROM " + table;
+		}
+	}
 
 	int count(String table) throws SQLException {
-		String stmtStr = "";
-		if (mysql) {
-			stmtStr = "SELECT COUNT(*) FROM " + table;
-		} else {
-			stmtStr = "SELECT COUNT(1) FROM " + table;
-		}
+		String stmtStr = getCountStmt(table);
 		plugin.debug(stmtStr, 5);
 		checkAsync();
 		synchronized (connection) {
