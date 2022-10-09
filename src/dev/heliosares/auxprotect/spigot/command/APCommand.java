@@ -281,7 +281,10 @@ public class APCommand implements CommandExecutor {
 									for (List<String> result : results) {
 										String line = "";
 										for (String part : result) {
-											line += part + ", ";
+											if (line.length() > 0) {
+												line += ", ";
+											}
+											line += part;
 										}
 										sender.sendMessage(line);
 									}

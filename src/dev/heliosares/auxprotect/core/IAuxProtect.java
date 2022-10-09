@@ -30,7 +30,9 @@ public interface IAuxProtect {
 
 	SQLManager getSqlManager();
 
-	int getDebug();
+	public int getDebug();
+	
+	public void setDebug(int debug);
 
 	APConfig getAPConfig();
 

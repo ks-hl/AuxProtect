@@ -16,6 +16,7 @@ public class MigrationManager {
 	private final SQLManager sql;
 	private final IAuxProtect plugin;
 	private boolean isMigrating;
+	private int preMigrateDebug;
 
 	private int rowcountformerge;
 
@@ -29,10 +30,16 @@ public class MigrationManager {
 	}
 
 	void preTables() throws SQLException, IOException {
+		preMigrateDebug = -1;
 		if (sql.getVersion() < SQLManager.DBVERSION) {
 			plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + SQLManager.DBVERSION
 					+ "...");
 			plugin.info("This may take a while. Please do not interrupt.");
+//			if (plugin.getDebug() < 3) {
+//				plugin.info("Enabling debug mode during migration");
+//				preMigrateDebug = plugin.getDebug();
+//				plugin.setDebug(3);
+//			}
 			isMigrating = true;
 			if (!sql.isMySQL()) {
 				plugin.info("Pre-migration database backup created: " + sql.backup());
@@ -91,6 +98,10 @@ public class MigrationManager {
 			sql.execute("DROP TABLE IF EXISTS " + table.toString() + "_temp;");
 		}
 
+		if (preMigrateDebug >= 0) {
+			plugin.setDebug(preMigrateDebug);
+			plugin.info("Debug mode restored to " + preMigrateDebug);
+		}
 		isMigrating = false;
 	}
 
@@ -248,69 +259,81 @@ public class MigrationManager {
 			try {
 				sql.execute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY.toString() + " ADD COLUMN hasblob BOOL");
 			} catch (SQLException e) {
-				plugin.info("This is probably fine..");
-				plugin.print(e);
+				plugin.warning(
+						"Error while modifying inventory table. This is probably due to a prior failed migration. You can ignore this if there are no further errors.");
 			}
 
 			final int totalrows = sql.count(Table.AUXPROTECT_INVENTORY);
 			long lastupdate = 0;
 			int count = 0;
 
-			String stmt = "SELECT time, action_id, data FROM " + Table.AUXPROTECT_INVENTORY.toString();
-			plugin.debug(stmt, 3);
-			HashMap<Long, byte[]> blobs = new HashMap<>();
-			try (PreparedStatement pstmt = sql.connection.prepareStatement(stmt)) {
-				pstmt.setFetchSize(500);
-				try (ResultSet results = pstmt.executeQuery()) {
-					while (results.next()) {
-						int progress = (int) Math.round((double) count / (double) totalrows * 100.0);
-						if (System.currentTimeMillis() - lastupdate > 5000) {
-							lastupdate = System.currentTimeMillis();
-							plugin.info("Migration " + progress + "% complete. (" + count + "/" + totalrows
-									+ "). DO NOT INTERRUPT");
-						}
-						count++;
-						long time = results.getLong("time");
-						String data = results.getString("data");
-						int action_id = results.getInt("action_id");
-						boolean hasblob = false;
-						if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
-							data = data.substring(data.indexOf(InvSerialization.ITEM_SEPARATOR)
-									+ InvSerialization.ITEM_SEPARATOR.length());
-							hasblob = true;
-						}
-						byte[] blob = null;
-						try {
-							if (action_id == EntryAction.INVENTORY.id) {
-								try {
-									blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
-								} catch (Exception e) {
-									plugin.warning("THIS IS PROBABLY FINE. Failed to migrate inventory log at " + time
-											+ "e. This can be ignored, but this entry will no longer be available.");
-								}
-							} else {
-								if (!hasblob) {
-									continue;
-								}
-								blob = Base64Coder.decodeLines(data);
-							}
-						} catch (IllegalArgumentException e) {
-							plugin.info("Error while decoding: " + data);
-							throw e;
-						}
-						if (blob == null || blob.length == 0) {
-							continue;
-						}
+			String stmt = "SELECT time, action_id, data FROM " + Table.AUXPROTECT_INVENTORY.toString()
+					+ " WHERE (action_id=1024 OR data LIKE '%" + InvSerialization.ITEM_SEPARATOR
+					+ "%') AND (hasblob!=TRUE OR hasblob IS NULL) LIMIT ";
 
-						blobs.put(time, blob);
-						if (blobs.size() >= 1000) {
-							migrateV6Commit(blobs);
-							blobs.clear();
+			plugin.debug(stmt, 3);
+
+			plugin.info("Migration beginnning. (0/" + totalrows + "). ***DO NOT INTERRUPT***");
+			boolean any = true;
+			while (any) {
+				any = false;
+				HashMap<Long, byte[]> blobs = new HashMap<>();
+				int limit = 1;
+				try (PreparedStatement pstmt = sql.connection.prepareStatement(stmt + limit)) {
+					if (limit < 50) {
+						limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
+									// issue
+					}
+					pstmt.setFetchSize(500);
+					try (ResultSet results = pstmt.executeQuery()) {
+						while (results.next()) {
+							any = true;
+							int progress = (int) Math.round((double) count / (double) totalrows * 100.0);
+							if (System.currentTimeMillis() - lastupdate > 5000) {
+								lastupdate = System.currentTimeMillis();
+								plugin.info("Migration " + progress + "% complete. (" + count + "/" + totalrows
+										+ "). DO NOT INTERRUPT");
+							}
+							count++;
+							long time = results.getLong("time");
+							String data = results.getString("data");
+							int action_id = results.getInt("action_id");
+							boolean hasblob = false;
+							if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
+								data = data.substring(data.indexOf(InvSerialization.ITEM_SEPARATOR)
+										+ InvSerialization.ITEM_SEPARATOR.length());
+								hasblob = true;
+							}
+							byte[] blob = null;
+							try {
+								if (action_id == EntryAction.INVENTORY.id) {
+									try {
+										blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
+									} catch (Exception e) {
+										plugin.warning("THIS IS PROBABLY FINE. Failed to migrate inventory log at "
+												+ time
+												+ "e. This can be ignored, but this entry will no longer be available.");
+									}
+								} else {
+									if (!hasblob) {
+										continue;
+									}
+									blob = Base64Coder.decodeLines(data);
+								}
+							} catch (IllegalArgumentException e) {
+								plugin.info("Error while decoding: " + data);
+								continue;
+							}
+							if (blob == null || blob.length == 0) {
+								continue;
+							}
+
+							blobs.put(time, blob);
 						}
 					}
 				}
+				migrateV6Commit(blobs);
 			}
-			migrateV6Commit(blobs);
 		}
 		sql.setVersion(6);
 	}
@@ -388,11 +411,14 @@ public class MigrationManager {
 	private void migrateV6Commit(HashMap<Long, byte[]> blobs) throws SQLException {
 		sql.putBlobs(blobs);
 
-		String where = " WHERE time IN (";
-		for (Long time : blobs.keySet()) {
-			where += time + ",";
+		String where = "";
+		if (blobs.size() > 0) {
+			where += " WHERE time IN (";
+			for (Long time : blobs.keySet()) {
+				where += time + ",";
+			}
+			where = where.substring(0, where.length() - 1) + ")";
 		}
-		where = where.substring(0, where.length() - 1) + ")";
 		sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1, data = ''" + where);
 	}
 }

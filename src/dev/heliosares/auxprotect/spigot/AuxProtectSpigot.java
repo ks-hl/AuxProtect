@@ -680,4 +680,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	public MySender getConsoleSender() {
 		return new MySender(this.getServer().getConsoleSender());
 	}
+
+	@Override
+	public void setDebug(int debug) {
+		this.debug = debug;
+	}
 }

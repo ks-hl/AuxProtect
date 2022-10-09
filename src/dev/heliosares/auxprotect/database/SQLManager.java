@@ -133,7 +133,7 @@ public class SQLManager {
 			} catch (ClassNotFoundException e1) {
 			}
 		if (!driver) {
-			System.err.println("SQL DRIVER NOT FOUND");
+			plugin.warning("SQL DRIVER NOT FOUND");
 		}
 
 		if (user != null && pass != null) {
@@ -399,7 +399,7 @@ public class SQLManager {
 					final ResultSetMetaData meta = rs.getMetaData();
 					final int columnCount = meta.getColumnCount();
 					for (int i = 0; i < columnCount; i++) {
-						//TODO
+						// TODO
 					}
 					while (rs.next()) {
 						final List<String> columnList = new LinkedList<String>();
@@ -1520,7 +1520,7 @@ public class SQLManager {
 	int count(Table table) throws SQLException {
 		return count(table.toString());
 	}
-	
+
 	public String getCountStmt(String table) {
 		if (mysql) {
 			return "SELECT COUNT(*) FROM " + table;
