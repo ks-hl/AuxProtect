@@ -6,6 +6,7 @@ lookup-invalid-parameter: '&cInvalid parameter: %s'
 lookup-invalid-syntax: '&cInvalid syntax.'
 lookup-invalid-notenough: '&cNot enough arguments.'
 lookup-error: '&cAn error occured'
+error: '&cAn error occured'
 lookup-unknown-world: '&cUnknown world: %s'
 lookup-looking: '&9Searching database...'
 lookup-noresults: '&cNo results found.'
@@ -13,12 +14,17 @@ lookup-count: '&9%d &fresults found.'
 lookup-page-footer: '&7Page (&9%d/%d&7) &9%d &7total entries.'
 lookup-no-results-selected: '&cYou don''t have a lookup to page through.'
 lookup-nopage: '&cNo entries on that page.'
-lookup-toomany: '&cToo many entries. Try narrowing your search. (Over %d entries.)'
+lookup-toomany: '&cToo many entries. Try narrowing your search. (%d entries, over %d)'
 lookup-incompatible-tables: '&cThose actions are incompatible.'
 lookup-action-negate: '&cYou cannot negate actions.'
 lookup-action-perm: '&cYou do not have permission to lookup that action. ''auxprotect.lookup.action.<action>'''
 lookup-action-none: '&cYou must specify an action.'
 lookup-rating-wrong: '&cYou can only specify ''rating'' for a:vein.'
+lookup-nodata: '&cThat table does not have data logs.'
+watch-none: '&cYou aren''t watching anything.'
+watch-ing: '&9Watching:'
+watch-removed: '&fRemoved &9%d&f watch records.'
+watch-now: '&fYou are now watching: &9%s'
 command-help-1: '&cYou don''t have a lookup to page through.'
 purge-purging: '&9Purging ''%s''...'
 purge-uids: '&9Purging unused UIDs...'
@@ -63,6 +69,9 @@ xray-click-to-change: '&aClick to rate'
 inactive-alert: '&8[&4Server&8] &e%s &7may be inactive. &e%d &7out of &e%d &7minutes inactive.'
 yes: 'Yes'
 no: 'No'
+inv-manual-success: '&9%s''%s &7inventory has been manually saved. &otime:%s'
+inv-toosoon: '&cThat user''s inventory has been saved too recently.'
+database-busy: '&cThe database is currently busy. Try again later or check the console for more information.'
 
 
 actions:
@@ -86,6 +95,7 @@ actions:
   alert: may be hacking
   respawn: respawned
   lightning: struck lightning
+  explode: caused explosion of
   xraycheck: xray check
   censor: was censored
   msg: messaged
@@ -117,6 +127,7 @@ actions:
   ip: Unique IP
   username: username
   inventory: inventory
+  breakitem: broke item
   launch: launched
   grab: grabbed
   drop: dropped
@@ -124,6 +135,5 @@ actions:
   itemframe:
     p: add itemframe
     n: remove itemframe
-  auctionlist: listed on auction
-  auctionbuy: bought from auction
-  auctionbid: bid
+  ahlist: listed on ah
+  ahbuy: bought from ah

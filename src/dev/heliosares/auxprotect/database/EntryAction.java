@@ -1,11 +1,14 @@
 package dev.heliosares.auxprotect.database;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
 public class EntryAction {
-	private static HashMap<String, EntryAction> values = new HashMap<>();
+	private static final HashMap<String, EntryAction> values = new HashMap<>();
+	private static final Set<Integer> usedids = new HashSet<>();
 
 	public static EntryAction[] values() {
 		return values.values().toArray(new EntryAction[0]);
@@ -48,6 +51,7 @@ public class EntryAction {
 	public static final EntryAction JOBS = new EntryAction("jobs", 140);
 	public static final EntryAction PAY = new EntryAction("pay", 141);
 	public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
+	public static final EntryAction EXPLODE = new EntryAction("explode", 143);
 	// END MAIN (255)
 
 	// START SPAM(256)
@@ -80,7 +84,7 @@ public class EntryAction {
 	public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
 	public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
 //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
-	public static final EntryAction BREAK = new EntryAction("break", 1032);
+	public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
 
 	public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
 	// END INVENTORY(1279)
@@ -113,6 +117,9 @@ public class EntryAction {
 		this.idPos = idPos;
 		this.name = name;
 
+		checkId(name, id);
+		checkId(name, idPos);
+
 		enabled = true;
 		values.put(name, this);
 	}
@@ -123,8 +130,16 @@ public class EntryAction {
 		this.idPos = id;
 		this.name = name;
 
+		checkId(name, id);
+
 		enabled = true;
 		values.put(name, this);
+	}
+
+	private void checkId(String name, int id) throws IllegalArgumentException {
+		if (!usedids.add(id)) {
+			throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+		}
 	}
 
 	protected EntryAction(String key, int nid, int pid, String ntext, String ptext) {

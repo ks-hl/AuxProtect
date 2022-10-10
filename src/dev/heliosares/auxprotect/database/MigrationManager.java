@@ -335,6 +335,8 @@ public class MigrationManager {
 				migrateV6Commit(blobs);
 			}
 		}
+		plugin.info("Done migrating blobs, purging unneeded data");
+		sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET data = '' where hasblob=true;");
 		sql.setVersion(6);
 	}
 
@@ -419,6 +421,6 @@ public class MigrationManager {
 			}
 			where = where.substring(0, where.length() - 1) + ")";
 		}
-		sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1, data = ''" + where);
+		sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1" + where);
 	}
 }

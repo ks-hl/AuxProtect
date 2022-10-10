@@ -277,4 +277,9 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	public MySender getConsoleSender() {
 		return new MySender(this.getProxy().getConsole());
 	}
+
+	@Override
+	public void setDebug(int debug) {
+		this.debug = debug;
+	}
 }

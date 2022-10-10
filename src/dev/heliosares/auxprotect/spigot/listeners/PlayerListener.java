@@ -23,6 +23,7 @@ import org.bukkit.event.player.PlayerGameModeChangeEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
+import org.bukkit.event.player.PlayerItemDamageEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerKickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
@@ -31,6 +32,7 @@ import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.event.player.PlayerUnleashEntityEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
@@ -72,6 +74,29 @@ public class PlayerListener implements Listener {
 		mobs.add(EntityType.TROPICAL_FISH);
 		mobs.add(EntityType.COD);
 		mobs.add(EntityType.SALMON);
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onPlayerItemDamageEvent(PlayerItemDamageEvent e) {
+		ItemStack item = e.getItem();
+		Damageable meta = (Damageable) item.getItemMeta();
+		int durability = item.getType().getMaxDurability() - (meta.getDamage() + 1);
+		if (durability <= 0) {
+			DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BREAKITEM, false,
+					e.getPlayer().getLocation(), AuxProtectSpigot.getLabel(item.getType()), "");
+
+			if (InvSerialization.isCustom(item)) {
+				try {
+					entry.setBlob(InvSerialization.toByteArray(item));
+				} catch (Exception e1) {
+					plugin.warning("Error serializing broken item");
+					plugin.print(e1);
+				}
+			} else if (item.getAmount() > 1) {
+				entry.setData("x" + item.getAmount());
+			}
+			plugin.add(entry);
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

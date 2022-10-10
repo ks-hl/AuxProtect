@@ -6,16 +6,20 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
@@ -64,6 +68,31 @@ public class EntityListener implements Listener {
 	public void onEntityMountEvent(EntityMountEvent e) {
 		DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.MOUNT, true,
 				e.getMount().getLocation(), AuxProtectSpigot.getLabel(e.getMount()), "");
+		plugin.add(entry);
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void onEntityExplodeEvent(EntityExplodeEvent e) {
+		String cause;
+		if (e.getEntity() instanceof TNTPrimed tnt && tnt.getSource() != null) {
+			if (tnt.getSource() instanceof Projectile proj && proj.getShooter() != null) {
+				cause = AuxProtectSpigot.getLabel(proj.getShooter());
+			} else {
+				cause = AuxProtectSpigot.getLabel(tnt.getSource());
+			}
+		} else if (e.getEntity() instanceof LivingEntity) {
+			if (e.getEntity() instanceof Monster monster && monster.getTarget() != null) {
+				cause = AuxProtectSpigot.getLabel(monster.getTarget());
+			} else {
+				cause = AuxProtectSpigot.getLabel(e.getEntity());
+			}
+		} else if (e.getEntity() instanceof Projectile proj && proj.getShooter() != null) {
+			cause = AuxProtectSpigot.getLabel(proj.getShooter());
+		} else {
+			cause = "#env";
+		}
+		DbEntry entry = new DbEntry(cause, EntryAction.EXPLODE, true, e.getEntity().getLocation(),
+				AuxProtectSpigot.getLabel(e.getEntity()), "");
 		plugin.add(entry);
 	}
 
@@ -133,6 +162,26 @@ public class EntityListener implements Listener {
 			}
 			if (!totem) {
 				action = EntryAction.KILL;
+			}
+		}
+		if (e.getEntity() instanceof Item) {
+			ItemStack item = ((Item) e.getEntity()).getItemStack();
+			if (item != null && item.getType() != Material.AIR) {
+				DbEntry entry = new DbEntry(sourceName, EntryAction.BREAKITEM, false, e.getEntity().getLocation(),
+						AuxProtectSpigot.getLabel(item.getType()), "");
+
+				if (InvSerialization.isCustom(item)) {
+					try {
+						entry.setBlob(InvSerialization.toByteArray(item));
+					} catch (Exception e1) {
+						plugin.warning("Error serializing broken item");
+						plugin.print(e1);
+					}
+				} else if (item.getAmount() > 1) {
+					entry.setData("x" + item.getAmount());
+				}
+				plugin.add(entry);
+				// Going to log both for now. Repetitive, but it seems more intuitive.
 			}
 		}
 		DbEntry entry = new DbEntry(sourceName, action, false, e.getEntity().getLocation(), targetName, itemname);
