@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.utils;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Set;
 import java.util.Map.Entry;
@@ -80,6 +81,10 @@ public class BidiMapCache<K, V> {
 
 	public Set<Entry<K, V>> entrySet() {
 		return set.entrySet();
+	}
+
+	public Collection<V> values() {
+		return set.values();
 	}
 
 	public void cleanup() {

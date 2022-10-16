@@ -97,6 +97,7 @@ public class TimeUtil {
 				modifier *= 60;
 			case 's':
 				modifier *= 1000;
+			case 'f':
 				break;
 			default:
 				throw new NumberFormatException("Invalid specifier: " + c);

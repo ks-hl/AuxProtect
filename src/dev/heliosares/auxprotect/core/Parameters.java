@@ -172,10 +172,12 @@ public class Parameters {
 						}
 					}
 					continue;
+				case "t":
+					token = "time";
 				case "before":
 				case "after":
-				case "t":
 				case "time":
+					param = param.replace("ms", "f");
 					boolean plusminus = param.contains("+-");
 					boolean minus = param.contains("-");
 					if (minus) { // || plusminus unnecessary because they both have '-'

@@ -12,6 +12,8 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -48,8 +50,8 @@ public class SQLManager {
 	private boolean isConnected;
 	private int nextWid;
 	private int nextActionId = 10000;
-	private BidiMapCache<Integer, String> uuids = new BidiMapCache<>(10000L, 10000L, true);
-	private BidiMapCache<Integer, String> usernames = new BidiMapCache<>(10000L, 10000L, true);
+	private BidiMapCache<Integer, String> uuids = new BidiMapCache<>(300000L, 300000L, true);
+	private BidiMapCache<Integer, String> usernames = new BidiMapCache<>(300000L, 300000L, true);
 	private HashMap<String, Integer> worlds = new HashMap<>();
 	private int version;
 	private int originalVersion;
@@ -1639,6 +1641,10 @@ public class SQLManager {
 	public void cleanup() {
 		usernames.cleanup();
 		uuids.cleanup();
+	}
+
+	public Collection<String> getCachedUsernames() {
+		return Collections.unmodifiableCollection(usernames.values());
 	}
 
 	boolean checkAsync() {

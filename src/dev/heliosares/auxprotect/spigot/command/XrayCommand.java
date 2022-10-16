@@ -189,11 +189,12 @@ public class XrayCommand implements CommandExecutor {
 				}.runTaskAsynchronously(plugin);
 				return true;
 			} else if (args[1].equalsIgnoreCase("report")) {
-				String cmd = plugin.getCommandPrefix() + " l a:vein";
+				String cmd = plugin.getCommandPrefix() + " l a:vein #xray";
 				if (args.length > 2) {
 					cmd += " t:" + args[2];
+				} else {
+					cmd += " t:1w";
 				}
-				cmd += " #xray";
 				Bukkit.dispatchCommand(sender, cmd);
 				return true;
 			} else {

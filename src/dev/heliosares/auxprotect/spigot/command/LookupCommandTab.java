@@ -58,6 +58,9 @@ public class LookupCommandTab implements TabCompleter {
 		possible.add("world:");
 		possible.add("user:");
 		possible.add("data:");
+		possible.add("before:");
+		possible.add("after:");
+
 		if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
 			String action = currentArg.split(":")[0] + ":";
 			for (EntryAction eaction : EntryAction.values()) {
@@ -83,10 +86,13 @@ public class LookupCommandTab implements TabCompleter {
 			for (Player player : Bukkit.getOnlinePlayers()) {
 				possible.add(user + player.getName());
 			}
+			for (String username : plugin.getSqlManager().getCachedUsernames()) {
+				possible.add(user + username);
+			}
 			for (EntityType et : EntityType.values()) {
 				possible.add(user + "#" + et.toString().toLowerCase());
 			}
-			possible.add("#env");
+			possible.add(user + "#env");
 		}
 		if (currentArg.startsWith("target:")) {
 			for (Material material : Material.values()) {
@@ -101,31 +107,27 @@ public class LookupCommandTab implements TabCompleter {
 				}
 			}
 		}
-		if (currentArg.startsWith("time:") || currentArg.startsWith("t:")) {
-			if (currentArg.matches("t(ime)?:\\d+")) {
-				possible.add(currentArg + "s");
-				possible.add(currentArg + "m");
-				possible.add(currentArg + "h");
-				possible.add(currentArg + "d");
-				possible.add(currentArg + "w");
-			}
+		if (currentArg.matches("(t(ime)?|before|after):\\d+m?")) {
+			possible.add(currentArg + "ms");
+			possible.add(currentArg + "s");
+			possible.add(currentArg + "m");
+			possible.add(currentArg + "h");
+			possible.add(currentArg + "d");
+			possible.add(currentArg + "w");
 		}
 		if (currentArg.startsWith("world:")) {
 			for (World world : Bukkit.getWorlds()) {
 				possible.add("world:" + world.getName());
 			}
 		}
-		if (currentArg.startsWith("rat"))
+		if (currentArg.startsWith("rat")) {
 			possible.add("rating:");
-		if (currentArg.matches("rating:-?")) {
-			for (int i = -2; i <= 3; i++) {
-				possible.add("rating:" + i);
+			if (currentArg.matches("rating:-?")) {
+				for (int i = -2; i <= 3; i++) {
+					possible.add("rating:" + i);
+				}
 			}
 		}
-		if (currentArg.startsWith("b"))
-			possible.add("before:");
-		if (currentArg.startsWith("a"))
-			possible.add("after:");
 
 		for (int i = 1; i < args.length - 1; i++) {
 			String arg = args[i];
