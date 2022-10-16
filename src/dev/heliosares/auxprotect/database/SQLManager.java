@@ -25,12 +25,14 @@ import javax.annotation.Nullable;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import com.google.common.io.Files;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
+import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.MovingAverage;
 
 public class SQLManager {
@@ -593,6 +595,26 @@ public class SQLManager {
 		}
 	}
 
+	private void putBlob(long time, byte[] bytes) throws SQLException {
+		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, `blob`) VALUES ";
+		stmt += "\n(?, ?),";
+
+		try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
+			int i = 1;
+			plugin.debug("blob: " + time, 5);
+			statement.setLong(i++, time);
+			if (mysql) {
+				Blob blob = connection.createBlob();
+				blob.setBytes(1, bytes);
+				statement.setBlob(i++, blob);
+			} else {
+				statement.setBytes(i++, bytes);
+			}
+
+			statement.executeUpdate();
+		}
+	}
+
 	/**
 	 * Replaced with LookupManager#lookup
 	 */
@@ -941,6 +963,7 @@ public class SQLManager {
 	 * @return An ArrayList of the DbEntry's meeting the provided conditions
 	 * @throws LookupManager.LookupException
 	 */
+	@SuppressWarnings("deprecation")
 	public ArrayList<DbEntry> lookup(Table table, String stmt, @Nullable ArrayList<String> writeParams)
 			throws LookupManager.LookupException {
 		final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
@@ -1025,10 +1048,14 @@ public class SQLManager {
 							entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
 									target_id, data);
 						}
-						if (table.hasBlob() && rs.getBoolean("hasblob")) {
-							entry.setHasBlob();
+						if (table.hasBlob()) {
+							if (plugin.getAPConfig().doSkipV6Migration()
+									&& (action_id == 1024 || data.contains(InvSerialization.ITEM_SEPARATOR))) {
+								entry.setHasBlob();
+							} else if (rs.getBoolean("hasblob")) {
+								entry.setHasBlob();
+							}
 						}
-
 						output.add(entry);
 						if (++count >= MAX_LOOKUP_SIZE) {
 							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.TOO_MANY,
@@ -1051,6 +1078,7 @@ public class SQLManager {
 			this.lookupTime.addData(System.nanoTime() - start);
 			return output;
 		}
+
 	}
 
 	public void purge(MySender sender, Table table, long time) throws SQLException {
@@ -1549,7 +1577,10 @@ public class SQLManager {
 		return -1;
 	}
 
+	@SuppressWarnings("deprecation")
 	public byte[] getBlob(DbEntry entry) {
+		byte[] blob = null;
+
 		String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB.toString() + " WHERE time=?;";
 		plugin.debug(stmt, 3);
 		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
@@ -1558,10 +1589,10 @@ public class SQLManager {
 				if (results.next()) {
 					if (mysql) {
 						try (InputStream in = results.getBlob("blob").getBinaryStream()) {
-							return in.readAllBytes();
+							blob = in.readAllBytes();
 						}
 					} else {
-						return results.getBytes("blob");
+						blob = results.getBytes("blob");
 					}
 				}
 			}
@@ -1570,7 +1601,39 @@ public class SQLManager {
 		} catch (IOException e) {
 			plugin.print(e);
 		}
-		return null;
+
+		if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
+			boolean hasblob = false;
+			String data = entry.getData();
+			if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
+				data = data.substring(
+						data.indexOf(InvSerialization.ITEM_SEPARATOR) + InvSerialization.ITEM_SEPARATOR.length());
+				hasblob = true;
+			}
+			try {
+				if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
+					plugin.info("Migrating inventory in place to v6: " + entry.getTime());
+					try {
+						blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
+					} catch (Exception e) {
+						plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
+					}
+				} else if (hasblob) {
+					plugin.info("Migrating item in place to v6: " + entry.getTime());
+					blob = Base64Coder.decodeLines(data);
+				} else {
+					plugin.info("Attempted to migrate invalid log");
+					return null;
+				}
+				this.putBlob(entry.getTime(), blob);
+				execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1, data = '' where time="
+						+ entry.getTime());
+			} catch (IllegalArgumentException | SQLException e) {
+				plugin.info("Error while decoding: " + data);
+			}
+
+		}
+		return blob;
 	}
 
 	public void cleanup() {

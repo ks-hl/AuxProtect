@@ -13,6 +13,7 @@ import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
+import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -98,6 +99,7 @@ public class Results {
 		sendEntry(plugin, player, entry, index, true, !params.getFlags().contains(Flag.HIDE_COORDS));
 	}
 
+	@SuppressWarnings("deprecation")
 	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index, boolean time,
 			boolean coords) {
 		String commandPrefix = "/" + plugin.getCommandPrefix();
@@ -170,6 +172,14 @@ public class Results {
 								String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
 										entry.getTarget(), entry.getTime())))
 						.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+			}
+		}
+		if (plugin.getAPConfig().doSkipV6Migration()) {
+			if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
+				data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));
+			}
+			if (entry.getAction().equals(EntryAction.INVENTORY)) {
+				data = null;
 			}
 		}
 		if (data != null && data.length() > 0) {
