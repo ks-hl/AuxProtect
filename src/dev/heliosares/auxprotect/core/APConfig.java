@@ -12,6 +12,7 @@ public class APConfig {
 	private boolean checkforupdates;
 	private long posInterval;
 	private long inventoryInterval;
+	private long inventoryDiffInterval;
 	private long moneyInterval;
 	private boolean overrideCommands;
 	private boolean skipV6Migration;
@@ -32,6 +33,10 @@ public class APConfig {
 		return inventoryInterval;
 	}
 
+	public long getInventoryDiffInterval() {
+		return inventoryDiffInterval;
+	}
+
 	public long getMoneyInterval() {
 		return moneyInterval;
 	}
@@ -50,6 +55,7 @@ public class APConfig {
 		inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
 		posInterval = config.getLong("Actions.pos.Interval", 10000);
 		inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
+		inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 1000);
 		moneyInterval = config.getLong("Actions.money.Interval", 600000);
 		skipV6Migration = config.getBoolean("skipv6migration");
 		for (EntryAction action : EntryAction.values()) {
@@ -62,7 +68,6 @@ public class APConfig {
 	public APConfig(Configuration config) {
 		privateRelease = config.getBoolean("private");
 		checkforupdates = config.getBoolean("checkforupdates", true);
-		skipV6Migration = config.getBoolean("skipv6migration");
 		for (EntryAction action : EntryAction.values()) {
 			if (!action.isBungee()) {
 				continue;

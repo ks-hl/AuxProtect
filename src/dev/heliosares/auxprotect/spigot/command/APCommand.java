@@ -24,6 +24,7 @@ public class APCommand implements CommandExecutor {
 	public LookupCommand lookupCommand;
 	private TpCommand tpCommand;
 	private InvCommand invCommand;
+	private InventoryCommand inventoryCommand;
 	private PlaytimeCommand playtimeCommand;
 	private ActivityCommand activityCommand;
 	private XrayCommand xrayCommand;
@@ -36,6 +37,7 @@ public class APCommand implements CommandExecutor {
 		lookupCommand = new LookupCommand(plugin);
 		tpCommand = new TpCommand(plugin);
 		invCommand = new InvCommand(plugin, this);
+		inventoryCommand = new InventoryCommand(plugin, this);
 		playtimeCommand = new PlaytimeCommand(plugin);
 		activityCommand = new ActivityCommand(plugin);
 		xrayCommand = new XrayCommand(plugin);
@@ -109,6 +111,12 @@ public class APCommand implements CommandExecutor {
 					return true;
 				}
 				return invCommand.onCommand(sender, command, label, args);
+			} else if (args[0].equalsIgnoreCase("inventory")) {
+				if (!APPermission.INV.hasPermission(sender)) {
+					sender.sendMessage(plugin.translate("no-permission"));
+					return true;
+				}
+				return inventoryCommand.onCommand(sender, command, label, args);
 			} else if (args[0].equalsIgnoreCase("saveinv")) {
 				if (!APPermission.INV_SAVE.hasPermission(sender)) {
 					sender.sendMessage(plugin.translate("no-permission"));

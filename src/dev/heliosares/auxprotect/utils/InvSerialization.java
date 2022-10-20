@@ -36,6 +36,17 @@ public class InvSerialization {
 		}
 	}
 
+	public static byte[] toByteArraySingle(ItemStack item) throws IOException {
+		if (item == null) {
+			return null;
+		}
+		ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+		try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
+			stream.writeObject(item);
+			return byteArrayOutputStream.toByteArray();
+		}
+	}
+
 	public static byte[] toByteArray(Inventory inventory) throws IOException {
 		return toByteArray(inventory.getContents());
 	}
@@ -74,6 +85,16 @@ public class InvSerialization {
 			}
 
 			return arrayOfItemStack;
+		}
+	}
+
+	public static ItemStack toItemStack(byte[] bytes) throws ClassNotFoundException, IOException {
+		if (bytes == null) {
+			return null;
+		}
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+			return (ItemStack) stream.readObject();
 		}
 	}
 
@@ -143,38 +164,38 @@ public class InvSerialization {
 			ItemStack[] ender, int exp) {
 	}
 
-//	public static void debug(byte[] bytes) {
-//		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-//		System.out.println("Debug Byte[] Dump:");
-//		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
-//			boolean keep = true;
-//			while (keep) {
-//				keep = false;
-//				try {
-//					System.out.println(stream.readInt());
-//					keep = true;
-//				} catch (Exception e) {
-//
-//				}
-//				try {
-//					Object o = stream.readObject();
-//					String out = "null";
-//					if (o != null) {
-//						out = o.toString();
-//						if (out.length() > 50) {
-//							out = out.substring(0, 50);
-//						}
-//					}
-//					System.out.println(out);
-//					keep = true;
-//				} catch (Exception e) {
-//
-//				}
-//			}
-//		} catch (Exception e) {
-//		}
-//		System.out.println("EOF");
-//	}
+	public static void debug(byte[] bytes) {
+		ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+		System.out.println("Debug Byte[] Dump:");
+		try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+			boolean keep = true;
+			while (keep) {
+				keep = false;
+				try {
+					System.out.println(stream.readInt());
+					keep = true;
+				} catch (Exception e) {
+
+				}
+				try {
+					Object o = stream.readObject();
+					String out = "null";
+					if (o != null) {
+						out = o.toString();
+						if (out.length() > 50) {
+							out = out.substring(0, 50);
+						}
+					}
+					System.out.println(out);
+					keep = true;
+				} catch (Exception e) {
+
+				}
+			}
+		} catch (Exception e) {
+		}
+		System.out.println("EOF");
+	}
 
 	public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
 

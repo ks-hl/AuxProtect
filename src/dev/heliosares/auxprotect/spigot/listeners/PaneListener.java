@@ -26,8 +26,7 @@ public class PaneListener implements Listener {
 
 	@EventHandler
 	public void onInventoryClickEvent(InventoryClickEvent e) {
-		if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane) {
-			Pane pane = (Pane) e.getInventory().getHolder();
+		if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane pane) {
 			if (pane.type == Type.SHOW) {
 				if (!APPermission.INV_EDIT.hasPermission(e.getWhoClicked())) {
 					e.setCancelled(true);
@@ -43,8 +42,7 @@ public class PaneListener implements Listener {
 
 	@EventHandler
 	public void onInventoryCloseEvent(InventoryCloseEvent e) {
-		if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane) {
-			Pane pane = (Pane) e.getInventory().getHolder();
+		if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane pane) {
 			if (pane.type == Type.CLAIM) {
 				ArrayList<ItemStack> leftover = new ArrayList<>();
 				for (int i = 0; i < e.getInventory().getSize(); i++) {
@@ -61,6 +59,7 @@ public class PaneListener implements Listener {
 					e.getPlayer().getWorld().dropItem(e.getPlayer().getLocation(), i);
 				}
 			}
+			pane.close();
 		}
 	}
 }

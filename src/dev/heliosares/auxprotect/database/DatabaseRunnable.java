@@ -15,8 +15,8 @@ public class DatabaseRunnable implements Runnable {
 	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
 	private static HashMap<Table, Long> lastTimes = new HashMap<>();
-	private long running = 0;
-	private long lastWarn = 0;
+//	private long running = 0;
+//	private long lastWarn = 0;
 	private long lastPolled = 0;
 	private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
 	private static final long pickupCacheTime = 1500;
@@ -65,21 +65,19 @@ public class DatabaseRunnable implements Runnable {
 			if (!sqlManager.isConnected()) {
 				return;
 			}
-			if (running > 0) {
-				if (System.currentTimeMillis() - running > 20000) {
-					if (System.currentTimeMillis() - lastWarn > 60000) {
-						lastWarn = System.currentTimeMillis();
-						plugin.warning("Overlapping logging windows > 20 seconds by "
-								+ (System.currentTimeMillis() - running) + " ms.");
-					}
-				}
-				plugin.debug("Overlapping logging windows by " + (System.currentTimeMillis() - running) + " ms.", 1);
-				if (plugin.getSqlManager().holdingConnectionSince > 0)
-					plugin.debug("Held by " + plugin.getSqlManager().holdingConnection + " for "
-							+ (System.currentTimeMillis() - plugin.getSqlManager().holdingConnectionSince) + " ms.", 1);
-				return;
-			}
-			running = System.currentTimeMillis();
+			// TODO was this necessary?
+//			if (running > 0) {
+//				if (System.currentTimeMillis() - running > 20000) {
+//					if (System.currentTimeMillis() - lastWarn > 60000) {
+//						lastWarn = System.currentTimeMillis();
+//						plugin.warning("Overlapping logging windows > 20 seconds by "
+//								+ (System.currentTimeMillis() - running) + " ms.");
+//					}
+//				}
+//				plugin.debug("Overlapping logging windows by " + (System.currentTimeMillis() - running) + " ms.", 1);
+//				return;
+//			}
+//			running = System.currentTimeMillis();
 
 			checkCache();
 
@@ -139,7 +137,7 @@ public class DatabaseRunnable implements Runnable {
 		}
 		sqlManager.cleanup();
 
-		running = 0;
+//		running = 0;
 	}
 
 	private String debugLogStatement(long start, int count, Table table) {

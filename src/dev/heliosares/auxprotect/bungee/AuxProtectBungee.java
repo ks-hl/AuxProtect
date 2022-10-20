@@ -89,9 +89,8 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 					if (mysql) {
 						sqlManager.connect(user, pass);
 					} else {
-						sqlManager.connect();
+						sqlManager.connect(null, null);
 					}
-					sqlManager.count();
 				} catch (Exception e) {
 					print(e);
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
@@ -119,6 +118,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 
 	@Override
 	public void onDisable() {
+		isShuttingDown = true;
 		getProxy().getPluginManager().unregisterListeners(this);
 		getProxy().getPluginManager().unregisterCommands(this);
 		if (dbRunnable != null) {
@@ -127,6 +127,13 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 		if (sqlManager != null) {
 			sqlManager.close();
 		}
+	}
+
+	private boolean isShuttingDown;
+
+	@Override
+	public boolean isShuttingDown() {
+		return isShuttingDown;
 	}
 
 	public static void tell(CommandSender to, String message) {

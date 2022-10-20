@@ -65,6 +65,9 @@ public class APCommandTab implements TabCompleter {
 			if (APPermission.PURGE.hasPermission(sender)) {
 				possible.add("purge");
 			}
+			if (APPermission.INV.hasPermission(sender)) {
+				possible.add("inventory");
+			}
 			possible.add("info");
 		}
 		if (args.length >= 2) {
@@ -81,13 +84,31 @@ public class APCommandTab implements TabCompleter {
 				possible.addAll(playtimeCommandTab.onTabComplete(sender, cmd, label, args));
 			} else if ((args[0].equalsIgnoreCase("purge")) && APPermission.PURGE.hasPermission(sender)) {
 				possible.addAll(purgeCommandTab.onTabComplete(sender, cmd, label, args));
-			} else if ((args[0].equalsIgnoreCase("help")) && APPermission.HELP.hasPermission(sender)) {
+			}
+		}
+		if (args.length == 2) {
+			if ((args[0].equalsIgnoreCase("help")) && APPermission.HELP.hasPermission(sender)) {
 				possible.add("lookup");
 				possible.add("purge");
 			} else if (args[0].equalsIgnoreCase("saveinv") && APPermission.INV_SAVE.hasPermission(sender)) {
 				for (Player player : Bukkit.getOnlinePlayers()) {
 					possible.add(player.getName());
 				}
+			} else if (args[0].equalsIgnoreCase("inventory") && APPermission.INV.hasPermission(sender)) {
+				for (Player player : Bukkit.getOnlinePlayers()) {
+					possible.add(player.getName());
+				}
+			}
+		}
+		if (args.length == 3) {
+			if (args[0].equalsIgnoreCase("inventory") && APPermission.INV.hasPermission(sender)
+					&& currentArg.matches("\\d+")) {
+				possible.add(currentArg + "ms");
+				possible.add(currentArg + "s");
+				possible.add(currentArg + "m");
+				possible.add(currentArg + "h");
+				possible.add(currentArg + "d");
+				possible.add(currentArg + "w");
 			}
 		}
 

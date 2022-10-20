@@ -159,9 +159,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 					if (mysql) {
 						sqlManager.connect(user, pass);
 					} else {
-						sqlManager.connect();
+						sqlManager.connect(null, null);
 					}
-					sqlManager.count();
 				} catch (Exception e) {
 					print(e);
 					getLogger().severe("Failed to connect to SQL database. Disabling.");
@@ -331,6 +330,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			EntryAction.ACTIVITY.setEnabled(false);
 		}
 
+		// This is a patch for when reloading the plugin, online players will receive
+		// immediate periodic logs
+		for (Player player : Bukkit.getOnlinePlayers()) {
+			this.getAPPlayer(player);
+		}
+
 		new BukkitRunnable() {
 
 			@Override
@@ -342,27 +347,34 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 						}
 
 						if (config.getInventoryInterval() > 0) {
-							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory > config
+							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
 									.getInventoryInterval()) {
 								apPlayer.logInventory("periodic");
 							}
 						}
 
+						if (config.getInventoryDiffInterval() > 0) {
+							if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
+									.getInventoryDiffInterval()) {
+								apPlayer.diff();
+							}
+						}
+
 						if (config.getMoneyInterval() > 0) {
-							if (System.currentTimeMillis() - apPlayer.lastLoggedMoney > config.getMoneyInterval()) {
+							if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
 								PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
 							}
 						}
 
 						if (config.getPosInterval() > 0) {
 							if (apPlayer.lastMoved > apPlayer.lastLoggedPos
-									&& System.currentTimeMillis() - apPlayer.lastLoggedPos > config.getPosInterval()) {
+									&& System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
 								PlayerListener.logPos(AuxProtectSpigot.this, apPlayer, apPlayer.player,
 										apPlayer.player.getLocation(), "");
 							}
 						}
 
-						if (System.currentTimeMillis() - apPlayer.lastCheckedMovement > 1000) {
+						if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
 							if (apPlayer.lastLocation != null
 									&& apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
 								apPlayer.movedAmountThisMinute += Math
@@ -447,7 +459,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 						&& System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
 					lastCheckedForUpdate = System.currentTimeMillis();
 					debug("Checking for updates...", 1);
-					String newVersion = UpdateChecker.getVersion(AuxProtectSpigot.this, 99147);
+					String newVersion;
+					try {
+						newVersion = UpdateChecker.getVersion(AuxProtectSpigot.this, 99147);
+					} catch (IOException e) {
+						print(e);
+						return;
+					}
 					debug("New Version: " + newVersion + " Current Version: "
 							+ AuxProtectSpigot.this.getDescription().getVersion(), 1);
 					if (newVersion != null) {
@@ -523,6 +541,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 	@Override
 	public void onDisable() {
+		isShuttingDown = true;
 		if (sqlManager != null) {
 			if (dbRunnable != null && sqlManager.isConnected()) {
 				dbRunnable.run();
@@ -531,6 +550,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		}
 		dbRunnable = null;
 		sqlManager = null;
+	}
+
+	private boolean isShuttingDown;
+
+	@Override
+	public boolean isShuttingDown() {
+		return isShuttingDown;
 	}
 
 	private boolean setupEconomy() {

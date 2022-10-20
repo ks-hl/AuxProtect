@@ -64,22 +64,29 @@ public class LookupManager {
 			stmt += "\nWHERE " + sqlstmts[0];
 		}
 		plugin.debug(stmt);
-		Connection connection = sql.getConnection();
-		synchronized (connection) {
-			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-				for (int i = 1; i < sqlstmts.length; i++) {
-					statement.setString(i, sqlstmts[i]);
-				}
-				try (ResultSet rs = statement.executeQuery()) {
-					if (rs.next()) {
-						return rs.getInt(1);
-					}
-				}
-			} catch (SQLException e) {
-				plugin.print(e);
-				throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-						plugin.translate("lookup-error"));
+		Connection connection;
+		try {
+			connection = sql.getConnection();
+		} catch (SQLException e1) {
+			plugin.print(e1);
+			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
+					plugin.translate("lookup-error"));
+		}
+		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+			for (int i = 1; i < sqlstmts.length; i++) {
+				statement.setString(i, sqlstmts[i]);
 			}
+			try (ResultSet rs = statement.executeQuery()) {
+				if (rs.next()) {
+					return rs.getInt(1);
+				}
+			}
+		} catch (SQLException e) {
+			plugin.print(e);
+			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
+					plugin.translate("lookup-error"));
+		} finally {
+			sql.returnConnection(connection);
 		}
 		return -1;
 	}

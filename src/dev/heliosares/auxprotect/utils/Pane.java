@@ -1,6 +1,8 @@
 package dev.heliosares.auxprotect.utils;
 
 import java.util.ArrayList;
+import java.util.List;
+
 import org.bukkit.Material;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
@@ -11,7 +13,8 @@ public class Pane implements InventoryHolder {
 	private Inventory inventory;
 	private ArrayList<Button> buttons;
 	public final Type type;
-	
+	private List<Runnable> onClose = new ArrayList<>();
+
 	public Pane(Type type) {
 		this.type = type;
 	}
@@ -71,6 +74,18 @@ public class Pane implements InventoryHolder {
 			this.index = index;
 		}
 	}
-	
-	public static enum Type{CLAIM,SHOW}
+
+	public void onClose(Runnable run) {
+		this.onClose.add(run);
+	}
+
+	public void close() {
+		for (Runnable run : onClose) {
+			run.run();
+		}
+	}
+
+	public static enum Type {
+		CLAIM, SHOW
+	}
 }

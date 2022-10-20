@@ -57,6 +57,7 @@ Actions:
     Enabled: true
     WorldChange: false
     Interval: 3600000
+    Diff-Interval: 1000
   launch:
     Enabled: true
   grab:

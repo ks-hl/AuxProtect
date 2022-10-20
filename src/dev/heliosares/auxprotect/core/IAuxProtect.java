@@ -47,4 +47,6 @@ public interface IAuxProtect {
 	public String getCommandPrefix();
 	
 	public MySender getConsoleSender();
+	
+	public boolean isShuttingDown();
 }

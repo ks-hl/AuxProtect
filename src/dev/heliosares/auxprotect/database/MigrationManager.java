@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import java.io.IOException;
+import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -14,15 +15,17 @@ import dev.heliosares.auxprotect.utils.InvSerialization;
 
 public class MigrationManager {
 	private final SQLManager sql;
+	private final Connection connection;
 	private final IAuxProtect plugin;
 	private boolean isMigrating;
 	private int preMigrateDebug;
 
 	private int rowcountformerge;
 
-	MigrationManager(SQLManager sql, IAuxProtect plugin) {
+	MigrationManager(SQLManager sql, Connection connection, IAuxProtect plugin) {
 		this.sql = sql;
 		this.plugin = plugin;
+		this.connection = connection;
 	}
 
 	boolean isMigrating() {
@@ -48,7 +51,7 @@ public class MigrationManager {
 
 		if (sql.getVersion() < 5) {
 			try {
-				sql.execute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
+				sql.execute(connection, "ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
 						+ Table.AUXPROTECT_MAIN.toString());
 			} catch (SQLException ignored) {
 				plugin.warning(
@@ -58,9 +61,9 @@ public class MigrationManager {
 
 		if (sql.getVersion() < 2 && !plugin.isBungee()) {
 			plugin.info("Migrating database to v2");
-			sql.execute("ALTER TABLE worlds RENAME TO auxprotect_worlds;");
+			sql.execute(connection, "ALTER TABLE worlds RENAME TO auxprotect_worlds;");
 
-			sql.setVersion(2);
+			sql.setVersion(connection, 2);
 		}
 
 		if (sql.getVersion() < 3) {
@@ -78,7 +81,7 @@ public class MigrationManager {
 		}
 
 		if (sql.getVersion() < 5) {
-			sql.setVersion(5);
+			sql.setVersion(connection, 5);
 		}
 
 		if (sql.getVersion() < 6) {
@@ -89,13 +92,13 @@ public class MigrationManager {
 		 * This should never be reached and is only here as a fail safe
 		 */
 		if (sql.getVersion() < SQLManager.DBVERSION) {
-			sql.setVersion(SQLManager.DBVERSION);
+			sql.setVersion(connection, SQLManager.DBVERSION);
 		}
 
 		plugin.debug("Purging temporary tables");
 		for (Table table : Table.values()) {
-			sql.execute("DROP TABLE IF EXISTS " + table.toString() + "temp;");
-			sql.execute("DROP TABLE IF EXISTS " + table.toString() + "_temp;");
+			sql.execute(connection, "DROP TABLE IF EXISTS " + table.toString() + "temp;");
+			sql.execute(connection, "DROP TABLE IF EXISTS " + table.toString() + "_temp;");
 		}
 
 		if (preMigrateDebug >= 0) {
@@ -115,7 +118,8 @@ public class MigrationManager {
 		plugin.info("Migrating database to v3. DO NOT INTERRUPT");
 		for (Table table : migrateTablesV3) {
 			try {
-				sql.execute("ALTER TABLE " + table.toString() + " RENAME TO " + table.toString() + "_temp;");
+				sql.execute(connection,
+						"ALTER TABLE " + table.toString() + " RENAME TO " + table.toString() + "_temp;");
 			} catch (Exception ignored) {
 				plugin.warning("Error renaming table, continuing anyway. This may cause errors.");
 			}
@@ -145,7 +149,7 @@ public class MigrationManager {
 			plugin.info("Merging table: " + table.toString());
 			String stmt = "SELECT * FROM " + table.toString() + "_temp;";
 			plugin.debug(stmt, 3);
-			try (PreparedStatement pstmt = sql.connection.prepareStatement(stmt)) {
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
 				pstmt.setFetchSize(500);
 				try (ResultSet results = pstmt.executeQuery()) {
 					while (results.next()) {
@@ -203,7 +207,7 @@ public class MigrationManager {
 			}
 		}
 
-		sql.setVersion(3);
+		sql.setVersion(connection, 3);
 	}
 
 	void migrateToV4() throws SQLException {
@@ -212,7 +216,7 @@ public class MigrationManager {
 			ArrayList<Object[]> output = new ArrayList<>();
 			String stmt = "SELECT * FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;";
 			plugin.debug(stmt, 3);
-			try (PreparedStatement pstmt = sql.connection.prepareStatement(stmt)) {
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
 				pstmt.setFetchSize(500);
 				try (ResultSet results = pstmt.executeQuery()) {
 					while (results.next()) {
@@ -248,16 +252,17 @@ public class MigrationManager {
 				putRaw(Table.AUXPROTECT_POSITION, output);
 			}
 			plugin.info("Deleting old entries.");
-			sql.execute("DELETE FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;");
+			sql.execute(connection, "DELETE FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;");
 		}
-		sql.setVersion(4);
+		sql.setVersion(connection, 4);
 	}
 
 	@SuppressWarnings("deprecation")
 	void migrateToV6() throws SQLException {
 		if (!plugin.isBungee()) {
 			try {
-				sql.execute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY.toString() + " ADD COLUMN hasblob BOOL");
+				sql.execute(connection,
+						"ALTER TABLE " + Table.AUXPROTECT_INVENTORY.toString() + " ADD COLUMN hasblob BOOL");
 			} catch (SQLException e) {
 				plugin.warning(
 						"Error while modifying inventory table. This is probably due to a prior failed migration. You can ignore this if there are no further errors.");
@@ -282,7 +287,7 @@ public class MigrationManager {
 					any = false;
 					HashMap<Long, byte[]> blobs = new HashMap<>();
 					int limit = 1;
-					try (PreparedStatement pstmt = sql.connection.prepareStatement(stmt + limit)) {
+					try (PreparedStatement pstmt = connection.prepareStatement(stmt + limit)) {
 						if (limit < 50) {
 							limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
 										// issue
@@ -338,80 +343,75 @@ public class MigrationManager {
 					migrateV6Commit(blobs);
 				}
 				plugin.info("Done migrating blobs, purging unneeded data");
-				sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET data = '' where hasblob=true;");
+				sql.execute(connection,
+						"UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET data = '' where hasblob=true;");
 			}
 		}
-		sql.setVersion(6);
+		sql.setVersion(connection, 6);
 	}
 
 	void putRaw(Table table, ArrayList<Object[]> datas)
 			throws SQLException, ClassCastException, IndexOutOfBoundsException {
-		sql.checkAsync();
-		synchronized (sql.connection) {
-			sql.holdingConnectionSince = System.currentTimeMillis();
-			sql.holdingConnection = "put";
-			String stmt = "INSERT INTO " + table.toString() + " ";
-			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
-			final boolean hasData = table.hasData();
-			final boolean hasAction = table.hasActionId();
-			final boolean hasLook = table.hasLook();
-			stmt += table.getValuesHeader(plugin.isBungee());
-			String inc = table.getValuesTemplate(plugin.isBungee());
-			stmt += " VALUES";
-			for (int i = 0; i < datas.size(); i++) {
-				stmt += "\n" + inc;
-				if (i + 1 == datas.size()) {
-					stmt += ";";
-				} else {
-					stmt += ",";
-				}
+		String stmt = "INSERT INTO " + table.toString() + " ";
+		final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
+		final boolean hasData = table.hasData();
+		final boolean hasAction = table.hasActionId();
+		final boolean hasLook = table.hasLook();
+		stmt += table.getValuesHeader(plugin.isBungee());
+		String inc = table.getValuesTemplate(plugin.isBungee());
+		stmt += " VALUES";
+		for (int i = 0; i < datas.size(); i++) {
+			stmt += "\n" + inc;
+			if (i + 1 == datas.size()) {
+				stmt += ";";
+			} else {
+				stmt += ",";
 			}
-			try (PreparedStatement statement = sql.connection.prepareStatement(stmt)) {
-
-				int i = 1;
-				for (Object[] data : datas) {
-					int y = 0;
-					try {
-						// statement.setString(i++, table);
-						statement.setLong(i++, (long) data[y++]);
-						statement.setInt(i++, (int) data[y++]);
-
-						if (hasAction) {
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasLocation) {
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasLook) {
-							statement.setInt(i++, (int) data[y++]);
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (table.hasStringTarget()) {
-							statement.setString(i++, (String) data[y++]);
-						} else {
-							statement.setInt(i++, (int) data[y++]);
-						}
-						if (hasData) {
-							statement.setString(i++, (String) data[y++]);
-						}
-					} catch (Exception e) {
-						String error = "";
-						for (Object o : data) {
-							error += o + ", ";
-						}
-						plugin.warning(error + "\nError at index " + y);
-						throw e;
-					}
-				}
-
-				statement.executeUpdate();
-			}
-			sql.rowcount += datas.size();
-			sql.holdingConnectionSince = 0;
 		}
+		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+
+			int i = 1;
+			for (Object[] data : datas) {
+				int y = 0;
+				try {
+					// statement.setString(i++, table);
+					statement.setLong(i++, (long) data[y++]);
+					statement.setInt(i++, (int) data[y++]);
+
+					if (hasAction) {
+						statement.setInt(i++, (int) data[y++]);
+					}
+					if (hasLocation) {
+						statement.setInt(i++, (int) data[y++]);
+						statement.setInt(i++, (int) data[y++]);
+						statement.setInt(i++, (int) data[y++]);
+						statement.setInt(i++, (int) data[y++]);
+					}
+					if (hasLook) {
+						statement.setInt(i++, (int) data[y++]);
+						statement.setInt(i++, (int) data[y++]);
+					}
+					if (table.hasStringTarget()) {
+						statement.setString(i++, (String) data[y++]);
+					} else {
+						statement.setInt(i++, (int) data[y++]);
+					}
+					if (hasData) {
+						statement.setString(i++, (String) data[y++]);
+					}
+				} catch (Exception e) {
+					String error = "";
+					for (Object o : data) {
+						error += o + ", ";
+					}
+					plugin.warning(error + "\nError at index " + y);
+					throw e;
+				}
+			}
+
+			statement.executeUpdate();
+		}
+		sql.rowcount += datas.size();
 	}
 
 	private void migrateV6Commit(HashMap<Long, byte[]> blobs) throws SQLException {
@@ -425,6 +425,6 @@ public class MigrationManager {
 			}
 			where = where.substring(0, where.length() - 1) + ")";
 		}
-		sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1" + where);
+		sql.execute(connection, "UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1" + where);
 	}
 }
