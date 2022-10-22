@@ -107,6 +107,7 @@ public class EntryAction {
 	public final int idPos;
 	public final String name;
 	private boolean enabled;
+	private boolean lowestpriority;
 
 	private String overridePText;
 	private String overrideNText;
@@ -256,4 +257,13 @@ public class EntryAction {
 		EntryAction other = (EntryAction) other_;
 		return this.id == other.id && this.idPos == other.idPos;
 	}
+
+	public boolean isLowestpriority() {
+		return lowestpriority;
+	}
+
+	public void setLowestpriority(boolean lowestpriority) {
+		this.lowestpriority = lowestpriority;
+	}
+
 }

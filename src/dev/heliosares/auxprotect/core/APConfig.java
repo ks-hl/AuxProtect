@@ -60,7 +60,10 @@ public class APConfig {
 		skipV6Migration = config.getBoolean("skipv6migration");
 		for (EntryAction action : EntryAction.values()) {
 			boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", true);
+			boolean priority = config.getBoolean("Actions." + action.toString().toLowerCase() + ".LowestPriority",
+					false);
 			action.setEnabled(enabled);
+			action.setLowestpriority(priority);
 		}
 		overrideCommands = config.getBoolean("OverrideCommands");
 	}

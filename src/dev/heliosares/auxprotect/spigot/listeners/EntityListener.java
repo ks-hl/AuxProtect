@@ -218,9 +218,18 @@ public class EntityListener implements Listener {
 		plugin.add(entry);
 	}
 
+	@EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = true)
+	public void onPlayerDeathLowest(PlayerDeathEvent e) {
+		if (EntryAction.INVENTORY.isLowestpriority()) {
+			plugin.getAPPlayer(e.getEntity()).logInventory("death");
+		}
+	}
+
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void onPlayerDeath(PlayerDeathEvent e) {
-		plugin.getAPPlayer(e.getEntity()).logInventory("death");
+	public void onPlayerDeathMonitor(PlayerDeathEvent e) {
+		if (!EntryAction.INVENTORY.isLowestpriority()) {
+			plugin.getAPPlayer(e.getEntity()).logInventory("death");
+		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
