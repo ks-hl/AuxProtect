@@ -8,6 +8,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.UUID;
@@ -44,23 +45,13 @@ public class InvDiffManager {
 		long lastused;
 		final long blobid;
 		final byte[] ablob;
+		final int hash;
 
 		BlobCache(long blobid, byte[] ablob) {
 			this.blobid = blobid;
 			this.ablob = ablob;
 			this.lastused = System.currentTimeMillis();
-		}
-
-		boolean matches(byte[] other) {
-			if (ablob.length != other.length) {
-				return false;
-			}
-			for (int i = 0; i < ablob.length; i++) {
-				if (ablob[i] != other[i]) {
-					return false;
-				}
-			}
-			return true;
+			hash = Arrays.hashCode(ablob);
 		}
 	}
 
@@ -72,7 +63,7 @@ public class InvDiffManager {
 		final long time = System.currentTimeMillis();
 		Integer damage = null;
 		if (qty != 0 && item != null) {
-			if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+			if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
 				damage = meta.getDamage();
 				meta.setDamage(0);
 				item.setItemMeta(meta);
@@ -116,9 +107,16 @@ public class InvDiffManager {
 		long cachedid = -1;
 		boolean purge = System.currentTimeMillis() - lastpurged > 10 * 60 * 1000L;
 		Iterator<BlobCache> it = cache.iterator();
+		int hash = Arrays.hashCode(blob);
 		for (BlobCache other = null; it.hasNext();) {
 			other = it.next();
-			if (other.matches(blob)) {
+			// TODO needs tested, should be fine
+			out: if (other.hash == hash && blob.length == other.ablob.length) {
+				for (int i = 0; i < blob.length; i++) {
+					if (blob[i] != other.ablob[i]) {
+						break out; // This iteration isn't really necessary, just a check
+					}
+				}
 				cachedid = other.blobid;
 				if (!purge)
 					break;
@@ -266,7 +264,7 @@ public class InvDiffManager {
 								item.setAmount(qty);
 								plugin.debug("setting slot " + slot + " to " + qty);
 							}
-							if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+							if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
 								int damage = rs.getInt("damage");
 								if (!rs.wasNull()) {
 									meta.setDamage(damage);

@@ -1,33 +1,18 @@
 package dev.heliosares.auxprotect.database;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class EntryAction {
 	private static final HashMap<String, EntryAction> values = new HashMap<>();
 	private static final Set<Integer> usedids = new HashSet<>();
-
-	public static EntryAction[] values() {
-		return values.values().toArray(new EntryAction[0]);
-	}
-
-	public static EntryAction getAction(String key) {
-		return values.get(key);
-	}
-
-	public static EntryAction getAction(int id) {
-		if (id == 0)
-			return null;
-		for (EntryAction action : values.values()) {
-			if (action.id == id || action.idPos == id) {
-				return action;
-			}
-		}
-		return null;
-	}
 
 	// START MAIN (0)
 	public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
@@ -73,6 +58,7 @@ public class EntryAction {
 	// START LONGTERM (768)
 	public static final EntryAction IP = new EntryAction("ip", 768);
 	public static final EntryAction USERNAME = new EntryAction("username", 769);
+	public static final EntryAction TOWNYNAME = new EntryAction("townyname", 770);
 	// END LONGTERM (1023)
 
 	// START INVENTORY (1024)
@@ -101,6 +87,23 @@ public class EntryAction {
 	// START XRAY (1300)
 	public static final EntryAction VEIN = new EntryAction("vein", 1300);
 	// END XRAY(1309)
+
+	// START TOWNY (1310)
+	public static final EntryAction TOWNCREATE = new EntryAction("towncreate", 1310);
+	public static final EntryAction TOWNRENAME = new EntryAction("townrename", 1311);
+	public static final EntryAction TOWNDELETE = new EntryAction("towndelete", 1312);
+	public static final EntryAction TOWNJOIN = new EntryAction("townjoin", 1313, 1314);
+	public static final EntryAction TOWNCLAIM = new EntryAction("townclaim", 1315, 1316);
+	public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
+	public static final EntryAction TOWNMAYOR = new EntryAction("townmayor", 1318);
+	public static final EntryAction TOWNBANK = new EntryAction("townbank", 1319, 1320);
+
+	public static final EntryAction NATIONCREATE = new EntryAction("nationcreate", 1400);
+	public static final EntryAction NATIONRENAME = new EntryAction("nationrename", 1401);
+	public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
+	public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
+	public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
+	// END TOWNY (1499)
 
 	public final boolean hasDual;
 	public final int id;
@@ -180,18 +183,24 @@ public class EntryAction {
 		return "actions." + toString().toLowerCase();
 	}
 
-	public boolean isBungee() {
-		if (id == MSG.id || id == COMMAND.id || id == IP.id || id == USERNAME.id || id == SESSION.id) {
-			return true;
+	public boolean exists(IAuxProtect plugin) {
+		if (!plugin.getAPConfig().isPrivate()) {
+			if (equals(IGNOREABANDONED) || equals(VEIN)) {
+				return false;
+			}
 		}
-		return false;
-	}
-
-	public boolean isSpigot() {
-		if (id == MSG.id) {
+		if (plugin instanceof AuxProtectSpigot) {
+			if (id == MSG.id) {
+				return false;
+			}
+			return true;
+		} else if (plugin instanceof AuxProtectBungee) {
+			if (equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)) {
+				return true;
+			}
 			return false;
 		}
-		return true;
+		return false;
 	}
 
 	public Table getTable() {
@@ -219,10 +228,13 @@ public class EntryAction {
 		if (id < 1310) {
 			return Table.AUXPROTECT_XRAY;
 		}
-		if (id > 10000) {
+		if (id < 1500) {
+			return Table.AUXPROTECT_TOWNY;
+		}
+		if (id > 1000000) {
 			return Table.AUXPROTECT_API;
 		}
-		return null;
+		throw new IllegalArgumentException("Action with unknown table: " + toString() + ", id=" + id);
 	}
 
 	public int getId(boolean state) {
@@ -237,7 +249,7 @@ public class EntryAction {
 	}
 
 	public void setEnabled(boolean state) {
-		if (this.equals(USERNAME)) { // Don't allow this to be disabled.
+		if (equals(USERNAME)) { // Don't allow this to be disabled.
 			enabled = true;
 			return;
 		}
@@ -250,12 +262,11 @@ public class EntryAction {
 	}
 
 	@Override
-	public boolean equals(Object other_) {
-		if (!(other_ instanceof EntryAction)) {
-			return false;
+	public boolean equals(Object other) {
+		if (other instanceof EntryAction otherEntry) {
+			return this.id == otherEntry.id && this.idPos == otherEntry.idPos;
 		}
-		EntryAction other = (EntryAction) other_;
-		return this.id == other.id && this.idPos == other.idPos;
+		return false;
 	}
 
 	public boolean isLowestpriority() {
@@ -264,6 +275,25 @@ public class EntryAction {
 
 	public void setLowestpriority(boolean lowestpriority) {
 		this.lowestpriority = lowestpriority;
+	}
+
+	public static Collection<EntryAction> values() {
+		return Collections.unmodifiableCollection(values.values());
+	}
+
+	public static EntryAction getAction(String key) {
+		return values.get(key);
+	}
+
+	public static EntryAction getAction(int id) {
+		if (id == 0)
+			return null;
+		for (EntryAction action : values.values()) {
+			if (action.id == id || action.idPos == id) {
+				return action;
+			}
+		}
+		return null;
 	}
 
 }

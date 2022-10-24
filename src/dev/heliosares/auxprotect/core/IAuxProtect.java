@@ -49,4 +49,6 @@ public interface IAuxProtect {
 	public MySender getConsoleSender();
 	
 	public boolean isShuttingDown();
+	
+	public boolean isHooked(String name);
 }

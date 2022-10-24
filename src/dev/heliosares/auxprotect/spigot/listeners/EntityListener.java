@@ -74,19 +74,19 @@ public class EntityListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void onEntityExplodeEvent(EntityExplodeEvent e) {
 		String cause;
-		if (e.getEntity() instanceof TNTPrimed tnt && tnt.getSource() != null) {
-			if (tnt.getSource() instanceof Projectile proj && proj.getShooter() != null) {
+		if (e.getEntity()instanceof TNTPrimed tnt && tnt.getSource() != null) {
+			if (tnt.getSource()instanceof Projectile proj && proj.getShooter() != null) {
 				cause = AuxProtectSpigot.getLabel(proj.getShooter());
 			} else {
 				cause = AuxProtectSpigot.getLabel(tnt.getSource());
 			}
 		} else if (e.getEntity() instanceof LivingEntity) {
-			if (e.getEntity() instanceof Monster monster && monster.getTarget() != null) {
+			if (e.getEntity()instanceof Monster monster && monster.getTarget() != null) {
 				cause = AuxProtectSpigot.getLabel(monster.getTarget());
 			} else {
 				cause = AuxProtectSpigot.getLabel(e.getEntity());
 			}
-		} else if (e.getEntity() instanceof Projectile proj && proj.getShooter() != null) {
+		} else if (e.getEntity()instanceof Projectile proj && proj.getShooter() != null) {
 			cause = AuxProtectSpigot.getLabel(proj.getShooter());
 		} else {
 			cause = "#env";

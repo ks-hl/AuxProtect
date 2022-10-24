@@ -32,6 +32,8 @@ import com.google.common.io.Files;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.towny.TownyEntry;
+import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.MovingAverage;
@@ -62,6 +64,7 @@ public class SQLManager {
 	private final LookupManager lookupmanager;
 	private MigrationManager migrationmanager;
 	private final InvDiffManager invdiffmanager;
+	private final TownyManager townymanager;
 
 	public LookupManager getLookupManager() {
 		return lookupmanager;
@@ -69,6 +72,10 @@ public class SQLManager {
 
 	public InvDiffManager getInvDiffManager() {
 		return invdiffmanager;
+	}
+
+	public TownyManager getTownyManager() {
+		return townymanager;
 	}
 
 	public static SQLManager getInstance() {
@@ -114,6 +121,14 @@ public class SQLManager {
 			}
 			tablePrefix = prefix;
 		}
+		{
+			TownyManager tm = null;
+			try {
+				tm = new TownyManager((dev.heliosares.auxprotect.spigot.AuxProtectSpigot) plugin, this);
+			} catch (Throwable ignored) {
+			}
+			this.townymanager = tm;
+		}
 		this.sqliteFile = sqliteFile;
 	}
 
@@ -135,7 +150,11 @@ public class SQLManager {
 		plugin.info("Connected!");
 
 		count();
+		
 		plugin.info("There are currently " + rowcount + " rows");
+		if (townymanager != null) {
+			townymanager.init();
+		}
 	}
 
 	public void close() {
@@ -1041,6 +1060,9 @@ public class SQLManager {
 					if (table == Table.AUXPROTECT_XRAY) {
 						short rating = rs.getShort("rating");
 						entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
+					} else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
+						entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
+								target_id, data);
 					} else {
 						entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
 								target_id, data);
@@ -1359,7 +1381,7 @@ public class SQLManager {
 		if (worlds.containsKey(world)) {
 			return worlds.get(world);
 		}
-		if (Bukkit.getWorld(world) == null) {
+		if (world == null || Bukkit.getWorld(world) == null) {
 			return -1;
 		}
 
@@ -1433,8 +1455,6 @@ public class SQLManager {
 					uuids.put(uid, uuid);
 					return uid;
 				}
-			} catch (SQLException e) {
-				plugin.print(e);
 			}
 		} catch (SQLException e) {
 			plugin.print(e);
@@ -1452,7 +1472,7 @@ public class SQLManager {
 					if (result.next()) {
 						int uid = result.getInt(1);
 						uuids.put(uid, uuid);
-						plugin.debug("New UUID: " + uuid + ":" + uid, 3);
+						plugin.debug("New UUID: " + uuid + ":" + uid, 1);
 						rowcount++;
 						return uid;
 					}
@@ -1692,6 +1712,8 @@ public class SQLManager {
 	public void cleanup() {
 		usernames.cleanup();
 		uuids.cleanup();
+		if (townymanager != null)
+			townymanager.cleanup();
 	}
 
 	public Collection<String> getCachedUsernames() {

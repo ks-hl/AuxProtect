@@ -7,7 +7,9 @@ public enum Table {
 	AUXPROTECT_COMMANDS, AUXPROTECT_POSITION,
 
 	AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB,
-	AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB;
+	AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB,
+
+	AUXPROTECT_TOWNY;
 
 	@Override
 	public String toString() {
@@ -35,6 +37,7 @@ public enum Table {
 		case AUXPROTECT_COMMANDS:
 		case AUXPROTECT_POSITION:
 		case AUXPROTECT_API:
+		case AUXPROTECT_TOWNY:
 			return true;
 		default:
 			return false;
@@ -48,6 +51,7 @@ public enum Table {
 		case AUXPROTECT_SPAM:
 		case AUXPROTECT_API:
 		case AUXPROTECT_XRAY:
+		case AUXPROTECT_TOWNY:
 			return true;
 		default:
 			return false;
@@ -79,6 +83,7 @@ public enum Table {
 		case AUXPROTECT_COMMANDS:
 		case AUXPROTECT_POSITION:
 		case AUXPROTECT_API:
+		case AUXPROTECT_TOWNY:
 			return true;
 		default:
 			return false;
@@ -124,7 +129,8 @@ public enum Table {
 			return "(time, uid, world_id, x, y, z, target)";
 		} else if (bungee) {
 			return "(time, uid, action_id, target_id, data)";
-		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API) {
+		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API
+				|| this == Table.AUXPROTECT_TOWNY) {
 			return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
 		} else if (this == Table.AUXPROTECT_INVENTORY) {
 			return "(time, uid, action_id, world_id, x, y, z, target_id, data, hasblob)";
@@ -174,6 +180,7 @@ public enum Table {
 		case AUXPROTECT_SPAM:
 		case AUXPROTECT_API:
 		case AUXPROTECT_XRAY:
+		case AUXPROTECT_TOWNY:
 			return 9;
 		case AUXPROTECT_POSITION:
 		case AUXPROTECT_INVENTORY:

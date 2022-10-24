@@ -161,7 +161,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 			print(e);
 		}
 
-		config = new APConfig(configurationFile);
+		config = new APConfig(this, configurationFile);
 	}
 
 	@Override
@@ -272,7 +272,7 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 
 	@Override
 	public void reloadConfig() {
-		config = new APConfig(configurationFile);
+		config = new APConfig(this, configurationFile);
 	}
 
 	@Override
@@ -288,5 +288,11 @@ public class AuxProtectBungee extends Plugin implements Listener, IAuxProtect {
 	@Override
 	public void setDebug(int debug) {
 		this.debug = debug;
+	}
+
+	@Override
+	public boolean isHooked(String name) {
+		// TODO Future implementation
+		return false;
 	}
 }

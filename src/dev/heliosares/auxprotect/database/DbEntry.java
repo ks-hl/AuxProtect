@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 import org.bukkit.Location;
 
@@ -8,9 +8,9 @@ public class DbEntry {
 
 	private final long time;
 
-	private final EntryAction action;
-	private final boolean state;
-	private String data;
+	protected final EntryAction action;
+	protected final boolean state;
+	protected String data;
 
 	public final String world;
 	public final int x;
@@ -21,12 +21,12 @@ public class DbEntry {
 	public final int yaw;
 
 	protected String userLabel;
-	private String user;
-	private int uid;
+	protected String user;
+	protected int uid;
 
-	private String targetLabel;
-	private String target;
-	private int target_id;
+	protected String targetLabel;
+	protected String target;
+	protected int target_id;
 
 	private boolean hasBlob;
 	private byte[] blob;
@@ -68,7 +68,7 @@ public class DbEntry {
 	 * @param state       Specifies the state of EntryAction (i.e +mount vs -mount),
 	 *                    if applicable, otherwise false.
 	 * 
-	 * @param location    Should not be null. Will throw NullPointerException
+	 * @param location    May be null
 	 * 
 	 * @param targetLabel The label of the target, see userLabel for details.
 	 * 
@@ -77,11 +77,13 @@ public class DbEntry {
 	 * 
 	 * @throws NullPointerException
 	 */
-	public DbEntry(String userLabel, EntryAction action, boolean state, @Nonnull Location location, String targetLabel,
+	public DbEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel,
 			String data) throws NullPointerException {
-		this(userLabel, action, state, location.getWorld().getName(), location.getBlockX(), location.getBlockY(),
-				location.getBlockZ(), (int) Math.round(location.getPitch()), (int) Math.round(location.getYaw()),
-				targetLabel, data);
+		this(userLabel, action, state, location == null ? null : location.getWorld().getName(),
+				location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
+				location == null ? 0 : location.getBlockZ(),
+				location == null ? 0 : (int) Math.round(location.getPitch()),
+				location == null ? 0 : (int) Math.round(location.getYaw()), targetLabel, data);
 	}
 
 	protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,

@@ -171,7 +171,7 @@ public class APBCommand extends Command implements TabExecutor {
 				if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
 					String action = currentArg.split(":")[0] + ":";
 					for (EntryAction eaction : EntryAction.values()) {
-						if (eaction.isBungee() && eaction.isEnabled()) {
+						if (eaction.exists(plugin) && eaction.isEnabled()) {
 							String actString = eaction.toString().toLowerCase();
 							if (eaction.hasDual) {
 								possible.add(action + "+" + actString);

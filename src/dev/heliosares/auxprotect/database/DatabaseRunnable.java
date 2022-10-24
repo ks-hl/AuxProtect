@@ -15,9 +15,8 @@ public class DatabaseRunnable implements Runnable {
 	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
 	private static HashMap<Table, Long> lastTimes = new HashMap<>();
-//	private long running = 0;
-//	private long lastWarn = 0;
-	private long lastPolled = 0;
+	private long running = 0;
+	private long lastWarn = 0;
 	private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
 	private static final long pickupCacheTime = 1500;
 	private ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
@@ -66,78 +65,80 @@ public class DatabaseRunnable implements Runnable {
 				return;
 			}
 			// TODO was this necessary?
-//			if (running > 0) {
-//				if (System.currentTimeMillis() - running > 20000) {
-//					if (System.currentTimeMillis() - lastWarn > 60000) {
-//						lastWarn = System.currentTimeMillis();
-//						plugin.warning("Overlapping logging windows > 20 seconds by "
-//								+ (System.currentTimeMillis() - running) + " ms.");
-//					}
-//				}
-//				plugin.debug("Overlapping logging windows by " + (System.currentTimeMillis() - running) + " ms.", 1);
-//				return;
-//			}
-//			running = System.currentTimeMillis();
+			if (running > 0) {
+				if (System.currentTimeMillis() - running > 20000) {
+					if (System.currentTimeMillis() - lastWarn > 60000) {
+						lastWarn = System.currentTimeMillis();
+						plugin.warning("Overlapping logging windows > 20 seconds by "
+								+ (System.currentTimeMillis() - running) + " ms.");
+					}
+				}
+				plugin.debug("Overlapping logging windows by " + (System.currentTimeMillis() - running) + " ms.", 1);
+				if (System.currentTimeMillis() - running < 300000) {
+					return;
+				} else {
+					plugin.warning("Overlapping logging windows by 5 minutes, continuing.");
+				}
+			}
+			running = System.currentTimeMillis();
 
 			checkCache();
 
-			if (System.currentTimeMillis() - lastPolled > 3000 || queue.size() > 50) {
-				DbEntry entry;
-				long start = System.nanoTime();
+			DbEntry entry;
+			long start = System.nanoTime();
 
-				HashMap<Table, ArrayList<DbEntry>> entriesHash = new HashMap<>();
+			HashMap<Table, ArrayList<DbEntry>> entriesHash = new HashMap<>();
 
-				lastPolled = System.currentTimeMillis();
-				while ((entry = queue.poll()) != null) {
-					if (plugin.getDebug() >= 2) {
-						String debug = String.format("§9%s §f%s§7(%d) §9%s §7", entry.getUser(),
-								entry.getAction().getText(plugin, entry.getState()),
-								entry.getAction().getId(entry.getState()), entry.getTarget());
-						if (entry.getData() != null && entry.getData().length() > 0) {
-							String data = entry.getData();
-							if (data.length() > 64) {
-								data = data.substring(0, 64) + "...";
-							}
-							debug += "(" + data + ")";
-
+			while ((entry = queue.poll()) != null) {
+				if (plugin.getDebug() >= 2) {
+					String debug = String.format("§9%s §f%s§7(%d) §9%s §7", entry.getUser(),
+							entry.getAction().getText(plugin, entry.getState()),
+							entry.getAction().getId(entry.getState()), entry.getTarget());
+					if (entry.getData() != null && entry.getData().length() > 0) {
+						String data = entry.getData();
+						if (data.length() > 64) {
+							data = data.substring(0, 64) + "...";
 						}
-						plugin.debug(debug, 2);
+						debug += "(" + data + ")";
+
 					}
+					plugin.debug(debug, 2);
+				}
 
-					Table table = entry.getAction().getTable();
+				Table table = entry.getAction().getTable();
 
-					if (table == null) {
+				if (table == null) {
+					continue;
+				}
+
+				ArrayList<DbEntry> entriesList = entriesHash.get(table);
+				if (entriesList == null) {
+					entriesList = new ArrayList<>();
+				}
+				entriesList.add(entry);
+				entriesHash.put(table, entriesList);
+			}
+
+			for (Entry<Table, ArrayList<DbEntry>> entryPair : entriesHash.entrySet()) {
+				try {
+					int size = entryPair.getValue().size();
+					if (size == 0) {
 						continue;
 					}
-
-					ArrayList<DbEntry> entriesList = entriesHash.get(table);
-					if (entriesList == null) {
-						entriesList = new ArrayList<>();
-					}
-					entriesList.add(entry);
-					entriesHash.put(table, entriesList);
-				}
-
-				for (Entry<Table, ArrayList<DbEntry>> entryPair : entriesHash.entrySet()) {
-					try {
-						int size = entryPair.getValue().size();
-						if (size == 0) {
-							continue;
-						}
-						sqlManager.put(entryPair.getKey(), entryPair.getValue());
-						plugin.debug(debugLogStatement(start, size, entryPair.getKey()), 1);
-						start = System.nanoTime();
-					} catch (Exception e) {
-						plugin.print(e);
-					}
+					sqlManager.put(entryPair.getKey(), entryPair.getValue());
+					plugin.debug(debugLogStatement(start, size, entryPair.getKey()), 1);
+					start = System.nanoTime();
+				} catch (Exception e) {
+					plugin.print(e);
 				}
 			}
-		} catch (Exception e) {
-			plugin.print(e);
-		}
-		sqlManager.cleanup();
 
-//		running = 0;
+			sqlManager.cleanup();
+		} catch (Throwable e) {
+			plugin.print(e);
+		} finally {
+			running = 0;
+		}
 	}
 
 	private String debugLogStatement(long start, int count, Table table) {

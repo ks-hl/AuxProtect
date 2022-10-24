@@ -137,3 +137,27 @@ actions:
     n: remove itemframe
   ahlist: listed on ah
   ahbuy: bought from ah
+  townyname: named
+  towncreate: created town
+  townrename: renamed town to
+  towndelete: deleted town
+  townjoin:
+    p: joined town
+    n: left town
+  townclaim:
+    p: claimed
+    n: unclaimed
+  townmerge: merged into
+  townmayor: became the mayor of
+  townbank:
+    p: deposited
+    n: withdrew
+  nationcreate: created nation
+  nationrename: renamed nation
+  nationdelete: deleted nation
+  nationjoin:
+    p: joined nation
+    n: left nation
+  nationbank:
+    p: deposited
+    n: withdrew

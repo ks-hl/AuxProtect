@@ -4,7 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 
 import org.bukkit.Bukkit;
@@ -15,6 +18,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -30,12 +34,14 @@ import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.command.APCommand;
 import dev.heliosares.auxprotect.spigot.command.APCommandTab;
 import dev.heliosares.auxprotect.spigot.command.ClaimInvCommand;
 import dev.heliosares.auxprotect.spigot.command.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.*;
+import dev.heliosares.auxprotect.towny.TownyListener;
 import dev.heliosares.auxprotect.utils.Language;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
@@ -93,7 +99,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 		debug = getConfig().getInt("debug", 0);
 
-		config = new APConfig(this.getConfig());
+		config = new APConfig(this, this.getConfig());
+		this.saveConfig();
 
 		YMLManager langManager = new YMLManager("en-us", this);
 		langManager.load(true);
@@ -210,81 +217,38 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new CommandListener(this), this);
 		getServer().getPluginManager().registerEvents(new XrayListener(this), this);
 
-		if (setupEconomy()) {
-			Telemetry.reportHook(this, "Vault", true);
-		} else {
-			Telemetry.reportHook(this, "Vault", false);
-		}
+		// this feels cursed to run setupEconomy() like this...
+		Telemetry.reportHook(this, "Vault", setupEconomy());
 
-		try {
-			String name = "ShopGuiPlus";
-			Plugin plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new ShopGUIPlusListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
+		hook(() -> {
+			return new ShopGUIPlusListener(this);
+		}, "ShopGuiPlus");
+		hook(() -> {
+			return new EconomyShopGUIListener(this);
+		}, "EconomyShopGUI", "EconomyShopGUI-Premium");
+		hook(() -> {
+			return new DynamicShopListener(this);
+		}, "DynamicShop");
+		hook(() -> {
+			return new ChestShopListener(this);
+		}, "ChestShop");
+		hook(() -> {
+			return new AuctionHouseListener(this);
+		}, "AuctionHouse");
+		hook(() -> {
+			return new JobsListener(this);
+		}, "Jobs");
+		hook(() -> {
+			return new EssentialsListener(this);
+		}, "Essentials");
+		if (!hook(() -> {
+			return new TownyListener(this);
+		}, "Towny")) {
+			for (EntryAction action : EntryAction.values()) {
+				if (action.getTable() == Table.AUXPROTECT_TOWNY) {
+					action.setEnabled(false);
+				}
 			}
-
-			name = "EconomyShopGUI";
-			plugin = getPlugin(name);
-			if (plugin == null) {
-				plugin = getServer().getPluginManager().getPlugin("EconomyShopGUI-Premium");
-			}
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new EconomyShopGUIListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-
-			name = "DynamicShop";
-			plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new DynamicShopListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-
-			name = "ChestShop";
-			plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new ChestShopListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-
-			name = "AuctionHouse";
-			plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new AuctionHouseListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-
-			name = "Jobs";
-			plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new JobsListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-
-			name = "Essentials";
-			plugin = getPlugin(name);
-			if (plugin != null && plugin.isEnabled()) {
-				getServer().getPluginManager().registerEvents(new EssentialsListener(this), this);
-				Telemetry.reportHook(this, name, true);
-			} else {
-				Telemetry.reportHook(this, name, false);
-			}
-		} catch (Exception e) {
-			warning("Exception while hooking other plugins");
-			print(e);
 		}
 
 		this.getCommand("claiminv").setExecutor(claiminvcommand = new ClaimInvCommand(this));
@@ -507,6 +471,36 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		}
 	}
 
+	private boolean hook(Supplier<Listener> listener, String... names) {
+		boolean hook = false;
+		try {
+			Plugin plugin = null;
+			for (String name : names) {
+				plugin = getPlugin(name);
+				if (plugin != null) {
+					break;
+				}
+			}
+			hook = plugin != null && plugin.isEnabled();
+			if (hook) {
+				getServer().getPluginManager().registerEvents(listener.get(), this);
+				hooks.add(plugin.getName());
+			}
+		} catch (Exception e) {
+			warning("Exception while hooking " + names[0]);
+			print(e);
+			hook = false;
+		}
+		Telemetry.reportHook(this, names[0], hook);
+		return hook;
+	}
+
+	private final Set<String> hooks = new HashSet<>();
+
+	public boolean isHooked(String name) {
+		return hooks.contains(name);
+	}
+
 	private Plugin getPlugin(String name) {
 		for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
 			if (plugin.getName().equalsIgnoreCase(name)) {
@@ -694,7 +688,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void reloadConfig() {
 		super.reloadConfig();
-		config = new APConfig(this.getConfig());
+		config = new APConfig(this, this.getConfig());
 	}
 
 	@Override

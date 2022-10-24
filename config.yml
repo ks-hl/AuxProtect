@@ -57,7 +57,12 @@ Actions:
     Enabled: true
     WorldChange: false
     Interval: 3600000
-    Diff-Interval: 1000
+    # Enables differential logging and searching of inventories down to the second. 
+    # This feature is experimental and will consume more disk space.
+    Diff-Interval: 0
+    # Use this if you run into issues with death inventories being empty. 
+    # This is usually due to a plugin like DeathChests clearing the inventory before AuxProtect sees it.
+    LowestPriority: false
   launch:
     Enabled: true
   grab:
@@ -73,6 +78,64 @@ Actions:
   ahbuy:
     Enabled: true
   elytra:
+    Enabled: true
+  gamemode:
+    Enabled: true
+  explode:
+    Enabled: true
+  auctionbuy:
+    Enabled: true
+  lightning:
+    Enabled: true
+  vein:
+    Enabled: true
+  pay:
+    Enabled: true
+  auctionlist:
+    Enabled: true
+  activity:
+    Enabled: true
+  alert:
+    Enabled: true
+  totem:
+    Enabled: true
+  jobs:
+    Enabled: true
+  tame:
+    Enabled: true
+  censor:
+    Enabled: true
+  breakitem:
+    Enabled: true
+  tp:
+    Enabled: true
+  towncreate:
+    Enabled: true
+  nationdelete:
+    Enabled: true
+  townyname:
+    Enabled: true
+  townrename:
+    Enabled: true
+  townjoin:
+    Enabled: true
+  nationrename:
+    Enabled: true
+  townmerge:
+    Enabled: true
+  nationjoin:
+    Enabled: true
+  townclaim:
+    Enabled: true
+  townbank:
+    Enabled: true
+  nationcreate:
+    Enabled: true
+  towndelete:
+    Enabled: true
+  townmayor:
+    Enabled: true
+  nationbank:
     Enabled: true
 # Automatically check for updates and display notifications in game.
 # It's recommended to leave this enabled, as I'm constantly improving the plugin.
