@@ -27,47 +27,6 @@
 					<release>16</release>
 				</configuration>
 			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-antrun-plugin</artifactId>
-				<version>3.1.0</version>
-				<executions>
-					<execution>
-						<id>replace-version</id>
-						<phase>prepare-package</phase>
-						<configuration>
-							<target>
-								<replace token="%VERSION%" value="${project.version}" dir="target/classes/">
-									<include name="**plugin.yml" />
-									<include name="**bungee.yml" />
-								</replace>
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-					<execution>
-						<id>impl-jar</id>
-						<phase>package</phase>
-						<configuration>
-							<target>
-								<delete dir="${testserver}/Test1/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
-								<copy todir="${testserver}/Test1/plugins">
-									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
-								</copy>
-								<delete dir="${testserver}/Proxy/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
-								<copy todir="${testserver}/Proxy/plugins">
-									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
-								</copy>
-							</target>
-						</configuration>
-						<goals>
-							<goal>run</goal>
-						</goals>
-					</execution>
-				</executions>
-			</plugin>
 		</plugins>
 	</build>
 	<repositories>
