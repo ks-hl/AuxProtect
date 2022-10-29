@@ -7,6 +7,8 @@ lookup-invalid-syntax: '&cInvalid syntax.'
 lookup-invalid-notenough: '&cNot enough arguments.'
 lookup-error: '&cAn error occured'
 error: '&cAn error occured'
+action-disabled: '&cThat action is disabled.'
+notplayererror: 'That command can only be used ingame'
 lookup-unknown-world: '&cUnknown world: %s'
 lookup-looking: '&9Searching database...'
 lookup-noresults: '&cNo results found.'
@@ -33,6 +35,7 @@ purge-complete: '&9Purge complete.'
 purge-error: '&cAn error occured while purging.'
 purge-time: '&cThat purge is too short. Try a longer amount of time.'
 purge-table: '&cThat table is invalid or does not exist.'
+backup-sqliteonly: 'Backups only work on SQLite'
 unknown-subcommand: 'Unknown subcommand. Do ''/ap help'' for more info.'
 command-help-unknown-subcommand: '&cUnknown subcommand.'
 command-help-header: '&f----- &9AuxProtect Help &f-----'
@@ -161,3 +164,4 @@ actions:
   nationbank:
     p: deposited
     n: withdrew
+  connect: connected to

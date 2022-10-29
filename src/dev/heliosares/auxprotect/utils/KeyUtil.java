@@ -38,42 +38,47 @@ public class KeyUtil {
 	private final boolean isBlacklisted;
 	private final boolean isMalformed;
 	private final boolean isPrivate;
+	private final String keyholder;
 
 	public KeyUtil(String key) {
 		boolean isValid = false;
 		boolean isBlacklisted = false;
 		boolean isPrivate = false;
 		boolean isMalformed = false;
+		String keyholder = null;
 		long gen = -1;
-		out: try {
-			String[] parts = key.split("\\.");
-			String name = parts[0];
-			key = parts[1];
-			key = do_RSADecryption(decode(key), PUBLIC_KEY);
-			if (!key.endsWith("." + name)) {
-				isValid = false;
-				isMalformed = true;
-				break out;
-			}
-			gen = Long.parseLong(key.substring(0, key.indexOf(".")));
-			for (long other : BLACKLIST) {
-				if (other == gen) {
-					isBlacklisted = true;
+		if (key != null && key.length() > 10) {
+			out: try {
+				String[] parts = key.split("\\.");
+				keyholder = parts[0];
+				key = parts[1];
+				key = do_RSADecryption(decode(key), PUBLIC_KEY);
+				if (!key.endsWith("." + keyholder)) {
 					isValid = false;
+					isMalformed = true;
 					break out;
 				}
+				gen = Long.parseLong(key.substring(0, key.indexOf(".")));
+				for (long other : BLACKLIST) {
+					if (other == gen) {
+						isBlacklisted = true;
+						isValid = false;
+						break out;
+					}
+				}
+				isValid = gen <= System.currentTimeMillis() && gen > 1577854800000L;
+				isPrivate = keyholder.matches("private(_.*)?");
+			} catch (Exception e) {
+				e.printStackTrace();
+				isMalformed = true;
+				isValid = false;
 			}
-			isValid = gen <= System.currentTimeMillis() && gen > 1577854800000L;
-			isPrivate = name.matches("private(_.*)?");
-		} catch (Exception e) {
-			e.printStackTrace();
-			isMalformed = true;
-			isValid = false;
 		}
 		this.isBlacklisted = isBlacklisted;
 		this.isPrivate = isPrivate;
 		this.isValid = isValid;
 		this.isMalformed = isMalformed;
+		this.keyholder = keyholder;
 	}
 
 	public boolean isValid() {
@@ -96,6 +101,10 @@ public class KeyUtil {
 
 	public boolean isMalformed() {
 		return isMalformed;
+	}
+
+	public String getKeyHolder() {
+		return keyholder;
 	}
 
 	private static byte[] decode(String str) {

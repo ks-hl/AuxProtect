@@ -1,0 +1,72 @@
+package dev.heliosares.auxprotect.core.commands;
+
+import java.sql.SQLException;
+import java.util.List;
+
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.CommandException;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+
+public class SQLCommand extends Command {
+
+	public SQLCommand(IAuxProtect plugin) {
+		super(plugin, "sql", APPermission.ADMIN, "sqli", "sqlu");
+	}
+
+	@Override
+	public boolean hasPermission(SenderAdapter sender) {
+		return super.hasPermission(sender) && sender.isConsole();
+	}
+
+	@Override
+	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+		String msg = "";
+		for (int i = 1; i < args.length; i++) {
+			msg += args[i] + " ";
+		}
+		final String stmt = msg.trim();
+		plugin.runAsync(() -> {
+			sender.sendMessageRaw("§aRunning...");
+			try {
+				if (args[0].equalsIgnoreCase("sql")) {
+					plugin.getSqlManager().execute(stmt);
+				} else if (args[0].equalsIgnoreCase("sqli")) {
+					plugin.getSqlManager().executeWrite(stmt);
+				} else {
+					List<List<String>> results = plugin.getSqlManager().executeUpdate(stmt);
+					if (results != null) {
+						for (List<String> result : results) {
+							String line = "";
+							for (String part : result) {
+								if (line.length() > 0) {
+									line += ", ";
+								}
+								line += part;
+							}
+							sender.sendMessageRaw(line);
+						}
+					}
+				}
+			} catch (SQLException e) {
+				sender.sendLang("error");
+				plugin.print(e);
+				return;
+			}
+			sender.sendMessageRaw("§aSQL statement executed successfully.");
+
+		});
+	}
+
+	@Override
+	public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+		return null;
+	}
+
+	@Override
+	public boolean exists() {
+		return true;
+	}
+
+}

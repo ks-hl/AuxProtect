@@ -1,8 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import org.bukkit.entity.Player;
-
-import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -12,12 +10,11 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 public class XrayResults {
 
-	public static void sendHeader(MySender sender) {
-		sender.sendMessage("§f------  §9AuxProtect Xray Check Results§7  ------");
+	public static void sendHeader(SenderAdapter sender) {
+		sender.sendMessageRaw("§f------  §9AuxProtect Xray Check Results§7  ------"); // TODO lang
 	}
 
-	public static void sendEntry(AuxProtectSpigot plugin, Player player, XrayEntry en, boolean auto) {
-		MySender sender = new MySender(player);
+	public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) {
 		sendHeader(sender);
 
 		Results.sendEntry(plugin, sender, en, -1, true, true);
@@ -43,12 +40,12 @@ public class XrayResults {
 				.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
 						"/ap xray skip " + en.getTime() + "e" + (auto ? " -auto" : "")))
 				.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click to skip this entry.")));
-		player.spigot().sendMessage(message.create());
+		sender.sendMessage(message.create());
 
 		sendArrowKeys(sender, plugin.getVeinManager().size());
 	}
 
-	public static void sendArrowKeys(MySender sender, int size) {
-		sender.sendMessage(String.format("§9%d§7 remaining.", size));
+	public static void sendArrowKeys(SenderAdapter sender, int size) {
+		sender.sendMessageRaw(String.format("§9%d§7 remaining.", size)); // TODO lang
 	}
 }

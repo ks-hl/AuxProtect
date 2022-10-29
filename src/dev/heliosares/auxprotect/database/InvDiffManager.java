@@ -9,8 +9,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.UUID;
 
 import org.bukkit.inventory.ItemStack;
@@ -45,25 +47,26 @@ public class InvDiffManager {
 		long lastused;
 		final long blobid;
 		final byte[] ablob;
-		final int hash;
 
 		BlobCache(long blobid, byte[] ablob) {
 			this.blobid = blobid;
 			this.ablob = ablob;
+			touch();
+		}
+
+		public void touch() {
 			this.lastused = System.currentTimeMillis();
-			hash = Arrays.hashCode(ablob);
 		}
 	}
 
-	private final List<BlobCache> cache = new ArrayList<>();
-	private long lastpurged = System.currentTimeMillis();
+	private final HashMap<Integer, BlobCache> cache = new HashMap<>();
 
 	public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) throws SQLException {
 		byte[] blob = null;
 		final long time = System.currentTimeMillis();
 		Integer damage = null;
 		if (qty != 0 && item != null) {
-			if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
+			if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
 				damage = meta.getDamage();
 				meta.setDamage(0);
 				item.setItemMeta(meta);
@@ -79,24 +82,24 @@ public class InvDiffManager {
 		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF.toString()
 				+ " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
-		Connection connection = sql.getConnection();
-		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-			statement.setLong(1, time);
-			int uid = sql.getUIDFromUUID("$" + uuid.toString(), false);
-			statement.setInt(2, uid);
-			statement.setInt(3, slot);
-			if (qty >= 0) {
-				statement.setInt(4, qty);
+		Connection connection = sql.getWriteConnection();
+		synchronized (connection) {
+			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+				statement.setLong(1, time);
+				int uid = sql.getUIDFromUUID("$" + uuid.toString(), false);
+				statement.setInt(2, uid);
+				statement.setInt(3, slot);
+				if (qty >= 0) {
+					statement.setInt(4, qty);
+				}
+				if (blobid >= 0) {
+					statement.setLong(5, blobid);
+				}
+				if (damage != null) {
+					statement.setInt(6, damage);
+				}
+				statement.execute();
 			}
-			if (blobid >= 0) {
-				statement.setLong(5, blobid);
-			}
-			if (damage != null) {
-				statement.setInt(6, damage);
-			}
-			statement.execute();
-		} finally {
-			sql.returnConnection(connection);
 		}
 	}
 
@@ -105,37 +108,31 @@ public class InvDiffManager {
 			return -1;
 		}
 		long cachedid = -1;
-		boolean purge = System.currentTimeMillis() - lastpurged > 10 * 60 * 1000L;
-		Iterator<BlobCache> it = cache.iterator();
 		int hash = Arrays.hashCode(blob);
-		for (BlobCache other = null; it.hasNext();) {
-			other = it.next();
-			// TODO needs tested, should be fine
-			out: if (other.hash == hash && blob.length == other.ablob.length) {
-				for (int i = 0; i < blob.length; i++) {
-					if (blob[i] != other.ablob[i]) {
-						break out; // This iteration isn't really necessary, just a check
-					}
-				}
-				cachedid = other.blobid;
-				if (!purge)
-					break;
-			}
-			if (System.currentTimeMillis() - other.lastused > 600000L) {
-				it.remove();
-			}
+		BlobCache other;
+		synchronized (cache) {
+			other = cache.get(hash);
 		}
-		if (purge) {
-			lastpurged = System.currentTimeMillis();
+		out: if (other != null && blob.length == other.ablob.length) {
+			for (int i = 0; i < blob.length; i++) {
+				if (blob[i] != other.ablob[i]) {
+					break out; // This iteration isn't really necessary, just a check
+				}
+			}
+			cachedid = other.blobid;
+			other.touch();
 		}
 
 		if (cachedid > 0) {
+			plugin.debug("Used cached blob: " + cachedid, 5);
 			return cachedid;
 		}
 
 		cachedid = findOrInsertBlob(blob);
 		if (cachedid > 0) {
-			cache.add(new BlobCache(cachedid, blob));
+			synchronized (cache) {
+				cache.put(hash, new BlobCache(cachedid, blob));
+			}
 		}
 		return cachedid;
 	}
@@ -155,32 +152,33 @@ public class InvDiffManager {
 			}
 			try (ResultSet rs = statement.executeQuery()) {
 				if (rs.next()) {
-					return rs.getInt(1);
+					int id = rs.getInt(1);
+					plugin.debug("Looked up blobid: " + id, 5);
+					return id;
 				}
 			}
 		} finally {
 			sql.returnConnection(connection);
 		}
-		connection = sql.getConnection();
+		connection = sql.getWriteConnection();
 		// }
 		stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " (blobid, ablob) VALUES (?,?)";
-		// synchronized (sql.connection) {
-		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-			long blobid = ++this.blobid;
-			statement.setLong(1, blobid);
-			if (sql.isMySQL()) {
-				Blob sqlblob = connection.createBlob();
-				sqlblob.setBytes(1, blob);
-				statement.setBlob(2, sqlblob);
-			} else {
-				statement.setBytes(2, blob);
+		synchronized (connection) {
+			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+				long blobid = ++this.blobid;
+				statement.setLong(1, blobid);
+				if (sql.isMySQL()) {
+					Blob sqlblob = connection.createBlob();
+					sqlblob.setBytes(1, blob);
+					statement.setBlob(2, sqlblob);
+				} else {
+					statement.setBytes(2, blob);
+				}
+				statement.execute();
+				plugin.debug("NEW blobid: " + blobid, 5);
+				return blobid;
 			}
-			statement.execute();
-			return blobid;
-		} finally {
-			sql.returnConnection(connection);
 		}
-		// }
 	}
 
 	public static record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
@@ -264,7 +262,7 @@ public class InvDiffManager {
 								item.setAmount(qty);
 								plugin.debug("setting slot " + slot + " to " + qty);
 							}
-							if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
+							if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
 								int damage = rs.getInt("damage");
 								if (!rs.wasNull()) {
 									meta.setDamage(damage);
@@ -329,5 +327,23 @@ public class InvDiffManager {
 			}
 		}
 		return output;
+	}
+
+	private long lastcleanup;
+
+	public void cleanup() {
+		synchronized (cache) {
+			if (System.currentTimeMillis() - lastcleanup < 300000) {
+				return;
+			}
+			lastcleanup = System.currentTimeMillis();
+			Iterator<Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
+			for (Entry<Integer, BlobCache> other = null; it.hasNext();) {
+				other = it.next();
+				if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
+					it.remove();
+				}
+			}
+		}
 	}
 }

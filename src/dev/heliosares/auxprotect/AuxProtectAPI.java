@@ -9,14 +9,23 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class AuxProtectAPI {
 
+	private static IAuxProtect instance;
+
 	public static IAuxProtect getInstance() {
-		IAuxProtect ap = AuxProtectSpigot.getInstance();
-		if (ap != null) {
-			return ap;
+		if (instance != null) {
+			return instance;
 		}
-		ap = AuxProtectBungee.getInstance();
-		if (ap != null) {
-			return ap;
+		try {
+			if ((instance = AuxProtectSpigot.getInstance()) != null) {
+				return instance;
+			}
+		} catch (Throwable ignored) {
+		}
+		try {
+			if ((instance = AuxProtectBungee.getInstance()) != null) {
+				return instance;
+			}
+		} catch (Throwable ignored) {
 		}
 		return null;
 	}

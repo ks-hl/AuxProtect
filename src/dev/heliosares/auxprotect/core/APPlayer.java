@@ -95,7 +95,8 @@ public class APPlayer {
 		return entry.getTime();
 	}
 
-	public void diff() {
+	public synchronized void diff() {
+		lastLoggedInventoryDiff = System.currentTimeMillis();
 		if (invDiffItems == null) {
 			logInventory("diff");
 			return;
@@ -136,13 +137,13 @@ public class APPlayer {
 			}
 			try {
 				plugin.getSqlManager().getInvDiffManager().logInvDiff(player.getUniqueId(), i, qty, item);
-				plugin.debug("Found diff for " + player.getName() + ": slot=" + i + " qty=" + qty + " item=" + item, 5);
+				plugin.debug("Found diff for " + player.getName() + ": slot=" + i + " qty=" + qty + " item="
+						+ (item == null ? null : item.getType().toString().toLowerCase()), 5);
 			} catch (SQLException e) {
 				plugin.print(e);
 				return;
 			}
 			invDiffItems.set(i, newItem);
 		}
-		lastLoggedInventoryDiff = System.currentTimeMillis();
 	}
 }

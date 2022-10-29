@@ -2,13 +2,17 @@ package dev.heliosares.auxprotect.spigot;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Supplier;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -25,10 +29,16 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import net.milkbowl.vault.economy.Economy;
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.SpigotConfigAdapter;
+import dev.heliosares.auxprotect.adapters.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MySender;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
+import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -36,13 +46,9 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
-import dev.heliosares.auxprotect.spigot.command.APCommand;
-import dev.heliosares.auxprotect.spigot.command.APCommandTab;
-import dev.heliosares.auxprotect.spigot.command.ClaimInvCommand;
-import dev.heliosares.auxprotect.spigot.command.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.*;
 import dev.heliosares.auxprotect.towny.TownyListener;
-import dev.heliosares.auxprotect.utils.Language;
+import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 
@@ -56,7 +62,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	protected DatabaseRunnable dbRunnable;
-	private static Language lang;
 	public int debug;
 	public YMLManager data;
 	private APConfig config;
@@ -73,13 +78,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	long lastloaded;
 
 	private ClaimInvCommand claiminvcommand;
-	private APCommand apcommand;
+	private APSCommand apcommand;
 
 	public ClaimInvCommand getClaiminvcommand() {
 		return claiminvcommand;
 	}
 
-	public APCommand getApcommand() {
+	public APSCommand getApcommand() {
 		return apcommand;
 	}
 
@@ -92,19 +97,21 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void onEnable() {
 		instance = this;
+		// AuxProtectAPI.setInstance(this);
 
 		this.saveDefaultConfig();
-		this.reloadConfig();
+		super.reloadConfig();
 		this.getConfig().options().copyDefaults(true);
 
 		debug = getConfig().getInt("debug", 0);
 
-		config = new APConfig(this, this.getConfig());
+		config = new APConfig();
+		config.load(this, new SpigotConfigAdapter(this.getConfig()));
 		this.saveConfig();
 
 		YMLManager langManager = new YMLManager("en-us", this);
 		langManager.load(true);
-		lang = new Language(langManager.getData());
+		Language.load(new SpigotConfigAdapter(langManager.getData()));
 
 		data = new YMLManager("data", this);
 		data.load(false);
@@ -215,7 +222,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		getServer().getPluginManager().registerEvents(new PaneListener(this), this);
 		getServer().getPluginManager().registerEvents(new WorldListener(this), this);
 		getServer().getPluginManager().registerEvents(new CommandListener(this), this);
-		getServer().getPluginManager().registerEvents(new XrayListener(this), this);
+		getServer().getPluginManager().registerEvents(new VeinListener(this), this);
 
 		// this feels cursed to run setupEconomy() like this...
 		Telemetry.reportHook(this, "Vault", setupEconomy());
@@ -249,11 +256,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 					action.setEnabled(false);
 				}
 			}
+			EntryAction.TOWNYNAME.setEnabled(false);
 		}
 
 		this.getCommand("claiminv").setExecutor(claiminvcommand = new ClaimInvCommand(this));
-		this.getCommand("auxprotect").setExecutor(apcommand = new APCommand(this));
-		this.getCommand("auxprotect").setTabCompleter(new APCommandTab(this));
+		this.getCommand("auxprotect").setExecutor((apcommand = new APSCommand(this)));
+		this.getCommand("auxprotect").setTabCompleter(apcommand);
 
 		new BukkitRunnable() {
 
@@ -276,8 +284,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 					warning(output);
 					if (config.isOverrideCommands()) {
 						warning("Attempting to re-register tab completer.");
-						getCommand("auxprotect").setTabCompleter(new APCommandTab(AuxProtectSpigot.this));
-						getCommand("ap").setTabCompleter(new APCommandTab(AuxProtectSpigot.this));
+						getCommand("auxprotect").setTabCompleter(apcommand);
+						getCommand("ap").setTabCompleter(apcommand);
 					} else {
 						warning("If this is causing issues, try enabling 'OverrideCommands' in the config.");
 					}
@@ -304,109 +312,115 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 			@Override
 			public void run() {
+				if (!sqlManager.isConnected()) {
+					return;
+				}
+				List<APPlayer> players = new ArrayList<>();
 				synchronized (apPlayers) {
-					for (APPlayer apPlayer : apPlayers.values()) {
-						if (!apPlayer.player.isOnline()) {
-							continue;
+					apPlayers.values().forEach((p) -> {
+						players.add(p);
+					});
+				}
+				for (APPlayer apPlayer : players) {
+					if (!apPlayer.player.isOnline()) {
+						continue;
+					}
+
+					if (config.getInventoryInterval() > 0) {
+						if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
+								.getInventoryInterval()) {
+							apPlayer.logInventory("periodic");
+						}
+					}
+
+					if (config.getInventoryDiffInterval() > 0) {
+						if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
+								.getInventoryDiffInterval()) {
+							apPlayer.diff();
+						}
+					}
+
+					if (config.getMoneyInterval() > 0) {
+						if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
+							PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
+						}
+					}
+
+					if (config.getPosInterval() > 0) {
+						if (apPlayer.lastMoved > apPlayer.lastLoggedPos
+								&& System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
+							PlayerListener.logPos(AuxProtectSpigot.this, apPlayer, apPlayer.player,
+									apPlayer.player.getLocation(), "");
+						}
+					}
+
+					if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
+						if (apPlayer.lastLocation != null
+								&& apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
+							apPlayer.movedAmountThisMinute += Math
+									.min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
+						}
+						apPlayer.lastLocation = apPlayer.player.getLocation();
+						apPlayer.lastCheckedMovement = System.currentTimeMillis();
+					}
+
+					if (apPlayer.lastLoggedActivity == 0) {
+						apPlayer.lastLoggedActivity = System.currentTimeMillis();
+					}
+					if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
+						if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
+							apPlayer.activity[apPlayer.activityIndex] += 100;
+						}
+						apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
+						apPlayer.movedAmountThisMinute = 0;
+
+						if (apPlayer.hasMovedThisMinute) {
+							apPlayer.addActivity(1);
+							apPlayer.hasMovedThisMinute = false;
 						}
 
-						if (config.getInventoryInterval() > 0) {
-							if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
-									.getInventoryInterval()) {
-								apPlayer.logInventory("periodic");
+						add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
+								apPlayer.player.getLocation(), "",
+								(int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
+						apPlayer.lastLoggedActivity = System.currentTimeMillis();
+
+						int tallied = 0;
+						int inactive = 0;
+						for (double activity : apPlayer.activity) {
+							if (activity < 0) {
+								continue;
+							}
+							tallied++;
+							if (activity < 10) {
+								inactive++;
 							}
 						}
-
-						if (config.getInventoryDiffInterval() > 0) {
-							if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
-									.getInventoryDiffInterval()) {
-								apPlayer.diff();
-							}
-						}
-
-						if (config.getMoneyInterval() > 0) {
-							if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
-								PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
-							}
-						}
-
-						if (config.getPosInterval() > 0) {
-							if (apPlayer.lastMoved > apPlayer.lastLoggedPos
-									&& System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
-								PlayerListener.logPos(AuxProtectSpigot.this, apPlayer, apPlayer.player,
-										apPlayer.player.getLocation(), "");
-							}
-						}
-
-						if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-							if (apPlayer.lastLocation != null
-									&& apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
-								apPlayer.movedAmountThisMinute += Math
-										.min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
-							}
-							apPlayer.lastLocation = apPlayer.player.getLocation();
-							apPlayer.lastCheckedMovement = System.currentTimeMillis();
-						}
-
-						if (apPlayer.lastLoggedActivity == 0) {
-							apPlayer.lastLoggedActivity = System.currentTimeMillis();
-						}
-						if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
-							if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
-								apPlayer.activity[apPlayer.activityIndex] += 100;
-							}
-							apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
-							apPlayer.movedAmountThisMinute = 0;
-
-							if (apPlayer.hasMovedThisMinute) {
-								apPlayer.addActivity(1);
-								apPlayer.hasMovedThisMinute = false;
-							}
-
-							add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
-									apPlayer.player.getLocation(), "",
-									(int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
-							apPlayer.lastLoggedActivity = System.currentTimeMillis();
-
-							int tallied = 0;
-							int inactive = 0;
-							for (double activity : apPlayer.activity) {
-								if (activity < 0) {
-									continue;
-								}
-								tallied++;
-								if (activity < 10) {
-									inactive++;
-								}
-							}
-							if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-									&& !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
-								if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
-									apPlayer.lastNotifyInactive = System.currentTimeMillis();
-									String msg = String.format(lang.translate("inactive-alert"),
-											apPlayer.player.getName(), inactive, tallied);
-									for (Player player : Bukkit.getOnlinePlayers()) {
-										if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
-											player.sendMessage(msg);
-										}
+						if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
+								&& !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
+							if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
+								apPlayer.lastNotifyInactive = System.currentTimeMillis();
+								String msg = Language.translate("inactive-alert", apPlayer.player.getName(), inactive,
+										tallied);
+								for (Player player : Bukkit.getOnlinePlayers()) {
+									if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+										player.sendMessage(msg);
 									}
-									info(msg);
-									add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT,
-											false, apPlayer.player.getLocation(), "inactive",
-											inactive + "/" + tallied));
 								}
+								info(msg);
+								add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
+										apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
 							}
-
-							apPlayer.activityIndex++;
-							if (apPlayer.activityIndex >= apPlayer.activity.length) {
-								apPlayer.activityIndex = 0;
-							}
-							apPlayer.activity[apPlayer.activityIndex] = 0;
 						}
+
+						apPlayer.activityIndex++;
+						if (apPlayer.activityIndex >= apPlayer.activity.length) {
+							apPlayer.activityIndex = 0;
+						}
+						apPlayer.activity[apPlayer.activityIndex] = 0;
 					}
 				}
 			}
-		}.runTaskTimerAsynchronously(this, 5, 5);
+		}.runTaskTimerAsynchronously(this, 40, 20);
 		new BukkitRunnable() {
 
 			@Override
@@ -530,16 +544,18 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	public void tellAboutUpdate(CommandSender sender) {
-		lang.send(sender, "update", AuxProtectSpigot.this.getDescription().getVersion(), update);
+		new SpigotSenderAdapter(this, sender).sendLang("update", AuxProtectSpigot.this.getDescription().getVersion(),
+				update);
 	}
 
 	@Override
 	public void onDisable() {
 		isShuttingDown = true;
 		if (sqlManager != null) {
-			if (dbRunnable != null && sqlManager.isConnected()) {
-				dbRunnable.run();
-			}
+			// TODO restore
+//			if (dbRunnable != null && sqlManager.isConnected()) {
+//				dbRunnable.run();
+//			}
 			sqlManager.close();
 		}
 		dbRunnable = null;
@@ -629,23 +645,37 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	@Override
-	public String translate(String key) {
-		return lang.translate(key);
-	}
-
-	@Override
 	public void warning(String message) {
 		getLogger().warning(message);
+		logToStackLog("[WARNING] " + message);
 	}
 
 	@Override
 	public void print(Throwable t) {
 		getLogger().log(Level.WARNING, t.getMessage(), t);
+		String stack = StackUtil.format(t, 3);
+		if (stackHashHistory.add(stack.hashCode())) {
+			stack = StackUtil.format(t, 20);
+		}
+		logToStackLog(stack);
+	}
+
+	private void logToStackLog(String msg) {
+		stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
+	}
+
+	private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+	Set<Integer> stackHashHistory = new HashSet<>();
+	private String stackLog = "";
+
+	@Override
+	public String getStackLog() {
+		return stackLog;
 	}
 
 	@Override
-	public boolean isBungee() {
-		return false;
+	public PlatformType getPlatform() {
+		return PlatformType.SPIGOT;
 	}
 
 	@Override
@@ -688,7 +718,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void reloadConfig() {
 		super.reloadConfig();
-		config = new APConfig(this, this.getConfig());
+		config = new APConfig();
+		config.load(this, new SpigotConfigAdapter(this.getConfig()));
 	}
 
 	@Override
@@ -697,12 +728,39 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	@Override
-	public MySender getConsoleSender() {
-		return new MySender(this.getServer().getConsoleSender());
+	public SenderAdapter getConsoleSender() {
+		return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
 	}
 
 	@Override
 	public void setDebug(int debug) {
 		this.debug = debug;
+		getConfig().set("debug", debug);
+		saveConfig();
+	}
+
+	@Override
+	public File getRootDirectory() {
+		return getDataFolder();
+	}
+
+	@Override
+	public String getPlatformVersion() {
+		return getServer().getVersion();
+	}
+
+	@Override
+	public String getPluginVersion() {
+		return this.getDescription().getVersion();
+	}
+
+	@Override
+	public APPlayer getAPPlayer(SenderAdapter sender) {
+		return getAPPlayer((Player) sender.getSender());
+	}
+
+	@Override
+	public List<String> listPlayers() {
+		return getServer().getOnlinePlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
 	}
 }

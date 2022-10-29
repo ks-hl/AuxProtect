@@ -231,4 +231,20 @@ public class DbEntry {
 	public void setHasBlob() {
 		hasBlob = true;
 	}
+	
+	@Override
+	public String toString() {
+		String out = String.format("%s %s(%d) %s ", getUser(),
+				getAction().getText(getState()),
+				getAction().getId(getState()), getTarget());
+		if (getData() != null && getData().length() > 0) {
+			String data = getData();
+			if (data.length() > 64) {
+				data = data.substring(0, 64) + "...";
+			}
+			out += "(" + data + ")";
+
+		}
+		return out;
+	}
 }

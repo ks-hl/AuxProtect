@@ -1,8 +1,9 @@
 package dev.heliosares.auxprotect.core;
 
-import org.bukkit.entity.Player;
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
 
 public class APPermission {
+	public static final APPermission NONE = new APPermission(null);
 	private static final APPermission ROOT = new APPermission("auxprotect");
 
 	public static final APPermission ADMIN = ROOT.dot("admin");
@@ -39,19 +40,17 @@ public class APPermission {
 		this.node = node;
 	}
 
-	public boolean hasPermission(Player player) {
-		return player.hasPermission(node);
-	}
-
-	public boolean hasPermission(MySender player) {
-		return player.hasPermission(node);
-	}
-
-	public boolean hasPermission(net.md_5.bungee.api.CommandSender player) {
+	public boolean hasPermission(SenderAdapter player) {
+		if (this.equals(NONE)) {
+			return true;
+		}
 		return player.hasPermission(node);
 	}
 
 	public boolean hasPermission(org.bukkit.command.CommandSender player) {
+		if (this.equals(NONE)) {
+			return true;
+		}
 		return player.hasPermission(node);
 	}
 

@@ -2,10 +2,10 @@
 # Developed by Heliosares
 # https://www.spigotmc.org/resources/auxprotect.99147/
 
-# MySQL functionality is experimental. Use with caution.
+# MySQL functionality is EXPERIMENTAL. Use with caution.
 # OLD LOGS WILL NOT BE MIGRATED.
 MySQL:
-  use: false
+  use: false # Recommended: false
   host: localhost
   port: 3306
   database: database

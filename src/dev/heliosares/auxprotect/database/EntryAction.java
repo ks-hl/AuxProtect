@@ -6,9 +6,12 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
-import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
+import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
 
 public class EntryAction {
 	private static final HashMap<String, EntryAction> values = new HashMap<>();
@@ -28,6 +31,7 @@ public class EntryAction {
 	public static final EntryAction CENSOR = new EntryAction("censor", 132);
 	public static final EntryAction MSG = new EntryAction("msg", 133);
 	public static final EntryAction CONSUME = new EntryAction("consume", 134);
+	public static final EntryAction CONNECT = new EntryAction("connect", 135);
 	// SKIPPED 135
 	public static final EntryAction RECOVER = new EntryAction("recover", 136);
 	public static final EntryAction MONEY = new EntryAction("money", 137);
@@ -121,8 +125,8 @@ public class EntryAction {
 		this.idPos = idPos;
 		this.name = name;
 
-		checkId(name, id);
-		checkId(name, idPos);
+		validateID(name, id);
+		validateID(name, idPos);
 
 		enabled = true;
 		values.put(name, this);
@@ -134,13 +138,13 @@ public class EntryAction {
 		this.idPos = id;
 		this.name = name;
 
-		checkId(name, id);
+		validateID(name, id);
 
 		enabled = true;
 		values.put(name, this);
 	}
 
-	private void checkId(String name, int id) throws IllegalArgumentException {
+	private void validateID(String name, int id) throws IllegalArgumentException {
 		if (!usedids.add(id)) {
 			throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
 		}
@@ -157,7 +161,7 @@ public class EntryAction {
 		this.overrideNText = text;
 	}
 
-	public String getText(IAuxProtect plugin, boolean state) {
+	public String getText(boolean state) {
 		if (hasDual) {
 			if (state) {
 				if (overridePText != null) {
@@ -168,12 +172,12 @@ public class EntryAction {
 					return overrideNText;
 				}
 			}
-			return plugin.translate(getLang(state));
+			return Language.translate(getLang(state));
 		}
 		if (overrideNText != null) {
 			return overrideNText;
 		}
-		return plugin.translate(getLang(state));
+		return Language.translate(getLang(state));
 	}
 
 	private String getLang(boolean state) {
@@ -183,22 +187,24 @@ public class EntryAction {
 		return "actions." + toString().toLowerCase();
 	}
 
-	public boolean exists(IAuxProtect plugin) {
+	public boolean exists() {
+		IAuxProtect plugin = AuxProtectAPI.getInstance();
 		if (!plugin.getAPConfig().isPrivate()) {
 			if (equals(IGNOREABANDONED) || equals(VEIN)) {
 				return false;
 			}
 		}
-		if (plugin instanceof AuxProtectSpigot) {
-			if (id == MSG.id) {
-				return false;
-			}
-			return true;
-		} else if (plugin instanceof AuxProtectBungee) {
-			if (equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)) {
+		if (plugin.getPlatform() == PlatformType.BUNGEE) {
+			if (equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)
+					|| equals(CONNECT)) {
 				return true;
 			}
 			return false;
+		} else if (plugin.getPlatform() == PlatformType.SPIGOT) {
+			if (id == MSG.id || equals(CONNECT)) {
+				return false;
+			}
+			return true;
 		}
 		return false;
 	}
@@ -245,6 +251,9 @@ public class EntryAction {
 	}
 
 	public boolean isEnabled() {
+		if (!exists()) {
+			return false;
+		}
 		return enabled;
 	}
 
@@ -296,4 +305,11 @@ public class EntryAction {
 		return null;
 	}
 
+	public String getNode() {
+		return APPermission.LOOKUP_ACTION.dot(toString().toLowerCase()).node;
+	}
+
+	public boolean hasPermission(SenderAdapter sender) {
+		return APPermission.LOOKUP_ACTION.dot(toString().toLowerCase()).hasPermission(sender);
+	}
 }

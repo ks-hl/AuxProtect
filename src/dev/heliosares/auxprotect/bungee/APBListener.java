@@ -10,6 +10,7 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.LoginEvent;
 import net.md_5.bungee.api.event.PlayerDisconnectEvent;
+import net.md_5.bungee.api.event.ServerConnectedEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
 import net.md_5.bungee.event.EventPriority;
@@ -32,32 +33,35 @@ public class APBListener implements Listener {
 
 	@EventHandler
 	public void chatEvent(ChatEvent e) {
-		if (e.getSender() instanceof ProxiedPlayer) {
-			ProxiedPlayer player = (ProxiedPlayer) e.getSender();
-			if (e.isCommand()) {
-				DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.COMMAND, false,
-						e.getMessage(), "");
-				plugin.dbRunnable.add(entry);
-				if (e.getMessage().toLowerCase().startsWith("/msg ")
-						|| e.getMessage().toLowerCase().startsWith("/message ")
-						|| e.getMessage().toLowerCase().startsWith("/tell ")
-						|| e.getMessage().toLowerCase().startsWith("/whisper ")
-						|| e.getMessage().toLowerCase().startsWith("/chat ")) {
-					msg(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
-				} else if (e.getMessage().toLowerCase().startsWith("/r ")
-						|| e.getMessage().toLowerCase().startsWith("/reply ")
-						|| e.getMessage().toLowerCase().startsWith("/respond ")) {
-					r(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
-				}
-			} else if (Events.PMToggle.containsKey(player.getUniqueId())) {
-				String message = e.getMessage();
-				if (ProxyServer.getInstance().getPlayer((UUID) Events.PMToggle.get(player.getUniqueId())) != null) {
-					ProxiedPlayer target = ProxyServer.getInstance()
-							.getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
-					handlePM(player, target, message);
-				}
+		try {
+			if (e.getSender() instanceof ProxiedPlayer) {
+				ProxiedPlayer player = (ProxiedPlayer) e.getSender();
+				if (e.isCommand()) {
+					DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.COMMAND, false,
+							e.getMessage(), "");
+					plugin.dbRunnable.add(entry);
+					if (e.getMessage().toLowerCase().startsWith("/msg ")
+							|| e.getMessage().toLowerCase().startsWith("/message ")
+							|| e.getMessage().toLowerCase().startsWith("/tell ")
+							|| e.getMessage().toLowerCase().startsWith("/whisper ")
+							|| e.getMessage().toLowerCase().startsWith("/chat ")) {
+						msg(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
+					} else if (e.getMessage().toLowerCase().startsWith("/r ")
+							|| e.getMessage().toLowerCase().startsWith("/reply ")
+							|| e.getMessage().toLowerCase().startsWith("/respond ")) {
+						r(player, e.getMessage().substring(e.getMessage().indexOf(" ") + 1).split(" "));
+					}
+				} else if (Events.PMToggle.containsKey(player.getUniqueId())) {
+					String message = e.getMessage();
+					if (ProxyServer.getInstance().getPlayer((UUID) Events.PMToggle.get(player.getUniqueId())) != null) {
+						ProxiedPlayer target = ProxyServer.getInstance()
+								.getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
+						handlePM(player, target, message);
+					}
 
+				}
 			}
+		} catch (NoClassDefFoundError ignored) {
 		}
 	}
 
@@ -108,6 +112,12 @@ public class APBListener implements Listener {
 		});
 		plugin.dbRunnable.add(new DbEntry(AuxProtectBungee.getLabel(e.getConnection().getUniqueId()),
 				EntryAction.SESSION, true, "", "IP: " + ip));
+	}
+
+	@EventHandler(priority = EventPriority.HIGHEST)
+	public void serverConnectEvent(ServerConnectedEvent e) {
+		plugin.dbRunnable.add(new DbEntry(AuxProtectBungee.getLabel(e.getPlayer()), EntryAction.CONNECT, false,
+				e.getServer().getInfo().getName(), ""));
 	}
 
 	@EventHandler

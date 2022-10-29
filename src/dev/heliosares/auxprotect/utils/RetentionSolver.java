@@ -11,14 +11,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.database.DbEntry;
 
 public class RetentionSolver {
 
-	public static void showRetention(IAuxProtect plugin, MySender sender, ArrayList<DbEntry> entries, long startTime,
-			long endTime) {
+	public static void showRetention(IAuxProtect plugin, SenderAdapter sender, ArrayList<DbEntry> entries,
+			long startTime, long endTime) {
 		long start = System.currentTimeMillis();
 		Set<Integer> lookupUids = new HashSet<>();
 		for (DbEntry entry : entries) {
@@ -52,7 +52,7 @@ public class RetentionSolver {
 			OfflinePlayer player = Bukkit
 					.getOfflinePlayer(UUID.fromString(plugin.getSqlManager().getUUIDFromUID(uid).substring(1)));
 			if (player == null) {
-				sender.sendMessage("§cPlayer not found. UID=" + uid);
+				sender.sendMessageRaw("§cPlayer not found. UID=" + uid);
 				return;
 			}
 			int playtime = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
@@ -76,11 +76,11 @@ public class RetentionSolver {
 			} else {
 				time = key + "m";
 			}
-			sender.sendMessage(String.format("§7Above %s: §9%s §7(%d/%d)", time, Math.round(val) + "%",
+			sender.sendMessageRaw(String.format("§7Above %s: §9%s §7(%d/%d)", time, Math.round(val) + "%",
 					entry.getValue(), playtimes.size()));
 		}
-		sender.sendMessage(String.format("§7Online now: §9%s §7(%d/%d)",
+		sender.sendMessageRaw(String.format("§7Online now: §9%s §7(%d/%d)",
 				Math.round((double) onlinern / (double) playtimes.size() * 100) + "%", onlinern, playtimes.size()));
-		sender.sendMessage(String.format("§7(%sms)", "" + (System.currentTimeMillis() - start)));
+		sender.sendMessageRaw(String.format("§7(%sms)", "" + (System.currentTimeMillis() - start)));
 	}
 }

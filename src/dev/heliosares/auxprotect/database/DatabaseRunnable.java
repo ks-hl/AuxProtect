@@ -7,7 +7,7 @@ import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.spigot.command.WatchCommand;
+import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 public class DatabaseRunnable implements Runnable {
@@ -91,18 +91,8 @@ public class DatabaseRunnable implements Runnable {
 
 			while ((entry = queue.poll()) != null) {
 				if (plugin.getDebug() >= 2) {
-					String debug = String.format("§9%s §f%s§7(%d) §9%s §7", entry.getUser(),
-							entry.getAction().getText(plugin, entry.getState()),
-							entry.getAction().getId(entry.getState()), entry.getTarget());
-					if (entry.getData() != null && entry.getData().length() > 0) {
-						String data = entry.getData();
-						if (data.length() > 64) {
-							data = data.substring(0, 64) + "...";
-						}
-						debug += "(" + data + ")";
 
-					}
-					plugin.debug(debug, 2);
+					plugin.debug(entry.toString(), 2);
 				}
 
 				Table table = entry.getAction().getTable();

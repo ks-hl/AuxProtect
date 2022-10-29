@@ -11,6 +11,7 @@ import java.util.HashMap;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
 public class MigrationManager {
@@ -59,7 +60,7 @@ public class MigrationManager {
 			}
 		}
 
-		if (sql.getVersion() < 2 && !plugin.isBungee()) {
+		if (sql.getVersion() < 2 && plugin.getPlatform() == PlatformType.SPIGOT) {
 			plugin.info("Migrating database to v2");
 			sql.execute(connection, "ALTER TABLE worlds RENAME TO auxprotect_worlds;");
 
@@ -111,7 +112,7 @@ public class MigrationManager {
 	int migrateToV3Part1() throws SQLException {
 		Table[] migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
 				Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY };
-		if (plugin.isBungee()) {
+		if (plugin.getPlatform() == PlatformType.BUNGEE) {
 			migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM };
 		}
 		int rowcountformerge = 0;
@@ -133,7 +134,7 @@ public class MigrationManager {
 	void migrateToV3Part2() throws SQLException {
 		Table[] migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
 				Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY };
-		if (plugin.isBungee()) {
+		if (plugin.getPlatform() == PlatformType.BUNGEE) {
 			migrateTablesV3 = new Table[] { Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM };
 		}
 		plugin.info("Merging data into new tables...");
@@ -143,7 +144,7 @@ public class MigrationManager {
 		for (Table table : migrateTablesV3) {
 			ArrayList<Object[]> output = new ArrayList<>();
 			ArrayList<Object[]> commands = new ArrayList<>();
-			final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
+			final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
 			final boolean hasData = table.hasData();
 			final boolean hasStringTarget = table.hasStringTarget();
 			plugin.info("Merging table: " + table.toString());
@@ -212,7 +213,7 @@ public class MigrationManager {
 
 	void migrateToV4() throws SQLException {
 		plugin.info("Migrating database to v4. DO NOT INTERRUPT");
-		if (!plugin.isBungee()) {
+		if (plugin.getPlatform() == PlatformType.SPIGOT) {
 			ArrayList<Object[]> output = new ArrayList<>();
 			String stmt = "SELECT * FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;";
 			plugin.debug(stmt, 3);
@@ -259,7 +260,7 @@ public class MigrationManager {
 
 	@SuppressWarnings("deprecation")
 	void migrateToV6() throws SQLException {
-		if (!plugin.isBungee()) {
+		if (plugin.getPlatform() == PlatformType.SPIGOT) {
 			try {
 				sql.execute(connection,
 						"ALTER TABLE " + Table.AUXPROTECT_INVENTORY.toString() + " ADD COLUMN hasblob BOOL");
@@ -353,12 +354,12 @@ public class MigrationManager {
 	void putRaw(Table table, ArrayList<Object[]> datas)
 			throws SQLException, ClassCastException, IndexOutOfBoundsException {
 		String stmt = "INSERT INTO " + table.toString() + " ";
-		final boolean hasLocation = plugin.isBungee() ? false : table.hasLocation();
+		final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
 		final boolean hasData = table.hasData();
 		final boolean hasAction = table.hasActionId();
 		final boolean hasLook = table.hasLook();
-		stmt += table.getValuesHeader(plugin.isBungee());
-		String inc = table.getValuesTemplate(plugin.isBungee());
+		stmt += table.getValuesHeader(plugin.getPlatform());
+		String inc = table.getValuesTemplate(plugin.getPlatform());
 		stmt += " VALUES";
 		for (int i = 0; i < datas.size(); i++) {
 			stmt += "\n" + inc;

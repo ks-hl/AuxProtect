@@ -1,14 +1,14 @@
 package dev.heliosares.auxprotect.database;
 
 import java.util.ArrayList;
+import java.util.UUID;
 
 import org.bukkit.Location;
-import org.bukkit.entity.Player;
 
 public class XrayEntry extends DbEntry {
 
 	private short rating;
-	public Player viewer;
+	public UUID viewer;
 	public long viewingStarted;
 
 	public XrayEntry(String user, Location location, String block) {

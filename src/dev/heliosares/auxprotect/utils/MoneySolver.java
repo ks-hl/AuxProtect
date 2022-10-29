@@ -16,6 +16,7 @@ import org.bukkit.map.MapView;
 import org.bukkit.map.MinecraftFont;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -133,15 +134,12 @@ public class MoneySolver extends ChartRenderer {
 		if (!(plugin instanceof AuxProtectSpigot)) {
 			return;
 		}
-		plugin.runSync(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
-					player.getInventory().addItem(solver.asItem(player));
-				} catch (IllegalArgumentException e) {
-					player.sendMessage(plugin.translate("lookup-noresults"));
-				}
+		plugin.runSync(() -> {
+			try {
+				MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
+				player.getInventory().addItem(solver.asItem(player));
+			} catch (IllegalArgumentException e) {
+				player.sendMessage(Language.translate("lookup-noresults"));
 			}
 		});
 	}

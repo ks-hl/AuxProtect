@@ -2,14 +2,14 @@ package dev.heliosares.auxprotect.spigot;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import org.bukkit.entity.Player;
+import java.util.UUID;
 
 import dev.heliosares.auxprotect.database.XrayEntry;
 
 public class VeinManager {
 	private ArrayList<XrayEntry> entries = new ArrayList<>();
 	private ArrayList<XrayEntry> ignoredentries = new ArrayList<>();
-	private HashMap<Player, ArrayList<Long>> skipped = new HashMap<>();
+	private HashMap<UUID, ArrayList<Long>> skipped = new HashMap<>();
 
 	/**
 	 * @returns true if already part of a vein
@@ -37,13 +37,13 @@ public class VeinManager {
 		return false;
 	}
 
-	public XrayEntry next(Player player) {
-		XrayEntry current = current(player);
+	public XrayEntry next(UUID uuid) {
+		XrayEntry current = current(uuid);
 		if (current != null) {
 			remove(current);
 		}
 		synchronized (entries) {
-			ArrayList<Long> skipped = this.skipped.get(player);
+			ArrayList<Long> skipped = this.skipped.get(uuid);
 			for (XrayEntry entry : entries) {
 				if (skipped != null && skipped.contains(entry.getTime())) {
 					continue;
@@ -53,24 +53,24 @@ public class VeinManager {
 						continue;
 					}
 				}
-				entry.viewer = player;
+				entry.viewer = uuid;
 				entry.viewingStarted = System.currentTimeMillis();
 				return entry;
 			}
 
-			this.skipped.remove(player);
+			this.skipped.remove(uuid);
 		}
 		return null;
 	}
 
-	public boolean skip(Player player, long time) {
+	public boolean skip(UUID uuid, long time) {
 		synchronized (entries) {
-			ArrayList<Long> skipped = this.skipped.get(player);
+			ArrayList<Long> skipped = this.skipped.get(uuid);
 			if (skipped == null) {
 				skipped = new ArrayList<>();
 			}
 			skipped.add(time);
-			this.skipped.put(player, skipped);
+			this.skipped.put(uuid, skipped);
 			for (XrayEntry entry : entries) {
 				if (entry.getTime() == time) {
 					release(entry);
@@ -87,10 +87,10 @@ public class VeinManager {
 		}
 	}
 
-	public XrayEntry current(Player player) {
+	public XrayEntry current(UUID uuid) {
 		XrayEntry current = null;
 		for (XrayEntry entry : entries) {
-			if (player.equals(entry.viewer)) {
+			if (uuid.equals(entry.viewer)) {
 				if (current == null) {
 					current = entry;
 					continue;

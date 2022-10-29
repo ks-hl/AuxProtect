@@ -6,10 +6,11 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 
 public class LookupManager {
-	public enum LookupExceptionType {
+	public static enum LookupExceptionType {
 		SYNTAX, PLAYER_NOT_FOUND, ACTION_NEGATE, UNKNOWN_ACTION, ACTION_INCOMPATIBLE, UNKNOWN_WORLD, GENERAL, TOO_MANY
 	}
 
@@ -37,57 +38,66 @@ public class LookupManager {
 		this.plugin = plugin;
 	}
 
-	public ArrayList<DbEntry> lookup(Parameters params) throws LookupManager.LookupException {
-		String[] sqlstmts = params.toSQL(plugin);
+	public ArrayList<DbEntry> lookup(Parameters... params) throws LookupManager.LookupException {
+		ArrayList<DbEntry> out = null;
+		for (Parameters param : params) {
+			String[] sqlstmts = param.toSQL(plugin);
 
-		ArrayList<String> writeparams = new ArrayList<>();
-		for (int i = 1; i < sqlstmts.length; i++) {
-			writeparams.add(sqlstmts[i]);
+			ArrayList<String> writeparams = new ArrayList<>();
+			for (int i = 1; i < sqlstmts.length; i++) {
+				writeparams.add(sqlstmts[i]);
+			}
+			String stmt = "SELECT * FROM " + param.getTable().toString();
+			if (sqlstmts[0].length() > 1) {
+				stmt += "\nWHERE " + sqlstmts[0];
+			}
+			stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
+			ArrayList<DbEntry> results = sql.lookup(param.getTable(), stmt, writeparams);
+			if (out == null) {
+				out = results;
+			} else {
+				out.addAll(results);
+			}
 		}
-		String stmt = "SELECT * FROM " + params.getTable().toString();
-		if (sqlstmts[0].length() > 1) {
-			stmt += "\nWHERE " + sqlstmts[0];
-		}
-		stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
-		return sql.lookup(params.getTable(), stmt, writeparams);
+		return out;
 	}
 
-	public int count(Parameters params) throws LookupManager.LookupException {
-		String[] sqlstmts = params.toSQL(plugin);
-
-		ArrayList<String> writeparams = new ArrayList<>();
-		for (int i = 1; i < sqlstmts.length; i++) {
-			writeparams.add(sqlstmts[i]);
-		}
-		String stmt = sql.getCountStmt(params.getTable().toString());
-		if (sqlstmts[0].length() > 1) {
-			stmt += "\nWHERE " + sqlstmts[0];
-		}
-		plugin.debug(stmt);
-		Connection connection;
+	public int count(Parameters... params) throws LookupManager.LookupException {
+		int count = 0;
+		Connection connection = null;
 		try {
 			connection = sql.getConnection();
+
+			for (Parameters param : params) {
+				String[] sqlstmts = param.toSQL(plugin);
+
+				ArrayList<String> writeparams = new ArrayList<>();
+				for (int i = 1; i < sqlstmts.length; i++) {
+					writeparams.add(sqlstmts[i]);
+				}
+				String stmt = sql.getCountStmt(param.getTable().toString());
+				if (sqlstmts[0].length() > 1) {
+					stmt += "\nWHERE " + sqlstmts[0];
+				}
+				plugin.debug(stmt);
+				try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+					for (int i = 1; i < sqlstmts.length; i++) {
+						statement.setString(i, sqlstmts[i]);
+					}
+					try (ResultSet rs = statement.executeQuery()) {
+						if (rs.next()) {
+							count += rs.getInt(1);
+						}
+					}
+				}
+			}
 		} catch (SQLException e1) {
 			plugin.print(e1);
 			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					plugin.translate("lookup-error"));
-		}
-		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-			for (int i = 1; i < sqlstmts.length; i++) {
-				statement.setString(i, sqlstmts[i]);
-			}
-			try (ResultSet rs = statement.executeQuery()) {
-				if (rs.next()) {
-					return rs.getInt(1);
-				}
-			}
-		} catch (SQLException e) {
-			plugin.print(e);
-			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					plugin.translate("lookup-error"));
+					Language.translate("lookup-error"));
 		} finally {
 			sql.returnConnection(connection);
 		}
-		return -1;
+		return count;
 	}
 }

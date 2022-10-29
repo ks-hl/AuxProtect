@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+
 import com.spawnchunk.auctionhouse.events.ListItemEvent;
 import com.spawnchunk.auctionhouse.events.PurchaseItemEvent;
 

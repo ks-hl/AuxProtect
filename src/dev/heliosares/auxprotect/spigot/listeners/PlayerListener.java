@@ -338,25 +338,6 @@ public class PlayerListener implements Listener {
 
 		plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
 				e.getPlayer().getLocation(), e.getMessage(), ""));
-
-//		Pattern pattern = Pattern.compile("/(pay|epay) ([\\w_]+) \\$?([\\d?\\.]+)");
-//		Matcher matcher = pattern.matcher(e.getMessage());
-//		if (matcher.matches()) { // TODO config
-//			String player = matcher.group(2);
-//			double amount;
-//			try {
-//				amount = Double.parseDouble(matcher.group(3));
-//			} catch (NumberFormatException ignored) {
-//				return;
-//			}
-//			Player target = Bukkit.getPlayer(player);
-//			if (target == null) {
-//				return;
-//			}
-//			plugin.debug(String.format("%s paid %s $%f", e.getPlayer().getName(), target.getName(), amount));
-//			plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.PAY, false,
-//					e.getPlayer().getLocation(), AuxProtectSpigot.getLabel(target), "$" + amount));
-//		}
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

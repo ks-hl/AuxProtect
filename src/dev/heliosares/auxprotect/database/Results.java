@@ -7,8 +7,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
-import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -23,14 +24,14 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 public class Results {
 
 	private final ArrayList<DbEntry> entries;
-	protected final MySender player;
+	protected final SenderAdapter player;
 	public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
 	final IAuxProtect plugin;
 	public int perpage = 4;
 	public int prevpage = 0;
 	private final Parameters params;
 
-	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, MySender player, Parameters params) {
+	public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, SenderAdapter player, Parameters params) {
 		this.entries = entries;
 		this.player = player;
 		this.plugin = plugin;
@@ -71,7 +72,7 @@ public class Results {
 			headerColor = "§f"; // The header had these mismatched colors for over a year of development until
 								// v1.1.3. This is a tribute to that screw up
 		}
-		player.sendMessage(headerColor + line + "  §9AuxProtect Results§7  " + line);
+		player.sendMessageRaw(headerColor + line + "  §9AuxProtect Results§7  " + line);
 	}
 
 	public void showPage(int page) {
@@ -81,7 +82,7 @@ public class Results {
 	public void showPage(int page, int perpage_) {
 		int lastpage = getNumPages(perpage_);
 		if (page > lastpage || page < 1) {
-			player.sendMessage(plugin.translate("lookup-nopage"));
+			player.sendLang("lookup-nopage");
 			return;
 		}
 		perpage = perpage_;
@@ -100,7 +101,7 @@ public class Results {
 	}
 
 	@SuppressWarnings("deprecation")
-	public static void sendEntry(IAuxProtect plugin, MySender player, DbEntry entry, int index, boolean time,
+	public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time,
 			boolean coords) {
 		String commandPrefix = "/" + plugin.getCommandPrefix();
 		ComponentBuilder message = new ComponentBuilder();
@@ -129,7 +130,7 @@ public class Results {
 		HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to copy to clipboard"));
 		message.append("§9" + entry.getUser()).event(clickToCopy)
 				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
-		message.append(" §f" + entry.getAction().getText(plugin, entry.getState())).event((HoverEvent) null)
+		message.append(" §f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
 				.event((ClickEvent) null);
 		message.append(" §9" + entry.getTarget()).event(clickToCopy)
 				.event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
@@ -152,7 +153,7 @@ public class Results {
 			if (xray.getRating() >= 0) {
 				hover += color + VeinManager.getSeverityDescription(xray.getRating()) + "\n\n";
 			}
-			hover += plugin.translate("xray-click-to-change");
+			hover += Language.translate("xray-click-to-change");
 			message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
 		}
 
@@ -240,8 +241,7 @@ public class Results {
 			message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
 		}
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
-		message.append(
-				String.format(plugin.translate("lookup-page-footer"), page, getNumPages(perpage), getEntries().size()));
+		message.append(Language.translate("lookup-page-footer", page, getNumPages(perpage), getEntries().size()));
 		player.sendMessage(message.create());
 	}
 

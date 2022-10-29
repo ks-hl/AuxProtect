@@ -4,6 +4,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
+
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class CommandListener implements Listener {
@@ -15,7 +16,7 @@ public class CommandListener implements Listener {
 	}
 
 	@EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-	public void onBlockBreak(PlayerCommandPreprocessEvent e) {
+	public void onCommandPreProcess(PlayerCommandPreprocessEvent e) {
 		if (!plugin.getAPConfig().isOverrideCommands()) {
 			return;
 		}

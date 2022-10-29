@@ -6,8 +6,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.UUID;
 
-import org.bukkit.scheduler.BukkitRunnable;
-
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 
@@ -30,10 +28,10 @@ public class TownyManager {
 	public void init() {
 		plugin.info("Checking for new towns/nations...");
 		TownyUniverse.getInstance().getTowns().forEach((town) -> {
-			sql.getTownyManager().updateName(town);
+			sql.getTownyManager().updateName(town, false);
 		});
 		TownyUniverse.getInstance().getNations().forEach((nation) -> {
-			sql.getTownyManager().updateName(nation);
+			sql.getTownyManager().updateName(nation, false);
 		});
 	}
 
@@ -125,12 +123,12 @@ public class TownyManager {
 //		return -1;
 //	}
 
-	public void updateName(Government gov) {
-		this.updateName(gov.getUUID(), gov.getName());
+	public void updateName(Government gov, boolean async) {
+		this.updateName(gov.getUUID(), gov.getName(), async);
 	}
 
-	public void updateName(UUID uuid, String name) {
-		new BukkitRunnable() {
+	public void updateName(UUID uuid, String name, boolean async) {
+		Runnable run = new Runnable() {
 
 			@Override
 			public void run() {
@@ -148,7 +146,12 @@ public class TownyManager {
 				}
 				names.put(uid, name);
 			}
-		}.runTaskAsynchronously(plugin);
+		};
+		if (async) {
+			plugin.getServer().getScheduler().runTaskAsynchronously(plugin, run);
+		} else {
+			run.run();
+		}
 	}
 
 	public static String getLabel(Government gov) {

@@ -2,7 +2,9 @@ package dev.heliosares.auxprotect.core;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.List;
 
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 
@@ -11,10 +13,6 @@ public interface IAuxProtect {
 	File getDataFolder();
 
 	InputStream getResource(String string);
-
-	String translate(String key);
-
-// TODO	String translate(String key, Object... args);
 
 	void info(String msg);
 
@@ -26,7 +24,7 @@ public interface IAuxProtect {
 
 	void print(Throwable t);
 
-	boolean isBungee();
+	PlatformType getPlatform();
 
 	SQLManager getSqlManager();
 
@@ -46,9 +44,23 @@ public interface IAuxProtect {
 	
 	public String getCommandPrefix();
 	
-	public MySender getConsoleSender();
+	public SenderAdapter getConsoleSender();
 	
 	public boolean isShuttingDown();
 	
 	public boolean isHooked(String name);
+	
+	public File getRootDirectory();
+	
+	public String getPlatformVersion();
+
+	public String getPluginVersion();
+	
+	public APPlayer getAPPlayer(SenderAdapter sender);
+
+	public int queueSize();
+
+	public String getStackLog();
+	
+	public List<String> listPlayers();
 }

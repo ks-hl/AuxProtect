@@ -35,6 +35,8 @@ public class UpdateChecker {
 				int part = 0;
 				if (parts[i].startsWith("pre")) {
 					part = Integer.parseInt(parts[i].substring(3)) - 1000000;
+				} else if (parts[i].startsWith("rc")) {
+					part = Integer.parseInt(parts[i].substring(3)) - 500000;
 				} else {
 					part = Integer.parseInt(parts[i]);
 				}

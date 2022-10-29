@@ -7,7 +7,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
-import com.gamingmesh.jobs.Jobs;
 import com.gamingmesh.jobs.api.JobsExpGainEvent;
 import com.gamingmesh.jobs.api.JobsPrePaymentEvent;
 import com.gamingmesh.jobs.container.CurrencyType;
@@ -39,16 +38,16 @@ public class JobsListener implements Listener {
 			return;
 		}
 		Location location = null;
-		double boost = 1;
+//		double boost = 1;
 		if (oplayer instanceof Player) {
 			Player player = (Player) oplayer;
 			location = player.getLocation();
-			try {
-				boost += Jobs.getPlayerManager().getBoost(Jobs.getPlayerManager().getJobsPlayer(player), job, type);
-			} catch (Exception e1) {
-				plugin.warning("Error while getting Jobs boost");
-				plugin.print(e1);
-			}
+//			try {
+//				boost += Jobs.getPlayerManager().getBoost(Jobs.getPlayerManager().getJobsPlayer(player), job, type);
+//			} catch (Exception e1) {
+//				plugin.warning("Error while getting Jobs boost");
+//				plugin.print(e1);
+//			}
 		}
 		char typechar = '?';
 		switch (type) {
@@ -64,8 +63,7 @@ public class JobsListener implements Listener {
 		default:
 			break;
 		}
-		plugin.debug(String.format("Logging gain - Player:%s Job:%s Amount:%f Boost:%f", oplayer.getName(),
-				job.getName(), value, boost), 5);
+
 		if (location == null) {
 			plugin.add(new JobsEntry(AuxProtectSpigot.getLabel(oplayer), job.getName(), typechar, value));
 		} else {

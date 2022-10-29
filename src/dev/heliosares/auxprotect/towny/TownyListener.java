@@ -11,7 +11,6 @@ import com.palmergames.bukkit.towny.event.DeleteTownEvent;
 import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
 import com.palmergames.bukkit.towny.event.NationTransactionEvent;
-import com.palmergames.bukkit.towny.event.NewDayEvent;
 import com.palmergames.bukkit.towny.event.NewNationEvent;
 import com.palmergames.bukkit.towny.event.NewTownEvent;
 import com.palmergames.bukkit.towny.event.RenameNationEvent;
@@ -28,6 +27,7 @@ import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
+import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -40,22 +40,11 @@ public class TownyListener implements Listener {
 		this.plugin = plugin;
 	}
 
-	// General
-
-	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-	public void on(NewDayEvent e) {
-		e.getBankruptedTowns();
-		e.getFallenNations();
-		e.getFallenTowns();
-
-		// TODO does delete town handle this?
-	}
-
 	// Towns
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(NewTownEvent e) {
-		plugin.getSqlManager().getTownyManager().updateName(e.getTown());
+		plugin.getSqlManager().getTownyManager().updateName(e.getTown(), true);
 		try {
 			plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(e.getTown().getMayor().getPlayer()),
 					EntryAction.TOWNCREATE, false, toLoc(e.getTown().getHomeBlock().getWorldCoord()),
@@ -67,29 +56,29 @@ public class TownyListener implements Listener {
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(RenameTownEvent e) {
-		plugin.getSqlManager().getTownyManager().updateName(e.getTown());
-		Player mayor = e.getTown().getMayor().getPlayer();
-		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.TOWNRENAME, false, mayor.getLocation(),
-				TownyManager.getLabel(e.getTown()), e.getOldName() + " -> " + e.getTown().getName()));
+		plugin.getSqlManager().getTownyManager().updateName(e.getTown(), true);
+		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(e.getTown().getMayor()), EntryAction.TOWNRENAME, false,
+				toLoc(e.getTown().getMayor()), TownyManager.getLabel(e.getTown()),
+				e.getOldName() + " -> " + e.getTown().getName()));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(DeleteTownEvent e) {
-		plugin.getSqlManager().getTownyManager().updateName(e.getTownUUID(), e.getTownName());
-		plugin.add(new TownyEntry("$" + e.getMayorUUID().toString(), EntryAction.TOWNDELETE, false,
-				e.getMayor().getPlayer().getLocation(), "$t" + e.getTownUUID(), ""));
+		plugin.getSqlManager().getTownyManager().updateName(e.getTownUUID(), e.getTownName(), true);
+		plugin.add(new TownyEntry("$" + e.getMayorUUID().toString(), EntryAction.TOWNDELETE, false, toLoc(e.getMayor()),
+				"$t" + e.getTownUUID(), ""));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(TownAddResidentEvent e) {
 		plugin.add(new TownyEntry("$" + e.getResident().getUUID().toString(), EntryAction.TOWNJOIN, true,
-				e.getResident().getPlayer().getLocation(), TownyManager.getLabel(e.getTown()), ""));
+				toLoc(e.getResident()), TownyManager.getLabel(e.getTown()), ""));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(TownRemoveResidentEvent e) {
 		plugin.add(new TownyEntry("$" + e.getResident().getUUID().toString(), EntryAction.TOWNJOIN, false,
-				e.getResident().getPlayer().getLocation(), TownyManager.getLabel(e.getTown()), ""));
+				toLoc(e.getResident()), TownyManager.getLabel(e.getTown()), ""));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -108,6 +97,13 @@ public class TownyListener implements Listener {
 				toLoc(e.getWorldCoord()), "", ""));
 	}
 
+	private static Location toLoc(Resident res) {
+		if (res == null || res.getPlayer() == null) {
+			return null;
+		}
+		return res.getPlayer().getLocation();
+	}
+
 	private static Location toLoc(Coord coord) {
 		if (coord instanceof WorldCoord c) {
 			return new Location(c.getBukkitWorld(), c.getX() * 16, 128, c.getZ() * 16);
@@ -124,8 +120,7 @@ public class TownyListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(TownMayorChangeEvent e) {
 		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(e.getNewMayor().getPlayer()), EntryAction.TOWNMAYOR, false,
-				e.getNewMayor().getPlayer().getLocation(), getLabel(e.getTown()),
-				"Prior: " + e.getOldMayor().getName()));
+				toLoc(e.getNewMayor()), getLabel(e.getTown()), "Prior: " + e.getOldMayor().getName()));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -159,22 +154,23 @@ public class TownyListener implements Listener {
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(NewNationEvent e) {
 		Player king = e.getNation().getKing().getPlayer();
-		plugin.getSqlManager().getTownyManager().updateName(e.getNation());
-		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.TOWNCREATE, false, king.getLocation(),
-				TownyManager.getLabel(e.getNation()), null));
+		plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
+		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.TOWNCREATE, false,
+				toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()), null));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(RenameNationEvent e) {
-		plugin.getSqlManager().getTownyManager().updateName(e.getNation());
+		plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
 		Player mayor = e.getNation().getKing().getPlayer();
-		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.TOWNRENAME, false, mayor.getLocation(),
-				TownyManager.getLabel(e.getNation()), e.getOldName() + " -> " + e.getNation().getName()));
+		plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.TOWNRENAME, false,
+				toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()),
+				e.getOldName() + " -> " + e.getNation().getName()));
 	}
 
 	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
 	public void on(DeleteNationEvent e) {
-		plugin.getSqlManager().getTownyManager().updateName(e.getNationUUID(), e.getNationName());
+		plugin.getSqlManager().getTownyManager().updateName(e.getNationUUID(), e.getNationName(), true);
 		plugin.add(
 				new TownyEntry("$" + e.getNationKing(), EntryAction.TOWNDELETE, false, "$t" + e.getNationUUID(), ""));
 	}

@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.PlatformType;
 
 public enum Table {
 	AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
@@ -17,7 +18,7 @@ public enum Table {
 	}
 
 	public boolean exists(IAuxProtect plugin) {
-		if (plugin.isBungee() && !this.isOnBungee()) {
+		if (plugin.getPlatform() == PlatformType.BUNGEE && !this.isOnBungee()) {
 			return false;
 		}
 		if (!plugin.getAPConfig().isPrivate() && this == AUXPROTECT_ABANDONED) {
@@ -119,15 +120,15 @@ public enum Table {
 		}
 	}
 
-	public String getValuesHeader(boolean bungee) {
+	public String getValuesHeader(PlatformType platform) {
 		if (this == Table.AUXPROTECT_LONGTERM) {
 			return "(time, uid, action_id, target)";
 		} else if (this == Table.AUXPROTECT_COMMANDS) {
-			if (bungee) {
+			if (platform == PlatformType.BUNGEE) {
 				return "(time, uid, target)";
 			}
 			return "(time, uid, world_id, x, y, z, target)";
-		} else if (bungee) {
+		} else if (platform == PlatformType.BUNGEE) {
 			return "(time, uid, action_id, target_id, data)";
 		} else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API
 				|| this == Table.AUXPROTECT_TOWNY) {
@@ -159,17 +160,17 @@ public enum Table {
 		return output;
 	}
 
-	public int getNumColumns(boolean bungee) {
+	public int getNumColumns(PlatformType platform) {
 		if (this == Table.AUXPROTECT_LONGTERM) {
 			return 4;
 		}
 		if (this == Table.AUXPROTECT_COMMANDS) {
-			if (bungee) {
+			if (platform == PlatformType.BUNGEE) {
 				return 3;
 			}
 			return 7;
 		}
-		if (bungee) {
+		if (platform == PlatformType.BUNGEE) {
 			return 5;
 		}
 
@@ -190,8 +191,8 @@ public enum Table {
 		}
 	}
 
-	public String getValuesTemplate(boolean bungee) {
-		return getValuesTemplate(getNumColumns(bungee));
+	public String getValuesTemplate(PlatformType platform) {
+		return getValuesTemplate(getNumColumns(platform));
 	}
 
 	public String getSQLCreateString(IAuxProtect plugin) {
@@ -204,7 +205,7 @@ public enum Table {
 		if (hasActionId()) {
 			stmt += ",\n    action_id SMALLINT";
 		}
-		if (!plugin.isBungee() && hasLocation()) {
+		if (plugin.getPlatform() == PlatformType.SPIGOT && hasLocation()) {
 			stmt += ",\n    world_id SMALLINT";
 			stmt += ",\n    x INTEGER";
 			stmt += ",\n    y SMALLINT";

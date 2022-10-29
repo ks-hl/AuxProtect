@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.spigot.command;
+package dev.heliosares.auxprotect.core.commands;
 
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Experience;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -29,12 +30,12 @@ public class ClaimInvCommand implements CommandExecutor {
 		if (args.length == 1 && APPermission.INV_RECOVER.hasPermission(sender)) {
 			OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
 			if (target == null) {
-				sender.sendMessage("§cPlayer not found.");
+				sender.sendMessage("§cPlayer not found."); // TODO lang
 				return true;
 			}
 			String data = plugin.data.getData().getString("Recoverables." + target.getUniqueId().toString() + ".inv");
 			if (data == null) {
-				sender.sendMessage("§cThat player has no claimable inventory to cancel.");
+				sender.sendMessage("§cThat player has no claimable inventory to cancel."); // TODO lang
 				return true;
 			}
 			plugin.data.getData().set("Recoverables." + target.getUniqueId().toString(), null);
@@ -46,16 +47,16 @@ public class ClaimInvCommand implements CommandExecutor {
 						&& targetP.getOpenInventory().getTopInventory().getHolder() instanceof Pane) {
 					targetP.closeInventory();
 				}
-				targetP.sendMessage("§cYour claimable inventory was cancelled.");
+				targetP.sendMessage("§cYour claimable inventory was cancelled."); // TODO lang
 			}
 			sender.sendMessage("§aYou cancelled " + target.getName() + "'" + (target.getName().endsWith("s") ? "" : "s")
-					+ " claimable inventory.");
+					+ " claimable inventory."); // TODO lang
 		} else if (sender instanceof Player) {
 			Player player = (Player) sender;
 			String data = plugin.data.getData().getString("Recoverables." + player.getUniqueId().toString() + ".inv");
 			int xp = plugin.data.getData().getInt("Recoverables." + player.getUniqueId().toString() + ".xp", -1);
 			if (data == null) {
-				sender.sendMessage("§cYou have no inventory to claim.");
+				sender.sendMessage("§cYou have no inventory to claim."); // TODO lang
 				return true;
 			}
 			if (xp > 0) {
@@ -67,7 +68,7 @@ public class ClaimInvCommand implements CommandExecutor {
 			} catch (Exception e1) {
 				plugin.warning("Error serializing inventory claim");
 				plugin.print(e1);
-				sender.sendMessage(plugin.translate("error"));
+				sender.sendMessage(Language.translate("error"));
 				return true;
 			}
 			player.openInventory(inv);

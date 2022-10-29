@@ -17,9 +17,6 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 public class InvSerialization {
 
-	// TODO implement
-	// TODO maybe simplify?
-	// TODO identify type
 	public static byte[] toByteArray(ItemStack... array) throws IOException {
 		if (array == null || array.length == 0) {
 			return null;

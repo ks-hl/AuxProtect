@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.spigot.command;
+package dev.heliosares.auxprotect.core.commands;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -6,11 +6,19 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
+import org.bukkit.World;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 
+import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.MySender;
 import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -18,40 +26,29 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.RetentionSolver;
 import dev.heliosares.auxprotect.utils.XraySolver;
 
-public class LookupCommand {
-
-	private final IAuxProtect plugin;
-
-	static final HashMap<String, Results> results;
-
-	static {
-		results = new HashMap<>();
-	}
+public class LookupCommand extends Command {
 
 	public LookupCommand(IAuxProtect plugin) {
-		this.plugin = plugin;
+		super(plugin, "lookup", APPermission.LOOKUP, "l");
 	}
 
-	public boolean onCommand(org.bukkit.command.CommandSender sender1, String[] args) {
-		MySender sender = new MySender(sender1);
-		onCommand(plugin, sender, args);
-		return true;
-	}
+	static final HashMap<String, Results> results = new HashMap<>();
 
-	public static void onCommand(IAuxProtect plugin, MySender sender, String[] args) {
+	public void onCommand(SenderAdapter sender, String label, String[] args) {
 		if (args.length < 2) {
-			sender.sendMessage(plugin.translate("lookup-invalid-syntax"));
+			sender.sendLang("lookup-invalid-syntax");
 			return;
 		}
 		if (!plugin.getSqlManager().isConnected()) {
-			sender.sendMessage(plugin.translate("database-busy"));
+			sender.sendLang("database-busy");
 			return;
 		}
 		Runnable run = new Runnable() {
@@ -90,7 +87,7 @@ public class LookupCommand {
 							result = results.get(uuid);
 						}
 						if (result == null) {
-							sender.sendMessage(plugin.translate("lookup-no-results-selected"));
+							sender.sendLang("lookup-no-results-selected");
 							return;
 						}
 						if (perpage == -1) {
@@ -120,32 +117,31 @@ public class LookupCommand {
 
 				Parameters params = null;
 				try {
-					params = Parameters.parse(plugin, sender, args);
+					params = Parameters.parse(sender, args);
 				} catch (Exception e) {
-					sender.sendMessage(e.getMessage());
+					sender.sendMessageRaw(e.getMessage());
 					return;
 				}
 
-				sender.sendMessage(plugin.translate("lookup-looking"));
+				sender.sendLang("lookup-looking");
 
 				int count = 0;
 				try {
 					count = plugin.getSqlManager().getLookupManager().count(params);
 				} catch (LookupManager.LookupException e) {
-					sender.sendMessage(e.getMessage());
+					sender.sendMessageRaw(e.getMessage());
 					return;
 				}
 				if (params.getFlags().contains(Flag.COUNT_ONLY)) {
-					sender.sendMessage(String.format(plugin.translate("lookup-count"), count));
+					sender.sendLang("lookup-count", count);
 					return;
 				}
 				if (count == 0) {
-					sender.sendMessage(plugin.translate("lookup-noresults"));
+					sender.sendLang("lookup-noresults");
 					return;
 				}
 				if (count > SQLManager.MAX_LOOKUP_SIZE) {
-					sender.sendMessage(
-							String.format(plugin.translate("lookup-toomany"), count, SQLManager.MAX_LOOKUP_SIZE));
+					sender.sendLang("lookup-toomany", count, SQLManager.MAX_LOOKUP_SIZE);
 					return;
 				}
 
@@ -153,15 +149,15 @@ public class LookupCommand {
 				try {
 					rs = plugin.getSqlManager().getLookupManager().lookup(params);
 				} catch (LookupManager.LookupException e) {
-					sender.sendMessage(e.getMessage());
+					sender.sendMessageRaw(e.getMessage());
 					return;
 				}
 				if (rs == null || rs.size() == 0) {
-					sender.sendMessage(plugin.translate("lookup-noresults"));
+					sender.sendLang("lookup-noresults");
 					return;
 				}
 				if (params.getFlags().contains(Flag.COUNT)) {
-					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
+					sender.sendLang("lookup-count", rs.size());
 					double totalMoney = 0;
 					double totalExp = 0;
 					int dropcount = 0;
@@ -229,11 +225,11 @@ public class LookupCommand {
 					if (totalMoney != 0 && plugin instanceof AuxProtectSpigot) {
 						boolean negative = totalMoney < 0;
 						totalMoney = Math.abs(totalMoney);
-						sender.sendMessage("§fTotal Money: §9" + (negative ? "-" : "")
+						sender.sendMessageRaw("§fTotal Money: §9" + (negative ? "-" : "")
 								+ ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
 					}
 					if (totalExp != 0) {
-						sender.sendMessage("§fTotal Experience: §9" + Math.round(totalExp * 100f) / 100f);
+						sender.sendMessageRaw("§fTotal Experience: §9" + Math.round(totalExp * 100f) / 100f);
 					}
 					String msg = "";
 					if (pickupcount > 0) {
@@ -246,7 +242,7 @@ public class LookupCommand {
 						msg += "§fNet: §9" + (pickupcount - dropcount);
 					}
 					if (msg.length() > 0) {
-						sender.sendMessage(msg);
+						sender.sendMessageRaw(msg);
 					}
 					return;
 				}
@@ -307,11 +303,11 @@ public class LookupCommand {
 				else if (params.getFlags().contains(Flag.PT)) {
 					List<String> users = params.getUsers();
 					if (users.size() == 0) {
-						sender.sendMessage(plugin.translate("playtime-nouser"));
+						sender.sendLang("playtime-nouser");
 						return;
 					}
 					if (users.size() > 1) {
-						sender.sendMessage(plugin.translate("playtime-toomanyusers"));
+						sender.sendLang("playtime-toomanyusers");
 						return;
 					}
 					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(),
@@ -339,19 +335,19 @@ public class LookupCommand {
 							it.remove();
 						}
 					}
-				} else if (params.getFlags().contains(Flag.MONEY) && !sender.isBungee()) {
+				} else if (params.getFlags().contains(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
 					List<String> users = params.getUsers();
 					if (users.size() == 0) {
-						sender.sendMessage(plugin.translate("playtime-nouser"));
+						sender.sendLang("playtime-nouser");
 						return;
 					}
 					if (users.size() > 1) {
-						sender.sendMessage(plugin.translate("playtime-toomanyusers"));
+						sender.sendLang("playtime-toomanyusers");
 						return;
 					}
-					if (sender.getSender() instanceof Player) {
-						MoneySolver.showMoney(plugin, (Player) sender.getSender(), rs,
-								(int) Math.round(params.getAfter() / (1000 * 3600)), users.get(0));
+					if (sender.getSender() instanceof org.bukkit.entity.Player player) {
+						MoneySolver.showMoney(plugin, player, rs, (int) Math.round(params.getAfter() / (1000 * 3600)),
+								users.get(0));
 					}
 					return;
 				} else if (params.getFlags().contains(Flag.RETENTION)) {
@@ -369,5 +365,138 @@ public class LookupCommand {
 			}
 		};
 		plugin.runAsync(run);
+	}
+
+	@Override
+	public boolean exists() {
+		return true;
+	}
+
+	@Override
+	public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+		return onTabCompleteStatic(plugin, sender, label, args);
+	}
+
+	public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label,
+			String[] args) {
+		List<String> possible = new ArrayList<>();
+		String currentArg = args[args.length - 1];
+		boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
+		boolean watch = args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w");
+		if (lookup && !APPermission.LOOKUP.hasPermission(sender)) {
+			return null;
+		}
+		if (watch && !APPermission.WATCH.hasPermission(sender)) {
+			return null;
+		}
+		if (args.length == 2) {
+			if (lookup) {
+				possible.add("next");
+				possible.add("prev");
+				possible.add("first");
+				possible.add("last");
+			}
+			if (watch) {
+				possible.add("remove");
+				possible.add("clear");
+				possible.add("list");
+			}
+		}
+
+		possible.add("radius:");
+		possible.add("time:");
+		possible.add("target:");
+		possible.add("action:");
+		possible.add("world:");
+		possible.add("user:");
+		possible.add("data:");
+		possible.add("before:");
+		possible.add("after:");
+
+		if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
+			String action = currentArg.split(":")[0] + ":";
+			for (EntryAction eaction : EntryAction.values()) {
+				if (eaction.exists() && eaction.isEnabled() && eaction.hasPermission(sender)) {
+					String actString = eaction.toString().toLowerCase();
+					if (eaction.hasDual) {
+						possible.add(action + "+" + actString);
+						possible.add(action + "-" + actString);
+					}
+					possible.add(action + actString);
+				}
+			}
+		}
+		if (currentArg.startsWith("user:") || currentArg.startsWith("u:") || currentArg.startsWith("target:")) {
+			int cutIndex = 0;
+			if (currentArg.contains(",")) {
+				cutIndex = currentArg.lastIndexOf(",");
+			} else {
+				cutIndex = currentArg.indexOf(":");
+
+			}
+			String user = currentArg.substring(0, cutIndex + 1);
+			for (Player player : Bukkit.getOnlinePlayers()) {
+				possible.add(user + player.getName());
+			}
+			for (String username : plugin.getSqlManager().getCachedUsernames()) {
+				possible.add(user + username);
+			}
+			for (EntityType et : EntityType.values()) {
+				possible.add(user + "#" + et.toString().toLowerCase());
+			}
+			possible.add(user + "#env");
+		}
+		if (currentArg.startsWith("target:")) {
+			for (Material material : Material.values()) {
+				possible.add("target:" + material.toString().toLowerCase());
+			}
+		}
+		if (APPermission.ADMIN.hasPermission(sender)) {
+			possible.add("db:");
+			if (currentArg.startsWith("db:")) {
+				for (Table table : Table.values()) {
+					possible.add("db:" + table.toString());
+				}
+			}
+		}
+		if (currentArg.matches("(t(ime)?|before|after):\\d+m?")) {
+			possible.add(currentArg + "ms");
+			possible.add(currentArg + "s");
+			possible.add(currentArg + "m");
+			possible.add(currentArg + "h");
+			possible.add(currentArg + "d");
+			possible.add(currentArg + "w");
+		}
+		if (currentArg.startsWith("world:")) {
+			for (World world : Bukkit.getWorlds()) {
+				possible.add("world:" + world.getName());
+			}
+		}
+		if (currentArg.startsWith("rat")) {
+			possible.add("rating:");
+			if (currentArg.matches("rating:-?")) {
+				for (int i = -2; i <= 3; i++) {
+					possible.add("rating:" + i);
+				}
+			}
+		}
+
+		for (int i = 1; i < args.length - 1; i++) {
+			String arg = args[i];
+			if (!arg.contains(":"))
+				continue;
+			arg = arg.substring(0, arg.indexOf(":") + 1);
+			possible.remove(arg);
+		}
+
+		if (currentArg.startsWith("#")) {
+			for (Flag flag : Flag.values()) {
+				if (flag.hasPermission(sender)) {
+					possible.add("#" + flag.toString().toLowerCase());
+				}
+			}
+		}
+
+		return possible;
 	}
 }

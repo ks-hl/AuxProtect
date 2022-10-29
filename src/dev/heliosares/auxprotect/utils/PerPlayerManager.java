@@ -22,7 +22,7 @@ public class PerPlayerManager<V> extends HashMap<UUID, V> {
 				return get(player.getUniqueId());
 			}
 			V v = supplier.get();
-			put(player.getUniqueId(),v);
+			put(player.getUniqueId(), v);
 			return v;
 		}
 	}

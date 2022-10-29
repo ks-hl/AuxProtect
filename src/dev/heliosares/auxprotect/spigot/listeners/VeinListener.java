@@ -21,7 +21,7 @@ import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.PerPlayerManager;
 
-public class XrayListener implements Listener {
+public class VeinListener implements Listener {
 
 	private static final ArrayList<Material> NETHER_CHECK = new ArrayList<>();// TODO config
 	private static final int NETHER_MAXY = 128;
@@ -35,18 +35,20 @@ public class XrayListener implements Listener {
 
 	private AuxProtectSpigot plugin;
 
-	public XrayListener(AuxProtectSpigot plugin) {
+	public VeinListener(AuxProtectSpigot plugin) {
 		this.plugin = plugin;
 
 		// Maybe overkill, just preventing memory leaks
 		new BukkitRunnable() {
 			@Override
 			public void run() {
-				Iterator<Entry<UUID, BlockHistory>> it = blockhistory.entrySet().iterator();
-				while (it.hasNext()) {
-					Entry<UUID, BlockHistory> entry = it.next();
-					if (entry.getValue().timeSinceUsed() > 300000L) {
-						it.remove();
+				synchronized (blockhistory) {
+					Iterator<Entry<UUID, BlockHistory>> it = blockhistory.entrySet().iterator();
+					while (it.hasNext()) {
+						Entry<UUID, BlockHistory> entry = it.next();
+						if (entry.getValue().timeSinceUsed() > 300000L) {
+							it.remove();
+						}
 					}
 				}
 			}
@@ -55,6 +57,7 @@ public class XrayListener implements Listener {
 		NETHER_CHECK.add(Material.ANCIENT_DEBRIS);
 
 		OVERWORLD_CHECK.add(Material.DIAMOND_ORE);
+		OVERWORLD_CHECK.add(Material.SPAWNER);
 		if (plugin.getCompatabilityVersion() >= 17) {
 			OVERWORLD_CHECK.add(Material.DEEPSLATE_DIAMOND_ORE);
 		}
@@ -118,7 +121,7 @@ public class XrayListener implements Listener {
 			ore = NETHER_CHECK.contains(e.getBlock().getType());
 			break;
 		case NORMAL:
-			if (e.getBlock().getY() > OVERWORLD_MAXY) {
+			if (e.getBlock().getY() > OVERWORLD_MAXY && e.getBlock().getType() != Material.SPAWNER) {
 				return;
 			}
 			ore = OVERWORLD_CHECK.contains(e.getBlock().getType());
@@ -135,7 +138,8 @@ public class XrayListener implements Listener {
 		// those
 		// ores and happen to find valuables, it is not logged.
 		if (!ore && anykindofore) {
-			// TODO return;
+			// TODO test
+			return;
 		}
 
 		if (!ore) {
