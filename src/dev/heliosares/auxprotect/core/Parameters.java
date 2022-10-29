@@ -289,11 +289,11 @@ public class Parameters {
 	 * @param negate
 	 * @throws LookupException
 	 */
-	public void user(String param, boolean negate) throws LookupException {
+	public Parameters user(String param, boolean negate) throws LookupException {
 		if (param == null) {
 			users.clear();
 			uids.clear();
-			return;
+			return this;
 		}
 		negateUser = negate;
 		for (String user : param.split(",")) {
@@ -313,6 +313,7 @@ public class Parameters {
 			}
 			users.add(user);
 		}
+		return this;
 	}
 
 	/**
@@ -322,7 +323,7 @@ public class Parameters {
 	 * @param negate Whether to negate
 	 * @throws LookupException If the user is not found
 	 */
-	public void user(UUID uuid, boolean negate) throws LookupException {
+	public Parameters user(UUID uuid, boolean negate) throws LookupException {
 		this.negateUser = negate;
 		int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
 		if (uid > 0) {
@@ -331,6 +332,7 @@ public class Parameters {
 			throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
 		}
 		users.add(uuid.toString());
+		return this;
 	}
 
 	/**
@@ -340,7 +342,7 @@ public class Parameters {
 	 * @param negate Whether to negate
 	 * @throws LookupException If the user is not found
 	 */
-	public void target(UUID uuid, boolean negate) throws LookupException {
+	public Parameters target(UUID uuid, boolean negate) throws LookupException {
 		this.negateTarget = negate;
 		int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
 		if (uid > 0) {
@@ -348,6 +350,7 @@ public class Parameters {
 		} else {
 			throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
 		}
+		return this;
 	}
 
 	/**
@@ -359,10 +362,10 @@ public class Parameters {
 	 * @throws LookupException
 	 * @throws IllegalStateException if the table is null
 	 */
-	public void target(@Nullable String param, boolean negate) throws LookupException {
+	public Parameters target(@Nullable String param, boolean negate) throws LookupException {
 		if (param == null) {
 			targets.clear();
-			return;
+			return this;
 		}
 		if (table == null) {
 			throw new IllegalStateException("action or table must be set before target");
@@ -389,6 +392,7 @@ public class Parameters {
 				}
 			}
 		}
+		return this;
 	}
 
 	/**
@@ -399,7 +403,7 @@ public class Parameters {
 	 * @param param  CSV of actions
 	 * @throws ParseException
 	 */
-	public void action(@Nullable SenderAdapter sender, String param) throws ParseException {
+	public Parameters action(@Nullable SenderAdapter sender, String param) throws ParseException {
 		for (String actionStr : param.split(",")) {
 			int state = 0;
 			boolean pos = actionStr.startsWith("+");
@@ -413,6 +417,7 @@ public class Parameters {
 			}
 			addAction(sender, action, state);
 		}
+		return this;
 	}
 
 	/**
@@ -425,7 +430,7 @@ public class Parameters {
 	 * @param int    state -1 for negative, 0 for either, 1 for positive
 	 * @throws ParseException
 	 */
-	public void addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
+	public Parameters addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
 		if (!action.isEnabled()) {
 			throw new ParseException(Language.L.ACTION_DISABLED);
 		}
@@ -447,6 +452,7 @@ public class Parameters {
 		} else {
 			actions.add(action.id);
 		}
+		return this;
 	}
 
 	/**
@@ -455,7 +461,7 @@ public class Parameters {
 	 * @param param May be a range, a single time, or an exact time
 	 * @throws ParseException
 	 */
-	public void time(String param) throws ParseException {
+	public Parameters time(String param) throws ParseException {
 		param = param.replace("ms", "f");
 		boolean plusminus = param.contains("+-");
 		boolean minus = param.contains("-");
@@ -505,6 +511,7 @@ public class Parameters {
 			}
 			after = time;
 		}
+		return this;
 	}
 
 	public Parameters time(long start, long stop) {
@@ -514,7 +521,7 @@ public class Parameters {
 		return this;
 	}
 
-	private void time(String param, boolean before) throws ParseException {
+	private Parameters time(String param, boolean before) throws ParseException {
 		try {
 			long time = TimeUtil.stringToMillis(param);
 			if (time < 0) {
@@ -531,6 +538,7 @@ public class Parameters {
 		} catch (NumberFormatException e) {
 			throw new ParseException(Language.L.INVALID_PARAMETER, param);
 		}
+		return this;
 	}
 
 	public Parameters before(long time) {
@@ -877,43 +885,52 @@ public class Parameters {
 		return ratings;
 	}
 
-	public void addExactTime(long exactTime) {
+	public Parameters addExactTime(long exactTime) {
 		this.exactTime.add(exactTime);
+		return this;
 	}
 
-	public void setNegateUser(boolean negateUser) {
+	public Parameters setNegateUser(boolean negateUser) {
 		this.negateUser = negateUser;
+		return this;
 	}
 
-	public void setNegateTarget(boolean negateTarget) {
+	public Parameters setNegateTarget(boolean negateTarget) {
 		this.negateTarget = negateTarget;
+		return this;
 	}
 
-	public void setTable(Table table) {
+	public Parameters setTable(Table table) {
 		this.table = table;
+		return this;
 	}
 
-	public void addRadius(int radius, boolean negate) {
+	public Parameters addRadius(int radius, boolean negate) {
 		this.radius.put(radius, negate);
+		return this;
 	}
 
-	public void setLocation(Location location) {
+	public Parameters setLocation(Location location) {
 		this.location = location;
+		return this;
 	}
 
-	public void setNegateWorld(boolean negateWorld) {
+	public Parameters setNegateWorld(boolean negateWorld) {
 		this.negateWorld = negateWorld;
+		return this;
 	}
 
-	public void addWorld(String world) {
+	public Parameters addWorld(String world) {
 		this.worlds.add(world);
+		return this;
 	}
 
 	/**
 	 * Clears the flags
 	 */
-	public void resetFlags() {
+	public Parameters resetFlags() {
 		this.flags.clear();
+		return this;
 	}
 
 	/**
@@ -921,7 +938,7 @@ public class Parameters {
 	 * 
 	 * @param flags
 	 */
-	public void setFlags(boolean state, Flag... flags) {
+	public Parameters setFlags(boolean state, Flag... flags) {
 		for (Flag flag : flags) {
 			if (state) {
 				this.flags.add(flag);
@@ -929,10 +946,12 @@ public class Parameters {
 				this.flags.remove(flag);
 			}
 		}
+		return this;
 	}
 
-	public void addRating(short rating) {
+	public Parameters addRating(short rating) {
 		this.ratings.add(rating);
+		return this;
 	}
 
 	public boolean hasFlag(Flag flag) {
