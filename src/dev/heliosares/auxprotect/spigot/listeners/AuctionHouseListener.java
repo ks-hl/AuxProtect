@@ -36,11 +36,13 @@ public class AuctionHouseListener implements Listener {
 		}
 		DbEntry entry = new DbEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
 				e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()));
-		try {
-			entry.setBlob(InvSerialization.toByteArray(e.getItem()));
-		} catch (Exception e1) {
-			plugin.warning("Error serializing auction listing");
-			plugin.print(e1);
+		if (InvSerialization.isCustom(e.getItem())) {
+			try {
+				entry.setBlob(InvSerialization.toByteArray(e.getItem()));
+			} catch (Exception e1) {
+				plugin.warning("Error serializing auction listing");
+				plugin.print(e1);
+			}
 		}
 		plugin.add(entry);
 	}
@@ -62,11 +64,13 @@ public class AuctionHouseListener implements Listener {
 		DbEntry entry = new DbEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
 				e.getItem().getType().toString().toLowerCase(),
 				"From " + e.getSeller().getName() + " for " + plugin.formatMoney(e.getPrice()));
-		try {
-			entry.setBlob(InvSerialization.toByteArray(e.getItem()));
-		} catch (Exception e1) {
-			plugin.warning("Error serializing auction purchase");
-			plugin.print(e1);
+		if (InvSerialization.isCustom(e.getItem())) {
+			try {
+				entry.setBlob(InvSerialization.toByteArray(e.getItem()));
+			} catch (Exception e1) {
+				plugin.warning("Error serializing auction purchase");
+				plugin.print(e1);
+			}
 		}
 		plugin.add(entry);
 	}

@@ -138,8 +138,8 @@ actions:
   itemframe:
     p: add itemframe
     n: remove itemframe
-  ahlist: listed on ah
-  ahbuy: bought from ah
+  auctionlist: listed on ah
+  auctionbuy: bought from ah
   townyname: named
   towncreate: created town
   townrename: renamed town to
