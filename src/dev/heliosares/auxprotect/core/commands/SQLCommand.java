@@ -1,14 +1,14 @@
 package dev.heliosares.auxprotect.core.commands;
 
-import java.sql.SQLException;
 import java.util.List;
 
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.exceptions.CommandException;
 public class SQLCommand extends Command {
 
 	public SQLCommand(IAuxProtect plugin) {
@@ -49,8 +49,8 @@ public class SQLCommand extends Command {
 						}
 					}
 				}
-			} catch (SQLException e) {
-				sender.sendLang("error");
+			} catch (Exception e) {
+				sender.sendLang(Language.L.ERROR);
 				plugin.print(e);
 				return;
 			}

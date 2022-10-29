@@ -1,9 +1,9 @@
 package dev.heliosares.auxprotect.database;
 
-import java.util.ArrayList;
+import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
@@ -11,7 +11,6 @@ import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 public class DatabaseRunnable implements Runnable {
-	private ConcurrentLinkedQueue<DbEntry> queue;
 	private final SQLManager sqlManager;
 	private final IAuxProtect plugin;
 	private static HashMap<Table, Long> lastTimes = new HashMap<>();
@@ -23,7 +22,6 @@ public class DatabaseRunnable implements Runnable {
 	private static final long jobsCacheTime = 10000;
 
 	public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
-		queue = new ConcurrentLinkedQueue<>();
 		this.sqlManager = sqlManager;
 		this.plugin = plugin;
 	}
@@ -41,7 +39,11 @@ public class DatabaseRunnable implements Runnable {
 			this.addJobs((JobsEntry) entry);
 			return;
 		}
-		queue.add(entry);
+		Table table = entry.getAction().getTable();
+		if (table == null || table.queue == null) {
+			return;
+		}
+		table.queue.add(entry);
 	}
 
 	public static synchronized long getTime(Table table) {
@@ -55,7 +57,8 @@ public class DatabaseRunnable implements Runnable {
 	}
 
 	public int queueSize() {
-		return queue.size();
+		return Arrays.asList(Table.values()).stream().filter(t -> t.queue != null).map(t -> t.queue.size())
+				.reduce((a, b) -> a + b).get();
 	}
 
 	@Override
@@ -84,45 +87,13 @@ public class DatabaseRunnable implements Runnable {
 
 			checkCache();
 
-			DbEntry entry;
-			long start = System.nanoTime();
-
-			HashMap<Table, ArrayList<DbEntry>> entriesHash = new HashMap<>();
-
-			while ((entry = queue.poll()) != null) {
-				if (plugin.getDebug() >= 2) {
-
-					plugin.debug(entry.toString(), 2);
-				}
-
-				Table table = entry.getAction().getTable();
-
-				if (table == null) {
-					continue;
-				}
-
-				ArrayList<DbEntry> entriesList = entriesHash.get(table);
-				if (entriesList == null) {
-					entriesList = new ArrayList<>();
-				}
-				entriesList.add(entry);
-				entriesHash.put(table, entriesList);
-			}
-
-			for (Entry<Table, ArrayList<DbEntry>> entryPair : entriesHash.entrySet()) {
+			Arrays.asList(Table.values()).forEach(t -> {
 				try {
-					int size = entryPair.getValue().size();
-					if (size == 0) {
-						continue;
-					}
-					sqlManager.put(entryPair.getKey(), entryPair.getValue());
-					plugin.debug(debugLogStatement(start, size, entryPair.getKey()), 1);
-					start = System.nanoTime();
-				} catch (Exception e) {
+					sqlManager.put(t);
+				} catch (SQLException e) {
 					plugin.print(e);
 				}
-			}
-
+			});
 			sqlManager.cleanup();
 		} catch (Throwable e) {
 			plugin.print(e);
@@ -131,19 +102,13 @@ public class DatabaseRunnable implements Runnable {
 		}
 	}
 
-	private String debugLogStatement(long start, int count, Table table) {
-		double elapsed = (System.nanoTime() - start) / 1000000.0;
-		return table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
-				+ (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)";
-	}
-
 	private void checkCache() {
 		synchronized (pickups) {
 			Iterator<PickupEntry> itr = pickups.iterator();
 			while (itr.hasNext()) {
 				PickupEntry next = itr.next();
 				if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
-					queue.add(next);
+					Table.AUXPROTECT_INVENTORY.queue.add(next);
 					pickups.remove(next);
 				}
 			}
@@ -153,7 +118,7 @@ public class DatabaseRunnable implements Runnable {
 			while (itr.hasNext()) {
 				JobsEntry next = itr.next();
 				if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
-					queue.add(next);
+					EntryAction.JOBS.getTable().queue.add(next);
 					jobsentries.remove(next);
 				}
 			}

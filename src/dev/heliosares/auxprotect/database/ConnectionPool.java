@@ -5,6 +5,8 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.bukkit.Bukkit;
 
@@ -22,6 +24,8 @@ public class ConnectionPool {
 	private final IAuxProtect plugin;
 	private boolean closed;
 	private final Connection writeconn;
+	private Thread whoHasWriteConnection;
+	private ReentrantLock lock = new ReentrantLock();
 
 	private static int alive = 0;
 	private static int born = 0;
@@ -95,24 +99,59 @@ public class ConnectionPool {
 
 	}
 
-	private void checkAsync() {
-		if (plugin.getPlatform() == PlatformType.SPIGOT && !plugin.isShuttingDown()) {
+	private void checkAsync() throws IllegalStateException {
+		if (plugin.getPlatform() == PlatformType.SPIGOT) {
 			if (Bukkit.isPrimaryThread()) {
-				plugin.warning("Synchronous call to database. This may cause lag.");
-				if (plugin.getDebug() > 0) {
-					Thread.dumpStack();
+				plugin.warning("Synchronous call to database.");
+				if (plugin.getAPConfig().getDebug() > 0) {
+					throw new IllegalStateException();
 				}
 			}
 		}
 	}
 
-	// TODO lock and throw busy
-	public Connection getWriteConnection() {
+	public static class BusyException extends Exception {
+		private static final long serialVersionUID = 4797822287876350186L;
+		public final Thread holder;
+
+		BusyException(Thread holder) {
+			this.holder = holder;
+		}
+	};
+
+	/**
+	 * Use this ONLY for modifying the database.
+	 * 
+	 * You MUST synchronize this variable while you use it.
+	 * 
+	 * You MUST call {@link ConnectionPool#returnConnection(Connection)} when you
+	 * are done with this Connection
+	 * 
+	 * @return a WRITE-ONLY connection to the database
+	 * @param wait how many milliseconds to wait for a lock
+	 * @throws BusyException if wait is exceeded and the database is busy
+	 */
+	public Connection getWriteConnection(long wait) throws BusyException {
 		if (closed) {
 			throw new IllegalStateException("closed");
 		}
 		checkAsync();
-		writeCheckOut = System.currentTimeMillis();
+		boolean havelock = false;
+		if (wait > 0) {
+			try {
+				havelock = lock.tryLock(wait, TimeUnit.MILLISECONDS);
+			} catch (InterruptedException ignored) {
+			}
+		} else {
+			havelock = lock.tryLock();
+		}
+		if (!havelock) {
+			throw new BusyException(whoHasWriteConnection);
+		}
+		if (lock.getHoldCount() == 1) {
+			writeCheckOut = System.currentTimeMillis();
+			whoHasWriteConnection = Thread.currentThread();
+		}
 		return writeconn;
 	}
 
@@ -133,11 +172,19 @@ public class ConnectionPool {
 
 	public void returnConnection(Connection connection) {
 		if (connection.equals(writeconn)) {
-			writeTimeIndex++;
-			if (writeTimeIndex >= writeTimes.length) {
-				writeTimeIndex = 0;
+			if (!lock.isHeldByCurrentThread()) {
+				throw new IllegalArgumentException();
 			}
-			writeTimes[writeTimeIndex] = new long[] { writeCheckOut, System.currentTimeMillis() };
+			if (lock.getHoldCount() == 1) {
+				writeTimeIndex++;
+				if (writeTimeIndex >= writeTimes.length) {
+					writeTimeIndex = 0;
+				}
+				writeTimes[writeTimeIndex] = new long[] { writeCheckOut, System.currentTimeMillis() };
+				writeCheckOut = 0;
+				whoHasWriteConnection = null;
+			}
+			lock.unlock();
 			return;
 		}
 		synchronized (pool) {

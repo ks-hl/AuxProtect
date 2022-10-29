@@ -82,7 +82,7 @@ public class Results {
 	public void showPage(int page, int perpage_) {
 		int lastpage = getNumPages(perpage_);
 		if (page > lastpage || page < 1) {
-			player.sendLang("lookup-nopage");
+			player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
 			return;
 		}
 		perpage = perpage_;
@@ -153,7 +153,7 @@ public class Results {
 			if (xray.getRating() >= 0) {
 				hover += color + VeinManager.getSeverityDescription(xray.getRating()) + "\n\n";
 			}
-			hover += Language.translate("xray-click-to-change");
+			hover += Language.translate(Language.L.XRAY_CLICK_TO_CHANGE);
 			message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
 		}
 
@@ -241,7 +241,7 @@ public class Results {
 			message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
 		}
 		message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
-		message.append(Language.translate("lookup-page-footer", page, getNumPages(perpage), getEntries().size()));
+		message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(perpage), getEntries().size()));
 		player.sendMessage(message.create());
 	}
 

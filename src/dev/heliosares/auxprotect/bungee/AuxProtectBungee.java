@@ -1,9 +1,9 @@
 package dev.heliosares.auxprotect.bungee;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -30,14 +30,9 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
-import net.md_5.bungee.config.Configuration;
-import net.md_5.bungee.config.ConfigurationProvider;
-import net.md_5.bungee.config.YamlConfiguration;
 
 public class AuxProtectBungee extends Plugin implements IAuxProtect {
-	protected Configuration configurationFile;
-	public APConfig config;
-	public int debug;
+	private final APConfig config = new APConfig();
 	SQLManager sqlManager;
 	protected DatabaseRunnable dbRunnable;
 	private static AuxProtectBungee instance;
@@ -48,25 +43,36 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
 	@Override
 	public void onEnable() {
-		loadConfig();
+		try {
+			config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
+					(s) -> getResourceAsStream(s), false));
+		} catch (IOException e1) {
+			warning("Failed to load config");
+			print(e1);
+		}
+		// TODO reloadable
+		try {
+			Language.load(this,
+					() -> new BungeeConfigAdapter(getDataFolder(),
+							"lang/" + config.getConfig().getString("lang") + ".yml", null,
+							(s) -> getResourceAsStream(s), false));
 
-		YMLManager langManager = new YMLManager("en-us.yml", this);
-		langManager.load();
-		Language.load(new BungeeConfigAdapter(langManager.getData()));
+		} catch (FileNotFoundException e1) {
+			warning("Language file not found");
+		} catch (IOException e1) {
+			warning("Failed to load lang");
+			print(e1);
+		}
 
-		getProxy().getPluginManager().registerCommand(this, new APBCommand(this));
+		getProxy().getPluginManager().registerCommand(this, new APBCommand(this, this.getCommandPrefix()));
+		getProxy().getPluginManager().registerCommand(this, new APBCommand(this, this.getCommandAlias()));
 		getProxy().getPluginManager().registerListener(this, new APBListener(this));
 
 		File sqliteFile = null;
-		boolean mysql = configurationFile.getBoolean("MySQL.use", false);
-		String user = configurationFile.getString("MySQL.username", "");
-		String pass = configurationFile.getString("MySQL.password", "");
 		String uri = "";
-		if (mysql) {
-			String host = configurationFile.getString("MySQL.host", "localhost");
-			String port = configurationFile.getString("MySQL.port", "3306");
-			String database = configurationFile.getString("MySQL.database", "database");
-			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
+		if (getAPConfig().isMySQL()) {
+			uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
+					getAPConfig().getDatabase());
 		} else {
 			sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
 			if (!sqliteFile.getParentFile().exists()) {
@@ -89,15 +95,15 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 			}
 			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
-		sqlManager = new SQLManager(this, uri, configurationFile.getString("MySQL.table-prefix"), sqliteFile);
+		sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
 
 		runAsync(new Runnable() {
 
 			@Override
 			public void run() {
 				try {
-					if (mysql) {
-						sqlManager.connect(user, pass);
+					if (getAPConfig().isMySQL()) {
+						sqlManager.connect(getAPConfig().getUser(), getAPConfig().getPass());
 					} else {
 						sqlManager.connect(null, null);
 					}
@@ -150,31 +156,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 		to.sendMessage(TextComponent.fromLegacyText(message));
 	}
 
-	public void loadConfig() {
-
-		if (!getDataFolder().exists())
-			getDataFolder().mkdir();
-
-		File file = new File(getDataFolder(), "config.yml");
-
-		if (!file.exists()) {
-			try (InputStream in = getResourceAsStream("config.yml")) {
-				Files.copy(in, file.toPath());
-			} catch (IOException e) {
-				print(e);
-			}
-		}
-		try {
-			configurationFile = ConfigurationProvider.getProvider(YamlConfiguration.class)
-					.load(new File(getDataFolder(), "config.yml"));
-		} catch (IOException e) {
-			print(e);
-		}
-
-		config = new APConfig();
-		config.load(this, new BungeeConfigAdapter(configurationFile));
-	}
-
 	@Override
 	public InputStream getResource(String string) {
 		return getResourceAsStream(string);
@@ -196,7 +177,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
 	@Override
 	public void debug(String string, int verbosity) {
-		if (debug >= verbosity) {
+		if (getAPConfig().getDebug() >= verbosity) {
 			this.info("DEBUG" + verbosity + ": " + string);
 		}
 	}
@@ -240,11 +221,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 	}
 
 	@Override
-	public int getDebug() {
-		return debug;
-	}
-
-	@Override
 	public APConfig getAPConfig() {
 		return config;
 	}
@@ -278,23 +254,13 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 	}
 
 	@Override
-	public void reloadConfig() {
-		loadConfig();
-	}
-
-	@Override
 	public String getCommandPrefix() {
-		return "apb";
+		return "auxprotectbungee";
 	}
 
 	@Override
 	public SenderAdapter getConsoleSender() {
 		return new BungeeSenderAdapter(this, this.getProxy().getConsole());
-	}
-
-	@Override
-	public void setDebug(int debug) {
-		this.debug = debug;
 	}
 
 	@Override
@@ -331,5 +297,10 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 	@Override
 	public List<String> listPlayers() {
 		return getProxy().getPlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
+	}
+
+	@Override
+	public String getCommandAlias() {
+		return "apb";
 	}
 }

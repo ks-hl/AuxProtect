@@ -11,11 +11,12 @@ import java.util.List;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.utils.HasteBinAPI;
 import dev.heliosares.auxprotect.utils.StackUtil;
 
@@ -56,7 +57,7 @@ public class DumpCommand extends Command {
 				sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
 			} catch (Exception e) {
 				plugin.print(e);
-				sender.sendLang("error");
+				sender.sendLang(Language.L.ERROR);
 			}
 			if (config) {
 				sender.sendMessageRaw(
@@ -87,6 +88,7 @@ public class DumpCommand extends Command {
 			trace += "none";
 		}
 		trace += "\n";
+		trace += "Language: " + Language.getLocale() + "\n";
 		trace += "DB version: " + plugin.getSqlManager().getVersion() + "\n";
 		trace += "Original DB version: " + plugin.getSqlManager().getOriginalVersion() + "\n";
 		if (!stats) {

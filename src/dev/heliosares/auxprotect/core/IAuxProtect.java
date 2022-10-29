@@ -28,10 +28,6 @@ public interface IAuxProtect {
 
 	SQLManager getSqlManager();
 
-	public int getDebug();
-	
-	public void setDebug(int debug);
-
 	APConfig getAPConfig();
 
 	void add(DbEntry dbEntry);
@@ -39,10 +35,10 @@ public interface IAuxProtect {
 	public void runAsync(Runnable run);
 
 	public void runSync(Runnable runnable);
-
-	public void reloadConfig();
 	
 	public String getCommandPrefix();
+	
+	public String getCommandAlias();
 	
 	public SenderAdapter getConsoleSender();
 	

@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
+import dev.heliosares.auxprotect.core.Language;
 public class ActivityCommand extends Command {
 
 	public ActivityCommand(IAuxProtect plugin) {
@@ -15,7 +16,7 @@ public class ActivityCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) {
 		if (args.length != 2 && args.length != 3) {
-			sender.sendLang("lookup-invalid-syntax");
+			sender.sendLang(Language.L.INVALID_SYNTAX);
 			return;
 		}
 		String cmd = plugin.getCommandPrefix()

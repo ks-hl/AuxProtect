@@ -6,9 +6,10 @@ import java.util.List;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 public class RetentionCommand extends Command {
 
@@ -19,7 +20,7 @@ public class RetentionCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (args.length != 2) {
-			throw new CommandException.SyntaxException();
+			throw new SyntaxException();
 		}
 		sender.executeCommand(String.format("ap lookup #retention time:%s action:username", args[1]));
 	}

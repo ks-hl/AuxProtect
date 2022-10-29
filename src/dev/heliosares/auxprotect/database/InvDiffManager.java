@@ -19,6 +19,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 
@@ -61,12 +62,12 @@ public class InvDiffManager {
 
 	private final HashMap<Integer, BlobCache> cache = new HashMap<>();
 
-	public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) throws SQLException {
+	public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) throws SQLException, BusyException {
 		byte[] blob = null;
 		final long time = System.currentTimeMillis();
 		Integer damage = null;
 		if (qty != 0 && item != null) {
-			if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+			if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
 				damage = meta.getDamage();
 				meta.setDamage(0);
 				item.setItemMeta(meta);
@@ -82,28 +83,28 @@ public class InvDiffManager {
 		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF.toString()
 				+ " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
-		Connection connection = sql.getWriteConnection();
-		synchronized (connection) {
-			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-				statement.setLong(1, time);
-				int uid = sql.getUIDFromUUID("$" + uuid.toString(), false);
-				statement.setInt(2, uid);
-				statement.setInt(3, slot);
-				if (qty >= 0) {
-					statement.setInt(4, qty);
-				}
-				if (blobid >= 0) {
-					statement.setLong(5, blobid);
-				}
-				if (damage != null) {
-					statement.setInt(6, damage);
-				}
-				statement.execute();
+		Connection connection = sql.getWriteConnection(30000);
+		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+			statement.setLong(1, time);
+			int uid = sql.getUIDFromUUID("$" + uuid.toString(), false);
+			statement.setInt(2, uid);
+			statement.setInt(3, slot);
+			if (qty >= 0) {
+				statement.setInt(4, qty);
 			}
+			if (blobid >= 0) {
+				statement.setLong(5, blobid);
+			}
+			if (damage != null) {
+				statement.setInt(6, damage);
+			}
+			statement.execute();
+		} finally {
+			sql.returnConnection(connection);
 		}
 	}
 
-	private long getBlobId(final byte[] blob) throws SQLException {
+	private long getBlobId(final byte[] blob) throws SQLException, BusyException {
 		if (blob == null) {
 			return -1;
 		}
@@ -137,7 +138,7 @@ public class InvDiffManager {
 		return cachedid;
 	}
 
-	private long findOrInsertBlob(byte[] blob) throws SQLException {
+	private long findOrInsertBlob(byte[] blob) throws SQLException, BusyException {
 
 		String stmt = "SELECT blobid FROM " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " WHERE ablob=?";
 		// synchronized (sql.connection) {
@@ -160,24 +161,24 @@ public class InvDiffManager {
 		} finally {
 			sql.returnConnection(connection);
 		}
-		connection = sql.getWriteConnection();
+		connection = sql.getWriteConnection(30000);
 		// }
 		stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " (blobid, ablob) VALUES (?,?)";
-		synchronized (connection) {
-			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-				long blobid = ++this.blobid;
-				statement.setLong(1, blobid);
-				if (sql.isMySQL()) {
-					Blob sqlblob = connection.createBlob();
-					sqlblob.setBytes(1, blob);
-					statement.setBlob(2, sqlblob);
-				} else {
-					statement.setBytes(2, blob);
-				}
-				statement.execute();
-				plugin.debug("NEW blobid: " + blobid, 5);
-				return blobid;
+		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+			long blobid = ++this.blobid;
+			statement.setLong(1, blobid);
+			if (sql.isMySQL()) {
+				Blob sqlblob = connection.createBlob();
+				sqlblob.setBytes(1, blob);
+				statement.setBlob(2, sqlblob);
+			} else {
+				statement.setBytes(2, blob);
 			}
+			statement.execute();
+			plugin.debug("NEW blobid: " + blobid, 5);
+			return blobid;
+		} finally {
+			sql.returnConnection(connection);
 		}
 	}
 
@@ -262,7 +263,7 @@ public class InvDiffManager {
 								item.setAmount(qty);
 								plugin.debug("setting slot " + slot + " to " + qty);
 							}
-							if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+							if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
 								int damage = rs.getInt("damage");
 								if (!rs.wasNull()) {
 									meta.setDamage(damage);

@@ -5,6 +5,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.exceptions.CommandException;
 
 public abstract class Command {
 	protected final IAuxProtect plugin;

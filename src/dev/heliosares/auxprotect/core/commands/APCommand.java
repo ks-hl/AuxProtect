@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.core.commands;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -10,9 +11,12 @@ import java.util.stream.Collectors;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.NotPlayerException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
 
 public class APCommand extends Command {
 
@@ -59,21 +63,21 @@ public class APCommand extends Command {
 				if (c.hasPermission(sender)) {
 					try {
 						c.onCommand(sender, label, args);
-					} catch (CommandException.PlatformException ignored) {
+					} catch (PlatformException ignored) {
 						continue;
-					} catch (CommandException.NotPlayerException e) {
-						sender.sendLang("notplayererror");
+					} catch (NotPlayerException e) {
+						sender.sendLang(Language.L.NOTPLAYERERROR);
 					} catch (CommandException e) {
 						if (e.getMessage() != null) {
 							sender.sendMessageRaw(e.getMessage());
 						} else {
-							sender.sendLang("lookup-invalid-syntax");
+							sender.sendLang(Language.L.INVALID_SYNTAX);
 						}
 					} catch (Throwable t) {
-						sender.sendLang("error");
+						sender.sendLang(Language.L.ERROR);
 					}
 				} else {
-					sender.sendLang("no-permission");
+					sender.sendLang(Language.L.NO_PERMISSION);
 				}
 				break;
 			}
@@ -82,7 +86,7 @@ public class APCommand extends Command {
 			}
 			if (args[0].equalsIgnoreCase("debug")) {
 				if (!APPermission.ADMIN.hasPermission(sender)) {
-					sender.sendLang("no-permission");
+					sender.sendLang(Language.L.NO_PERMISSION);
 					return;
 				}
 				int verbosity = -1;
@@ -96,13 +100,18 @@ public class APCommand extends Command {
 						return;
 					}
 				} else {
-					if (plugin.getDebug() > 0) {
+					if (plugin.getAPConfig().getDebug() > 0) {
 						verbosity = 0;
 					} else {
 						verbosity = 1;
 					}
 				}
-				plugin.setDebug(verbosity);
+				try {
+					plugin.getAPConfig().setDebug(verbosity);
+				} catch (IOException e) {
+					sender.sendLang(Language.L.ERROR);
+					plugin.print(e);
+				}
 				sender.sendMessageRaw("Debug " + (verbosity > 0 ? "§aenabled. §7Level: " + verbosity : "§cdisabled."));
 				return;
 			} else if (args[0].equalsIgnoreCase("info")) {
@@ -110,28 +119,43 @@ public class APCommand extends Command {
 				return;
 			} else if (args[0].equalsIgnoreCase("reload")) {
 				if (!APPermission.ADMIN.hasPermission(sender)) {
-					sender.sendLang("no-permission");
+					sender.sendLang(Language.L.NO_PERMISSION);
 					return;
 				}
 				// plugin.config.save();
 				// plugin.saveConfig();
-				plugin.reloadConfig();
-				sender.sendMessageRaw("§aConfig reloaded");// TODO lang
+				try {
+					plugin.getAPConfig().reload();
+				} catch (IOException e) {
+					plugin.print(e);
+					sender.sendLang(Language.L.ERROR);
+				}
+				sender.sendMessageRaw("§aConfig reloaded.");// TODO lang
+				try {
+					Language.reload();
+					sender.sendMessageRaw("§aLanguage reloaded: " + Language.getLocale());// TODO lang
+				} catch (FileNotFoundException e) {
+					sender.sendMessageRaw("Language file not found.");
+					plugin.print(e);
+				} catch (IOException e) {
+					sender.sendLang(Language.L.ERROR);
+					plugin.print(e);
+				}
 				return;
 			} else if (args[0].equalsIgnoreCase("backup")) {
 				if (!APPermission.SQL.hasPermission(sender) || !sender.isConsole()) {
-					sender.sendLang("no-permission");
+					sender.sendLang(Language.L.NO_PERMISSION);
 					return;
 				}
 				if (plugin.getSqlManager().isMySQL()) {
-					sender.sendLang("backup-sqliteonly");
+					sender.sendLang(Language.L.BACKUP_SQLITEONLY);
 					return;
 				}
 				plugin.runAsync(() -> {
 					String backup = null;
 					try {
 						backup = plugin.getSqlManager().backup();
-					} catch (IOException e) {
+					} catch (Exception e) {
 						plugin.print(e);
 						return;
 					}
@@ -139,7 +163,7 @@ public class APCommand extends Command {
 				});
 				return;
 			} else {
-				sender.sendLang("unknown-subcommand");
+				sender.sendLang(Language.L.UNKNOWN_SUBCOMMAND);
 				return;
 			}
 		}

@@ -68,7 +68,7 @@ public class ClaimInvCommand implements CommandExecutor {
 			} catch (Exception e1) {
 				plugin.warning("Error serializing inventory claim");
 				plugin.print(e1);
-				sender.sendMessage(Language.translate("error"));
+				sender.sendMessage(Language.translate(Language.L.ERROR));
 				return true;
 			}
 			player.openInventory(inv);

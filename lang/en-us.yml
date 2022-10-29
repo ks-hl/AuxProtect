@@ -1,0 +1,176 @@
+version: 3
+color:
+  p: '9'
+  s: 'f'
+  t: '7'
+update: '&tThere is a new update of &pAuxProtect&t available!\n&tCurrent Version: &p%s &tNew Version: &p%s\n&thttps://www.spigotmc.org/resources/auxprotect.99147/'
+no-permission: '&cYou don''t have permission for that.'
+no-permission-node: '&cYou don''t have permission for that: &t%s'
+no-permission-flag: '&cYou don''t have permission for that flag.'
+invalid-parameter: '&cInvalid parameter: %s'
+invalid-syntax: '&cInvalid syntax.'
+invalid-notenough: '&cNot enough arguments.'
+error: '&cAn error occured'
+action-disabled: '&cThat action is disabled.'
+notplayererror: 'That command can only be used ingame'
+watch-none: '&cYou aren''t watching anything.'
+watch-ing: '&pWatching:'
+watch-removed: '&sRemoved &p%d&s watch records.'
+watch-now: '&sYou are now watching: &p%s'
+purge-purging: '&pPurging ''%s''...'
+purge-uids: '&pPurging unused UIDs...'
+purge-vacuum: '&pCondensing SQLite file...'
+purge-complete: '&pPurge complete.'
+purge-error: '&cAn error occured while purging.'
+purge-time: '&cThat purge is too short. Try a longer amount of time.'
+purge-table: '&cThat table is invalid or does not exist.'
+backup-sqliteonly: 'Backups only work on SQLite'
+unknown-subcommand: 'Unknown subcommand. Do ''/ap help'' for more info.'
+command:
+  lookup:
+    unknown-world: '&cUnknown world: %s'
+    looking: '&pSearching database...'
+    noresults: '&cNo results found.'
+    count: '&p%d &sresults found.'
+    page-footer: '&tPage (&p%d/%d&t) &p%d &ttotal entries.'
+    no-results-selected: '&cYou don''t have a lookup to page through.'
+    nopage: '&cThat page does not exist.'
+    toomany: '&cToo many entries. Try narrowing your search. (%d entries, over %d)'
+    incompatible-tables: '&cThose actions are incompatible.'
+    action-negate: '&cYou cannot negate actions.'
+    action-perm: '&cYou do not have permission to lookup that action. &t''%s'''
+    action-none: '&cYou must specify an action.'
+    rating-wrong: '&cYou can only specify ''rating'' for a:vein.'
+    nodata: '&cThat table does not have data logs.'
+  help:
+    nohelp: '&cThis command does not have a help page.'
+    header: '&s----- &pAuxProtect Help &s-----'
+    help:
+      - '&p/$prefix lookup <params> &s- Perform a lookup'
+      - '&p/$prefix purge <params> &s- Perform a database purge'
+      - '&p/$prefix info &s- Version and credit information'
+      - '&p/$prefix help [command] &s- Show this message, or more information on a subcommand'
+      - '&s'
+      - '&tSee the Wiki for more: https://github.com/Heliosares/AuxProtect/wiki'
+    lookup:
+      - '&s/$prefix &plookup &s<params>'
+      - '&pParams:'
+      - '&pTime: &sIn seconds, minutes, hours, days, or months, represented by the first letter (i.e ''s'' for seconds).'
+      - '&pBefore/After: &sUsed to set a range for time lookup.'
+      - '&pAction: &sType of world interaction log, see tab completion for options.'
+      - '&pTarget: &sSpecify the parameter an action was performed to. You can use an asterisk as a wildcard and a dash as a space in this parameter.'
+      - '&pRadius: &sSpecify the square block radius for a lookup.'
+      - '&sAll parameters can be inverted using &p''!'' &s(i.e radius:5,!2 would do a lookup within 5 blocks of the player, but NOT within 2 blocks.)'
+    purge:
+      - '&s/$prefix &ppurge &s<table | all> <time>'
+      - '&sSee tab completion for list of valid tables.'
+      - '&sMinimum time is 2 weeks.'
+lookup-playtime-nouser: '&cNo user specified'
+lookup-playtime-toomanyusers: '&cToo many users specified'
+lookup-playernotfound: '&cPlayer %s not found.'
+lookup-unknownaction: '&cUnknown action: %s.'
+playtime-toomanyusers: '&cYou can''t specify more than one user for a playtime lookup.'
+playtime-nouser: '&cYou must specify a user for a playtime lookup.'
+xray-rate-nochange: '&cThat is already the rating for that entry.'
+xray-rate-written: '&aRating successfully written.'
+xray-done: '&aThere are no more xray checks!'
+xray-notfound: '&cNo results found at that time'
+xray-toomany: '&cToo many results found'
+xray-already-rated: '&cThis entry has already been rated. Would you like to rate anyway?'
+xray-click-to-change: '&aClick to rate'
+inactive-alert: '&8[&4Server&8] &e%s &tmay be inactive. &e%d &tout of &e%d &tminutes inactive.'
+yes: 'Yes'
+no: 'No'
+inv-manual-success: '&p%s''%s &tinventory has been manually saved. &otime:%s'
+inv-toosoon: '&cThat user''s inventory has been saved too recently.'
+database-busy: '&cThe database is currently busy. Try again later or check the console for more information.'
+
+
+actions:
+  vein: mined vein
+  leash:
+    p: leashed
+    n: unleashed
+  session:
+    p: logged in
+    n: logged out
+  kick: was kicked
+  shop:
+    p: bought
+    n: sold
+  bucket:
+    p: caught fish
+    n: released fish
+  mount:
+    p: mounted
+    n: unmounted
+  alert: may be hacking
+  respawn: respawned
+  lightning: struck lightning
+  explode: caused explosion of
+  xraycheck: xray check
+  censor: was censored
+  msg: messaged
+  consume: consumed
+  tame: tamed
+  kitpvpkill: kill
+  recover: recovered inv of
+  money: money
+  pay: paid
+  gamemode: switched gamemode to
+  pos: position
+  jobs: earned from job
+  activity: activity
+  hurt: hurt
+  inv:
+    p: opened
+    n: closed
+  tp:
+    p: teleported to
+    n: teleported from
+  command: executed
+  kill: killed
+  totem: used totem
+  land: projectile landed
+  elytra:
+    p: started flying
+    n: stopped flying
+  ignoreabandoned: ignored abandoned warning
+  ip: Unique IP
+  username: username
+  inventory: inventory
+  breakitem: broke item
+  launch: launched
+  grab: grabbed
+  drop: dropped
+  pickup: picked up
+  itemframe:
+    p: add itemframe
+    n: remove itemframe
+  auctionlist: listed on ah
+  auctionbuy: bought from ah
+  townyname: named
+  towncreate: created town
+  townrename: renamed town to
+  towndelete: deleted town
+  townjoin:
+    p: joined town
+    n: left town
+  townclaim:
+    p: claimed
+    n: unclaimed
+  townmerge: merged into
+  townmayor: became the mayor of
+  townbank:
+    p: deposited
+    n: withdrew
+  nationcreate: created nation
+  nationrename: renamed nation
+  nationdelete: deleted nation
+  nationjoin:
+    p: joined nation
+    n: left nation
+  nationbank:
+    p: deposited
+    n: withdrew
+  connect: connected to

@@ -83,6 +83,51 @@ public class TownyManager {
 		return null;
 	}
 
+	public int getIDFromName(String name) {
+		if (name == null) {
+			return -1;
+		}
+		if (names.containsValue(name)) {
+			return names.getKey(name);
+		}
+		/*
+		 * if (plugin.isBungee()) { return uuid; } else { OfflinePlayer player =
+		 * Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1))); if (player !=
+		 * null) { usernames.put(uuid, player.getName()); return player.getName
+		 */
+
+		String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+				+ " WHERE action_id=? AND target=?\nORDER BY time DESC\nLIMIT 1;";
+		plugin.debug(stmt, 3);
+
+		Connection connection;
+		try {
+			connection = sql.getConnection();
+		} catch (SQLException e1) {
+			plugin.print(e1);
+			return -1;
+		}
+		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+			pstmt.setInt(1, EntryAction.TOWNYNAME.id);
+			pstmt.setString(2, name);
+			try (ResultSet results = pstmt.executeQuery()) {
+				if (results.next()) {
+					int uid = results.getInt("uid");
+					plugin.debug("Resolved name " + name + " to " + uid);
+					if (uid > 0) {
+						names.put(uid, name);
+						return uid;
+					}
+				}
+			}
+		} catch (SQLException e) {
+			plugin.print(e);
+		} finally {
+			sql.returnConnection(connection);
+		}
+		return -1;
+	}
+
 //	public int getIDFromName(String name, boolean insert) {
 //		if (name == null) {
 //			return -1;

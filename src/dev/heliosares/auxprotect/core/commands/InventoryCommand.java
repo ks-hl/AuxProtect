@@ -13,12 +13,16 @@ import org.bukkit.scheduler.BukkitRunnable;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+
+import dev.heliosares.auxprotect.core.Language;
 
 public class InventoryCommand extends Command {
 
@@ -29,10 +33,10 @@ public class InventoryCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (args.length != 3) {
-			throw new CommandException.SyntaxException();
+			throw new SyntaxException();
 		}
 		if (sender.getPlatform() != PlatformType.SPIGOT) {
-			throw new CommandException.PlatformException();
+			throw new PlatformException();
 		}
 		if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
 			String target = args[1];
@@ -42,11 +46,11 @@ public class InventoryCommand extends Command {
 			try {
 				time_ = TimeUtil.stringToMillis(paramtime);
 				if (time_ < 0) {
-					sender.sendLang("lookup-invalid-parameter", paramtime);
+					sender.sendLang(Language.L.INVALID_PARAMETER, paramtime);
 					return;
 				}
 			} catch (NumberFormatException e) {
-				sender.sendLang("lookup-invalid-parameter", paramtime);
+				sender.sendLang(Language.L.INVALID_PARAMETER, paramtime);
 				return;
 			}
 
@@ -61,7 +65,7 @@ public class InventoryCommand extends Command {
 				String uuid = plugin.getSqlManager().getUUIDFromUID(uid);
 				OfflinePlayer targetP = Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1)));
 				if (uid < 0) {
-					sender.sendLang("lookup-playernotfound", target);
+					sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);
 					return;
 				}
 				DiffInventoryRecord inv = null;
@@ -69,11 +73,11 @@ public class InventoryCommand extends Command {
 					inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
 				} catch (ClassNotFoundException | SQLException | IOException e) {
 					plugin.print(e);
-					sender.sendLang("error");
+					sender.sendLang(Language.L.ERROR);
 					return;
 				}
 				if (inv == null) {
-					sender.sendLang("lookup-noresults");
+					sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
 					return;
 				}
 
@@ -95,7 +99,7 @@ public class InventoryCommand extends Command {
 				}.runTask(spigot);
 			});
 		} else {
-			throw new CommandException.PlatformException();
+			throw new PlatformException();
 		}
 	}
 

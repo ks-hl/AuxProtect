@@ -10,10 +10,13 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+
+import dev.heliosares.auxprotect.core.Language;
 
 public class SaveInvCommand extends Command {
 
@@ -24,7 +27,7 @@ public class SaveInvCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (args.length != 2) {
-			throw new CommandException.SyntaxException();
+			throw new SyntaxException();
 		}
 		Player target = Bukkit.getPlayer(args[1]);
 		APPlayer apTarget = null;
@@ -32,16 +35,17 @@ public class SaveInvCommand extends Command {
 			apTarget = plugin.getAPPlayer(sender);
 		}
 		if (apTarget == null) {
-			sender.sendLang("lookup-playernotfound", args[1]);
+			sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, args[1]);
 			return;
 		}
 		if (!APPermission.ADMIN.hasPermission(sender)
 				&& System.currentTimeMillis() - apTarget.lastLoggedInventory < 10000L) {
-			sender.sendLang("inv-toosoon");
+			sender.sendLang(Language.L.INV_TOOSOON);
 			return;
 		}
 		long time = apTarget.logInventory("manual");
-		sender.sendLang("inv-manual-success", target.getName(), target.getName().endsWith("s") ? "" : "s", time + "e");
+		sender.sendLang(Language.L.INV_MANUAL_SUCCESS, target.getName(), target.getName().endsWith("s") ? "" : "s",
+				time + "e");
 	}
 
 	@Override
@@ -53,7 +57,7 @@ public class SaveInvCommand extends Command {
 	public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
 		if (args.length == 2 && plugin instanceof AuxProtectSpigot spigot) {
 			return spigot.getServer().getOnlinePlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
-		} 
+		}
 		return null;
 	}
 

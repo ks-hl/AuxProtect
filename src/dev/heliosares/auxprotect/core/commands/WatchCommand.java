@@ -10,12 +10,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.heliosares.auxprotect.core.Language;
 
 public class WatchCommand extends Command {
 
@@ -48,12 +50,12 @@ public class WatchCommand extends Command {
 
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (args.length < 2) {
-			throw new CommandException.SyntaxException();
+			throw new SyntaxException();
 		}
 		plugin.runAsync(() -> {
 			if (args.length >= 2 && args[1].equalsIgnoreCase("remove")) {
 				if (args.length != 3) {
-					sender.sendLang("lookup-invalid-syntax");
+					sender.sendLang(Language.L.INVALID_SYNTAX);
 					return;
 				}
 				int id = -1;
@@ -63,7 +65,7 @@ public class WatchCommand extends Command {
 
 				}
 				if (id < 0) {
-					sender.sendLang("lookup-invalid-syntax");
+					sender.sendLang(Language.L.INVALID_SYNTAX);
 					return;
 				}
 				Iterator<WatchRecord> it = records.iterator();
@@ -76,9 +78,9 @@ public class WatchCommand extends Command {
 					}
 				}
 				if (count == 0) {
-					sender.sendLang("watch-none");
+					sender.sendLang(Language.L.WATCH_NONE);
 				} else {
-					sender.sendLang("watch-removed", count);
+					sender.sendLang(Language.L.WATCH_REMOVED, count);
 				}
 				return;
 			} else if (args.length >= 2 && args[1].equalsIgnoreCase("clear")) {
@@ -92,9 +94,9 @@ public class WatchCommand extends Command {
 					}
 				}
 				if (count == 0) {
-					sender.sendLang("watch-none");
+					sender.sendLang(Language.L.WATCH_NONE);
 				} else {
-					sender.sendLang("watch-removed", count);
+					sender.sendLang(Language.L.WATCH_REMOVED, count);
 				}
 				return;
 			} else if (args.length >= 2 && args[1].equalsIgnoreCase("list")) {
@@ -105,9 +107,9 @@ public class WatchCommand extends Command {
 					}
 				}
 				if (lines.isEmpty()) {
-					sender.sendLang("watch-none");
+					sender.sendLang(Language.L.WATCH_NONE);
 				} else {
-					sender.sendLang("watch-ing");
+					sender.sendLang(Language.L.WATCH_ING);
 					for (String line : lines) {
 						sender.sendMessageRaw(line);
 					}
@@ -128,7 +130,7 @@ public class WatchCommand extends Command {
 			}
 			WatchRecord record = new WatchRecord(sender, params, command);
 			WatchCommand.records.add(record);
-			sender.sendLang("watch-now", record.id + ": " + command);
+			sender.sendLang(Language.L.WATCH_NOW, record.id + ": " + command);
 		});
 	}
 

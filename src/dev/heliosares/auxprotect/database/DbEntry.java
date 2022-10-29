@@ -4,6 +4,8 @@ import javax.annotation.Nullable;
 
 import org.bukkit.Location;
 
+import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
+
 public class DbEntry {
 
 	private final long time;
@@ -213,7 +215,7 @@ public class DbEntry {
 		return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
 	}
 
-	public byte[] getBlob() {
+	public byte[] getBlob() throws BusyException {
 		if (blob == null) {
 			blob = SQLManager.getInstance().getBlob(this);
 		}

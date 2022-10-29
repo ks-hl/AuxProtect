@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 
@@ -11,6 +13,8 @@ public enum Table {
 	AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB,
 
 	AUXPROTECT_TOWNY;
+
+	protected final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
 
 	@Override
 	public String toString() {

@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.core;
 
-import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -139,7 +138,7 @@ public class APPlayer {
 				plugin.getSqlManager().getInvDiffManager().logInvDiff(player.getUniqueId(), i, qty, item);
 				plugin.debug("Found diff for " + player.getName() + ": slot=" + i + " qty=" + qty + " item="
 						+ (item == null ? null : item.getType().toString().toLowerCase()), 5);
-			} catch (SQLException e) {
+			} catch (Exception e) {
 				plugin.print(e);
 				return;
 			}

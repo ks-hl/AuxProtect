@@ -10,6 +10,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
 
+import dev.heliosares.auxprotect.core.Language;
 public class ActivityResults extends Results {
 
 	private final long rangeStart;
@@ -29,7 +30,7 @@ public class ActivityResults extends Results {
 	public void showPage(int page, int perpage_) {
 		int lastpage = getNumPages(perpage_);
 		if (page > lastpage || page < 1) {
-			player.sendLang("lookup-nopage");
+			player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
 			return;
 		}
 		perpage = perpage_;

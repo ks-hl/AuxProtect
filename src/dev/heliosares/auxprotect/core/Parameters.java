@@ -16,12 +16,11 @@ import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.LookupManager;
-import dev.heliosares.auxprotect.database.LookupManager.LookupException;
-import dev.heliosares.auxprotect.database.LookupManager.LookupExceptionType;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 public class Parameters {
@@ -88,10 +87,10 @@ public class Parameters {
 	 * @param args
 	 * @return
 	 * @throws ParseException
-	 * @throws LookupManager.LookupException
+	 * @throws LookupException
 	 */
 	public static Parameters parse(@Nonnull SenderAdapter sender, String[] args)
-			throws ParseException, LookupManager.LookupException {
+			throws ParseException, LookupException {
 		IAuxProtect plugin = AuxProtectAPI.getInstance();
 		Parameters parameters = new Parameters(plugin);
 		if (sender.getPlatform() == PlatformType.SPIGOT
@@ -111,7 +110,7 @@ public class Parameters {
 				}
 				if (flag != null) {
 					if (!flag.hasPermission(sender)) {
-						throw new ParseException(Language.translate("no-permission-flag"));
+						throw new ParseException(Language.L.NO_PERMISSION_FLAG);
 					}
 					parameters.flags.add(flag);
 					continue;
@@ -132,8 +131,7 @@ public class Parameters {
 				boolean negate = false;
 				if (param.startsWith("!")) {
 					if (token.equals("action")) {
-						throw new LookupException(LookupExceptionType.ACTION_NEGATE,
-								Language.translate("lookup-action-negate"));
+						throw new LookupException(Language.L.COMMAND__LOOKUP__ACTION_NEGATE);
 					} else if (!token.equals("radius")) {
 						negate = true;
 						param = param.substring(1);
@@ -173,7 +171,7 @@ public class Parameters {
 							}
 							parameters.radius.put(Integer.parseInt(str), negate);
 						} catch (Exception e) {
-							throw new ParseException(Language.translate("lookup-invalid-parameter", line));
+							throw new ParseException(Language.L.INVALID_PARAMETER, line);
 						}
 					}
 					continue;
@@ -182,7 +180,7 @@ public class Parameters {
 					for (String str : param.split(",")) {
 						World world = Bukkit.getWorld(str);
 						if (world == null) {
-							throw new ParseException(Language.translate("lookup-unknown-world", str));
+							throw new ParseException(Language.L.COMMAND__LOOKUP__UNKNOWN_WORLD, str);
 						}
 						parameters.worlds.add(world.getName());
 					}
@@ -192,33 +190,33 @@ public class Parameters {
 						try {
 							parameters.ratings.add(Short.parseShort(str));
 						} catch (NumberFormatException e) {
-							throw new ParseException(Language.translate("lookup-invalid-parameter", line));
+							throw new ParseException(Language.L.INVALID_PARAMETER, line);
 						}
 					}
 					continue;
 				case "db":
 					if (!APPermission.ADMIN.hasPermission(sender)) {
-						throw new ParseException(Language.translate("no-permission"));
+						throw new ParseException(Language.L.NO_PERMISSION);
 					}
 					try {
 						parameters.table = Table.valueOf(param.toUpperCase());
 					} catch (Exception e) {
-						throw new ParseException(Language.translate("lookup-invalid-parameter", line));
+						throw new ParseException(Language.L.INVALID_PARAMETER, line);
 					}
 					continue;
 				}
 			}
-			throw new ParseException(Language.translate("lookup-invalid-parameter", line));
+			throw new ParseException(Language.L.INVALID_PARAMETER, line);
 
 		}
 		if (count < 1) {
-			throw new ParseException(Language.translate("lookup-invalid-notenough"));
+			throw new ParseException(Language.L.INVALID_NOTENOUGH);
 		}
 		if (parameters.actions.size() == 0) {
 			for (EntryAction action : EntryAction.values()) {
 				if (action.getTable() == Table.AUXPROTECT_MAIN
 						&& !APPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase()).hasPermission(sender)) {
-					throw new ParseException(Language.translate("lookup-action-none"));
+					throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NONE);
 				}
 			}
 		}
@@ -228,9 +226,9 @@ public class Parameters {
 		}
 		if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PT)) {
 			if (parameters.users.size() > 1) {
-				throw new ParseException(Language.translate("lookup-playtime-toomanyusers"));
+				throw new ParseException(Language.L.LOOKUP_PLAYTIME_TOOMANYUSERS);
 			} else if (parameters.uids.size() == 0) {
-				throw new ParseException(Language.translate("lookup-playtime-nouser"));
+				throw new ParseException(Language.L.LOOKUP_PLAYTIME_NOUSER);
 			}
 		}
 		if (parameters.flags.contains(Flag.PT)) {
@@ -247,7 +245,7 @@ public class Parameters {
 			if (!parameters.actions.isEmpty()) {
 				for (int id : parameters.actions) {
 					if (id != EntryAction.VEIN.id) {
-						throw new ParseException(Language.translate("lookup-rating-wrong"));
+						throw new ParseException(Language.L.COMMAND__LOOKUP__RATING_WRONG);
 					}
 				}
 			} else {
@@ -260,7 +258,7 @@ public class Parameters {
 		}
 		if (datastr != null) {
 			if (!parameters.table.hasData()) {
-				throw new ParseException(Language.translate("lookup-nodata"));
+				throw new ParseException(Language.L.COMMAND__LOOKUP__NODATA);
 			}
 			for (String data : split(datastr, true)) {
 				parameters.datas.add(data);
@@ -285,9 +283,9 @@ public class Parameters {
 	 * 
 	 * @param param
 	 * @param negate
-	 * @throws LookupManager.LookupException
+	 * @throws LookupException
 	 */
-	public void user(String param, boolean negate) throws LookupManager.LookupException {
+	public void user(String param, boolean negate) throws LookupException {
 		if (param == null) {
 			users.clear();
 			uids.clear();
@@ -307,8 +305,7 @@ public class Parameters {
 				good = true;
 			}
 			if (!good) {
-				throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
-						Language.translate("lookup-playernotfound", user));
+				throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, user);
 			}
 			users.add(user);
 		}
@@ -320,10 +317,10 @@ public class Parameters {
 	 * 
 	 * @param param  Null will clear
 	 * @param negate
-	 * @throws LookupManager.LookupException
+	 * @throws LookupException
 	 * @throws IllegalStateException         if the table is null
 	 */
-	public void target(@Nullable String param, boolean negate) throws LookupManager.LookupException {
+	public void target(@Nullable String param, boolean negate) throws LookupException {
 		if (param == null) {
 			targets.clear();
 			return;
@@ -349,8 +346,7 @@ public class Parameters {
 					good = true;
 				}
 				if (!good) {
-					throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
-							Language.translate("lookup-playernotfound", target));
+					throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, target);
 				}
 			}
 		}
@@ -374,17 +370,17 @@ public class Parameters {
 			}
 			EntryAction action = EntryAction.getAction(actionStr);
 			if (action == null) {
-				throw new ParseException(Language.translate("lookup-unknownaction", param));
+				throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
 			}
 			if (!action.isEnabled()) {
-				throw new ParseException(Language.translate("action-disabled"));
+				throw new ParseException(Language.L.ACTION_DISABLED);
 			}
 
 			if (sender != null && !action.hasPermission(sender)) {
-				throw new ParseException(Language.translate("lookup-action-perm" + " (%s)", param, action.getNode()));
+				throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_PERM, action.getNode());
 			}
 			if (table != null && table != action.getTable()) {
-				throw new ParseException(Language.translate("lookup-incompatible-tables"));
+				throw new ParseException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
 			}
 			table = action.getTable();
 			if (action.hasDual) {
@@ -413,7 +409,7 @@ public class Parameters {
 		if (minus) { // || plusminus unnecessary because they both have '-'
 			String[] range = param.split("\\+?-");
 			if (range.length != 2) {
-				throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+				throw new ParseException(Language.L.INVALID_PARAMETER, param);
 			}
 
 			long time1;
@@ -422,7 +418,7 @@ public class Parameters {
 				time1 = TimeUtil.stringToMillis(range[0]);
 				time2 = TimeUtil.stringToMillis(range[1]);
 			} catch (NumberFormatException e) {
-				throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+				throw new ParseException(Language.L.INVALID_PARAMETER, param);
 			}
 
 			if (!range[0].endsWith("e")) {
@@ -445,10 +441,10 @@ public class Parameters {
 			try {
 				time = TimeUtil.stringToMillis(param);
 				if (time < 0) {
-					throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+					throw new ParseException(Language.L.INVALID_PARAMETER, param);
 				}
 			} catch (NumberFormatException e) {
-				throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+				throw new ParseException(Language.L.INVALID_PARAMETER, param);
 			}
 
 			if (!param.endsWith("e")) {
@@ -467,7 +463,7 @@ public class Parameters {
 		try {
 			long time = TimeUtil.stringToMillis(param);
 			if (time < 0) {
-				throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+				throw new ParseException(Language.L.INVALID_PARAMETER, param);
 			}
 			if (!param.endsWith("e")) {
 				time = System.currentTimeMillis() - time;
@@ -478,7 +474,7 @@ public class Parameters {
 				this.after = time;
 			}
 		} catch (NumberFormatException e) {
-			throw new ParseException(Language.translate("lookup-invalid-parameter", param));
+			throw new ParseException(Language.L.INVALID_PARAMETER, param);
 		}
 	}
 
@@ -740,15 +736,6 @@ public class Parameters {
 			stmt += id;
 		}
 		return stmt + ")";
-	}
-
-	public static class ParseException extends Exception {
-		private static final long serialVersionUID = -3371728414735680055L;
-
-		public ParseException(String msg) {
-			super(msg);
-		}
-
 	}
 
 	public long getAfter() {

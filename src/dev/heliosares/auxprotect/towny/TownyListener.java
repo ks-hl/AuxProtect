@@ -11,6 +11,7 @@ import com.palmergames.bukkit.towny.event.DeleteTownEvent;
 import com.palmergames.bukkit.towny.event.NationAddTownEvent;
 import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
 import com.palmergames.bukkit.towny.event.NationTransactionEvent;
+import com.palmergames.bukkit.towny.event.NewDayEvent;
 import com.palmergames.bukkit.towny.event.NewNationEvent;
 import com.palmergames.bukkit.towny.event.NewTownEvent;
 import com.palmergames.bukkit.towny.event.RenameNationEvent;
@@ -38,6 +39,31 @@ public class TownyListener implements Listener {
 
 	public TownyListener(AuxProtectSpigot plugin) {
 		this.plugin = plugin;
+	}
+
+	@EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+	public void on(NewDayEvent e) {
+		e.getFallenTowns().forEach((t) -> {
+			handledeleted(t, false);
+		});
+		e.getFallenNations().forEach((n) -> {
+			handledeleted(n, true);
+		});
+	}
+
+	private void handledeleted(String name, boolean nation) {
+		int uid = plugin.getSqlManager().getTownyManager().getIDFromName(name);
+		if (uid <= 0) {
+			plugin.info("Unknown town/nation " + name);
+			return;
+		}
+		String uuid = plugin.getSqlManager().getUUIDFromUID(uid);
+		if (uuid == null) {
+			plugin.info("Unknown town/nation " + name + " with uid " + uid);
+			return;
+		}
+		plugin.add(
+				new TownyEntry("#server", nation ? EntryAction.NATIONDELETE : EntryAction.TOWNDELETE, false, uuid, ""));
 	}
 
 	// Towns

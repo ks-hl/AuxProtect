@@ -8,28 +8,9 @@ import java.util.ArrayList;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.exceptions.LookupException;
 
 public class LookupManager {
-	public static enum LookupExceptionType {
-		SYNTAX, PLAYER_NOT_FOUND, ACTION_NEGATE, UNKNOWN_ACTION, ACTION_INCOMPATIBLE, UNKNOWN_WORLD, GENERAL, TOO_MANY
-	}
-
-	public static class LookupException extends Exception {
-		private static final long serialVersionUID = -8329753973868577238L;
-
-		public final LookupExceptionType error;
-
-		public LookupException(LookupExceptionType error, String errorMessage) {
-			super(errorMessage);
-			this.error = error;
-		}
-
-		@Override
-		public String toString() {
-			return error.toString() + ": " + super.getMessage();
-		}
-	}
-
 	private final SQLManager sql;
 	private final IAuxProtect plugin;
 
@@ -38,7 +19,7 @@ public class LookupManager {
 		this.plugin = plugin;
 	}
 
-	public ArrayList<DbEntry> lookup(Parameters... params) throws LookupManager.LookupException {
+	public ArrayList<DbEntry> lookup(Parameters... params) throws LookupException {
 		ArrayList<DbEntry> out = null;
 		for (Parameters param : params) {
 			String[] sqlstmts = param.toSQL(plugin);
@@ -62,7 +43,7 @@ public class LookupManager {
 		return out;
 	}
 
-	public int count(Parameters... params) throws LookupManager.LookupException {
+	public int count(Parameters... params) throws LookupException {
 		int count = 0;
 		Connection connection = null;
 		try {
@@ -93,8 +74,7 @@ public class LookupManager {
 			}
 		} catch (SQLException e1) {
 			plugin.print(e1);
-			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					Language.translate("lookup-error"));
+			throw new LookupException(Language.L.ERROR);
 		} finally {
 			sql.returnConnection(connection);
 		}

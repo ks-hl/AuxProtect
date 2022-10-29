@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.core.commands;
 
-import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -11,15 +10,18 @@ import org.bukkit.entity.Player;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
-import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.database.XrayResults;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -38,7 +40,7 @@ public class XrayCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (sender.getPlatform() != PlatformType.SPIGOT) {
-			throw new CommandException.PlatformException();
+			throw new PlatformException();
 		}
 		if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
 			if (args.length > 1) {
@@ -58,7 +60,7 @@ public class XrayCommand extends Command {
 				boolean skip = args[1].equalsIgnoreCase("skip");
 				if (args[1].equalsIgnoreCase("rate") || skip) {
 					if (args.length < 2) {
-						throw new CommandException.SyntaxException();
+						throw new SyntaxException();
 					}
 
 					long time_ = 0;
@@ -70,10 +72,10 @@ public class XrayCommand extends Command {
 						try {
 							time_ = Long.parseLong(timestr);
 						} catch (NumberFormatException e) {
-							throw new CommandException.SyntaxException();
+							throw new SyntaxException();
 						}
 						if (time_ < 0 || time_ > System.currentTimeMillis()) {
-							throw new CommandException.SyntaxException();
+							throw new SyntaxException();
 						}
 
 						if (skip) {
@@ -81,7 +83,7 @@ public class XrayCommand extends Command {
 								nextEntry(spigot, sender, auto);
 								return;
 							}
-							sender.sendLang("xray-notfound");
+							sender.sendLang(Language.L.XRAY_NOTFOUND);
 							return;
 						}
 					}
@@ -95,17 +97,17 @@ public class XrayCommand extends Command {
 							try {
 								entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
 										"SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
-							} catch (LookupManager.LookupException e) {
+							} catch (LookupException e) {
 								plugin.print(e);
 								sender.sendMessageRaw(e.getMessage());
 								return;
 							}
 							if (entries.size() > 1 && !override) {
-								sender.sendLang("xray-toomany");
+								sender.sendLang(Language.L.XRAY_TOOMANY);
 								return;
 							}
 							if (entries.size() == 0 && !override) {
-								sender.sendLang("xray-notfound");
+								sender.sendLang(Language.L.XRAY_NOTFOUND);
 								return;
 							}
 
@@ -119,11 +121,11 @@ public class XrayCommand extends Command {
 							try {
 								rating = Short.parseShort(args[3]);
 							} catch (NumberFormatException e) {
-								sender.sendLang("error");
+								sender.sendLang(Language.L.ERROR);
 								return;
 							}
 							if (rating < -1 || rating > 3) {
-								sender.sendLang("error");
+								sender.sendLang(Language.L.ERROR);
 								return;
 							}
 							if (entry == null) {
@@ -131,7 +133,7 @@ public class XrayCommand extends Command {
 								return;
 							}
 							if (entry.getRating() >= 0 && !override) {
-								sender.sendLang("xray-already-rated");
+								sender.sendLang(Language.L.XRAY_ALREADY_RATED);
 								ComponentBuilder message = new ComponentBuilder();
 								message.append("§c§l[Overwrite]");
 								String thiscmd = "/" + label;
@@ -147,7 +149,7 @@ public class XrayCommand extends Command {
 								return;
 							}
 							if (rating == entry.getRating() && !override) {
-								sender.sendLang("xray-rate-nochange");
+								sender.sendLang(Language.L.XRAY_RATE_NOCHANGE);
 								return;
 							}
 							entry.setRating(rating);
@@ -162,12 +164,12 @@ public class XrayCommand extends Command {
 
 							try {
 								plugin.getSqlManager().updateXrayEntry(entry);
-							} catch (SQLException e) {
+							} catch (Exception e) {
 								plugin.print(e);
-								sender.sendLang("lookup-error");
+								sender.sendLang(Language.L.ERROR);
 								return;
 							}
-							sender.sendLang("xray-rate-written");
+							sender.sendLang(Language.L.XRAY_RATE_WRITTEN);
 							if (auto) {
 								nextEntry(spigot, sender, true);
 							}
@@ -207,7 +209,7 @@ public class XrayCommand extends Command {
 	private void nextEntry(AuxProtectSpigot plugin, SenderAdapter player, boolean auto) {
 		XrayEntry en = plugin.getVeinManager().next(player.getUniqueId());
 		if (en == null) {
-			player.sendLang("xray-done");
+			player.sendLang(Language.L.XRAY_DONE);
 			return;
 		}
 		final XrayEntry entry = en;
@@ -218,7 +220,6 @@ public class XrayCommand extends Command {
 
 	@Override
 	public boolean exists() {
-		// TODO zz bungee?
 		return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
 	}
 

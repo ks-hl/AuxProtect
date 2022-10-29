@@ -172,19 +172,19 @@ public class EntryAction {
 					return overrideNText;
 				}
 			}
-			return Language.translate(getLang(state));
+			return Language.L.ACTIONS.translateSubcategory(getLang(state));
 		}
 		if (overrideNText != null) {
 			return overrideNText;
 		}
-		return Language.translate(getLang(state));
+		return Language.L.ACTIONS.translateSubcategory(getLang(state));
 	}
 
 	private String getLang(boolean state) {
 		if (hasDual) {
-			return "actions." + toString().toLowerCase() + "." + (state ? "p" : "n");
+			return toString().toLowerCase() + "." + (state ? "p" : "n");
 		}
-		return "actions." + toString().toLowerCase();
+		return toString().toLowerCase();
 	}
 
 	public boolean exists() {

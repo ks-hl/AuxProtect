@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Scanner;
 
 import dev.heliosares.auxprotect.adapters.ConfigAdapter;
@@ -9,6 +10,7 @@ import dev.heliosares.auxprotect.utils.KeyUtil;
 
 public class APConfig {
 
+	private IAuxProtect plugin;
 	private boolean inventoryOnWorldChange;
 	private boolean checkforupdates;
 	private long posInterval;
@@ -19,11 +21,35 @@ public class APConfig {
 	private boolean skipV6Migration;
 	private KeyUtil key;
 	private ConfigAdapter config;
+	private int debug;
+	private boolean mysql;
+	private String host;
+	private String port;
+	private String user;
+	private String pass;
+	private String database;
+	private String tablePrefix;
 
-	public void load(IAuxProtect plugin, ConfigAdapter config) {
-		loadKey(plugin);
+	public void load(IAuxProtect plugin, ConfigAdapter config) throws IOException {
+		this.plugin = plugin;
 		this.config = config;
+		reload();
+	}
+
+	public void reload() throws IOException {
+		config.load();
+		loadKey(plugin);
+		this.debug = config.getInt("debug", 0);
 		checkforupdates = config.getBoolean("checkforupdates", true);
+		mysql = config.getBoolean("MySQL.use", false);
+		if (mysql) {
+			user = config.getString("MySQL.username", "");
+			pass = config.getString("MySQL.password", "");
+			host = config.getString("MySQL.host", "localhost");
+			port = config.getString("MySQL.port", "3306");
+			database = config.getString("MySQL.database", "database");
+			tablePrefix = config.getString("MySQL.table-prefix");
+		}
 		if (config.getPlatform() == PlatformType.SPIGOT) {
 			skipV6Migration = config.getBoolean("skipv6migration");
 			overrideCommands = config.getBoolean("OverrideCommands");
@@ -49,6 +75,7 @@ public class APConfig {
 			action.setLowestpriority(priority);
 			config.set("Actions." + action.toString().toLowerCase() + ".Enabled", enabled);
 		}
+		config.save();
 	}
 
 	private void loadKey(IAuxProtect plugin) {
@@ -128,5 +155,46 @@ public class APConfig {
 
 	public ConfigAdapter getConfig() {
 		return config;
+	}
+
+	public int getDebug() {
+		return debug;
+	}
+
+	public void setDebug(int debug) throws IOException {
+		this.debug = debug;
+		config.set("debug", debug);
+		config.save();
+	}
+
+	public String getHost() {
+		return host;
+	}
+
+	public String getPort() {
+		return port;
+	}
+
+	public String getUser() {
+		return user;
+	}
+
+	public String getPass() {
+		return pass;
+	}
+
+	public String getDatabase() {
+		return database;
+	}
+
+	public boolean isMySQL() {
+		return mysql;
+	}
+
+	public String getTablePrefix() {
+		if (!mysql) {
+			return null;
+		}
+		return tablePrefix;
 	}
 }

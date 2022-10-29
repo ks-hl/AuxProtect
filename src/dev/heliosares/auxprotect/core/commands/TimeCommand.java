@@ -7,9 +7,12 @@ import java.util.List;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 public class TimeCommand extends Command {
 
@@ -31,7 +34,7 @@ public class TimeCommand extends Command {
 				try {
 					time = TimeUtil.stringToMillis(args[1].substring(1));
 				} catch (NumberFormatException e) {
-					sender.sendLang("lookup-invalid-syntax");
+					sender.sendLang(Language.L.INVALID_SYNTAX);
 					return;
 				}
 				sender.sendMessageRaw("§9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
@@ -45,12 +48,12 @@ public class TimeCommand extends Command {
 				return;
 			}
 		}
-		throw new CommandException.SyntaxException();
+		throw new SyntaxException();
 	}
 
 	@Override
 	public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-		//TODO
+		// TODO
 		return null;
 	}
 

@@ -15,7 +15,6 @@ import org.bukkit.inventory.ItemStack;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -23,6 +22,9 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager;
 import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Experience;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -43,10 +45,10 @@ public class InvCommand extends Command {
 	@Override
 	public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
 		if (args.length < 2) {
-			throw new CommandException.SyntaxException();
+			throw new SyntaxException();
 		}
 		if (sender.getPlatform() != PlatformType.SPIGOT) {
-			throw new CommandException.PlatformException();
+			throw new PlatformException();
 		}
 		if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
 			int index = -1;
@@ -56,16 +58,16 @@ public class InvCommand extends Command {
 
 			}
 			if (index < 0) {
-				throw new CommandException.SyntaxException();
+				throw new SyntaxException();
 			}
 			Results results = LookupCommand.results.get(player.getUniqueId().toString());
 			if (results == null || index >= results.getSize()) {
-				throw new CommandException.SyntaxException();
+				throw new SyntaxException();
 			}
 
 			DbEntry entry = results.get(index);
 			if (entry == null) {
-				throw new CommandException.SyntaxException();
+				throw new SyntaxException();
 			}
 			plugin.runAsync(() -> {
 				if (entry.getAction().equals(EntryAction.INVENTORY)) {
@@ -75,7 +77,7 @@ public class InvCommand extends Command {
 					} catch (Exception e1) {
 						plugin.warning("Error serializing inventory lookup");
 						plugin.print(e1);
-						sender.sendLang("error");
+						sender.sendLang(Language.L.ERROR);
 						return;
 					}
 					final PlayerInventoryRecord inv = inv_;
@@ -90,13 +92,13 @@ public class InvCommand extends Command {
 					} catch (Exception e1) {
 						plugin.warning("Error serializing itemviewer");
 						plugin.print(e1);
-						sender.sendLang("error");
+						sender.sendLang(Language.L.ERROR);
 						return;
 					}
 				}
 			});
 		} else {
-			throw new CommandException.PlatformException();
+			throw new PlatformException();
 		}
 	}
 
@@ -175,7 +177,7 @@ public class InvCommand extends Command {
 						} catch (Exception e1) {
 							plugin.warning("Error serializing inventory recovery");
 							plugin.print(e1);
-							player.sendMessage(Language.translate("error"));
+							player.sendMessage(Language.translate(Language.L.ERROR));
 						}
 						//TODO move to AP table
 						plugin.data.getData().set("Recoverables." + target.getUniqueId().toString() + ".time",

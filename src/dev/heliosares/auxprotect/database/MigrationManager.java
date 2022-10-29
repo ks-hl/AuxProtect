@@ -12,6 +12,7 @@ import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
 public class MigrationManager {
@@ -33,7 +34,7 @@ public class MigrationManager {
 		return isMigrating;
 	}
 
-	void preTables() throws SQLException, IOException {
+	void preTables() throws SQLException, IOException, BusyException {
 		preMigrateDebug = -1;
 		if (sql.getVersion() < SQLManager.DBVERSION) {
 			plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + SQLManager.DBVERSION
@@ -103,7 +104,10 @@ public class MigrationManager {
 		}
 
 		if (preMigrateDebug >= 0) {
-			plugin.setDebug(preMigrateDebug);
+			try {
+				plugin.getAPConfig().setDebug(preMigrateDebug);
+			} catch (IOException ignored) {
+			}
 			plugin.info("Debug mode restored to " + preMigrateDebug);
 		}
 		isMigrating = false;

@@ -8,8 +8,8 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
 import dev.heliosares.auxprotect.adapters.SpigotSenderAdapter;
-import dev.heliosares.auxprotect.core.CommandException;
 import dev.heliosares.auxprotect.core.commands.APCommand;
+import dev.heliosares.auxprotect.exceptions.CommandException;
 
 public class APSCommand implements CommandExecutor, TabExecutor {
 

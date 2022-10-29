@@ -139,7 +139,7 @@ public class MoneySolver extends ChartRenderer {
 				MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
 				player.getInventory().addItem(solver.asItem(player));
 			} catch (IllegalArgumentException e) {
-				player.sendMessage(Language.translate("lookup-noresults"));
+				player.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__NORESULTS));
 			}
 		});
 	}

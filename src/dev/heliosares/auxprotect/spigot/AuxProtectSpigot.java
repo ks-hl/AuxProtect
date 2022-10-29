@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.spigot;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -62,9 +63,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	protected DatabaseRunnable dbRunnable;
-	public int debug;
+	// TODO convert to configadapter
 	public YMLManager data;
-	private APConfig config;
+	private final APConfig config = new APConfig();
 
 	private Economy econ;
 	private static AuxProtectSpigot instance;
@@ -97,24 +98,30 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public void onEnable() {
 		instance = this;
-		// AuxProtectAPI.setInstance(this);
-
 		this.saveDefaultConfig();
 		super.reloadConfig();
 		this.getConfig().options().copyDefaults(true);
 
-		debug = getConfig().getInt("debug", 0);
+		try {
+			config.load(this, new SpigotConfigAdapter(this.getRootDirectory(), "config.yml", this.getConfig(),
+					s -> this.getResource(s), false));
+		} catch (IOException e1) {
+			warning("Failed to load config");
+			print(e1);
+		}
 
-		config = new APConfig();
-		config.load(this, new SpigotConfigAdapter(this.getConfig()));
-		this.saveConfig();
-
-		YMLManager langManager = new YMLManager("en-us", this);
-		langManager.load(true);
-		Language.load(new SpigotConfigAdapter(langManager.getData()));
+		try {
+			Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(),
+					"lang/" + config.getConfig().getString("lang") + ".yml", null, s -> this.getResource(s), false));
+		} catch (FileNotFoundException e1) {
+			warning("Language file not found");
+		} catch (IOException e1) {
+			warning("Failed to load lang");
+			print(e1);
+		}
 
 		data = new YMLManager("data", this);
-		data.load(false);
+		data.load();
 		lastloaded = data.getData().getLong("lastloaded");
 		data.getData().set("lastloaded", System.currentTimeMillis());
 		data.save();
@@ -130,15 +137,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		debug("Compatability version: " + SERVER_VERSION, 1);
 
 		File sqliteFile = null;
-		boolean mysql = getConfig().getBoolean("MySQL.use", false);
-		String user = getConfig().getString("MySQL.username", "");
-		String pass = getConfig().getString("MySQL.password", "");
 		String uri = "";
-		if (mysql) {
-			String host = getConfig().getString("MySQL.host", "localhost");
-			String port = getConfig().getString("MySQL.port", "3306");
-			String database = getConfig().getString("MySQL.database", "database");
-			uri = String.format("jdbc:mysql://%s:%s/%s", host, port, database);
+		if (getAPConfig().isMySQL()) {
+			uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
+					getAPConfig().getDatabase());
 		} else {
 			sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
 			if (!sqliteFile.getParentFile().exists()) {
@@ -162,7 +164,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
 		}
 
-		sqlManager = new SQLManager(this, uri, getConfig().getString("MySQL.table-prefix"), sqliteFile);
+		sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
 		veinManager = new VeinManager();
 
 		new BukkitRunnable() {
@@ -170,8 +172,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			@Override
 			public void run() {
 				try {
-					if (mysql) {
-						sqlManager.connect(user, pass);
+					if (getAPConfig().isMySQL()) {
+						sqlManager.connect(getAPConfig().getUser(), getAPConfig().getPass());
 					} else {
 						sqlManager.connect(null, null);
 					}
@@ -268,7 +270,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 			@Override
 			public void run() {
 				checkcommand("auxprotect");
-				checkcommand("ap");
+				checkcommand(getCommandAlias());
 				checkcommand("claiminv");
 			}
 
@@ -285,7 +287,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 					if (config.isOverrideCommands()) {
 						warning("Attempting to re-register tab completer.");
 						getCommand("auxprotect").setTabCompleter(apcommand);
-						getCommand("ap").setTabCompleter(apcommand);
+						getCommand(getCommandAlias()).setTabCompleter(apcommand);
 					} else {
 						warning("If this is causing issues, try enabling 'OverrideCommands' in the config.");
 					}
@@ -399,8 +401,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 								&& !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
 							if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
 								apPlayer.lastNotifyInactive = System.currentTimeMillis();
-								String msg = Language.translate("inactive-alert", apPlayer.player.getName(), inactive,
-										tallied);
+								String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
+										inactive, tallied);
 								for (Player player : Bukkit.getOnlinePlayers()) {
 									if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
 										player.sendMessage(msg);
@@ -544,8 +546,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	public void tellAboutUpdate(CommandSender sender) {
-		new SpigotSenderAdapter(this, sender).sendLang("update", AuxProtectSpigot.this.getDescription().getVersion(),
-				update);
+		new SpigotSenderAdapter(this, sender).sendLang(Language.L.UPDATE,
+				AuxProtectSpigot.this.getDescription().getVersion(), update);
 	}
 
 	@Override
@@ -593,7 +595,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
 	@Override
 	public void debug(String string, int verbosity) {
-		if (debug >= verbosity) {
+		if (getAPConfig().getDebug() >= verbosity) {
 			this.info("DEBUG" + verbosity + ": " + string);
 		}
 	}
@@ -678,11 +680,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 		return PlatformType.SPIGOT;
 	}
 
-	@Override
-	public int getDebug() {
-		return debug;
-	}
-
 	public APConfig getAPConfig() {
 		return config;
 	}
@@ -716,13 +713,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	}
 
 	@Override
-	public void reloadConfig() {
-		super.reloadConfig();
-		config = new APConfig();
-		config.load(this, new SpigotConfigAdapter(this.getConfig()));
-	}
-
-	@Override
 	public String getCommandPrefix() {
 		return "auxprotect";
 	}
@@ -730,13 +720,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public SenderAdapter getConsoleSender() {
 		return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
-	}
-
-	@Override
-	public void setDebug(int debug) {
-		this.debug = debug;
-		getConfig().set("debug", debug);
-		saveConfig();
 	}
 
 	@Override
@@ -762,5 +745,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 	@Override
 	public List<String> listPlayers() {
 		return getServer().getOnlinePlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
+	}
+
+	@Override
+	public String getCommandAlias() {
+		return "ap";
 	}
 }

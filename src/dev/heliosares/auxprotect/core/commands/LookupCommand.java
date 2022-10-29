@@ -23,16 +23,18 @@ import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
 import dev.heliosares.auxprotect.utils.RetentionSolver;
 import dev.heliosares.auxprotect.utils.XraySolver;
+
+import dev.heliosares.auxprotect.core.Language;
 
 public class LookupCommand extends Command {
 
@@ -44,11 +46,11 @@ public class LookupCommand extends Command {
 
 	public void onCommand(SenderAdapter sender, String label, String[] args) {
 		if (args.length < 2) {
-			sender.sendLang("lookup-invalid-syntax");
+			sender.sendLang(Language.L.INVALID_SYNTAX);
 			return;
 		}
 		if (!plugin.getSqlManager().isConnected()) {
-			sender.sendLang("database-busy");
+			sender.sendLang(Language.L.DATABASE_BUSY);
 			return;
 		}
 		Runnable run = new Runnable() {
@@ -87,7 +89,7 @@ public class LookupCommand extends Command {
 							result = results.get(uuid);
 						}
 						if (result == null) {
-							sender.sendLang("lookup-no-results-selected");
+							sender.sendLang(Language.L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
 							return;
 						}
 						if (perpage == -1) {
@@ -123,41 +125,41 @@ public class LookupCommand extends Command {
 					return;
 				}
 
-				sender.sendLang("lookup-looking");
+				sender.sendLang(Language.L.COMMAND__LOOKUP__LOOKING);
 
 				int count = 0;
 				try {
 					count = plugin.getSqlManager().getLookupManager().count(params);
-				} catch (LookupManager.LookupException e) {
+				} catch (LookupException e) {
 					sender.sendMessageRaw(e.getMessage());
 					return;
 				}
 				if (params.getFlags().contains(Flag.COUNT_ONLY)) {
-					sender.sendLang("lookup-count", count);
+					sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, count);
 					return;
 				}
 				if (count == 0) {
-					sender.sendLang("lookup-noresults");
+					sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
 					return;
 				}
 				if (count > SQLManager.MAX_LOOKUP_SIZE) {
-					sender.sendLang("lookup-toomany", count, SQLManager.MAX_LOOKUP_SIZE);
+					sender.sendLang(Language.L.COMMAND__LOOKUP__TOOMANY, count, SQLManager.MAX_LOOKUP_SIZE);
 					return;
 				}
 
 				ArrayList<DbEntry> rs = null;
 				try {
 					rs = plugin.getSqlManager().getLookupManager().lookup(params);
-				} catch (LookupManager.LookupException e) {
+				} catch (LookupException e) {
 					sender.sendMessageRaw(e.getMessage());
 					return;
 				}
 				if (rs == null || rs.size() == 0) {
-					sender.sendLang("lookup-noresults");
+					sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
 					return;
 				}
 				if (params.getFlags().contains(Flag.COUNT)) {
-					sender.sendLang("lookup-count", rs.size());
+					sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, rs.size());
 					double totalMoney = 0;
 					double totalExp = 0;
 					int dropcount = 0;
@@ -185,7 +187,7 @@ public class LookupCommand extends Command {
 										totalMoney += value;
 									}
 								} catch (Exception ignored) {
-									if (plugin.getDebug() > 0) {
+									if (plugin.getAPConfig().getDebug() > 0) {
 										plugin.print(ignored);
 									}
 								}
@@ -247,7 +249,7 @@ public class LookupCommand extends Command {
 					return;
 				}
 //				else if (params.getFlags().contains(Flag.COUNT1)) {
-//					sender.sendMessage(String.format(plugin.translate("lookup-count"), rs.size()));
+//					sender.sendMessage(String.format(plugin.translate(Language.L.COMMAND__LOOKUP__COUNT), rs.size()));
 //					HashMap<String, Double> values = new HashMap<>();
 //					HashMap<String, Integer> qtys = new HashMap<>();
 //					for (DbEntry entry : rs) {
@@ -303,11 +305,11 @@ public class LookupCommand extends Command {
 				else if (params.getFlags().contains(Flag.PT)) {
 					List<String> users = params.getUsers();
 					if (users.size() == 0) {
-						sender.sendLang("playtime-nouser");
+						sender.sendLang(Language.L.PLAYTIME_NOUSER);
 						return;
 					}
 					if (users.size() > 1) {
-						sender.sendLang("playtime-toomanyusers");
+						sender.sendLang(Language.L.PLAYTIME_TOOMANYUSERS);
 						return;
 					}
 					sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(),
@@ -338,11 +340,11 @@ public class LookupCommand extends Command {
 				} else if (params.getFlags().contains(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
 					List<String> users = params.getUsers();
 					if (users.size() == 0) {
-						sender.sendLang("playtime-nouser");
+						sender.sendLang(Language.L.PLAYTIME_NOUSER);
 						return;
 					}
 					if (users.size() > 1) {
-						sender.sendLang("playtime-toomanyusers");
+						sender.sendLang(Language.L.PLAYTIME_TOOMANYUSERS);
 						return;
 					}
 					if (sender.getSender() instanceof org.bukkit.entity.Player player) {

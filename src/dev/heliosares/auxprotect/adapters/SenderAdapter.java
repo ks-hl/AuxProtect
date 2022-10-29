@@ -15,8 +15,8 @@ public abstract class SenderAdapter {
 
 	public abstract PlatformType getPlatform();
 
-	public void sendLang(String namespace, Object... format) {
-		Language.send(this, namespace, format);
+	public void sendLang(Language.L lang, Object... format) {
+		sendMessageRaw(lang.translate(format));
 	}
 
 	public abstract void sendMessage(BaseComponent... message);

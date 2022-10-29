@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.2-rc1</version>
+	<version>1.2-rc2</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -14,7 +14,7 @@
 				<filtering>true</filtering>
 				<includes>
 					<include>plugin.yml</include>
-					<include>en-us.yml</include>
+					<include>lang/*</include>
 					<include>config.yml</include>
 					<include>bungee.yml</include>
 				</includes>
@@ -200,5 +200,6 @@
 	<properties>
 		<jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
 		<testserver>${env.USERPROFILE}/Documents/TestServer</testserver>
+		<project.build.sourceEncoding>Cp1252</project.build.sourceEncoding>
 	</properties>
 </project>

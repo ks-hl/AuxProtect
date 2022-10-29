@@ -34,6 +34,9 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
@@ -130,7 +133,8 @@ public class SQLManager {
 		this.sqliteFile = sqliteFile;
 	}
 
-	public void connect(String user, String pass) throws SQLException, IOException, ClassNotFoundException {
+	public void connect(String user, String pass)
+			throws SQLException, IOException, ClassNotFoundException, BusyException {
 		plugin.info("Connecting to database...");
 
 		conn = new ConnectionPool(plugin, targetString, user, pass);
@@ -162,30 +166,28 @@ public class SQLManager {
 		}
 	}
 
-	public String backup() throws IOException {
+	public String backup() throws IOException, BusyException {
 		if (mysql) {
 			return null;
 		}
 
-		Connection connection = conn.getWriteConnection();
+		Connection connection = conn.getWriteConnection(30000);
 		try {
-			synchronized (connection) {
-				File backup = new File(sqliteFile.getParentFile(),
-						"backups/backup-v" + version + "-" + System.currentTimeMillis() + ".db");
-				if (!backup.getParentFile().exists()) {
-					backup.getParentFile().mkdirs();
-				}
-				Files.copy(sqliteFile, backup);
-				return backup.getAbsolutePath();
+			File backup = new File(sqliteFile.getParentFile(),
+					"backups/backup-v" + version + "-" + System.currentTimeMillis() + ".db");
+			if (!backup.getParentFile().exists()) {
+				backup.getParentFile().mkdirs();
 			}
+			Files.copy(sqliteFile, backup);
+			return backup.getAbsolutePath();
 		} finally {
 			conn.returnConnection(connection);
 		}
 	}
 
-	private void init() throws SQLException, IOException {
+	private void init() throws SQLException, IOException, BusyException {
 
-		Connection connection = conn.getWriteConnection();
+		Connection connection = conn.getWriteConnection(60000);
 		try {
 			synchronized (connection) {
 				this.migrationmanager = new MigrationManager(this, connection, plugin);
@@ -343,7 +345,7 @@ public class SQLManager {
 		return inUseUids;
 	}
 
-	public void purgeUIDs() throws SQLException {
+	public void purgeUIDs() throws SQLException, BusyException {
 		Set<Integer> inUseUids = new HashSet<>();
 		for (Table table : Table.values()) {
 			if (!table.hasAPEntries() || !table.exists(plugin)) {
@@ -376,7 +378,7 @@ public class SQLManager {
 			executeWrite(hdr + "(" + stmt + ")");
 	}
 
-	public void vacuum() throws SQLException {
+	public void vacuum() throws SQLException, BusyException {
 		executeWrite("VACUUM;");
 	}
 
@@ -397,8 +399,8 @@ public class SQLManager {
 		}
 	}
 
-	public void executeWrite(String stmt) throws SQLException {
-		Connection connection = conn.getWriteConnection();
+	public void executeWrite(String stmt) throws SQLException, BusyException {
+		Connection connection = conn.getWriteConnection(30000);
 		try {
 			synchronized (connection) {
 				execute(connection, stmt);
@@ -463,10 +465,14 @@ public class SQLManager {
 	 * done with this Connection
 	 * 
 	 * @return a WRITE-ONLY connection to the database
+	 * @param wait how many milliseconds to wait for a lock
+	 * @throws BusyException if wait is exceeded and the database is busy
 	 */
-	public Connection getWriteConnection() {
-		return conn.getWriteConnection();
+	protected Connection getWriteConnection(long wait) throws BusyException {
+		return conn.getWriteConnection(wait);
 	}
+
+	// TODO controlled method of executing write preparedstatements
 
 	/**
 	 * Called to return a connection to the pool
@@ -482,95 +488,125 @@ public class SQLManager {
 		return conn.getPoolSize();
 	}
 
-	protected void put(Table table, ArrayList<DbEntry> entries) throws SQLException {
-		String stmt = "INSERT INTO " + table.toString() + " ";
-		int numColumns = table.getNumColumns(plugin.getPlatform());
-		String inc = Table.getValuesTemplate(numColumns);
-		final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
-		final boolean hasData = table.hasData();
-		final boolean hasAction = table.hasActionId();
-		final boolean hasLook = table.hasLook();
-		stmt += table.getValuesHeader(plugin.getPlatform());
-		stmt += " VALUES";
-		for (int i = 0; i < entries.size(); i++) {
-			stmt += "\n" + inc;
-			if (i + 1 == entries.size()) {
-				stmt += ";";
-			} else {
-				stmt += ",";
-			}
-		}
-		HashMap<Long, byte[]> blobsToLog = new HashMap<>();
-		Connection connection = conn.getWriteConnection();
+	protected boolean put(Table table) throws SQLException {
+		Connection connection = null;
 		try {
-			synchronized (connection) {
-				try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+			connection = conn.getWriteConnection(0);
+		} catch (BusyException e) {
+		}
+		if (connection == null) {
+			return false;
+		}
+		long start = System.nanoTime();
+		int count = 0;
+		try {
+			if (table.queue == null) {
+				return false;
+			}
+			List<DbEntry> entries = new ArrayList<>();
 
-					int i = 1;
-					for (DbEntry dbEntry : entries) {
-						int prior = i;
-						// statement.setString(i++, table);
-						statement.setLong(i++, dbEntry.getTime());
-						statement.setInt(i++, getUIDFromUUID(dbEntry.getUserUUID(), true));
-						int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
+			DbEntry entry;
+			while ((entry = table.queue.poll()) != null) {
+				entries.add(entry);
+			}
+			count = entries.size();
+			if (count == 0) {
+				return false;
+			}
+			String stmt = "INSERT INTO " + table.toString() + " ";
+			int numColumns = table.getNumColumns(plugin.getPlatform());
+			String inc = Table.getValuesTemplate(numColumns);
+			final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
+			final boolean hasData = table.hasData();
+			final boolean hasAction = table.hasActionId();
+			final boolean hasLook = table.hasLook();
+			stmt += table.getValuesHeader(plugin.getPlatform());
+			stmt += " VALUES";
+			for (int i = 0; i < entries.size(); i++) {
+				stmt += "\n" + inc;
+				if (i + 1 == entries.size()) {
+					stmt += ";";
+				} else {
+					stmt += ",";
+				}
+			}
+			HashMap<Long, byte[]> blobsToLog = new HashMap<>();
+			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
 
-						if (hasAction) {
-							statement.setInt(i++, action);
+				int i = 1;
+				for (DbEntry dbEntry : entries) {
+					int prior = i;
+					// statement.setString(i++, table);
+					statement.setLong(i++, dbEntry.getTime());
+					statement.setInt(i++, getUIDFromUUID(dbEntry.getUserUUID(), true));
+					int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
+
+					if (hasAction) {
+						statement.setInt(i++, action);
+					}
+					if (hasLocation) {
+						statement.setInt(i++, getWID(dbEntry.world));
+						statement.setInt(i++, dbEntry.x);
+						int y = dbEntry.y;
+						if (y > 32767) {
+							y = 32767;
 						}
-						if (hasLocation) {
-							statement.setInt(i++, getWID(dbEntry.world));
-							statement.setInt(i++, dbEntry.x);
-							int y = dbEntry.y;
-							if (y > 32767) {
-								y = 32767;
-							}
-							if (y < -32768) {
-								y = -32768;
-							}
-							statement.setInt(i++, y);
-							statement.setInt(i++, dbEntry.z);
+						if (y < -32768) {
+							y = -32768;
 						}
-						if (hasLook) {
-							statement.setInt(i++, dbEntry.pitch);
-							statement.setInt(i++, dbEntry.yaw);
-						}
-						if (table.hasStringTarget()) {
-							statement.setString(i++, dbEntry.getTargetUUID());
-						} else {
-							statement.setInt(i++, getUIDFromUUID(dbEntry.getTargetUUID(), true));
-						}
-						if (dbEntry instanceof XrayEntry) {
-							statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
-						}
-						if (hasData) {
-							statement.setString(i++, dbEntry.getData());
-						}
-						if (table.hasBlob()) {
-							statement.setBoolean(i++, dbEntry.hasBlob());
-							if (dbEntry.hasBlob()) {
+						statement.setInt(i++, y);
+						statement.setInt(i++, dbEntry.z);
+					}
+					if (hasLook) {
+						statement.setInt(i++, dbEntry.pitch);
+						statement.setInt(i++, dbEntry.yaw);
+					}
+					if (table.hasStringTarget()) {
+						statement.setString(i++, dbEntry.getTargetUUID());
+					} else {
+						statement.setInt(i++, getUIDFromUUID(dbEntry.getTargetUUID(), true));
+					}
+					if (dbEntry instanceof XrayEntry) {
+						statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
+					}
+					if (hasData) {
+						statement.setString(i++, dbEntry.getData());
+					}
+					if (table.hasBlob()) {
+						statement.setBoolean(i++, dbEntry.hasBlob());
+						if (dbEntry.hasBlob()) {
+							try {
 								blobsToLog.put(dbEntry.getTime(), dbEntry.getBlob());
+							} catch (BusyException e) {
+								plugin.warning("Failed to acquire lock to log blob");
+								plugin.print(e);
 							}
-						}
-						if (i - prior != numColumns) {
-							plugin.warning("Incorrect number of columns provided inserting action "
-									+ dbEntry.getAction().toString() + " into " + table.toString());
-							plugin.warning(i - prior + " =/= " + numColumns);
-							plugin.warning("Statement: " + stmt);
-							throw new IllegalArgumentException();
 						}
 					}
-
-					statement.executeUpdate();
+					if (i - prior != numColumns) {
+						plugin.warning("Incorrect number of columns provided inserting action "
+								+ dbEntry.getAction().toString() + " into " + table.toString());
+						plugin.warning(i - prior + " =/= " + numColumns);
+						plugin.warning("Statement: " + stmt);
+						throw new IllegalArgumentException();
+					}
 				}
-				if (table.hasBlob() && blobsToLog.size() > 0) {
-					putBlobs(blobsToLog);
-				}
 
-				rowcount += entries.size();
+				statement.executeUpdate();
 			}
+			if (table.hasBlob() && blobsToLog.size() > 0) {
+				putBlobs(blobsToLog);
+			}
+
+			rowcount += entries.size();
 		} finally {
 			returnConnection(connection);
 		}
+
+		double elapsed = (System.nanoTime() - start) / 1000000.0;
+		plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
+				+ (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
+		return true;
 	}
 
 	private String getSize(double bytes) {
@@ -635,24 +671,29 @@ public class SQLManager {
 			stmt += "\n(?, ?),";
 		}
 
-		Connection connection = getWriteConnection();
-		synchronized (connection) {
-			try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
-				int i = 1;
-				for (Entry<Long, byte[]> entry : blobsToLog.entrySet()) {
-					plugin.debug("blob: " + entry.getKey(), 5);
-					statement.setLong(i++, entry.getKey());
-					if (mysql) {
-						Blob blob = connection.createBlob();
-						blob.setBytes(1, entry.getValue());
-						statement.setBlob(i++, blob);
-					} else {
-						statement.setBytes(i++, entry.getValue());
-					}
+		Connection connection;
+		try {
+			connection = getWriteConnection(30000);
+		} catch (BusyException e) {
+			return;
+		}
+		try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
+			int i = 1;
+			for (Entry<Long, byte[]> entry : blobsToLog.entrySet()) {
+				plugin.debug("blob: " + entry.getKey(), 5);
+				statement.setLong(i++, entry.getKey());
+				if (mysql) {
+					Blob blob = connection.createBlob();
+					blob.setBytes(1, entry.getValue());
+					statement.setBlob(i++, blob);
+				} else {
+					statement.setBytes(i++, entry.getValue());
 				}
-
-				statement.executeUpdate();
 			}
+
+			statement.executeUpdate();
+		} finally {
+			returnConnection(connection);
 		}
 	}
 
@@ -660,7 +701,12 @@ public class SQLManager {
 		String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, `blob`) VALUES ";
 		stmt += "\n(?, ?),";
 
-		Connection connection = getWriteConnection();
+		Connection connection;
+		try {
+			connection = getWriteConnection(30000);
+		} catch (BusyException e) {
+			return;
+		}
 		synchronized (connection) {
 			try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
 				int i = 1;
@@ -675,6 +721,8 @@ public class SQLManager {
 				}
 
 				statement.executeUpdate();
+			} finally {
+				returnConnection(connection);
 			}
 		}
 	}
@@ -686,7 +734,7 @@ public class SQLManager {
 	 */
 	@Deprecated
 	public ArrayList<DbEntry> lookup(HashMap<String, String> params, Location location, boolean exact)
-			throws LookupManager.LookupException {
+			throws LookupException, ParseException {
 		if (!isConnected)
 			return null;
 
@@ -735,8 +783,7 @@ public class SQLManager {
 					try {
 						forcedTable = Table.valueOf(value.toUpperCase());
 					} catch (IllegalArgumentException e) {
-						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.SYNTAX,
-								Language.translate("lookup-invalid-syntax"));
+						throw new LookupException(Language.L.INVALID_SYNTAX);
 					}
 					continue;
 				}
@@ -744,8 +791,7 @@ public class SQLManager {
 				if (not) {
 					value = value.substring(1);
 					if (key.equalsIgnoreCase("action")) {
-						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.ACTION_NEGATE,
-								Language.translate("lookup-action-negate"));
+						throw new LookupException(Language.L.COMMAND__LOOKUP__ACTION_NEGATE);
 					}
 				}
 				String build = "";
@@ -799,8 +845,7 @@ public class SQLManager {
 						} else if (altuid > 0) {
 							theStmt = "uid = '" + altuid + "'";
 						} else {
-							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
-									Language.translate("lookup-playernotfound", param));
+							throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, param);
 
 						}
 					} else if (key.equalsIgnoreCase("radius")) {
@@ -816,16 +861,13 @@ public class SQLManager {
 						}
 						EntryAction action = EntryAction.getAction(param);
 						if (action == null || !action.isEnabled()) {
-							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.UNKNOWN_ACTION,
-									Language.translate("lookup-unknownaction", param));
+							throw new LookupException(Language.L.LOOKUP_UNKNOWNACTION, param);
 						} else {
 							if (table == null) {
 								table = action.getTable();
 							} else {
 								if (table != action.getTable()) {
-									throw new LookupManager.LookupException(
-											LookupManager.LookupExceptionType.ACTION_INCOMPATIBLE,
-											Language.translate("lookup-incompatible-tables"));
+									throw new LookupException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
 								}
 							}
 							if (action.hasDual) {
@@ -841,8 +883,7 @@ public class SQLManager {
 					} else if (key.equalsIgnoreCase("world")) {
 						int wid = getWID(param);
 						if (wid == -1) {
-							throw new LookupManager.LookupException(LookupManager.LookupExceptionType.UNKNOWN_WORLD,
-									Language.translate("lookup-unknown-world", param));
+							throw new LookupException(Language.L.COMMAND__LOOKUP__UNKNOWN_WORLD, param);
 						}
 						theStmt = "world_id = " + getWID(param);
 					} else {
@@ -901,8 +942,7 @@ public class SQLManager {
 					} else if (altuid > 0) {
 						theStmt = "target_id = '" + altuid + "'";
 					} else {
-						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.PLAYER_NOT_FOUND,
-								Language.translate("lookup-playernotfound", target));
+						throw new ParseException(Language.L.LOOKUP_PLAYERNOTFOUND, target);
 					}
 				}
 				if (theStmt.length() > 0) {
@@ -1006,14 +1046,12 @@ public class SQLManager {
 			stmt += "\nORDER BY time DESC\nLIMIT " + (MAX_LOOKUP_SIZE + 1) + ";";
 
 			return lookup(table, stmt, writeParams);
+		} catch (LookupException e) {
+			throw e;
 		} catch (Exception e) {
-			if (e instanceof LookupManager.LookupException) {
-				throw e;
-			}
 			plugin.warning("Error while executing command");
 			plugin.print(e);
-			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					Language.translate("lookup-error"));
+			throw new LookupException(Language.L.ERROR);
 		}
 	}
 
@@ -1026,12 +1064,12 @@ public class SQLManager {
 	 * @param writeParams An in-order array of parameters to be inserted into ? of
 	 *                    stmt
 	 * @return An ArrayList of the DbEntry's meeting the provided conditions
-	 * @throws LookupManager.LookupException
+	 * @throws LookupException
 	 * @see {@link LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters...)}
 	 */
 	@SuppressWarnings("deprecation")
 	public ArrayList<DbEntry> lookup(Table table, String stmt, @Nullable ArrayList<String> writeParams)
-			throws LookupManager.LookupException {
+			throws LookupException {
 		final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
 		final boolean hasData = table.hasData();
 		final boolean hasAction = table.hasActionId();
@@ -1047,8 +1085,7 @@ public class SQLManager {
 		} catch (SQLException e1) {
 			plugin.warning("Error obtaining connection");
 			plugin.print(e1);
-			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					Language.translate("lookup-error"));
+			throw new LookupException(Language.L.DATABASE_BUSY);
 		}
 		long lookupStart = System.currentTimeMillis();
 		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
@@ -1132,8 +1169,7 @@ public class SQLManager {
 					}
 					output.add(entry);
 					if (++count >= MAX_LOOKUP_SIZE) {
-						throw new LookupManager.LookupException(LookupManager.LookupExceptionType.TOO_MANY,
-								Language.translate("lookup-toomany", count));
+						throw new LookupException(Language.L.COMMAND__LOOKUP__TOOMANY, count);
 					}
 				}
 			}
@@ -1141,8 +1177,7 @@ public class SQLManager {
 			plugin.warning("Error while executing command");
 			plugin.warning("SQL Code: " + stmt);
 			plugin.print(e);
-			throw new LookupManager.LookupException(LookupManager.LookupExceptionType.GENERAL,
-					Language.translate("lookup-error"));
+			throw new LookupException(Language.L.ERROR);
 		} finally {
 			returnConnection(connection);
 		}
@@ -1153,7 +1188,7 @@ public class SQLManager {
 		return output;
 	}
 
-	public void purge(SenderAdapter sender, Table table, long time) throws SQLException {
+	public void purge(SenderAdapter sender, Table table, long time) throws SQLException, BusyException {
 		if (!isConnected)
 			return;
 		if (time < 1000 * 3600 * 24 * 14) {
@@ -1186,21 +1221,14 @@ public class SQLManager {
 			stmt += ");";
 		}
 
-		Connection connection = getWriteConnection();
-		plugin.debug(stmt, 1);
-		synchronized (connection) {
-			try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-				pstmt.setFetchSize(500);
-				pstmt.execute();
-			}
-		}
+		executeWrite(stmt);
 		if (table == Table.AUXPROTECT_INVENTORY) {
 			purge(sender, Table.AUXPROTECT_INVDIFF, time);
 			purge(sender, Table.AUXPROTECT_INVDIFFBLOB, time);
 		}
 	}
 
-	public void updateXrayEntry(XrayEntry entry) throws SQLException {
+	public void updateXrayEntry(XrayEntry entry) throws SQLException, BusyException {
 		if (!isConnected)
 			return;
 		String stmt = "UPDATE " + entry.getAction().getTable().toString();
@@ -1209,20 +1237,20 @@ public class SQLManager {
 
 		plugin.debug(stmt, 3);
 
-		Connection connection = getWriteConnection();
-		synchronized (connection) {
-			try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-				int i = 1;
-				statement.setShort(i++, entry.getRating());
-				statement.setString(i++, entry.getData());
-				statement.setLong(i++, entry.getTime());
-				statement.setInt(i++, entry.getUid());
-				statement.setInt(i++, entry.getTargetId());
-				if (statement.executeUpdate() > 1) {
-					plugin.warning("Updated multiple entries when updating the following entry:");
-					Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
-				}
+		Connection connection = getWriteConnection(30000);
+		try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+			int i = 1;
+			statement.setShort(i++, entry.getRating());
+			statement.setString(i++, entry.getData());
+			statement.setLong(i++, entry.getTime());
+			statement.setInt(i++, entry.getUid());
+			statement.setInt(i++, entry.getTargetId());
+			if (statement.executeUpdate() > 1) {
+				plugin.warning("Updated multiple entries when updating the following entry:");
+				Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
 			}
+		} finally {
+			returnConnection(connection);
 		}
 	}
 
@@ -1438,22 +1466,27 @@ public class SQLManager {
 			return -1;
 		}
 
-		Connection connection = getWriteConnection();
-		synchronized (connection) {
-			try {
-				String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS.toString() + " (name, wid)";
-				stmt += "\nVALUES (?,?)";
-				PreparedStatement pstmt = connection.prepareStatement(stmt);
-				pstmt.setString(1, world);
-				pstmt.setInt(2, nextWid);
-				plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
-				pstmt.execute();
-				worlds.put(world, nextWid);
-				rowcount++;
-				return nextWid++;
-			} catch (SQLException e) {
-				plugin.print(e);
-			}
+		Connection connection;
+		try {
+			connection = getWriteConnection(30000);
+		} catch (BusyException e1) {
+			return -1;
+		}
+		try {
+			String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS.toString() + " (name, wid)";
+			stmt += "\nVALUES (?,?)";
+			PreparedStatement pstmt = connection.prepareStatement(stmt);
+			pstmt.setString(1, world);
+			pstmt.setInt(2, nextWid);
+			plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
+			pstmt.execute();
+			worlds.put(world, nextWid);
+			rowcount++;
+			return nextWid++;
+		} catch (SQLException e) {
+			plugin.print(e);
+		} finally {
+			returnConnection(connection);
 		}
 		return -1;
 	}
@@ -1507,25 +1540,29 @@ public class SQLManager {
 			returnConnection(connection);
 		}
 		if (insert) {
-			connection = getWriteConnection();
-			synchronized (connection) {
-				stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid)\nVALUES (?)";
-				try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-					pstmt.setString(1, uuid);
-					pstmt.execute();
+			try {
+				connection = getWriteConnection(30000);
+			} catch (BusyException e1) {
+				return -1;
+			}
+			stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid)\nVALUES (?)";
+			try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
+				pstmt.setString(1, uuid);
+				pstmt.execute();
 
-					try (ResultSet result = pstmt.getGeneratedKeys()) {
-						if (result.next()) {
-							int uid = result.getInt(1);
-							uuids.put(uid, uuid);
-							plugin.debug("New UUID: " + uuid + ":" + uid, 1);
-							rowcount++;
-							return uid;
-						}
+				try (ResultSet result = pstmt.getGeneratedKeys()) {
+					if (result.next()) {
+						int uid = result.getInt(1);
+						uuids.put(uid, uuid);
+						plugin.debug("New UUID: " + uuid + ":" + uid, 1);
+						rowcount++;
+						return uid;
 					}
-				} catch (SQLException e) {
-					plugin.print(e);
 				}
+			} catch (SQLException e) {
+				plugin.print(e);
+			} finally {
+				returnConnection(connection);
 			}
 		}
 
@@ -1540,7 +1577,7 @@ public class SQLManager {
 		}
 		try {
 			return lookup(Table.AUXPROTECT_XRAY, stmt, null);
-		} catch (LookupManager.LookupException e) {
+		} catch (LookupException e) {
 			plugin.print(e);
 		}
 		return null;
@@ -1606,7 +1643,7 @@ public class SQLManager {
 	 * @returns The created EntryAction.
 	 */
 	public EntryAction createAction(String key, String ntext, String ptext)
-			throws AlreadyExistsException, SQLException {
+			throws AlreadyExistsException, SQLException, BusyException {
 		if (EntryAction.getAction(key) != null) {
 			throw new AlreadyExistsException();
 		}
@@ -1614,7 +1651,6 @@ public class SQLManager {
 		int nid = -1;
 		EntryAction action = null;
 
-		Connection connection = getWriteConnection();
 		if (ptext == null) {
 			nid = nextActionId++;
 			action = new EntryAction(key, nid, ntext);
@@ -1623,6 +1659,7 @@ public class SQLManager {
 			pid = nextActionId++;
 			action = new EntryAction(key, nid, pid, ntext, ptext);
 		}
+		Connection connection = getWriteConnection(30000);
 		try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS
 				+ " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)")) {
 			int i = 1;
@@ -1633,6 +1670,8 @@ public class SQLManager {
 			pstmt.setString(i++, ptext);
 
 			pstmt.executeUpdate();
+		} finally {
+			returnConnection(connection);
 		}
 		return action;
 	}
@@ -1684,7 +1723,7 @@ public class SQLManager {
 	}
 
 	@SuppressWarnings("deprecation")
-	public byte[] getBlob(DbEntry entry) {
+	public byte[] getBlob(DbEntry entry) throws BusyException {
 		byte[] blob = null;
 
 		String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB.toString() + " WHERE time=?;";
