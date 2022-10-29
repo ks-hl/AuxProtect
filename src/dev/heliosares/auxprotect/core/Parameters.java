@@ -507,9 +507,11 @@ public class Parameters {
 		}
 	}
 
-	public void time(long start, long stop) {
+	public Parameters time(long start, long stop) {
 		after(Math.min(start, stop));
 		before(Math.max(start, stop));
+
+		return this;
 	}
 
 	private void time(String param, boolean before) throws ParseException {
@@ -531,20 +533,24 @@ public class Parameters {
 		}
 	}
 
-	public void before(long time) {
+	public Parameters before(long time) {
 		this.before = time;
+		return this;
 	}
 
-	public void before(String time) throws ParseException {
+	public Parameters before(String time) throws ParseException {
 		time(time, true);
+		return this;
 	}
 
-	public void after(long time) {
+	public Parameters after(long time) {
 		this.after = time;
+		return this;
 	}
 
-	public void after(String time) throws ParseException {
+	public Parameters after(String time) throws ParseException {
 		time(time, false);
+		return this;
 	}
 
 	public boolean matches(DbEntry entry) {
@@ -871,14 +877,6 @@ public class Parameters {
 		return ratings;
 	}
 
-	public void setAfter(long after) {
-		this.after = after;
-	}
-
-	public void setBefore(long before) {
-		this.before = before;
-	}
-
 	public void addExactTime(long exactTime) {
 		this.exactTime.add(exactTime);
 	}
@@ -887,24 +885,8 @@ public class Parameters {
 		this.negateUser = negateUser;
 	}
 
-	public void addAction(int action) {
-		this.actions.add(action);
-	}
-
 	public void setNegateTarget(boolean negateTarget) {
 		this.negateTarget = negateTarget;
-	}
-
-	public void addTarget(String target) {
-		this.targets.add(target);
-	}
-
-	public void setNegateData(boolean negateData) {
-		this.negateData = negateData;
-	}
-
-	public void addData(String data) {
-		this.datas.add(data);
 	}
 
 	public void setTable(Table table) {
