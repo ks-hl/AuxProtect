@@ -74,8 +74,13 @@ public class Parameters {
 		}
 	}
 
-	private Parameters(IAuxProtect plugin) {
-		this.plugin = plugin;
+	private Parameters() {
+		plugin = AuxProtectAPI.getInstance();
+	}
+
+	public Parameters(Table table) {
+		this();
+		this.table = table;
 	}
 
 	/**
@@ -92,7 +97,7 @@ public class Parameters {
 	public static Parameters parse(@Nonnull SenderAdapter sender, String[] args)
 			throws ParseException, LookupException {
 		IAuxProtect plugin = AuxProtectAPI.getInstance();
-		Parameters parameters = new Parameters(plugin);
+		Parameters parameters = new Parameters();
 		if (sender.getPlatform() == PlatformType.SPIGOT
 				&& sender.getSender() instanceof org.bukkit.entity.Player player) {
 			parameters.location = player.getLocation();
@@ -212,13 +217,14 @@ public class Parameters {
 		if (count < 1) {
 			throw new ParseException(Language.L.INVALID_NOTENOUGH);
 		}
-		if (parameters.actions.size() == 0) {
+		if (parameters.actions.size() == 0 || parameters.table == null) {
 			for (EntryAction action : EntryAction.values()) {
 				if (action.getTable() == Table.AUXPROTECT_MAIN
 						&& !APPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase()).hasPermission(sender)) {
 					throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NONE);
 				}
 			}
+			parameters.table = Table.AUXPROTECT_MAIN;
 		}
 		if (parameters.flags.contains(Flag.BW)) {
 			parameters.uids.addAll(parameters.targets);
@@ -252,9 +258,6 @@ public class Parameters {
 				parameters.actions.add(EntryAction.VEIN.id);
 			}
 
-		}
-		if (parameters.table == null) {
-			parameters.table = Table.AUXPROTECT_MAIN;
 		}
 		if (datastr != null) {
 			if (!parameters.table.hasData()) {
@@ -318,7 +321,7 @@ public class Parameters {
 	 * @param param  Null will clear
 	 * @param negate
 	 * @throws LookupException
-	 * @throws IllegalStateException         if the table is null
+	 * @throws IllegalStateException if the table is null
 	 */
 	public void target(@Nullable String param, boolean negate) throws LookupException {
 		if (param == null) {
@@ -575,6 +578,9 @@ public class Parameters {
 	}
 
 	public String[] toSQL(IAuxProtect plugin) {
+		if (table == null) {
+			throw new IllegalStateException();
+		}
 		SQLManager sql = plugin.getSqlManager();
 		List<String> stmts = new ArrayList<>();
 		List<String> out = new ArrayList<>();
