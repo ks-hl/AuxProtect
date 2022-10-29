@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.core;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import javax.annotation.Nonnull;
@@ -315,6 +316,41 @@ public class Parameters {
 	}
 
 	/**
+	 * Adds the specified UUID to the list of users
+	 * 
+	 * @param uuid   The UUID to be added
+	 * @param negate Whether to negate
+	 * @throws LookupException If the user is not found
+	 */
+	public void user(UUID uuid, boolean negate) throws LookupException {
+		this.negateUser = negate;
+		int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
+		if (uid > 0) {
+			uids.add(Integer.toString(uid));
+		} else {
+			throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
+		}
+		users.add(uuid.toString());
+	}
+
+	/**
+	 * Adds the specified UUID to the list of users
+	 * 
+	 * @param uuid   The UUID to be added
+	 * @param negate Whether to negate
+	 * @throws LookupException If the user is not found
+	 */
+	public void target(UUID uuid, boolean negate) throws LookupException {
+		this.negateTarget = negate;
+		int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
+		if (uid > 0) {
+			targets.add(Integer.toString(uid));
+		} else {
+			throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
+		}
+	}
+
+	/**
 	 * Used to set the target of the lookup. Action/Table must be set before calling
 	 * this method.
 	 * 
@@ -375,27 +411,41 @@ public class Parameters {
 			if (action == null) {
 				throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
 			}
-			if (!action.isEnabled()) {
-				throw new ParseException(Language.L.ACTION_DISABLED);
-			}
+			addAction(sender, action, state);
+		}
+	}
 
-			if (sender != null && !action.hasPermission(sender)) {
-				throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_PERM, action.getNode());
+	/**
+	 * 
+	 * Adds actions to this parameter instance
+	 * 
+	 * @param sender Will be used for individual action permission checks. Null will
+	 *               bypass checks
+	 * @param action The actions to be added
+	 * @param int    state -1 for negative, 0 for either, 1 for positive
+	 * @throws ParseException
+	 */
+	public void addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
+		if (!action.isEnabled()) {
+			throw new ParseException(Language.L.ACTION_DISABLED);
+		}
+
+		if (sender != null && !action.hasPermission(sender)) {
+			throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_PERM, action.getNode());
+		}
+		if (table != null && table != action.getTable()) {
+			throw new ParseException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
+		}
+		table = action.getTable();
+		if (action.hasDual) {
+			if (state != -1) {
+				actions.add(action.idPos);
 			}
-			if (table != null && table != action.getTable()) {
-				throw new ParseException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
-			}
-			table = action.getTable();
-			if (action.hasDual) {
-				if (state != -1) {
-					actions.add(action.idPos);
-				}
-				if (state != 1) {
-					actions.add(action.id);
-				}
-			} else {
+			if (state != 1) {
 				actions.add(action.id);
 			}
+		} else {
+			actions.add(action.id);
 		}
 	}
 
@@ -760,6 +810,11 @@ public class Parameters {
 		return negateUser;
 	}
 
+	/**
+	 * This is only used in a select few places. Parameters#getUIDS matters more
+	 * 
+	 * @return the list of users
+	 */
 	public List<String> getUsers() {
 		return users;
 	}
@@ -830,10 +885,6 @@ public class Parameters {
 
 	public void setNegateUser(boolean negateUser) {
 		this.negateUser = negateUser;
-	}
-
-	public void addUser(String user) {
-		this.users.add(user);
 	}
 
 	public void addAction(int action) {
