@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.2.1-pre2</version>
+	<version>1.2.1-pre3</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -58,6 +58,12 @@
 								<delete dir="${testserver}/Test1/plugins"
 									failonerror="false" includes="${project.artifactId}-*.jar" />
 								<copy todir="${testserver}/Test1/plugins">
+									<fileset dir="${basedir}/target"
+										includes="${project.artifactId}-${project.version}.jar" />
+								</copy>
+								<delete dir="${testserver}/Test2/plugins"
+									failonerror="false" includes="${project.artifactId}-*.jar" />
+								<copy todir="${testserver}/Test2/plugins">
 									<fileset dir="${basedir}/target"
 										includes="${project.artifactId}-${project.version}.jar" />
 								</copy>

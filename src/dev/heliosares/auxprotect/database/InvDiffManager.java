@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -67,7 +68,7 @@ public class InvDiffManager {
 		final long time = System.currentTimeMillis();
 		Integer damage = null;
 		if (qty != 0 && item != null) {
-			if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
+			if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
 				damage = meta.getDamage();
 				meta.setDamage(0);
 				item.setItemMeta(meta);
@@ -91,12 +92,18 @@ public class InvDiffManager {
 			statement.setInt(3, slot);
 			if (qty >= 0) {
 				statement.setInt(4, qty);
+			} else {
+				statement.setNull(4, Types.INTEGER);
 			}
 			if (blobid >= 0) {
 				statement.setLong(5, blobid);
+			} else {
+				statement.setNull(5, Types.BIGINT);
 			}
 			if (damage != null) {
 				statement.setInt(6, damage);
+			} else {
+				statement.setNull(6, Types.INTEGER);
 			}
 			statement.execute();
 		} finally {
@@ -263,7 +270,7 @@ public class InvDiffManager {
 								item.setAmount(qty);
 								plugin.debug("setting slot " + slot + " to " + qty);
 							}
-							if (item.getItemMeta() != null && item.getItemMeta()instanceof Damageable meta) {
+							if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
 								int damage = rs.getInt("damage");
 								if (!rs.wasNull()) {
 									meta.setDamage(damage);
