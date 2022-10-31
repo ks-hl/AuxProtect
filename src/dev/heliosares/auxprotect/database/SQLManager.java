@@ -51,7 +51,6 @@ public class SQLManager {
 	private String targetString;
 	private final IAuxProtect plugin;
 	private static String tablePrefix;
-	private boolean mysql;
 	private boolean isConnected;
 	private int nextWid;
 	private int nextActionId = 10000;
@@ -104,7 +103,7 @@ public class SQLManager {
 	}
 
 	public boolean isMySQL() {
-		return mysql;
+		return conn.isMySQL();
 	}
 
 	public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile) {
@@ -138,6 +137,7 @@ public class SQLManager {
 		plugin.info("Connecting to database...");
 
 		conn = new ConnectionPool(plugin, targetString, user, pass);
+
 		try {
 			init();
 		} catch (Exception e) {
@@ -167,7 +167,7 @@ public class SQLManager {
 	}
 
 	public String backup() throws IOException, BusyException {
-		if (mysql) {
+		if (isMySQL()) {
 			return null;
 		}
 
@@ -682,7 +682,7 @@ public class SQLManager {
 			for (Entry<Long, byte[]> entry : blobsToLog.entrySet()) {
 				plugin.debug("blob: " + entry.getKey(), 5);
 				statement.setLong(i++, entry.getKey());
-				if (mysql) {
+				if (isMySQL()) {
 					Blob blob = connection.createBlob();
 					blob.setBytes(1, entry.getValue());
 					statement.setBlob(i++, blob);
@@ -712,7 +712,7 @@ public class SQLManager {
 				int i = 1;
 				plugin.debug("blob: " + time, 5);
 				statement.setLong(i++, time);
-				if (mysql) {
+				if (isMySQL()) {
 					Blob blob = connection.createBlob();
 					blob.setBytes(1, bytes);
 					statement.setBlob(i++, blob);
@@ -1697,7 +1697,7 @@ public class SQLManager {
 	}
 
 	public String getCountStmt(String table) {
-		if (mysql) {
+		if (isMySQL()) {
 			return "SELECT COUNT(*) FROM " + table;
 		} else {
 			return "SELECT COUNT(1) FROM " + table;
@@ -1740,7 +1740,7 @@ public class SQLManager {
 			pstmt.setLong(1, entry.getTime());
 			try (ResultSet results = pstmt.executeQuery()) {
 				if (results.next()) {
-					if (mysql) {
+					if (isMySQL()) {
 						try (InputStream in = results.getBlob("blob").getBinaryStream()) {
 							blob = in.readAllBytes();
 						}
