@@ -1212,8 +1212,11 @@ public class SQLManager {
 		String stmt;
 		if (table == Table.AUXPROTECT_INVDIFFBLOB) {
 			stmt = "DELETE FROM " + table.toString() + " WHERE " + table.toString()
-					+ ".blobid NOT IN (SELECT DISTINCT blobid FROM " + Table.AUXPROTECT_INVDIFF
-					+ " WHERE blobid NOT NULL);";
+					+ ".blobid NOT IN (SELECT DISTINCT blobid FROM " + Table.AUXPROTECT_INVDIFF + " WHERE blobid";
+			if(this.isMySQL()) {
+				stmt += " IS";
+			}
+			stmt += " NOT NULL);";
 		} else {
 			stmt = "DELETE FROM " + table.toString();
 			stmt += "\nWHERE (time < ";
