@@ -10,42 +10,42 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 
 public class XrayResults {
 
-	public static void sendHeader(SenderAdapter sender) {
-		sender.sendMessageRaw("§f------  §9AuxProtect Xray Check Results§7  ------"); // TODO lang
-	}
+    public static void sendHeader(SenderAdapter sender) {
+        sender.sendMessageRaw("§f------  §9AuxProtect Xray Check Results§7  ------"); // TODO lang
+    }
 
-	public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) {
-		sendHeader(sender);
+    public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) {
+        sendHeader(sender);
 
-		Results.sendEntry(plugin, sender, en, -1, true, true);
+        Results.sendEntry(plugin, sender, en, -1, true, true);
 
-		ComponentBuilder message = new ComponentBuilder();
-		String xraycmd = "/ap xray rate %de %d";
-		if (auto) {
-			xraycmd += " -auto";
-		}
-		String descFormat = "Rate this vein a %d/3 (%s)";
+        ComponentBuilder message = new ComponentBuilder();
+        String xraycmd = "/ap xray rate %de %d";
+        if (auto) {
+            xraycmd += " -auto";
+        }
+        String descFormat = "Rate this vein a %d/3 (%s)";
 
-		for (int sev = -1; sev <= 3; sev++) {
-			String color = VeinManager.getSeverityColor(sev);
-			String desc = VeinManager.getSeverityDescription(sev);
-			message.append(String.format("%s§l[%s]", color, sev == -1 ? "Clear" : ("" + sev)))
-					.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, String.format(xraycmd, en.getTime(), sev)))
-					.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-							new Text(color + String.format(descFormat, sev, desc))));
-			message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
-		}
+        for (int sev = -1; sev <= 3; sev++) {
+            String color = VeinManager.getSeverityColor(sev);
+            String desc = VeinManager.getSeverityDescription(sev);
+            message.append(String.format("%s§l[%s]", color, sev == -1 ? "Clear" : ("" + sev)))
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, String.format(xraycmd, en.getTime(), sev)))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new Text(color + String.format(descFormat, sev, desc))));
+            message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
+        }
 
-		message.append("§7§l[Skip]")
-				.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-						"/ap xray skip " + en.getTime() + "e" + (auto ? " -auto" : "")))
-				.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click to skip this entry.")));
-		sender.sendMessage(message.create());
+        message.append("§7§l[Skip]")
+                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                        "/ap xray skip " + en.getTime() + "e" + (auto ? " -auto" : "")))
+                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click to skip this entry.")));
+        sender.sendMessage(message.create());
 
-		sendArrowKeys(sender, plugin.getVeinManager().size());
-	}
+        sendArrowKeys(sender, plugin.getVeinManager().size());
+    }
 
-	public static void sendArrowKeys(SenderAdapter sender, int size) {
-		sender.sendMessageRaw(String.format("§9%d§7 remaining.", size)); // TODO lang
-	}
+    public static void sendArrowKeys(SenderAdapter sender, int size) {
+        sender.sendMessageRaw(String.format("§9%d§7 remaining.", size)); // TODO lang
+    }
 }
