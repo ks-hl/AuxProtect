@@ -56,7 +56,7 @@ public class APConfig {
             inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
             posInterval = config.getLong("Actions.pos.Interval", 10000);
             inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
-            inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 1000);
+            inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 0);
             moneyInterval = config.getLong("Actions.money.Interval", 600000);
         }
         for (EntryAction action : EntryAction.values()) {

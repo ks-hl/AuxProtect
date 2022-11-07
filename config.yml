@@ -37,7 +37,8 @@ Actions:
     WorldChange: false
     Interval: 3600000
     # Enables differential logging and searching of inventories down to the second. 
-    # This feature is experimental and will consume more disk space.
+    # This feature is experimental and will consume significantly more disk space.
+    # Do not use this feature if your server is medium to large.
     Diff-Interval: 0
     # Use this if you run into issues with death inventories being empty. 
     # This is usually due to a plugin like DeathChests clearing the inventory before AuxProtect sees it.
