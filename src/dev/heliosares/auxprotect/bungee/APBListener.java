@@ -106,7 +106,7 @@ public class APBListener implements Listener {
 
             @Override
             public void run() {
-                plugin.getSqlManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
+                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
                         ip);
             }
         });

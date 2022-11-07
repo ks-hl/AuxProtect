@@ -19,6 +19,7 @@ public class ConnectionPool {
     private static final long[][] writeTimes = new long[200][];
     private static int alive = 0;
     private static int born = 0;
+    private static int roaming = 0;
     private static int readTimeIndex;
     private static long writeCheckOut;
     private static int writeTimeIndex;
@@ -41,28 +42,7 @@ public class ConnectionPool {
         this.pwd = pwd;
         this.mysql = user != null && pwd != null;
 
-        boolean driver = false;
-        if (!driver)
-            try {
-                Class.forName("org.sqlite.JDBC");
-                driver = true;
-            } catch (ClassNotFoundException e1) {
-            }
-        if (!driver)
-            try {
-                Class.forName("com.mysql.cj.jdbc.Driver");
-                driver = true;
-            } catch (ClassNotFoundException e1) {
-            }
-        if (!driver)
-            try {
-                Class.forName("com.mysql.jdbc.Driver");
-                driver = true;
-            } catch (ClassNotFoundException e1) {
-            }
-        if (!driver) {
-            throw new ClassNotFoundException("SQL Driver not found");
-        }
+        checkDriver();
 
         writeconn = newConn();
 
@@ -74,15 +54,19 @@ public class ConnectionPool {
 
     }
 
+    public static int getRoaming() {
+        return roaming;
+    }
+
     public static int getNumAlive() {
         return alive;
     }
 
-    ;
-
     public static int getNumBorn() {
         return born;
     }
+
+    ;
 
     public static long[] calculateWriteTimes() {
         return calculateTimes(writeTimes);
@@ -141,27 +125,40 @@ public class ConnectionPool {
         return connection;
     }
 
+    private void checkDriver() throws ClassNotFoundException {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        throw new ClassNotFoundException("SQL Driver not found");
+    }
+
     private void checkAsync() throws IllegalStateException {
-        if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            if (Bukkit.isPrimaryThread()) {
-                plugin.warning("Synchronous call to database.");
-                if (plugin.getAPConfig().getDebug() > 0) {
-                    throw new IllegalStateException();
-                }
-            }
+        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
+            plugin.warning("Synchronous call to database.");
+            throw new IllegalStateException();
         }
     }
 
     /**
      * Use this ONLY for modifying the database.
      * <p>
-     * You MUST synchronize this variable while you use it.
-     * <p>
      * You MUST call {@link ConnectionPool#returnConnection(Connection)} when you
      * are done with this Connection
      *
      * @param wait how many milliseconds to wait for a lock
-     * @return a WRITE-ONLY connection to the database
+     * @return a writable connection to the database
      * @throws BusyException if wait is exceeded and the database is busy
      */
     public Connection getWriteConnection(long wait) throws BusyException {
@@ -185,21 +182,38 @@ public class ConnectionPool {
             writeCheckOut = System.currentTimeMillis();
             whoHasWriteConnection = Thread.currentThread();
         }
+        roaming++;
         return writeconn;
     }
 
-    public Connection getConnection() throws SQLException, IllegalStateException {
+    public Connection getConnection(boolean wait) throws SQLException, IllegalStateException, BusyException {
         if (closed) {
             throw new IllegalStateException("closed");
         }
         checkAsync();
-        synchronized (pool) {
-            if (pool.isEmpty()) {
-                pool.add(newConn());
+        if (wait) {
+            lock.lock();
+        } else {
+            try {
+                if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
+                    throw new BusyException(whoHasWriteConnection);
+                }
+            } catch (InterruptedException e) {
+                throw new BusyException(whoHasWriteConnection);
             }
-            Connection out = pool.pop();
-            checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
-            return out;
+        }
+        try {
+            synchronized (pool) {
+                if (pool.isEmpty()) {
+                    pool.add(newConn());
+                }
+                Connection out = pool.pop();
+                checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
+                roaming++;
+                return out;
+            }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -218,6 +232,7 @@ public class ConnectionPool {
                 whoHasWriteConnection = null;
             }
             lock.unlock();
+            roaming--;
             return;
         }
         synchronized (pool) {
@@ -237,6 +252,7 @@ public class ConnectionPool {
                 }
                 return;
             }
+            roaming--;
             pool.push(connection);
         }
     }
@@ -265,7 +281,7 @@ public class ConnectionPool {
         return mysql;
     }
 
-    public static class BusyException extends Exception {
+    public static class BusyException extends SQLException {
         private static final long serialVersionUID = 4797822287876350186L;
         public final Thread holder;
 

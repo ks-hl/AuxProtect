@@ -58,7 +58,7 @@ public class TownyListener implements Listener {
             plugin.info("Unknown town/nation " + name);
             return;
         }
-        String uuid = plugin.getSqlManager().getUUIDFromUID(uid);
+        String uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
         if (uuid == null) {
             plugin.info("Unknown town/nation " + name + " with uid " + uid);
             return;

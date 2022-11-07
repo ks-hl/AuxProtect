@@ -9,11 +9,16 @@ import org.bukkit.inventory.meta.Damageable;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class InvDiffManager {
+    protected final ConcurrentLinkedQueue<InvDiffRecord> queue = new ConcurrentLinkedQueue<>();
     private final SQLManager sql;
     private final IAuxProtect plugin;
     private final HashMap<Integer, BlobCache> cache = new HashMap<>();
@@ -42,8 +47,7 @@ public class InvDiffManager {
                 extra[i - 40] = item;
             } else if (i < 68) {
                 ender[i - 41] = item;
-            } else
-                break;
+            } else break;
         }
         return new PlayerInventoryRecord(storage, armor, extra, ender, exp);
     }
@@ -53,29 +57,20 @@ public class InvDiffManager {
             return null;
         }
         List<ItemStack> output = new ArrayList<>();
-        for (int i = 9; i < inv.storage().length; i++) {
-            output.add(inv.storage()[i]);
-        }
-        for (int i = 0; i < 9; i++) {
-            output.add(inv.storage()[i]);
-        }
+        output.addAll(Arrays.asList(inv.storage()).subList(9, inv.storage().length));
+        output.addAll(Arrays.asList(inv.storage()).subList(0, 9));
         for (int i = inv.armor().length - 1; i >= 0; i--) {
             output.add(inv.armor()[i]);
         }
-        for (int i = 0; i < inv.extra().length; i++) {
-            output.add(inv.extra()[i]);
-        }
+        Collections.addAll(output, inv.extra());
         if (addender) {
-            for (ItemStack item : inv.ender()) {
-                output.add(item);
-            }
+            Collections.addAll(output, inv.ender());
         }
         return output;
     }
 
-    public void init(Connection connection) throws SQLException {
-        try (PreparedStatement stmt = connection
-                .prepareStatement("SELECT MAX(blobid) FROM " + Table.AUXPROTECT_INVDIFFBLOB)) {
+    protected void init(Connection connection) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT MAX(blobid) FROM " + Table.AUXPROTECT_INVDIFFBLOB)) {
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     blobid = rs.getLong(1);
@@ -84,230 +79,177 @@ public class InvDiffManager {
         }
     }
 
-    public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) throws SQLException, BusyException {
-        byte[] blob = null;
-        final long time = System.currentTimeMillis();
-        Integer damage = null;
-        if (qty != 0 && item != null) {
-            if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
-                damage = meta.getDamage();
-                meta.setDamage(0);
-                item.setItemMeta(meta);
-            }
-            try {
-                blob = InvSerialization.toByteArraySingle(item);
-            } catch (IOException e) {
-                plugin.print(e);
-                return;
-            }
-        }
-        long blobid = getBlobId(blob);
-        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF.toString()
-                + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
-
-        Connection connection = sql.getWriteConnection(30000);
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            statement.setLong(1, time);
-            int uid = sql.getUIDFromUUID("$" + uuid.toString(), false);
-            statement.setInt(2, uid);
-            statement.setInt(3, slot);
-            if (qty >= 0) {
-                statement.setInt(4, qty);
-            } else {
-                statement.setNull(4, Types.INTEGER);
-            }
-            if (blobid >= 0) {
-                statement.setLong(5, blobid);
-            } else {
-                statement.setNull(5, Types.BIGINT);
-            }
-            if (damage != null) {
-                statement.setInt(6, damage);
-            } else {
-                statement.setNull(6, Types.INTEGER);
-            }
-            statement.execute();
-        } finally {
-            sql.returnConnection(connection);
-        }
+    public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) {
+        queue.add(new InvDiffRecord(uuid, slot, qty, item));
     }
 
-    private long getBlobId(final byte[] blob) throws SQLException, BusyException {
+    private long getBlobId(Connection connection, final byte[] blob) throws SQLException, BusyException, IOException {
         if (blob == null) {
             return -1;
         }
-        long cachedid = -1;
-        int hash = Arrays.hashCode(blob);
+        final int hash = Arrays.hashCode(blob);
         BlobCache other;
         synchronized (cache) {
             other = cache.get(hash);
         }
-        out:
-        if (other != null && blob.length == other.ablob.length) {
-            for (int i = 0; i < blob.length; i++) {
-                if (blob[i] != other.ablob[i]) {
-                    break out; // This iteration isn't really necessary, just a check
-                }
-            }
-            cachedid = other.blobid;
+
+        final BlobCache blobCache = new BlobCache(0, blob, hash);
+
+        if (blobCache.equals(other)) {
             other.touch();
+            plugin.debug("Used cached blob: " + other.blobid, 5);
+            return other.blobid;
         }
 
-        if (cachedid > 0) {
-            plugin.debug("Used cached blob: " + cachedid, 5);
-            return cachedid;
-        }
 
-        cachedid = findOrInsertBlob(blob);
-        if (cachedid > 0) {
-            synchronized (cache) {
-                cache.put(hash, new BlobCache(cachedid, blob));
-            }
-        }
-        return cachedid;
-    }
-
-    ;
-
-    private long findOrInsertBlob(byte[] blob) throws SQLException, BusyException {
-
-        String stmt = "SELECT blobid FROM " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " WHERE ablob=?";
+        String stmt = "SELECT blobid,ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE hash=?";
         // synchronized (sql.connection) {
-        Connection connection = sql.getConnection();
+        long id = -1;
         try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            if (sql.isMySQL()) {
-                Blob sqlblob = connection.createBlob();
-                sqlblob.setBytes(1, blob);
-                statement.setBlob(1, sqlblob);
-            } else {
-                statement.setBytes(1, blob);
-            }
+            statement.setInt(1, hash);
             try (ResultSet rs = statement.executeQuery()) {
                 if (rs.next()) {
-                    int id = rs.getInt(1);
-                    plugin.debug("Looked up blobid: " + id, 5);
-                    return id;
+                    long otherid = rs.getLong(1);
+                    byte[] otherBytes = sql.getBlob(rs, "ablob");
+                    if (blobCache.equals(new BlobCache(otherid, otherBytes, Arrays.hashCode(otherBytes)))) {
+                        plugin.debug("Looked up blobid: " + (id = otherid), 5);
+                    } else {
+                        plugin.warning("Hash collision! " + otherid);
+                    }
                 }
             }
-        } finally {
-            sql.returnConnection(connection);
         }
-        connection = sql.getWriteConnection(30000);
-        // }
-        stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " (blobid, ablob) VALUES (?,?)";
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            long blobid = ++this.blobid;
-            statement.setLong(1, blobid);
-            if (sql.isMySQL()) {
-                Blob sqlblob = connection.createBlob();
-                sqlblob.setBytes(1, blob);
-                statement.setBlob(2, sqlblob);
-            } else {
-                statement.setBytes(2, blob);
-            }
-            statement.execute();
+        if (id < 0) {
+            stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFFBLOB + " (blobid, ablob, hash) VALUES (?,?,?)";
+            sql.executeWrite(connection, stmt, id = ++blobid, blob, hash);
             plugin.debug("NEW blobid: " + blobid, 5);
-            return blobid;
-        } finally {
-            sql.returnConnection(connection);
+        }
+        if (id > 0) {
+            synchronized (cache) {
+                cache.put(hash, new BlobCache(id, blob, hash));
+            }
+        }
+        return id;
+    }
+
+    protected void put(Connection connection) {
+        for (InvDiffRecord diff; (diff = queue.poll()) != null; ) {
+            byte[] blob = null;
+            final long time = System.currentTimeMillis();
+            Integer damage = null;
+            if (diff.qty() != 0 && diff.item() != null) {
+                if (diff.item().getItemMeta() != null && diff.item().getItemMeta() instanceof Damageable meta) {
+                    damage = meta.getDamage();
+                    meta.setDamage(0);
+                    diff.item().setItemMeta(meta);
+                }
+                try {
+                    blob = InvSerialization.toByteArraySingle(diff.item());
+                } catch (IOException e) {
+                    plugin.print(e);
+                    continue;
+                }
+            }
+            try {
+                long blobid = getBlobId(connection, blob);
+                String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
+
+                sql.executeWrite(connection, stmt, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
+            } catch (SQLException | IOException e) {
+                plugin.print(e);
+            }
         }
     }
 
-    public DiffInventoryRecord getContentsAt(int uid, final long time)
-            throws SQLException, IOException, ClassNotFoundException {
+    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
 
         PlayerInventoryRecord inv = null;
         long after = 0;
 
         // synchronized (sql.connection) {
-        Connection connection = sql.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement("SELECT time,`blob`" + //
-                "\nFROM " + Table.AUXPROTECT_INVBLOB.toString() + //
-                "\nWHERE time=(" + "SELECT time FROM " + Table.AUXPROTECT_INVENTORY.toString()
-                + " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);")) {
-            statement.setInt(1, uid);
-            statement.setInt(2, EntryAction.INVENTORY.id);
-            statement.setLong(3, time);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    after = rs.getLong("time");
+        Connection connection = sql.getConnection(false);
+        try {
+            try (PreparedStatement statement = connection.prepareStatement("SELECT time,`blob`" + //
+                    "\nFROM " + Table.AUXPROTECT_INVBLOB + //
+                    "\nWHERE time=(" + "SELECT time FROM " + Table.AUXPROTECT_INVENTORY + " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);")) {
+                statement.setInt(1, uid);
+                statement.setInt(2, EntryAction.INVENTORY.id);
+                statement.setLong(3, time);
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) {
+                        after = rs.getLong("time");
 
-                    byte[] blob = null;
-                    if (sql.isMySQL()) {
-                        try (InputStream in = rs.getBlob("blob").getBinaryStream()) {
-                            blob = in.readAllBytes();
+                        byte[] blob;
+                        if (sql.isMySQL()) {
+                            try (InputStream in = rs.getBlob("blob").getBinaryStream()) {
+                                blob = in.readAllBytes();
+                            }
+                        } else {
+                            blob = rs.getBytes("blob");
                         }
-                    } else {
-                        blob = rs.getBytes("blob");
-                    }
-                    if (blob != null) {
-                        inv = InvSerialization.toPlayerInventory(blob);
+                        if (blob != null) {
+                            inv = InvSerialization.toPlayerInventory(blob);
+                        }
                     }
                 }
             }
-        } finally {
-            sql.returnConnection(connection);
-        }
-        if (inv == null) {
-            return null;
-        }
-        // }
-        List<ItemStack> output = playerInvToList(inv, true);
-        // synchronized (sql.connection) {
-        int numdiff = 0;
-        connection = sql.getConnection();
-        try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM "
-                + Table.AUXPROTECT_INVDIFF.toString() + " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " ON "
-                + Table.AUXPROTECT_INVDIFF.toString() + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB.toString()
-                + ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
-            statement.setInt(1, uid);
-            statement.setLong(2, after);
-            statement.setLong(3, time);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    int slot = rs.getInt("slot");
-                    byte[] blob = null;
-                    if (sql.isMySQL()) {
-                        try (InputStream in = rs.getBlob("ablob").getBinaryStream()) {
-                            blob = in.readAllBytes();
-                        } catch (Exception ignored) {
-                        }
-                    } else {
-                        blob = rs.getBytes("ablob");
-                    }
-
-                    int qty = rs.getInt("qty");
-                    ItemStack item;
-                    if (qty == 0 && !rs.wasNull()) {
-                        item = null;
-                    } else {
-                        if (blob == null) {
-                            item = output.get(slot);
-                        } else {
-                            item = InvSerialization.toItemStack(blob);
-                        }
-                        if (item != null) {
-                            if (qty > 0) {
-                                item.setAmount(qty);
-                                plugin.debug("setting slot " + slot + " to " + qty);
+            if (inv == null) {
+                return null;
+            }
+            // }
+            List<ItemStack> output = playerInvToList(inv, true);
+            // synchronized (sql.connection) {
+            int numdiff = 0;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB + ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
+                statement.setInt(1, uid);
+                statement.setLong(2, after);
+                statement.setLong(3, time);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        int slot = rs.getInt("slot");
+                        byte[] blob = null;
+                        if (sql.isMySQL()) {
+                            try (InputStream in = rs.getBlob("ablob").getBinaryStream()) {
+                                blob = in.readAllBytes();
+                            } catch (Exception ignored) {
                             }
-                            if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
-                                int damage = rs.getInt("damage");
-                                if (!rs.wasNull()) {
-                                    meta.setDamage(damage);
-                                    item.setItemMeta(meta);
+                        } else {
+                            blob = rs.getBytes("ablob");
+                        }
+
+                        int qty = rs.getInt("qty");
+                        ItemStack item;
+                        if (qty == 0 && !rs.wasNull()) {
+                            item = null;
+                        } else {
+                            if (blob == null) {
+                                item = output.get(slot);
+                            } else {
+                                item = InvSerialization.toItemStack(blob);
+                            }
+                            if (item != null) {
+                                if (qty > 0) {
+                                    item.setAmount(qty);
+                                    plugin.debug("setting slot " + slot + " to " + qty);
+                                }
+                                if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+                                    int damage = rs.getInt("damage");
+                                    if (!rs.wasNull()) {
+                                        meta.setDamage(damage);
+                                        item.setItemMeta(meta);
+                                    }
                                 }
                             }
                         }
+                        output.set(slot, item);
+                        numdiff++;
                     }
-                    output.set(slot, item);
-                    numdiff++;
                 }
             }
+            return new DiffInventoryRecord(after, numdiff, listToPlayerInv(output, inv.exp()));
         } finally {
             sql.returnConnection(connection);
         }
-        return new DiffInventoryRecord(after, numdiff, listToPlayerInv(output, inv.exp()));
     }
 
     public void cleanup() {
@@ -317,7 +259,7 @@ public class InvDiffManager {
             }
             lastcleanup = System.currentTimeMillis();
             Iterator<Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
-            for (Entry<Integer, BlobCache> other = null; it.hasNext(); ) {
+            for (Entry<Integer, BlobCache> other; it.hasNext(); ) {
                 other = it.next();
                 if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
                     it.remove();
@@ -329,19 +271,40 @@ public class InvDiffManager {
     private static class BlobCache {
         final long blobid;
         final byte[] ablob;
+        final int hash;
         long lastused;
 
-        BlobCache(long blobid, byte[] ablob) {
+        BlobCache(long blobid, byte[] ablob, int hash) {
             this.blobid = blobid;
             this.ablob = ablob;
+            this.hash = hash;
             touch();
         }
 
         public void touch() {
             this.lastused = System.currentTimeMillis();
         }
+
+        @Override
+        public boolean equals(Object otherObj) {
+            if (otherObj instanceof BlobCache other && ablob.length == other.ablob.length) {
+                if (hash != other.hash) {
+                    return false;
+                }
+                for (int i = 0; i < ablob.length; i++) {
+                    if (ablob[i] != other.ablob[i]) {
+                        return false;
+                    }
+                }
+                return true;
+            }
+            return false;
+        }
     }
 
-    public static record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
+    public record InvDiffRecord(UUID uuid, int slot, int qty, ItemStack item) {
+    }
+
+    public record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
     }
 }

@@ -114,25 +114,11 @@ public class DbEntry {
         this.data = data;
     }
 
-    public String getUser() {
-        if (user != null) {
-            return user;
-        }
-        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
-            return user = getUserUUID();
-        }
-        user = SQLManager.getInstance().getUsernameFromUID(getUid());
-        if (user == null) {
-            user = getUserUUID();
-        }
-        return user;
-    }
-
     public int getUid() {
         if (uid > 0) {
             return uid;
         }
-        return uid = SQLManager.getInstance().getUIDFromUUID(getUserUUID(), true);
+        return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true);
     }
 
     public int getTargetId() {
@@ -142,7 +128,21 @@ public class DbEntry {
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = SQLManager.getInstance().getUIDFromUUID(getTargetUUID(), true);
+        return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true);
+    }
+
+    public String getUser() {
+        if (user != null) {
+            return user;
+        }
+        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+            return user = getUserUUID();
+        }
+        user = SQLManager.getInstance().getUserManager().getUsernameFromUID(getUid());
+        if (user == null) {
+            user = getUserUUID();
+        }
+        return user;
     }
 
     public String getTarget() {
@@ -152,7 +152,7 @@ public class DbEntry {
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
             return target = getTargetUUID();
         }
-        target = SQLManager.getInstance().getUsernameFromUID(getTargetId());
+        target = SQLManager.getInstance().getUserManager().getUsernameFromUID(getTargetId());
         if (target == null) {
             target = getTargetUUID();
         }
@@ -164,7 +164,7 @@ public class DbEntry {
             return targetLabel;
         }
         if (target_id > 0) {
-            targetLabel = SQLManager.getInstance().getUUIDFromUID(target_id);
+            targetLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(target_id);
         } else if (target_id == 0) {
             return targetLabel = "";
         }
@@ -179,7 +179,7 @@ public class DbEntry {
             return userLabel;
         }
         if (uid > 0) {
-            userLabel = SQLManager.getInstance().getUUIDFromUID(uid);
+            userLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(uid);
         } else if (uid == 0) {
             return userLabel = "";
         }
@@ -225,8 +225,7 @@ public class DbEntry {
 
     @Override
     public String toString() {
-        String out = String.format("%s %s(%d) %s ", getUser(),
-                getAction().getText(getState()),
+        String out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
                 getAction().getId(getState()), getTarget());
         if (getData() != null && getData().length() > 0) {
             String data = getData();

@@ -59,4 +59,6 @@ public interface IAuxProtect {
     public String getStackLog();
 
     public List<String> listPlayers();
+
+    public boolean isEnabled();
 }

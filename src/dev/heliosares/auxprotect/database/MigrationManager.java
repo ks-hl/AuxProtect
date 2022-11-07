@@ -7,21 +7,19 @@ import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.IOException;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.sql.*;
+import java.util.*;
 
 public class MigrationManager {
+    public static final int DBVERSION = 7;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
     private boolean isMigrating;
     private int preMigrateDebug;
-
+    private int version;
     private int rowcountformerge;
+    private int originalVersion;
 
     MigrationManager(SQLManager sql, Connection connection, IAuxProtect plugin) {
         this.sql = sql;
@@ -29,14 +27,51 @@ public class MigrationManager {
         this.connection = connection;
     }
 
+    public int getOriginalVersion() {
+        return originalVersion;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
     boolean isMigrating() {
         return isMigrating;
     }
 
     void preTables() throws SQLException, IOException, BusyException {
+        sql.execute(connection,
+                "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);");
+
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION;
+        plugin.debug(stmt, 3);
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet results = statement.executeQuery(stmt)) {
+                long newestVersionTime = 0;
+                long oldestVersionTime = Long.MAX_VALUE;
+                while (results.next()) {
+                    long versionTime_ = results.getLong("time");
+                    int version_ = results.getInt("version");
+                    if (versionTime_ > newestVersionTime) {
+                        version = version_;
+                        newestVersionTime = versionTime_;
+                    }
+                    if (versionTime_ < oldestVersionTime) {
+                        originalVersion = version_;
+                        oldestVersionTime = versionTime_;
+                    }
+                    plugin.debug("Version at " + versionTime_ + " was v" + version_ + ".", 1);
+                }
+            }
+        }
+
+        if (sql.getVersion() < 1) {
+            sql.migrationmanager.setVersion(connection, MigrationManager.DBVERSION, sql);
+        }
+
         preMigrateDebug = -1;
-        if (sql.getVersion() < SQLManager.DBVERSION) {
-            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + SQLManager.DBVERSION
+        if (sql.getVersion() < DBVERSION) {
+            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + DBVERSION
                     + "...");
             plugin.info("This may take a while. Please do not interrupt.");
 //			if (plugin.getDebug() < 3) {
@@ -64,7 +99,7 @@ public class MigrationManager {
             plugin.info("Migrating database to v2");
             sql.execute(connection, "ALTER TABLE worlds RENAME TO auxprotect_worlds;");
 
-            sql.setVersion(connection, 2);
+            sql.migrationmanager.setVersion(connection, 2, sql);
         }
 
         if (sql.getVersion() < 3) {
@@ -72,7 +107,7 @@ public class MigrationManager {
         }
     }
 
-    void postTables() throws SQLException {
+    void postTables() throws SQLException, BusyException {
         if (sql.getVersion() < 3) {
             migrateToV3Part2();
         }
@@ -82,18 +117,22 @@ public class MigrationManager {
         }
 
         if (sql.getVersion() < 5) {
-            sql.setVersion(connection, 5);
+            sql.migrationmanager.setVersion(connection, 5, sql);
         }
 
         if (sql.getVersion() < 6) {
             migrateToV6();
         }
 
+        if (sql.getVersion() < 7) {
+            migrateToV7();
+        }
+
         /*
          * This should never be reached and is only here as a fail safe
          */
-        if (sql.getVersion() < SQLManager.DBVERSION) {
-            sql.setVersion(connection, SQLManager.DBVERSION);
+        if (sql.getVersion() < DBVERSION) {
+            sql.migrationmanager.setVersion(connection, DBVERSION, sql);
         }
 
         plugin.debug("Purging temporary tables");
@@ -112,7 +151,7 @@ public class MigrationManager {
         isMigrating = false;
     }
 
-    int migrateToV3Part1() throws SQLException {
+    int migrateToV3Part1() throws SQLException, BusyException {
         Table[] migrateTablesV3 = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
                 Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY};
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
@@ -134,7 +173,7 @@ public class MigrationManager {
         return rowcountformerge;
     }
 
-    void migrateToV3Part2() throws SQLException {
+    void migrateToV3Part2() throws SQLException, BusyException {
         Table[] migrateTablesV3 = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
                 Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY};
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
@@ -159,7 +198,7 @@ public class MigrationManager {
                     while (results.next()) {
                         ArrayList<Object> entry = new ArrayList<>();
                         entry.add(results.getLong("time"));
-                        entry.add(sql.getUIDFromUUID(results.getString("user"), true));
+                        entry.add(sql.getUserManager().getUIDFromUUID(results.getString("user"), true));
                         int action_id = results.getInt("action_id");
                         if (action_id != 260) {
                             entry.add(action_id);
@@ -174,7 +213,7 @@ public class MigrationManager {
                         if (hasStringTarget || action_id == 260) {
                             entry.add(target);
                         } else {
-                            entry.add(sql.getUIDFromUUID(target, true));
+                            entry.add(sql.getUserManager().getUIDFromUUID(target, true));
                         }
                         if (hasData) {
                             entry.add(results.getString("data"));
@@ -211,7 +250,7 @@ public class MigrationManager {
             }
         }
 
-        sql.setVersion(connection, 3);
+        sql.migrationmanager.setVersion(connection, 3, sql);
     }
 
     void migrateToV4() throws SQLException {
@@ -258,11 +297,11 @@ public class MigrationManager {
             plugin.info("Deleting old entries.");
             sql.execute(connection, "DELETE FROM " + Table.AUXPROTECT_SPAM.toString() + " WHERE action_id = 256;");
         }
-        sql.setVersion(connection, 4);
+        sql.migrationmanager.setVersion(connection, 4, sql);
     }
 
     @SuppressWarnings("deprecation")
-    void migrateToV6() throws SQLException {
+    void migrateToV6() throws SQLException, BusyException {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             try {
                 sql.execute(connection,
@@ -351,7 +390,71 @@ public class MigrationManager {
                         "UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET data = '' where hasblob=true;");
             }
         }
-        sql.setVersion(connection, 6);
+        sql.migrationmanager.setVersion(connection, 6, sql);
+    }
+
+    void migrateToV7() throws SQLException, BusyException {
+        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+
+            final int totalrows = sql.count(Table.AUXPROTECT_INVDIFFBLOB);
+            long lastupdate = 0;
+            int count = 0;
+
+            try {
+                sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " ADD COLUMN hash INT");
+            } catch (SQLException e) {
+                plugin.warning("Failed to alter table, if you are reattempting migration this is expected.");
+            }
+
+            String stmt = "SELECT blobid, ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB.toString()
+                    + " WHERE (hash IS NULL) LIMIT ";
+
+            plugin.debug(stmt, 3);
+
+            plugin.info("Migration beginnning. (0/" + totalrows + "). ***DO NOT INTERRUPT***");
+            boolean any = true;
+            Set<Long> ignore = new HashSet<>();
+            int limit = 50;
+            while (any) {
+                any = false;
+                HashMap<Long, Integer> hashes = new HashMap<>();
+                try (PreparedStatement pstmt = connection.prepareStatement(stmt + (limit + ignore.size()))) {
+                    pstmt.setFetchSize(500);
+                    try (ResultSet results = pstmt.executeQuery()) {
+                        while (results.next()) {
+                            long blobid = results.getLong("blobid");
+                            if (ignore.contains(blobid)) continue;
+                            any = true;
+                            int progress = (int) Math.round((double) count / (double) totalrows * 100.0);
+                            if (System.currentTimeMillis() - lastupdate > 5000) {
+                                lastupdate = System.currentTimeMillis();
+                                plugin.info("Migration " + progress + "% complete. (" + count + "/" + totalrows
+                                        + "). DO NOT INTERRUPT");
+                            }
+                            count++;
+                            byte[] blob = null;
+                            try {
+                                blob = sql.getBlob(results, "ablob");
+                            } catch (IOException e) {
+                                plugin.warning("Failed to get blob for blobid: " + blobid + ". This is probably fine.");
+                                ignore.add(blobid);
+                            }
+                            hashes.put(blobid, Arrays.hashCode(blob));
+                        }
+                    }
+                }
+                hashes.forEach((k, v) -> {
+                    try {
+                        sql.executeWrite(connection, "UPDATE " + Table.AUXPROTECT_INVDIFFBLOB + " SET hash=? WHERE blobid=?", v, k);
+                    } catch (SQLException e) {
+                        plugin.warning("Error while committing hash for blobid: " + k + ", this is probably fine.");
+                        ignore.add(k);
+                    }
+                });
+            }
+            plugin.info("Done migrating blobs, purging unneeded data");
+        }
+        sql.migrationmanager.setVersion(connection, 7, sql);
     }
 
     void putRaw(Table table, ArrayList<Object[]> datas)
@@ -430,5 +533,11 @@ public class MigrationManager {
             where = where.substring(0, where.length() - 1) + ")";
         }
         sql.execute(connection, "UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1" + where);
+    }
+
+    private void setVersion(Connection connection, int version, SQLManager sql) throws SQLException {
+        sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
+                + System.currentTimeMillis() + "," + (this.version = version) + ")");
+        plugin.info("Done migrating to version " + version);
     }
 }

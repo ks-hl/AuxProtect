@@ -33,7 +33,7 @@ public class RetentionSolver {
         thresholds.put(3 * 60 * 60 * 20, 0);
         int onlinern = 0;
         for (int uid : lookupUids) {
-            HashMap<Long, String> usernames = plugin.getSqlManager().getUsernamesFromUID(uid);
+            HashMap<Long, String> usernames = plugin.getSqlManager().getUserManager().getUsernamesFromUID(uid);
             boolean valid = true;
             for (long time : usernames.keySet()) {
                 if (time < startTime) {
@@ -45,7 +45,7 @@ public class RetentionSolver {
                 continue;
             }
             OfflinePlayer player = Bukkit
-                    .getOfflinePlayer(UUID.fromString(plugin.getSqlManager().getUUIDFromUID(uid).substring(1)));
+                    .getOfflinePlayer(UUID.fromString(plugin.getSqlManager().getUserManager().getUUIDFromUID(uid).substring(1)));
             if (player == null) {
                 sender.sendMessageRaw("§cPlayer not found. UID=" + uid);
                 return;

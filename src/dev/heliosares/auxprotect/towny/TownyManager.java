@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.towny;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
+import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
@@ -61,6 +62,8 @@ public class TownyManager {
         Connection connection;
         try {
             connection = sql.getConnection();
+        } catch (ConnectionPool.BusyException e1) {
+            return null;
         } catch (SQLException e1) {
             plugin.print(e1);
             return null;
@@ -146,6 +149,8 @@ public class TownyManager {
         Connection connection;
         try {
             connection = sql.getConnection();
+        } catch (ConnectionPool.BusyException e1) {
+            return -1;
         } catch (SQLException e1) {
             plugin.print(e1);
             return -1;
@@ -180,7 +185,7 @@ public class TownyManager {
 
             @Override
             public void run() {
-                final int uid = sql.getUIDFromUUID("$t" + uuid, true);
+                final int uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
                 if (uid <= 0) {
                     plugin.warning("Failed to insert new town/nation name: " + name);
                     return;

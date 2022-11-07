@@ -3,7 +3,10 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.towny.TownyEntry;
+import dev.heliosares.auxprotect.utils.InvSerialization;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -34,7 +37,7 @@ public class LookupManager {
                 stmt += "\nWHERE " + sqlstmts[0];
             }
             stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
-            ArrayList<DbEntry> results = sql.lookup(param.getTable(), stmt, writeparams);
+            ArrayList<DbEntry> results = lookup(sql, param.getTable(), stmt, writeparams);
             if (out == null) {
                 out = results;
             } else {
@@ -48,7 +51,7 @@ public class LookupManager {
         int count = 0;
         Connection connection = null;
         try {
-            connection = sql.getConnection();
+            connection = sql.getConnection(false);
 
             for (Parameters param : params) {
                 String[] sqlstmts = param.toSQL(plugin);
@@ -73,6 +76,8 @@ public class LookupManager {
                     }
                 }
             }
+        } catch (ConnectionPool.BusyException e) {
+            throw new LookupException(Language.L.DATABASE_BUSY);
         } catch (SQLException e1) {
             plugin.print(e1);
             throw new LookupException(Language.L.ERROR);
@@ -80,5 +85,141 @@ public class LookupManager {
             sql.returnConnection(connection);
         }
         return count;
+    }
+
+    /**
+     * Performs a SQL Lookup in the table provided with the statement provided.
+     *
+     * @param sqlManager  TODO
+     * @param table       The table being utilized. This is not user in the
+     *                    statement and is merely provided for entry parsing
+     * @param stmt        The statement to be executed
+     * @param writeParams An in-order array of parameters to be inserted into ? of
+     *                    stmt
+     * @return An ArrayList of the DbEntry's meeting the provided conditions
+     * @throws LookupException
+     * @see {@link LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters...)}
+     */
+    @SuppressWarnings("deprecation")
+    public ArrayList<DbEntry> lookup(SQLManager sqlManager, Table table, String stmt, ArrayList<String> writeParams)
+            throws LookupException {
+        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
+        final boolean hasData = table.hasData();
+        final boolean hasAction = table.hasActionId();
+        final boolean hasLook = table.hasLook();
+        plugin.debug(stmt, 3);
+
+        ArrayList<DbEntry> output = new ArrayList<>();
+        long parseStart;
+
+        Connection connection;
+        try {
+            connection = sqlManager.getConnection(false);
+        } catch (ConnectionPool.BusyException e) {
+            throw new LookupException(Language.L.DATABASE_BUSY);
+        } catch (SQLException e1) {
+            plugin.warning("Error obtaining connection");
+            plugin.print(e1);
+            throw new LookupException(Language.L.DATABASE_BUSY);
+        }
+        long lookupStart = System.currentTimeMillis();
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+
+            pstmt.setFetchSize(500);
+            if (writeParams != null) {
+                int i1 = 1;
+                plugin.debug("writeParamsSize: " + writeParams.size());
+                for (String param : writeParams) {
+                    pstmt.setString(i1++, param);
+                }
+            }
+            try (ResultSet rs = pstmt.executeQuery()) {
+
+                int count = 0;
+                parseStart = System.currentTimeMillis();
+                while (rs.next()) {
+                    long time = rs.getLong("time");
+                    int uid = rs.getInt("uid");
+                    int action_id = -1;
+                    if (hasAction) {
+                        action_id = rs.getInt("action_id");
+                    } else if (table == Table.AUXPROTECT_COMMANDS) {
+                        action_id = EntryAction.COMMAND.id;
+                    } else if (table == Table.AUXPROTECT_XRAY) {
+                        action_id = EntryAction.VEIN.id;
+                    }
+                    String world = null;
+                    int x = 0, y = 0, z = 0;
+                    if (hasLocation) {
+                        world = sqlManager.getWorld(rs.getInt("world_id"));
+                        x = rs.getInt("x");
+                        y = rs.getInt("y");
+                        z = rs.getInt("z");
+                    }
+
+                    int pitch = 0, yaw = 180;
+                    if (hasLook) {
+                        pitch = rs.getInt("pitch");
+                        yaw = rs.getInt("yaw");
+                    }
+
+                    String data = null;
+                    if (hasData) {
+                        data = rs.getString("data");
+                    }
+                    EntryAction entryAction = EntryAction.getAction(action_id);
+                    if (entryAction == null) {
+                        plugin.debug("Unknown action_id: " + action_id, 1);
+                        continue;
+                    }
+                    boolean state = false;
+                    if (entryAction.hasDual && entryAction.id != action_id) {
+                        state = true;
+                    }
+                    DbEntry entry = null;
+                    String target = null;
+                    int target_id = -1;
+                    if (table.hasStringTarget()) {
+                        target = rs.getString("target");
+                    } else {
+                        target_id = rs.getInt("target_id");
+                    }
+                    if (table == Table.AUXPROTECT_XRAY) {
+                        short rating = rs.getShort("rating");
+                        entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
+                    } else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
+                        entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
+                                target_id, data);
+                    } else {
+                        entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
+                                target_id, data);
+                    }
+                    if (table.hasBlob()) {
+                        if (plugin.getAPConfig().doSkipV6Migration()
+                                && (action_id == 1024 || data.contains(InvSerialization.ITEM_SEPARATOR))) {
+                            entry.setHasBlob();
+                        } else if (rs.getBoolean("hasblob")) {
+                            entry.setHasBlob();
+                        }
+                    }
+                    output.add(entry);
+                    if (++count >= SQLManager.MAX_LOOKUP_SIZE) {
+                        throw new LookupException(Language.L.COMMAND__LOOKUP__TOOMANY, count);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.warning("Error while executing command");
+            plugin.warning("SQL Code: " + stmt);
+            plugin.print(e);
+            throw new LookupException(Language.L.ERROR);
+        } finally {
+            sqlManager.returnConnection(connection);
+        }
+        plugin.debug(
+                "Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: "
+                        + (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms",
+                1);
+        return output;
     }
 }

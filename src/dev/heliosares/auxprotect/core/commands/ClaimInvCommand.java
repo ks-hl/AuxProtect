@@ -2,18 +2,24 @@ package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.Experience;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
 import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.ItemStack;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.UUID;
 
 public class ClaimInvCommand implements CommandExecutor {
 
@@ -23,57 +29,90 @@ public class ClaimInvCommand implements CommandExecutor {
         this.plugin = plugin;
     }
 
-    @SuppressWarnings("deprecation")
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (args.length == 1 && APPermission.INV_RECOVER.hasPermission(sender)) {
-            OfflinePlayer target = Bukkit.getOfflinePlayer(args[0]);
-            if (target == null) {
-                sender.sendMessage("§cPlayer not found."); // TODO lang
-                return true;
-            }
-            String data = plugin.data.getData().getString("Recoverables." + target.getUniqueId().toString() + ".inv");
-            if (data == null) {
-                sender.sendMessage("§cThat player has no claimable inventory to cancel."); // TODO lang
-                return true;
-            }
-            plugin.data.getData().set("Recoverables." + target.getUniqueId().toString(), null);
-            plugin.data.save();
-            if (target.getPlayer() != null) {
-                Player targetP = target.getPlayer();
-                if (targetP.getOpenInventory() != null && targetP.getOpenInventory().getTopInventory() != null
-                        && targetP.getOpenInventory().getTopInventory().getHolder() != null
-                        && targetP.getOpenInventory().getTopInventory().getHolder() instanceof Pane) {
-                    targetP.closeInventory();
-                }
-                targetP.sendMessage("§cYour claimable inventory was cancelled."); // TODO lang
-            }
-            sender.sendMessage("§aYou cancelled " + target.getName() + "'" + (target.getName().endsWith("s") ? "" : "s")
-                    + " claimable inventory."); // TODO lang
-        } else if (sender instanceof Player) {
-            Player player = (Player) sender;
-            String data = plugin.data.getData().getString("Recoverables." + player.getUniqueId().toString() + ".inv");
-            int xp = plugin.data.getData().getInt("Recoverables." + player.getUniqueId().toString() + ".xp", -1);
-            if (data == null) {
-                sender.sendMessage("§cYou have no inventory to claim."); // TODO lang
-                return true;
-            }
-            if (xp > 0) {
-                Experience.giveExp(player, xp);
-            }
-            Inventory inv = null;
+        plugin.runAsync(() -> {
+            int uid;
+            boolean other;
+            OfflinePlayer target = null;
             try {
-                inv = InvSerialization.toInventory(data, new Pane(Type.CLAIM), "Inventory Claim");
-            } catch (Exception e1) {
-                plugin.warning("Error serializing inventory claim");
-                plugin.print(e1);
+                if (other = (args.length == 1 && APPermission.INV_RECOVER.hasPermission(sender))) {
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(args[0]);
+                    if (uid <= 0 || (target = Bukkit.getOfflinePlayer(UUID.fromString(
+                            plugin.getSqlManager().getUserManager().getUUIDFromUID(uid).substring(1)))) == null) {
+                        sender.sendMessage(Language.L.PLAYERNOTFOUND.translate());
+                        return;
+                    }
+                } else if (sender instanceof Player player) {
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + player.getUniqueId().toString(),
+                            false);
+                    target = player;
+                } else {
+                    sender.sendMessage(Language.L.NOTPLAYERERROR.translate());
+                    return;
+                }
+                byte[] data = null;
+                if (uid > 0) {
+                    data = plugin.getSqlManager().getUserManager().getPendingInventory(uid);
+                }
+                out:
+                if (data == null) {
+                    if (other) {
+                        if (target instanceof Player play
+                                && play.getOpenInventory().getTopInventory().getHolder() instanceof Pane pane) {
+                            pane.cancel();
+                            plugin.runSync(() -> play.getPlayer().closeInventory());
+                            break out;
+                        }
+                        sender.sendMessage(L.COMMAND__CLAIMINV__OTHERHASNONE.translate());
+                    } else {
+                        sender.sendMessage(L.COMMAND__CLAIMINV__YOUHAVENONE.translate());
+                    }
+                    return;
+                }
+                if (other) {
+                    plugin.getSqlManager().getUserManager().setPendingInventory(uid, null);
+                    if (target.getPlayer() != null) { // Player is online
+                        target.getPlayer().sendMessage(L.COMMAND__CLAIMINV__CANCELLED.translate());
+                    }
+                    sender.sendMessage(L.COMMAND__CLAIMINV__CANCELLED_OTHER
+                            .translate(target.getName() + "'" + (target.getName().endsWith("s") ? "" : "s")));
+                } else if (target.getPlayer() != null) {
+                    Inventory inv = null;
+                    Pane pane = new Pane(Type.CLAIM, target.getPlayer());
+                    pane.onClose(p -> {
+                        ArrayList<ItemStack> leftover = new ArrayList<>();
+                        for (int i = 0; i < p.getInventory().getSize(); i++) {
+                            ItemStack item = p.getInventory().getItem(i);
+                            if (item == null || item.getType() == Material.AIR)
+                                continue;
+                            HashMap<Integer, ItemStack> left = p.getPlayer().getInventory().addItem(item);
+                            p.getInventory().setItem(i, new ItemStack(Material.AIR));
+                            if (left != null) {
+                                leftover.addAll(left.values());
+                            }
+                        }
+                        for (ItemStack i : leftover) {
+                            p.getPlayer().getWorld().dropItem(p.getPlayer().getLocation(), i);
+                        }
+                    });
+                    try {
+                        inv = InvSerialization.toInventory(data, pane, L.COMMAND__CLAIMINV__HEADER.translate());
+                    } catch (Exception e1) {
+                        plugin.warning("Error serializing inventory claim");
+                        throw e1;
+                    }
+                    pane.setInventory(inv);
+                    plugin.getSqlManager().getUserManager().setPendingInventory(uid, null);
+                    InvCommand.openSync(plugin, target.getPlayer(), inv);// Executed after clearing the pending
+                    // inventory to prevent duplication
+                }
+            } catch (Exception e) {
                 sender.sendMessage(Language.translate(Language.L.ERROR));
-                return true;
+                plugin.print(e);
+                return;
             }
-            player.openInventory(inv);
-            plugin.data.getData().set("Recoverables." + player.getUniqueId().toString(), null);
-            plugin.data.save();
-        }
+        });
         return true;
     }
 }

@@ -86,7 +86,8 @@ public class XrayCommand extends Command {
                         if (time > 0) {
                             ArrayList<DbEntry> entries;
                             try {
-                                entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
+                                entries = plugin.getSqlManager().getLookupManager().lookup(plugin.getSqlManager(),
+                                        Table.AUXPROTECT_XRAY,
                                         "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
                             } catch (LookupException e) {
                                 plugin.print(e);

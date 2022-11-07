@@ -30,6 +30,8 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -82,22 +84,9 @@ public class PlayerListener implements Listener {
     public void onPlayerItemDamageEvent(PlayerItemDamageEvent e) {
         ItemStack item = e.getItem();
         Damageable meta = (Damageable) item.getItemMeta();
-        int durability = item.getType().getMaxDurability() - (meta.getDamage() + 1);
-        if (durability <= 0) {
-            DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BREAKITEM, false,
-                    e.getPlayer().getLocation(), AuxProtectSpigot.getLabel(item.getType()), "");
-
-            if (InvSerialization.isCustom(item)) {
-                try {
-                    entry.setBlob(InvSerialization.toByteArray(item));
-                } catch (Exception e1) {
-                    plugin.warning("Error serializing broken item");
-                    plugin.print(e1);
-                }
-            } else if (item.getAmount() > 1) {
-                entry.setData("x" + item.getAmount());
-            }
-            plugin.add(entry);
+        if (item.getType().getMaxDurability() - meta.getDamage() - e.getDamage() <= 0) {
+            EntityListener.itemBreak(plugin, AuxProtectSpigot.getLabel(e.getPlayer()), item,
+                    e.getPlayer().getLocation());
         }
     }
 
@@ -193,31 +182,38 @@ public class PlayerListener implements Listener {
 
             @Override
             public void run() {
-                plugin.getSqlManager().updateUsernameAndIP(e.getPlayer().getUniqueId(), e.getPlayer().getName(), ip);
+                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
+                        e.getPlayer().getName(), ip);
             }
         }.runTaskAsynchronously(plugin);
 
         apPlayer.logInventory("join");
 
-        final String data = plugin.data.getData().getString("Recoverables." + e.getPlayer().getUniqueId().toString());
-        if (data != null) {
-            new BukkitRunnable() {
+        new BukkitRunnable() {
 
-                @Override
-                public void run() {
-                    e.getPlayer().sendMessage("ï¿½aYou have an inventory waiting to be claimed!");
-                    e.getPlayer().sendMessage("ï¿½7Ensure you have room in your inventory before claiming!");
-                    ComponentBuilder message = new ComponentBuilder();
-                    message.append("ï¿½f\n         ");
-                    message.append("ï¿½a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                            .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    new Text("ï¿½aClick to claim your recovered inventory")));
-                    message.append("\nï¿½f").event((ClickEvent) null).event((HoverEvent) null);
-                    e.getPlayer().spigot().sendMessage(message.create());
-                    e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+            @Override
+            public void run() {
+                try {
+                    if (plugin.getSqlManager().getUserManager()
+                            .getPendingInventory(plugin.getSqlManager().getUserManager()
+                                    .getUIDFromUUID("$" + e.getPlayer().getUniqueId().toString(), false)) == null) {
+                        return;
+                    }
+                } catch (SQLException | IOException e1) {
+                    return;
                 }
-            }.runTaskLater(plugin, 60);
-        }
+                e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
+                e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
+                ComponentBuilder message = new ComponentBuilder();
+                message.append("§f\n         ");
+                message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new Text("§aClick to claim your recovered inventory")));
+                message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                e.getPlayer().spigot().sendMessage(message.create());
+                e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+            }
+        }.runTaskLaterAsynchronously(plugin, 40);
 
         if (plugin.update != null && APPermission.ADMIN.hasPermission(e.getPlayer())) {
             new BukkitRunnable() {

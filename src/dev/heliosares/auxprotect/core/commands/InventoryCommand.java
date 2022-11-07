@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
@@ -56,8 +57,8 @@ public class InventoryCommand extends Command {
             final long time = time_;
 
             plugin.runAsync(() -> {
-                int uid = plugin.getSqlManager().getUIDFromUsername(target);
-                String uuid = plugin.getSqlManager().getUUIDFromUID(uid);
+                int uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
+                String uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
                 OfflinePlayer targetP = Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1)));
                 if (uid < 0) {
                     sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);
@@ -66,6 +67,9 @@ public class InventoryCommand extends Command {
                 DiffInventoryRecord inv = null;
                 try {
                     inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
+                } catch (ConnectionPool.BusyException e) {
+                    sender.sendLang(Language.L.DATABASE_BUSY);
+                    return;
                 } catch (ClassNotFoundException | SQLException | IOException e) {
                     plugin.print(e);
                     sender.sendLang(Language.L.ERROR);

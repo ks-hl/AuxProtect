@@ -35,16 +35,6 @@ public class TownyEntry extends DbEntry {
         return user;
     }
 
-    public int getTargetId() {
-        if (action.getTable().hasStringTarget()) {
-            return -1;
-        }
-        if (target_id > 0) {
-            return target_id;
-        }
-        return target_id = SQLManager.getInstance().getUIDFromUUID(getTargetUUID(), true);
-    }
-
     public String getTarget() {
         if (target != null) {
             return target;

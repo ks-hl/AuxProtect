@@ -25,7 +25,13 @@ public class Telemetry {
         metrics.addCustomChart(new Metrics.SimplePie("private", new Callable<String>() {
             @Override
             public String call() throws Exception {
-                return plugin.getAPConfig().isPrivate() ? "Private" : "Public";
+                if (plugin.getAPConfig().isPrivate()) {
+                    return "Private";
+                }
+                if (plugin.getAPConfig().isDonor()) {
+                    return "Donor";
+                }
+                return "Public";
             }
         }));
 

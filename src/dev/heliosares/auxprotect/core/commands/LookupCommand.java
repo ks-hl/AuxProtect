@@ -14,7 +14,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
-import org.bukkit.entity.Player;
 
 import java.util.*;
 
@@ -84,14 +83,16 @@ public class LookupCommand extends Command {
 
             }
             String user = currentArg.substring(0, cutIndex + 1);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                possible.add(user + player.getName());
+            for (String player : plugin.listPlayers()) {
+                possible.add(user + player);
             }
-            for (String username : plugin.getSqlManager().getCachedUsernames()) {
+            for (String username : plugin.getSqlManager().getUserManager().getCachedUsernames()) {
                 possible.add(user + username);
             }
-            for (EntityType et : EntityType.values()) {
-                possible.add(user + "#" + et.toString().toLowerCase());
+            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+                for (EntityType et : EntityType.values()) {
+                    possible.add(user + "#" + et.toString().toLowerCase());
+                }
             }
             possible.add(user + "#env");
         }

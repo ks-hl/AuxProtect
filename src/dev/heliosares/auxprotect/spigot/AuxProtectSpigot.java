@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.spigot.listeners.*;
 import dev.heliosares.auxprotect.towny.TownyListener;
+import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
@@ -46,8 +47,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private static SQLManager sqlManager;
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
-    // TODO convert to configadapter
-    public YMLManager data;
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
@@ -128,11 +127,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             print(e1);
         }
 
-        data = new YMLManager("data", this);
-        data.load();
-        lastloaded = data.getData().getLong("lastloaded");
-        data.getData().set("lastloaded", System.currentTimeMillis());
-        data.save();
+        // TODO readd
+//		lastloaded = data.getData().getLong("lastloaded");
+//		data.getData().set("lastloaded", System.currentTimeMillis());
+//		data.save();
 
         debug("Parsing: " + Bukkit.getBukkitVersion());
         try {
@@ -153,7 +151,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {
                 if (!sqliteFile.getParentFile().mkdirs()) {
-                    this.getLogger().severe("Failed to create database directory.");
+                    this.getLogger().severe("Failed to create database directory. Disabling");
                     this.setEnabled(false);
                     return;
                 }
@@ -164,7 +162,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         throw new IOException();
                     }
                 } catch (IOException e) {
-                    this.getLogger().severe("Failed to create database file.");
+                    this.getLogger().severe("Failed to create database file. Disabling");
                     this.setEnabled(false);
                     return;
                 }
@@ -173,6 +171,11 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
+        if (sqlManager == null) {
+            this.getLogger().severe("Failed to connect to database. Disabling");
+            this.setEnabled(false);
+            return;
+        }
         veinManager = new VeinManager();
 
         new BukkitRunnable() {
@@ -237,27 +240,37 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         // this feels cursed to run setupEconomy() like this...
         Telemetry.reportHook(this, "Vault", setupEconomy());
 
-        hook(() -> {
+        boolean shop = hook(() -> {
             return new ShopGUIPlusListener(this);
         }, "ShopGuiPlus");
-        hook(() -> {
+        shop = hook(() -> {
             return new EconomyShopGUIListener(this);
-        }, "EconomyShopGUI", "EconomyShopGUI-Premium");
-        hook(() -> {
+        }, "EconomyShopGUI", "EconomyShopGUI-Premium") || shop;
+        shop = hook(() -> {
             return new DynamicShopListener(this);
-        }, "DynamicShop");
-        hook(() -> {
+        }, "DynamicShop") || shop;
+        shop = hook(() -> {
             return new ChestShopListener(this);
-        }, "ChestShop");
-        hook(() -> {
+        }, "ChestShop") || shop;
+        if (!shop) {
+            EntryAction.SHOP.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new AuctionHouseListener(this);
-        }, "AuctionHouse");
-        hook(() -> {
+        }, "AuctionHouse")) {
+            EntryAction.AUCTIONBUY.setEnabled(false);
+            EntryAction.AUCTIONLIST.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new JobsListener(this);
-        }, "Jobs");
-        hook(() -> {
+        }, "Jobs")) {
+            EntryAction.JOBS.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new EssentialsListener(this);
-        }, "Essentials");
+        }, "Essentials")) {
+            EntryAction.PAY.setEnabled(false);
+        }
         if (!hook(() -> {
             return new TownyListener(this);
         }, "Towny")) {
@@ -566,6 +579,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
         dbRunnable = null;
         sqlManager = null;
+        Pane.shutdown();
     }
 
     @Override

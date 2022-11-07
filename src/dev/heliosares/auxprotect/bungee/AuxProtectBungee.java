@@ -294,6 +294,11 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public boolean isEnabled() {
+        return this.isEnabled();
+    }
+
+    @Override
     public String getCommandAlias() {
         return "apb";
     }

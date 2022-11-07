@@ -7,14 +7,14 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public enum Table {
     AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
-    AUXPROTECT_COMMANDS, AUXPROTECT_POSITION,
+    AUXPROTECT_COMMANDS, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
 
     AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB,
-    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB,
+    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
 
-    AUXPROTECT_TOWNY;
-
+    public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
     protected final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    private long autopurgeinterval;
 
     public static String getValuesTemplate(int numColumns) {
         if (numColumns <= 0) {
@@ -36,9 +36,24 @@ public enum Table {
         return SQLManager.getTablePrefix() + super.toString().toLowerCase();
     }
 
+    public String getName() {
+        return super.toString().toLowerCase();
+    }
+
     public boolean exists(IAuxProtect plugin) {
-        if (plugin.getPlatform() == PlatformType.BUNGEE && !this.isOnBungee()) {
-            return false;
+        if (plugin.getPlatform() == PlatformType.BUNGEE) {
+            switch (this) {
+                case AUXPROTECT_MAIN:
+                case AUXPROTECT_COMMANDS:
+                case AUXPROTECT_LONGTERM:
+                case AUXPROTECT_API:
+                case AUXPROTECT_UIDS:
+                case AUXPROTECT_API_ACTIONS:
+                case AUXPROTECT_VERSION:
+                    return true;
+                default:
+                    return false;
+            }
         }
         if (!plugin.getAPConfig().isPrivate() && this == AUXPROTECT_ABANDONED) {
             return false;
@@ -72,21 +87,6 @@ public enum Table {
             case AUXPROTECT_API:
             case AUXPROTECT_XRAY:
             case AUXPROTECT_TOWNY:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public boolean isOnBungee() {
-        switch (this) {
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_LONGTERM:
-            case AUXPROTECT_API:
-            case AUXPROTECT_UIDS:
-            case AUXPROTECT_API_ACTIONS:
-            case AUXPROTECT_VERSION:
                 return true;
             default:
                 return false;
@@ -137,6 +137,16 @@ public enum Table {
             default:
                 return false;
         }
+    }
+
+    public boolean canPurge() {
+        if (this == Table.AUXPROTECT_LONGTERM) {
+            return false;
+        }
+        if (this.hasAPEntries()) {
+            return true;
+        }
+        return false;
     }
 
     public String getValuesHeader(PlatformType platform) {
@@ -250,4 +260,17 @@ public enum Table {
         return false;
     }
 
+    public long getAutoPurgeInterval() {
+        if (!canPurge()) {
+            throw new UnsupportedOperationException();
+        }
+        return autopurgeinterval;
+    }
+
+    public void setAutoPurgeInterval(long autopurgeinterval) {
+        if (!canPurge()) {
+            throw new UnsupportedOperationException();
+        }
+        this.autopurgeinterval = autopurgeinterval;
+    }
 }

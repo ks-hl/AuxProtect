@@ -5,14 +5,15 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class PurgeCommand extends Command {
 
@@ -37,12 +38,12 @@ public class PurgeCommand extends Command {
             } catch (IllegalArgumentException e) {
             }
             if (table_ == null || !table_.exists(plugin)) {
-                sender.sendLang(Language.L.PURGE_TABLE);
+                sender.sendLang(Language.L.COMMAND__PURGE__TABLE);
                 return;
             }
         }
-        if (table_ == Table.AUXPROTECT_LONGTERM) {
-            sender.sendLang(Language.L.PURGE_TABLE);
+        if (table_ != null && !table_.canPurge()) {
+            sender.sendLang(Language.L.COMMAND__PURGE__NOPURGE);
             return;
         }
         final Table table = table_;
@@ -54,32 +55,33 @@ public class PurgeCommand extends Command {
             return;
         }
 
-        if (time_ < 1000 * 3600 * 24 * 14) {
-            sender.sendLang(Language.L.PURGE_TIME);
+        if (time_ < Table.MIN_PURGE_INTERVAL) {
+            sender.sendLang(Language.L.COMMAND__PURGE__TIME);
             return;
         }
 
         final long time = time_;
-        sender.sendLang(Language.L.PURGE_PURGING, table == null ? "all" : table.toString());
+        sender.sendLang(Language.L.COMMAND__PURGE__PURGING, table == null ? "all" : table.toString());
         plugin.runAsync(new Runnable() {
 
             @Override
             public void run() {
+                int count = 0;
                 try {
-                    plugin.getSqlManager().purge(sender, table, time);
-                    sender.sendLang(Language.L.PURGE_UIDS);
+                    count += plugin.getSqlManager().purge(table, time);
+                    sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
                     plugin.getSqlManager().purgeUIDs();
 
                     if (!plugin.getSqlManager().isMySQL()) {
-                        sender.sendLang(Language.L.PURGE_VACUUM);
+                        sender.sendLang(Language.L.COMMAND__PURGE__VACUUM);
                         plugin.getSqlManager().vacuum();
                     }
-                } catch (SQLException | BusyException e) {
+                } catch (SQLException e) {
                     plugin.print(e);
-                    sender.sendLang(Language.L.PURGE_ERROR);
+                    sender.sendLang(Language.L.COMMAND__PURGE__ERROR);
                     return;
                 }
-                sender.sendLang(Language.L.PURGE_COMPLETE);
+                sender.sendLang(Language.L.COMMAND__PURGE__COMPLETE_COUNT, count);
             }
         });
     }
@@ -94,9 +96,8 @@ public class PurgeCommand extends Command {
         List<String> possible = new ArrayList<>();
 
         if (args.length == 2) {
-            for (Table table : Table.values()) {
-                possible.add(table.toString());
-            }
+            possible.addAll(Arrays.asList(Table.values()).stream().filter(t -> t.exists(plugin) && t.canPurge())
+                    .map(t -> t.getName()).collect(Collectors.toList()));
             possible.add("all");
         }
         if (args.length == 3) {

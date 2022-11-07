@@ -100,7 +100,7 @@ public class TimeUtil {
                 case 'f':
                     break;
                 default:
-                    throw new NumberFormatException("Invalid specifier: " + c);
+                    throw new NumberFormatException("Invalid specifier: " + c); // TODO lang
             }
             time += Double.parseDouble(builder) * modifier;
             builder = "";

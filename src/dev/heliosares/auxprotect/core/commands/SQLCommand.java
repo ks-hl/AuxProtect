@@ -35,7 +35,7 @@ public class SQLCommand extends Command {
                 } else if (args[0].equalsIgnoreCase("sqli")) {
                     plugin.getSqlManager().executeWrite(stmt);
                 } else {
-                    List<List<String>> results = plugin.getSqlManager().executeUpdate(stmt);
+                    List<List<String>> results = plugin.getSqlManager().executeGet(stmt);
                     if (results != null) {
                         for (List<String> result : results) {
                             String line = "";

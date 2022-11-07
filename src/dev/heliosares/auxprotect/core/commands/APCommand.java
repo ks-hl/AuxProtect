@@ -71,7 +71,7 @@ public class APCommand extends Command {
     public static List<String> allPlayers(IAuxProtect plugin, boolean cache) {
         List<String> out = plugin.listPlayers();
         if (cache) {
-            out.addAll(plugin.getSqlManager().getCachedUsernames());
+            out.addAll(plugin.getSqlManager().getUserManager().getCachedUsernames());
         }
         return out;
     }
@@ -100,6 +100,7 @@ public class APCommand extends Command {
                         }
                     } catch (Throwable t) {
                         sender.sendLang(Language.L.ERROR);
+                        plugin.print(t);
                     }
                 } else {
                     sender.sendLang(Language.L.NO_PERMISSION);
