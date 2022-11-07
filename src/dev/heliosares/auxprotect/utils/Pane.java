@@ -10,9 +10,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Pane implements InventoryHolder {
+    public final Type type;
     private Inventory inventory;
     private ArrayList<Button> buttons;
-    public final Type type;
     private List<Runnable> onClose = new ArrayList<>();
 
     public Pane(Type type) {
@@ -65,16 +65,6 @@ public class Pane implements InventoryHolder {
         return false;
     }
 
-    private static class Button {
-        final Runnable run;
-        final int index;
-
-        public Button(Runnable run, int index) {
-            this.run = run;
-            this.index = index;
-        }
-    }
-
     public void onClose(Runnable run) {
         this.onClose.add(run);
     }
@@ -87,5 +77,15 @@ public class Pane implements InventoryHolder {
 
     public static enum Type {
         CLAIM, SHOW
+    }
+
+    private static class Button {
+        final Runnable run;
+        final int index;
+
+        public Button(Runnable run, int index) {
+            this.run = run;
+            this.index = index;
+        }
     }
 }

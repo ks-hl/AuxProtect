@@ -13,31 +13,41 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class WatchCommand extends Command {
 
+    static final List<WatchRecord> records;
+    private static ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    private static int nextid = 0;
+
+    static {
+        records = new ArrayList<>();
+    }
+
     public WatchCommand(IAuxProtect plugin) {
         super(plugin, "watch", APPermission.WATCH, "w");
     }
 
-    private static ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
-    static final List<WatchRecord> records;
-
-    private static int nextid = 0;
-
-    private static class WatchRecord {
-        public final int id;
-        public final SenderAdapter sender;
-        public final Parameters params;
-        public final String originalCommand;
-
-        public WatchRecord(SenderAdapter sender, Parameters params, String originalCommand) {
-            this.id = nextid++;
-            this.sender = sender;
-            this.params = params;
-            this.originalCommand = originalCommand;
+    public static void notify(DbEntry entry) {
+        if (records.size() == 0) {
+            return;
         }
+        queue.add(entry);
     }
 
-    static {
-        records = new ArrayList<>();
+    public static void tick(IAuxProtect plugin) {
+        if (queue.size() == 0) {
+            return;
+        }
+        DbEntry entry = null;
+        while ((entry = queue.poll()) != null) {
+            HashSet<UUID> informed = new HashSet<>();
+            for (WatchRecord record : records) {
+                if (record.params.matches(entry)) {
+                    if (informed.add(record.sender.getUniqueId())) {
+                        Results.sendEntry(plugin, record.sender, entry, 0, true,
+                                !record.params.getFlags().contains(Flag.HIDE_COORDS));
+                    }
+                }
+            }
+        }
     }
 
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
@@ -126,31 +136,6 @@ public class WatchCommand extends Command {
         });
     }
 
-    public static void notify(DbEntry entry) {
-        if (records.size() == 0) {
-            return;
-        }
-        queue.add(entry);
-    }
-
-    public static void tick(IAuxProtect plugin) {
-        if (queue.size() == 0) {
-            return;
-        }
-        DbEntry entry = null;
-        while ((entry = queue.poll()) != null) {
-            HashSet<UUID> informed = new HashSet<>();
-            for (WatchRecord record : records) {
-                if (record.params.matches(entry)) {
-                    if (informed.add(record.sender.getUniqueId())) {
-                        Results.sendEntry(plugin, record.sender, entry, 0, true,
-                                !record.params.getFlags().contains(Flag.HIDE_COORDS));
-                    }
-                }
-            }
-        }
-    }
-
     @Override
     public boolean exists() {
         return plugin.getAPConfig().isPrivate();
@@ -159,5 +144,19 @@ public class WatchCommand extends Command {
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         return LookupCommand.onTabCompleteStatic(plugin, sender, label, args);
+    }
+
+    private static class WatchRecord {
+        public final int id;
+        public final SenderAdapter sender;
+        public final Parameters params;
+        public final String originalCommand;
+
+        public WatchRecord(SenderAdapter sender, Parameters params, String originalCommand) {
+            this.id = nextid++;
+            this.sender = sender;
+            this.params = params;
+            this.originalCommand = originalCommand;
+        }
     }
 }
