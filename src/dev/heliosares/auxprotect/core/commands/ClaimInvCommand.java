@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.core.commands;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
+import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Pane;
@@ -36,13 +37,15 @@ public class ClaimInvCommand implements CommandExecutor {
             boolean other;
             OfflinePlayer target = null;
             try {
-                if (other = (args.length == 1 && APPermission.INV_RECOVER.hasPermission(sender))) {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(args[0]);
-                    if (uid <= 0 || (target = Bukkit.getOfflinePlayer(UUID.fromString(
-                            plugin.getSqlManager().getUserManager().getUUIDFromUID(uid).substring(1)))) == null) {
+                other = (args.length == 1) && APPermission.INV_RECOVER.hasPermission(sender);
+                if (other) {
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(args[0], false);
+                    if (uid <= 0) {
                         sender.sendMessage(Language.L.PLAYERNOTFOUND.translate());
                         return;
                     }
+                    target = Bukkit.getOfflinePlayer(UUID.fromString(
+                            plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false).substring(1)));
                 } else if (sender instanceof Player player) {
                     uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + player.getUniqueId().toString(),
                             false);
@@ -104,13 +107,15 @@ public class ClaimInvCommand implements CommandExecutor {
                     }
                     pane.setInventory(inv);
                     plugin.getSqlManager().getUserManager().setPendingInventory(uid, null);
-                    InvCommand.openSync(plugin, target.getPlayer(), inv);// Executed after clearing the pending
+                    InvCommand.openSync(plugin, target.getPlayer(), inv);
+                    // Executed after clearing the pending
                     // inventory to prevent duplication
                 }
+            } catch (ConnectionPool.BusyException e) {
+                sender.sendMessage(Language.translate(L.DATABASE_BUSY));
             } catch (Exception e) {
                 sender.sendMessage(Language.translate(Language.L.ERROR));
                 plugin.print(e);
-                return;
             }
         });
         return true;
