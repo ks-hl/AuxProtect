@@ -28,13 +28,38 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public class AuxProtectBungee extends Plugin implements IAuxProtect {
-    private final APConfig config = new APConfig();
-    SQLManager sqlManager;
-    protected DatabaseRunnable dbRunnable;
+    private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
+    private final APConfig config = new APConfig();
+    protected DatabaseRunnable dbRunnable;
+    SQLManager sqlManager;
+    Set<Integer> stackHashHistory = new HashSet<>();
+    private boolean isShuttingDown;
+    private String stackLog = "";
 
     public AuxProtectBungee() {
         instance = this;
+    }
+
+    public static void tell(CommandSender to, String message) {
+        to.sendMessage(TextComponent.fromLegacyText(message));
+    }
+
+    public static IAuxProtect getInstance() {
+        return instance;
+    }
+
+    public static String getLabel(Object o) {
+        if (o == null) {
+            return "#null";
+        }
+        if (o instanceof UUID) {
+            return "$" + ((UUID) o).toString();
+        }
+        if (o instanceof ProxiedPlayer) {
+            return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
+        }
+        return "#null";
     }
 
     @Override
@@ -141,15 +166,9 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         }
     }
 
-    private boolean isShuttingDown;
-
     @Override
     public boolean isShuttingDown() {
         return isShuttingDown;
-    }
-
-    public static void tell(CommandSender to, String message) {
-        to.sendMessage(TextComponent.fromLegacyText(message));
     }
 
     @Override
@@ -198,10 +217,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
     }
 
-    private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-    Set<Integer> stackHashHistory = new HashSet<>();
-    private String stackLog = "";
-
     @Override
     public String getStackLog() {
         return stackLog;
@@ -210,10 +225,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public PlatformType getPlatform() {
         return PlatformType.BUNGEE;
-    }
-
-    public static IAuxProtect getInstance() {
-        return instance;
     }
 
     @Override
@@ -234,19 +245,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public void runSync(Runnable run) {
         runAsync(run);
-    }
-
-    public static String getLabel(Object o) {
-        if (o == null) {
-            return "#null";
-        }
-        if (o instanceof UUID) {
-            return "$" + ((UUID) o).toString();
-        }
-        if (o instanceof ProxiedPlayer) {
-            return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
-        }
-        return "#null";
     }
 
     @Override

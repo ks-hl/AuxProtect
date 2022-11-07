@@ -19,8 +19,8 @@ import java.util.ArrayList;
 
 public class ProjectileListener implements Listener {
 
-    private AuxProtectSpigot plugin;
     ArrayList<EntityType> whitelist;
+    private AuxProtectSpigot plugin;
 
     public ProjectileListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

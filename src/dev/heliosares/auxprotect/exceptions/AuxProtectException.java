@@ -8,7 +8,8 @@ import java.util.List;
 
 public class AuxProtectException extends Exception {
     private static final long serialVersionUID = 8845413629243613163L;
-
+    private final L l;
+    private final List<Object> format;
     public AuxProtectException(L l, Object... format) {
         super(l.translate(format));
         this.l = l;
@@ -18,9 +19,6 @@ public class AuxProtectException extends Exception {
             this.format = Collections.unmodifiableList(Arrays.asList(format));
         }
     }
-
-    private final L l;
-    private final List<Object> format;
 
     public L getLang() {
         return l;

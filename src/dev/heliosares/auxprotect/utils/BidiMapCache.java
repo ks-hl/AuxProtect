@@ -8,6 +8,13 @@ import java.util.Set;
 
 public class BidiMapCache<K, V> {
 
+    private final long timeToLive;
+    private final long cleanupInterval;
+    private final boolean updateWhenAccessed;
+    private HashMap<K, V> set;
+    private HashMap<V, K> reverse;
+    private HashMap<K, Long> timeAdded;
+    private long lastCleanup;
     public BidiMapCache(long timeToLive, long cleanupInterval, boolean updateWhenAccessed) {
         set = new HashMap<>();
         reverse = new HashMap<>();
@@ -17,14 +24,6 @@ public class BidiMapCache<K, V> {
         this.lastCleanup = System.currentTimeMillis();
         this.updateWhenAccessed = updateWhenAccessed;
     }
-
-    private HashMap<K, V> set;
-    private HashMap<V, K> reverse;
-    private HashMap<K, Long> timeAdded;
-    private long lastCleanup;
-    private final long timeToLive;
-    private final long cleanupInterval;
-    private final boolean updateWhenAccessed;
 
     public void clear() {
         set.clear();

@@ -20,11 +20,134 @@ import java.util.*;
 
 public class LookupCommand extends Command {
 
+    static final HashMap<String, Results> results = new HashMap<>();
+
     public LookupCommand(IAuxProtect plugin) {
         super(plugin, "lookup", APPermission.LOOKUP, "l");
     }
 
-    static final HashMap<String, Results> results = new HashMap<>();
+    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label,
+                                                   String[] args) {
+        List<String> possible = new ArrayList<>();
+        String currentArg = args[args.length - 1];
+        boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
+        boolean watch = args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w");
+        if (lookup && !APPermission.LOOKUP.hasPermission(sender)) {
+            return null;
+        }
+        if (watch && !APPermission.WATCH.hasPermission(sender)) {
+            return null;
+        }
+        if (args.length == 2) {
+            if (lookup) {
+                possible.add("next");
+                possible.add("prev");
+                possible.add("first");
+                possible.add("last");
+            }
+            if (watch) {
+                possible.add("remove");
+                possible.add("clear");
+                possible.add("list");
+            }
+        }
+
+        possible.add("radius:");
+        possible.add("time:");
+        possible.add("target:");
+        possible.add("action:");
+        possible.add("world:");
+        possible.add("user:");
+        possible.add("data:");
+        possible.add("before:");
+        possible.add("after:");
+
+        if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
+            String action = currentArg.split(":")[0] + ":";
+            for (EntryAction eaction : EntryAction.values()) {
+                if (eaction.exists() && eaction.isEnabled() && eaction.hasPermission(sender)) {
+                    String actString = eaction.toString().toLowerCase();
+                    if (eaction.hasDual) {
+                        possible.add(action + "+" + actString);
+                        possible.add(action + "-" + actString);
+                    }
+                    possible.add(action + actString);
+                }
+            }
+        }
+        if (currentArg.startsWith("user:") || currentArg.startsWith("u:") || currentArg.startsWith("target:")) {
+            int cutIndex = 0;
+            if (currentArg.contains(",")) {
+                cutIndex = currentArg.lastIndexOf(",");
+            } else {
+                cutIndex = currentArg.indexOf(":");
+
+            }
+            String user = currentArg.substring(0, cutIndex + 1);
+            for (Player player : Bukkit.getOnlinePlayers()) {
+                possible.add(user + player.getName());
+            }
+            for (String username : plugin.getSqlManager().getCachedUsernames()) {
+                possible.add(user + username);
+            }
+            for (EntityType et : EntityType.values()) {
+                possible.add(user + "#" + et.toString().toLowerCase());
+            }
+            possible.add(user + "#env");
+        }
+        if (currentArg.startsWith("target:")) {
+            for (Material material : Material.values()) {
+                possible.add("target:" + material.toString().toLowerCase());
+            }
+        }
+        if (APPermission.ADMIN.hasPermission(sender)) {
+            possible.add("db:");
+            if (currentArg.startsWith("db:")) {
+                for (Table table : Table.values()) {
+                    possible.add("db:" + table.toString());
+                }
+            }
+        }
+        if (currentArg.matches("(t(ime)?|before|after):\\d+m?")) {
+            possible.add(currentArg + "ms");
+            possible.add(currentArg + "s");
+            possible.add(currentArg + "m");
+            possible.add(currentArg + "h");
+            possible.add(currentArg + "d");
+            possible.add(currentArg + "w");
+        }
+        if (currentArg.startsWith("world:")) {
+            for (World world : Bukkit.getWorlds()) {
+                possible.add("world:" + world.getName());
+            }
+        }
+        if (currentArg.startsWith("rat")) {
+            possible.add("rating:");
+            if (currentArg.matches("rating:-?")) {
+                for (int i = -2; i <= 3; i++) {
+                    possible.add("rating:" + i);
+                }
+            }
+        }
+
+        for (int i = 1; i < args.length - 1; i++) {
+            String arg = args[i];
+            if (!arg.contains(":"))
+                continue;
+            arg = arg.substring(0, arg.indexOf(":") + 1);
+            possible.remove(arg);
+        }
+
+        if (currentArg.startsWith("#")) {
+            for (Flag flag : Flag.values()) {
+                if (flag.hasPermission(sender)) {
+                    possible.add("#" + flag.toString().toLowerCase());
+                }
+            }
+        }
+
+        return possible;
+    }
 
     public void onCommand(SenderAdapter sender, String label, String[] args) {
         if (args.length < 2) {
@@ -359,128 +482,5 @@ public class LookupCommand extends Command {
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         return onTabCompleteStatic(plugin, sender, label, args);
-    }
-
-    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label,
-                                                   String[] args) {
-        List<String> possible = new ArrayList<>();
-        String currentArg = args[args.length - 1];
-        boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
-        boolean watch = args[0].equalsIgnoreCase("watch") || args[0].equalsIgnoreCase("w");
-        if (lookup && !APPermission.LOOKUP.hasPermission(sender)) {
-            return null;
-        }
-        if (watch && !APPermission.WATCH.hasPermission(sender)) {
-            return null;
-        }
-        if (args.length == 2) {
-            if (lookup) {
-                possible.add("next");
-                possible.add("prev");
-                possible.add("first");
-                possible.add("last");
-            }
-            if (watch) {
-                possible.add("remove");
-                possible.add("clear");
-                possible.add("list");
-            }
-        }
-
-        possible.add("radius:");
-        possible.add("time:");
-        possible.add("target:");
-        possible.add("action:");
-        possible.add("world:");
-        possible.add("user:");
-        possible.add("data:");
-        possible.add("before:");
-        possible.add("after:");
-
-        if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
-            String action = currentArg.split(":")[0] + ":";
-            for (EntryAction eaction : EntryAction.values()) {
-                if (eaction.exists() && eaction.isEnabled() && eaction.hasPermission(sender)) {
-                    String actString = eaction.toString().toLowerCase();
-                    if (eaction.hasDual) {
-                        possible.add(action + "+" + actString);
-                        possible.add(action + "-" + actString);
-                    }
-                    possible.add(action + actString);
-                }
-            }
-        }
-        if (currentArg.startsWith("user:") || currentArg.startsWith("u:") || currentArg.startsWith("target:")) {
-            int cutIndex = 0;
-            if (currentArg.contains(",")) {
-                cutIndex = currentArg.lastIndexOf(",");
-            } else {
-                cutIndex = currentArg.indexOf(":");
-
-            }
-            String user = currentArg.substring(0, cutIndex + 1);
-            for (Player player : Bukkit.getOnlinePlayers()) {
-                possible.add(user + player.getName());
-            }
-            for (String username : plugin.getSqlManager().getCachedUsernames()) {
-                possible.add(user + username);
-            }
-            for (EntityType et : EntityType.values()) {
-                possible.add(user + "#" + et.toString().toLowerCase());
-            }
-            possible.add(user + "#env");
-        }
-        if (currentArg.startsWith("target:")) {
-            for (Material material : Material.values()) {
-                possible.add("target:" + material.toString().toLowerCase());
-            }
-        }
-        if (APPermission.ADMIN.hasPermission(sender)) {
-            possible.add("db:");
-            if (currentArg.startsWith("db:")) {
-                for (Table table : Table.values()) {
-                    possible.add("db:" + table.toString());
-                }
-            }
-        }
-        if (currentArg.matches("(t(ime)?|before|after):\\d+m?")) {
-            possible.add(currentArg + "ms");
-            possible.add(currentArg + "s");
-            possible.add(currentArg + "m");
-            possible.add(currentArg + "h");
-            possible.add(currentArg + "d");
-            possible.add(currentArg + "w");
-        }
-        if (currentArg.startsWith("world:")) {
-            for (World world : Bukkit.getWorlds()) {
-                possible.add("world:" + world.getName());
-            }
-        }
-        if (currentArg.startsWith("rat")) {
-            possible.add("rating:");
-            if (currentArg.matches("rating:-?")) {
-                for (int i = -2; i <= 3; i++) {
-                    possible.add("rating:" + i);
-                }
-            }
-        }
-
-        for (int i = 1; i < args.length - 1; i++) {
-            String arg = args[i];
-            if (!arg.contains(":"))
-                continue;
-            arg = arg.substring(0, arg.indexOf(":") + 1);
-            possible.remove(arg);
-        }
-
-        if (currentArg.startsWith("#")) {
-            for (Flag flag : Flag.values()) {
-                if (flag.hasPermission(sender)) {
-                    possible.add("#" + flag.toString().toLowerCase());
-                }
-            }
-        }
-
-        return possible;
     }
 }

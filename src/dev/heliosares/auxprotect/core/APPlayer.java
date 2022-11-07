@@ -12,12 +12,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class APPlayer {
+    public final Player player;
+    private final IAuxProtect plugin;
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
     public long lastLoggedPos;
     public long lastMoved;
-
     public long lastLoggedActivity;
     public Location lastLocation;
     public long lastCheckedMovement;
@@ -26,14 +27,8 @@ public class APPlayer {
     public double[] activity = new double[30];
     public int activityIndex;
     public long lastNotifyInactive;
-
-    public void addActivity(double d) {
-        activity[activityIndex] += d;
-    }
-
-    public final Player player;
-
-    private final IAuxProtect plugin;
+    // hotbar, main, armor, offhand, echest
+    private List<ItemStack> invDiffItems;
 
     public APPlayer(IAuxProtect plugin, Player player) {
         this.player = player;
@@ -44,8 +39,9 @@ public class APPlayer {
         }
     }
 
-    // hotbar, main, armor, offhand, echest
-    private List<ItemStack> invDiffItems;
+    public void addActivity(double d) {
+        activity[activityIndex] += d;
+    }
 
     public long logInventory(String reason) {
         if (!reason.equals("quit")) {

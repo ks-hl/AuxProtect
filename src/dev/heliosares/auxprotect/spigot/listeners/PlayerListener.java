@@ -35,9 +35,9 @@ import java.util.Arrays;
 
 public class PlayerListener implements Listener {
 
-    private AuxProtectSpigot plugin;
     private final ArrayList<Material> buckets;
     private final ArrayList<EntityType> mobs;
+    private AuxProtectSpigot plugin;
 
     public PlayerListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -60,6 +60,22 @@ public class PlayerListener implements Listener {
         mobs.add(EntityType.TROPICAL_FISH);
         mobs.add(EntityType.COD);
         mobs.add(EntityType.SALMON);
+    }
+
+    public static void logMoney(AuxProtectSpigot plugin, Player player, String reason) {
+        if (plugin.getEconomy() == null) {
+            return;
+        }
+        plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
+        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
+                reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
+    }
+
+    public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,
+                              String string) {
+        apPlayer.lastLoggedPos = System.currentTimeMillis();
+        auxProtect
+                .add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location, string, ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -189,14 +205,14 @@ public class PlayerListener implements Listener {
 
                 @Override
                 public void run() {
-                    e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
-                    e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
+                    e.getPlayer().sendMessage("ï¿½aYou have an inventory waiting to be claimed!");
+                    e.getPlayer().sendMessage("ï¿½7Ensure you have room in your inventory before claiming!");
                     ComponentBuilder message = new ComponentBuilder();
-                    message.append("§f\n         ");
-                    message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                    message.append("ï¿½f\n         ");
+                    message.append("ï¿½a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
                             .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    new Text("§aClick to claim your recovered inventory")));
-                    message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                                    new Text("ï¿½aClick to claim your recovered inventory")));
+                    message.append("\nï¿½f").event((ClickEvent) null).event((HoverEvent) null);
                     e.getPlayer().spigot().sendMessage(message.create());
                     e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                 }
@@ -274,15 +290,6 @@ public class PlayerListener implements Listener {
                 e.getPlayer().getLocation(), "", e.getReason()));
     }
 
-    public static void logMoney(AuxProtectSpigot plugin, Player player, String reason) {
-        if (plugin.getEconomy() == null) {
-            return;
-        }
-        plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
-                reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
-    }
-
     protected void logSession(Player player, boolean login, String supp) {
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
                 supp));
@@ -332,12 +339,5 @@ public class PlayerListener implements Listener {
         if (e.isCancelled()) {
             return;
         }
-    }
-
-    public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,
-                              String string) {
-        apPlayer.lastLoggedPos = System.currentTimeMillis();
-        auxProtect
-                .add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location, string, ""));
     }
 }

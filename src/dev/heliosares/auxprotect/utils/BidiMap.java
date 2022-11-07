@@ -6,13 +6,12 @@ import java.util.Set;
 
 public class BidiMap<K, V> {
 
+    private HashMap<K, V> set;
+    private HashMap<V, K> reverse;
     public BidiMap() {
         set = new HashMap<>();
         reverse = new HashMap<>();
     }
-
-    private HashMap<K, V> set;
-    private HashMap<V, K> reverse;
 
     public void clear() {
         set.clear();

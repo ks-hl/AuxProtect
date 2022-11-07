@@ -22,6 +22,26 @@ public class TownyListener implements Listener {
         this.plugin = plugin;
     }
 
+    private static Location toLoc(Resident res) {
+        if (res == null || res.getPlayer() == null) {
+            return null;
+        }
+        return res.getPlayer().getLocation();
+    }
+
+    private static Location toLoc(Coord coord) {
+        if (coord instanceof WorldCoord c) {
+            return new Location(c.getBukkitWorld(), c.getX() * 16, 128, c.getZ() * 16);
+        }
+        return null;
+    }
+
+    // Towns
+
+    public static String getLabel(Government gov) {
+        return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewDayEvent e) {
         e.getFallenTowns().forEach((t) -> {
@@ -46,8 +66,6 @@ public class TownyListener implements Listener {
         plugin.add(
                 new TownyEntry("#server", nation ? EntryAction.NATIONDELETE : EntryAction.TOWNDELETE, false, uuid, ""));
     }
-
-    // Towns
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewTownEvent e) {
@@ -104,20 +122,6 @@ public class TownyListener implements Listener {
                 toLoc(e.getWorldCoord()), "", ""));
     }
 
-    private static Location toLoc(Resident res) {
-        if (res == null || res.getPlayer() == null) {
-            return null;
-        }
-        return res.getPlayer().getLocation();
-    }
-
-    private static Location toLoc(Coord coord) {
-        if (coord instanceof WorldCoord c) {
-            return new Location(c.getBukkitWorld(), c.getX() * 16, 128, c.getZ() * 16);
-        }
-        return null;
-    }
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(TownMergeEvent e) {
         plugin.add(new TownyEntry("$t" + e.getSuccumbingTownUUID(), EntryAction.TOWNCLAIM, false,
@@ -134,6 +138,8 @@ public class TownyListener implements Listener {
     public void on(TownTransactionEvent e) {
         handleBank(e, e.getTown(), EntryAction.TOWNBANK);
     }
+
+    // Nations
 
     private void handleBank(BankTransactionEvent e, Government g, EntryAction action) {
         String user = "#server";
@@ -155,8 +161,6 @@ public class TownyListener implements Listener {
                 + plugin.formatMoney(e.getAccount().getHoldingBalance());
         plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));
     }
-
-    // Nations
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewNationEvent e) {
@@ -195,9 +199,5 @@ public class TownyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NationTransactionEvent e) {
         handleBank(e, e.getNation(), EntryAction.NATIONBANK);
-    }
-
-    public static String getLabel(Government gov) {
-        return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
     }
 }

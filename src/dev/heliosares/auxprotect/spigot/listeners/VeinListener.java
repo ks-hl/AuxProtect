@@ -30,7 +30,7 @@ public class VeinListener implements Listener {
     private static final int NON_ORE_RADIUS = 10;
     private static final int ORE_RADIUS = 5;
     private static final int NON_ORE_THRESHOLD = 2;
-
+    PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
     private AuxProtectSpigot plugin;
 
     public VeinListener(AuxProtectSpigot plugin) {
@@ -58,47 +58,6 @@ public class VeinListener implements Listener {
         OVERWORLD_CHECK.add(Material.SPAWNER);
         if (plugin.getCompatabilityVersion() >= 17) {
             OVERWORLD_CHECK.add(Material.DEEPSLATE_DIAMOND_ORE);
-        }
-    }
-
-    PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
-
-    public static class BlockHistory {
-        public Block[] nonOreBlock = new Block[20];
-        private int nonOreBlockIndex = 0;
-        public Block[] oreBlock = new Block[20];
-        private int oreBlockIndex = 0;
-        public final long birth = System.currentTimeMillis();
-
-        private long lastused;
-
-        {
-            touch();
-        }
-
-        public void addBlock(Block b, boolean ore) {
-            lastused = System.currentTimeMillis();
-            if (ore) {
-                oreBlockIndex++;
-                if (oreBlockIndex >= oreBlock.length) {
-                    oreBlockIndex = 0;
-                }
-                oreBlock[oreBlockIndex] = b;
-            } else {
-                nonOreBlockIndex++;
-                if (nonOreBlockIndex >= nonOreBlock.length) {
-                    nonOreBlockIndex = 0;
-                }
-                nonOreBlock[nonOreBlockIndex] = b;
-            }
-        }
-
-        public void touch() {
-            lastused = System.currentTimeMillis();
-        }
-
-        public long timeSinceUsed() {
-            return System.currentTimeMillis() - lastused;
         }
     }
 
@@ -197,5 +156,43 @@ public class VeinListener implements Listener {
 
     private double sq(double d) {
         return d * d;
+    }
+
+    public static class BlockHistory {
+        public final long birth = System.currentTimeMillis();
+        public Block[] nonOreBlock = new Block[20];
+        public Block[] oreBlock = new Block[20];
+        private int nonOreBlockIndex = 0;
+        private int oreBlockIndex = 0;
+        private long lastused;
+
+        {
+            touch();
+        }
+
+        public void addBlock(Block b, boolean ore) {
+            lastused = System.currentTimeMillis();
+            if (ore) {
+                oreBlockIndex++;
+                if (oreBlockIndex >= oreBlock.length) {
+                    oreBlockIndex = 0;
+                }
+                oreBlock[oreBlockIndex] = b;
+            } else {
+                nonOreBlockIndex++;
+                if (nonOreBlockIndex >= nonOreBlock.length) {
+                    nonOreBlockIndex = 0;
+                }
+                nonOreBlock[nonOreBlockIndex] = b;
+            }
+        }
+
+        public void touch() {
+            lastused = System.currentTimeMillis();
+        }
+
+        public long timeSinceUsed() {
+            return System.currentTimeMillis() - lastused;
+        }
     }
 }

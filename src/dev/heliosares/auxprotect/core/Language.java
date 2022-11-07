@@ -45,6 +45,17 @@ public class Language {
         return l.translate(format);
     }
 
+    public static String convert(String s) {
+        if (c1 != null)
+            s = s.replace("&p", c1);
+        if (c2 != null)
+            s = s.replace("&s", c2);
+        if (c3 != null)
+            s = s.replace("&t", c3);
+        s = s.replace("$prefix", plugin.getCommandAlias());
+        return ColorTranslate.cc(s);
+    }
+
     public static enum L {
         UPDATE, //
         NO_PERMISSION, //
@@ -162,16 +173,5 @@ public class Language {
             }
             return message.stream().map(s -> convert(s)).collect(Collectors.toList());
         }
-    }
-
-    public static String convert(String s) {
-        if (c1 != null)
-            s = s.replace("&p", c1);
-        if (c2 != null)
-            s = s.replace("&s", c2);
-        if (c3 != null)
-            s = s.replace("&t", c3);
-        s = s.replace("$prefix", plugin.getCommandAlias());
-        return ColorTranslate.cc(s);
     }
 }

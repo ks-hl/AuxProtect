@@ -13,49 +13,25 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 public class ConnectionPool {
-    private final LinkedList<Connection> pool = new LinkedList<Connection>();
     public static final int CAPACITY = 10;
-
+    private static final HashMap<Integer, Long> checkOutTimes = new HashMap<>();
+    private static final long[][] readTimes = new long[500][];
+    private static final long[][] writeTimes = new long[200][];
+    private static int alive = 0;
+    private static int born = 0;
+    private static int readTimeIndex;
+    private static long writeCheckOut;
+    private static int writeTimeIndex;
+    private final LinkedList<Connection> pool = new LinkedList<Connection>();
     private final String connString;
     private final String user;
     private final String pwd;
     private final boolean mysql;
     private final IAuxProtect plugin;
-    private boolean closed;
     private final Connection writeconn;
+    private boolean closed;
     private Thread whoHasWriteConnection;
     private ReentrantLock lock = new ReentrantLock();
-
-    private static int alive = 0;
-    private static int born = 0;
-
-    public static int getNumAlive() {
-        return alive;
-    }
-
-    public static int getNumBorn() {
-        return born;
-    }
-
-    public int getPoolSize() {
-        return pool.size();
-    }
-
-    public String getConnString() {
-        return connString;
-    }
-
-    private synchronized Connection newConn() throws SQLException {
-        alive++;
-        born++;
-        Connection connection;
-        if (mysql) {
-            connection = DriverManager.getConnection(connString, user, pwd);
-        } else {
-            connection = DriverManager.getConnection(connString);
-        }
-        return connection;
-    }
 
     public ConnectionPool(IAuxProtect plugin, String connString, String user, String pwd)
             throws SQLException, ClassNotFoundException {
@@ -98,6 +74,73 @@ public class ConnectionPool {
 
     }
 
+    public static int getNumAlive() {
+        return alive;
+    }
+
+    ;
+
+    public static int getNumBorn() {
+        return born;
+    }
+
+    public static long[] calculateWriteTimes() {
+        return calculateTimes(writeTimes);
+    }
+
+    public static long[] calculateReadTimes() {
+        return calculateTimes(readTimes);
+    }
+
+    private static long[] calculateTimes(long[][] array) {
+        long first = Long.MAX_VALUE;
+        long last = Long.MIN_VALUE;
+        long sum = 0;
+        int count = 0;
+        for (int i = 0; i < array.length; i++) {
+            if (array[i] == null) {
+                continue;
+            }
+            long start = array[i][0];
+            long stop = array[i][1];
+            if (start == 0) {
+                continue;
+            }
+            if (start < first) {
+                first = start;
+            }
+            if (stop > last) {
+                last = stop;
+            }
+            sum += stop - start;
+            count++;
+        }
+        if (count == 0) {
+            return null;
+        }
+        return new long[]{last - first, sum, count};
+    }
+
+    public int getPoolSize() {
+        return pool.size();
+    }
+
+    public String getConnString() {
+        return connString;
+    }
+
+    private synchronized Connection newConn() throws SQLException {
+        alive++;
+        born++;
+        Connection connection;
+        if (mysql) {
+            connection = DriverManager.getConnection(connString, user, pwd);
+        } else {
+            connection = DriverManager.getConnection(connString);
+        }
+        return connection;
+    }
+
     private void checkAsync() throws IllegalStateException {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             if (Bukkit.isPrimaryThread()) {
@@ -108,17 +151,6 @@ public class ConnectionPool {
             }
         }
     }
-
-    public static class BusyException extends Exception {
-        private static final long serialVersionUID = 4797822287876350186L;
-        public final Thread holder;
-
-        BusyException(Thread holder) {
-            this.holder = holder;
-        }
-    }
-
-    ;
 
     /**
      * Use this ONLY for modifying the database.
@@ -233,47 +265,12 @@ public class ConnectionPool {
         return mysql;
     }
 
-    private static final HashMap<Integer, Long> checkOutTimes = new HashMap<>();
-    private static final long[][] readTimes = new long[500][];
-    private static int readTimeIndex;
-    private static long writeCheckOut;
-    private static final long[][] writeTimes = new long[200][];
-    private static int writeTimeIndex;
+    public static class BusyException extends Exception {
+        private static final long serialVersionUID = 4797822287876350186L;
+        public final Thread holder;
 
-    public static long[] calculateWriteTimes() {
-        return calculateTimes(writeTimes);
-    }
-
-    public static long[] calculateReadTimes() {
-        return calculateTimes(readTimes);
-    }
-
-    private static long[] calculateTimes(long[][] array) {
-        long first = Long.MAX_VALUE;
-        long last = Long.MIN_VALUE;
-        long sum = 0;
-        int count = 0;
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == null) {
-                continue;
-            }
-            long start = array[i][0];
-            long stop = array[i][1];
-            if (start == 0) {
-                continue;
-            }
-            if (start < first) {
-                first = start;
-            }
-            if (stop > last) {
-                last = stop;
-            }
-            sum += stop - start;
-            count++;
+        BusyException(Thread holder) {
+            this.holder = holder;
         }
-        if (count == 0) {
-            return null;
-        }
-        return new long[]{last - first, sum, count};
     }
 }

@@ -16,10 +16,6 @@ import java.util.stream.Collectors;
 
 public class APCommand extends Command {
 
-    public APCommand(IAuxProtect plugin, String label, String... aliases) {
-        super(plugin, label, APPermission.NONE, aliases);
-    }
-
     private final ArrayList<Command> commands;
 
     {
@@ -46,6 +42,38 @@ public class APCommand extends Command {
         if (plugin.getAPConfig().isPrivate()) {
             commands.add(new WatchCommand(plugin));
         }
+    }
+
+    public APCommand(IAuxProtect plugin, String label, String... aliases) {
+        super(plugin, label, APPermission.NONE, aliases);
+    }
+
+    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String label,
+                                                        String[] args) {
+        if (args.length == 2) {
+            return allPlayers(plugin, true);
+        } else if (args.length == 3) {
+            String currentArg = args[args.length - 1];
+            if (APPermission.INV.hasPermission(sender) && currentArg.matches("\\d+")) {
+                List<String> out = new ArrayList<>();
+                out.add(currentArg + "ms");
+                out.add(currentArg + "s");
+                out.add(currentArg + "m");
+                out.add(currentArg + "h");
+                out.add(currentArg + "d");
+                out.add(currentArg + "w");
+                return out;
+            }
+        }
+        return null;
+    }
+
+    public static List<String> allPlayers(IAuxProtect plugin, boolean cache) {
+        List<String> out = plugin.listPlayers();
+        if (cache) {
+            out.addAll(plugin.getSqlManager().getCachedUsernames());
+        }
+        return out;
     }
 
     @Override
@@ -221,33 +249,5 @@ public class APCommand extends Command {
         }
         final String currentArg_ = currentArg.toLowerCase();
         return out.stream().filter((s) -> s.toLowerCase().startsWith(currentArg_)).collect(Collectors.toList());
-    }
-
-    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String label,
-                                                        String[] args) {
-        if (args.length == 2) {
-            return allPlayers(plugin, true);
-        } else if (args.length == 3) {
-            String currentArg = args[args.length - 1];
-            if (APPermission.INV.hasPermission(sender) && currentArg.matches("\\d+")) {
-                List<String> out = new ArrayList<>();
-                out.add(currentArg + "ms");
-                out.add(currentArg + "s");
-                out.add(currentArg + "m");
-                out.add(currentArg + "h");
-                out.add(currentArg + "d");
-                out.add(currentArg + "w");
-                return out;
-            }
-        }
-        return null;
-    }
-
-    public static List<String> allPlayers(IAuxProtect plugin, boolean cache) {
-        List<String> out = plugin.listPlayers();
-        if (cache) {
-            out.addAll(plugin.getSqlManager().getCachedUsernames());
-        }
-        return out;
     }
 }

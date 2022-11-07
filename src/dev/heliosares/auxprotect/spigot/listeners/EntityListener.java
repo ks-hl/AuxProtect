@@ -29,8 +29,8 @@ import java.util.ArrayList;
 
 public class EntityListener implements Listener {
 
-    private AuxProtectSpigot plugin;
     ArrayList<DamageCause> blacklistedDamageCauses;
+    private AuxProtectSpigot plugin;
 
     public EntityListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -39,6 +39,20 @@ public class EntityListener implements Listener {
         blacklistedDamageCauses.add(DamageCause.PROJECTILE);
         blacklistedDamageCauses.add(DamageCause.ENTITY_EXPLOSION);
         blacklistedDamageCauses.add(DamageCause.ENTITY_SWEEP_ATTACK);
+    }
+
+    public static boolean isChartMap(ItemStack item) {
+        if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
+            if (item.getItemMeta() instanceof MapMeta) {
+                MapMeta meta = (MapMeta) item.getItemMeta();
+                for (MapRenderer renderer : meta.getMapView().getRenderers()) {
+                    if (renderer instanceof ChartRenderer) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -274,19 +288,5 @@ public class EntityListener implements Listener {
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
-    }
-
-    public static boolean isChartMap(ItemStack item) {
-        if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
-            if (item.getItemMeta() instanceof MapMeta) {
-                MapMeta meta = (MapMeta) item.getItemMeta();
-                for (MapRenderer renderer : meta.getMapView().getRenderers()) {
-                    if (renderer instanceof ChartRenderer) {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
     }
 }

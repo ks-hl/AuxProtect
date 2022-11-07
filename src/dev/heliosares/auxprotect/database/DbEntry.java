@@ -7,20 +7,16 @@ import javax.annotation.Nullable;
 
 public class DbEntry {
 
-    private final long time;
-
-    protected final EntryAction action;
-    protected final boolean state;
-    protected String data;
-
     public final String world;
     public final int x;
     public final int y;
     public final int z;
-
     public final int pitch;
     public final int yaw;
-
+    protected final EntryAction action;
+    protected final boolean state;
+    private final long time;
+    protected String data;
     protected String userLabel;
     protected String user;
     protected int uid;

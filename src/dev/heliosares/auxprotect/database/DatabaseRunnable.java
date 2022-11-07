@@ -11,19 +11,29 @@ import java.util.Iterator;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class DatabaseRunnable implements Runnable {
+    private static final long pickupCacheTime = 1500;
+    private static final long jobsCacheTime = 10000;
+    private static HashMap<Table, Long> lastTimes = new HashMap<>();
     private final SQLManager sqlManager;
     private final IAuxProtect plugin;
-    private static HashMap<Table, Long> lastTimes = new HashMap<>();
     private long running = 0;
     private long lastWarn = 0;
     private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
-    private static final long pickupCacheTime = 1500;
     private ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
-    private static final long jobsCacheTime = 10000;
 
     public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
         this.sqlManager = sqlManager;
         this.plugin = plugin;
+    }
+
+    public static synchronized long getTime(Table table) {
+        long time = System.currentTimeMillis();
+        Long lastTime = lastTimes.get(table);
+        if (lastTime != null && time <= lastTime) {
+            time = lastTime + 1;
+        }
+        lastTimes.put(table, time);
+        return time;
     }
 
     public void add(DbEntry entry) {
@@ -44,16 +54,6 @@ public class DatabaseRunnable implements Runnable {
             return;
         }
         table.queue.add(entry);
-    }
-
-    public static synchronized long getTime(Table table) {
-        long time = System.currentTimeMillis();
-        Long lastTime = lastTimes.get(table);
-        if (lastTime != null && time <= lastTime) {
-            time = lastTime + 1;
-        }
-        lastTimes.put(table, time);
-        return time;
     }
 
     public int queueSize() {

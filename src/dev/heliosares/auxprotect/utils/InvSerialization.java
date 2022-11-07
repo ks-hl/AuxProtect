@@ -17,6 +17,9 @@ import java.io.IOException;
 
 public class InvSerialization {
 
+    @Deprecated
+    public static final String ITEM_SEPARATOR = ",ITEM,";
+
     public static byte[] toByteArray(ItemStack... array) throws IOException {
         if (array == null || array.length == 0) {
             return null;
@@ -157,10 +160,6 @@ public class InvSerialization {
         }
     }
 
-    public static record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,
-                                               ItemStack[] ender, int exp) {
-    }
-
     public static void debug(byte[] bytes) {
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         System.out.println("Debug Byte[] Dump:");
@@ -214,9 +213,6 @@ public class InvSerialization {
     }
 
     @Deprecated
-    public static final String ITEM_SEPARATOR = ",ITEM,";
-
-    @Deprecated
     public static PlayerInventoryRecord toPlayer(String base64) throws IOException, ClassNotFoundException {
         String[] parts = base64.split(",");
         ItemStack[][] contents = new ItemStack[4][];
@@ -241,5 +237,9 @@ public class InvSerialization {
     @Deprecated
     public static ItemStack[] toItemStackArray(String base64) throws IOException, ClassNotFoundException {
         return toItemStackArray(Base64Coder.decodeLines(base64));
+    }
+
+    public static record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,
+                                               ItemStack[] ender, int exp) {
     }
 }

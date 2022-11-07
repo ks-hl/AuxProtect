@@ -11,6 +11,43 @@ public class VeinManager {
     private ArrayList<XrayEntry> ignoredentries = new ArrayList<>();
     private HashMap<UUID, ArrayList<Long>> skipped = new HashMap<>();
 
+    public static String getSeverityDescription(int severity) {
+        switch (severity) {// TODO lang
+            case -2:
+                return "ignored";
+            case -1:
+                return "unrated";
+            case 0:
+                return "no concern";
+            case 1:
+                return "slightly suspicious";
+            case 2:
+                return "suspicious, not certain";
+            case 3:
+                return "almost certain or entirely certain";
+            default:
+                return "unknown severity";
+        }
+    }
+
+    public static String getSeverityColor(int severity) {
+        switch (severity) {
+            case -2:
+            case -1:
+                return "ï¿½5";
+            case 0:
+                return "ï¿½a";
+            case 1:
+                return "ï¿½e";
+            case 2:
+                return "ï¿½c";
+            case 3:
+                return "ï¿½4";
+            default:
+                return "";
+        }
+    }
+
     /**
      * @returns true if already part of a vein
      */
@@ -108,42 +145,5 @@ public class VeinManager {
 
     public int size() {
         return entries.size();
-    }
-
-    public static String getSeverityDescription(int severity) {
-        switch (severity) {// TODO lang
-            case -2:
-                return "ignored";
-            case -1:
-                return "unrated";
-            case 0:
-                return "no concern";
-            case 1:
-                return "slightly suspicious";
-            case 2:
-                return "suspicious, not certain";
-            case 3:
-                return "almost certain or entirely certain";
-            default:
-                return "unknown severity";
-        }
-    }
-
-    public static String getSeverityColor(int severity) {
-        switch (severity) {
-            case -2:
-            case -1:
-                return "§5";
-            case 0:
-                return "§a";
-            case 1:
-                return "§e";
-            case 2:
-                return "§c";
-            case 3:
-                return "§4";
-            default:
-                return "";
-        }
     }
 }

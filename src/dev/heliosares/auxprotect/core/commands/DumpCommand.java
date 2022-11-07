@@ -27,51 +27,6 @@ public class DumpCommand extends Command {
         super(plugin, "dump", APPermission.ADMIN, "stats");
     }
 
-    @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
-        sender.sendMessageRaw("§aBuilding trace...");
-        plugin.runAsync(() -> {
-            boolean verbose = false;
-            boolean chat = false;
-            boolean file = false;
-            boolean config = false;
-            boolean stats = args[0].equalsIgnoreCase("stats");
-            if (!stats) {
-                for (int i = 1; i < args.length; i++) {
-                    switch (args[i].toLowerCase()) {
-                        case "chat":
-                            chat = true;
-                            break;
-                        case "verbose":
-                            verbose = true;
-                            break;
-                        case "file":
-                            file = true;
-                            break;
-                        case "config":
-                            config = true;
-                            break;
-                    }
-                }
-            }
-            try {
-                sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
-            } catch (Exception e) {
-                plugin.print(e);
-                sender.sendLang(Language.L.ERROR);
-            }
-            if (config) {
-                sender.sendMessageRaw(
-                        "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
-            }
-        });
-    }
-
-    @Override
-    public boolean exists() {
-        return true;
-    }
-
     public static String dump(IAuxProtect plugin, boolean verbose, boolean chat, boolean file, boolean config,
                               boolean stats) throws Exception {
         String trace = "";
@@ -238,6 +193,51 @@ public class DumpCommand extends Command {
             build += plugin.getAPConfig().getConfig().get(parent) + "\n";
         }
         return build;
+    }
+
+    @Override
+    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+        sender.sendMessageRaw("§aBuilding trace...");
+        plugin.runAsync(() -> {
+            boolean verbose = false;
+            boolean chat = false;
+            boolean file = false;
+            boolean config = false;
+            boolean stats = args[0].equalsIgnoreCase("stats");
+            if (!stats) {
+                for (int i = 1; i < args.length; i++) {
+                    switch (args[i].toLowerCase()) {
+                        case "chat":
+                            chat = true;
+                            break;
+                        case "verbose":
+                            verbose = true;
+                            break;
+                        case "file":
+                            file = true;
+                            break;
+                        case "config":
+                            config = true;
+                            break;
+                    }
+                }
+            }
+            try {
+                sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
+            } catch (Exception e) {
+                plugin.print(e);
+                sender.sendLang(Language.L.ERROR);
+            }
+            if (config) {
+                sender.sendMessageRaw(
+                        "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
+            }
+        });
+    }
+
+    @Override
+    public boolean exists() {
+        return true;
     }
 
     @Override

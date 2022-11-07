@@ -103,6 +103,21 @@ public class MoneySolver extends ChartRenderer {
 
     }
 
+    public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
+                                 String users) {
+        if (!(plugin instanceof AuxProtectSpigot)) {
+            return;
+        }
+        plugin.runSync(() -> {
+            try {
+                MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
+                player.getInventory().addItem(solver.asItem(player));
+            } catch (IllegalArgumentException e) {
+                player.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__NORESULTS));
+            }
+        });
+    }
+
     @Override
     public double getValue(int x) {
         return values[x];
@@ -126,20 +141,5 @@ public class MoneySolver extends ChartRenderer {
             }
             canvas.drawText(x, ySize + yShift + 3, MinecraftFont.Font, str);
         }
-    }
-
-    public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
-                                 String users) {
-        if (!(plugin instanceof AuxProtectSpigot)) {
-            return;
-        }
-        plugin.runSync(() -> {
-            try {
-                MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
-                player.getInventory().addItem(solver.asItem(player));
-            } catch (IllegalArgumentException e) {
-                player.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__NORESULTS));
-            }
-        });
     }
 }

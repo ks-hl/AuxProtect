@@ -21,53 +21,26 @@ import java.util.regex.Pattern;
 public class Parameters {
     public final long time_created = System.currentTimeMillis();
     private final IAuxProtect plugin;
-
+    boolean negateUser;
+    boolean negateTarget;
+    boolean negateData;
+    boolean negateWorld;
     private long after;
     private long before = Long.MAX_VALUE;
     private List<Long> exactTime = new ArrayList<>();
-
-    boolean negateUser;
     private List<String> uids = new ArrayList<>();
     private List<String> users = new ArrayList<>();
-
     private List<Integer> actions = new ArrayList<>();
-
-    boolean negateTarget;
     private List<String> targets = new ArrayList<>();
-
-    boolean negateData;
     private List<String> datas = new ArrayList<>();
-
     private Table table;
-
     private HashMap<Integer, Boolean> radius = new HashMap<>();
     private Location location;
-
-    boolean negateWorld;
     private List<String> worlds = new ArrayList<>();
 
     private List<Flag> flags = new ArrayList<>();
 
     private List<Short> ratings = new ArrayList<>();
-
-    public static enum Flag {
-        COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
-        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY),
-        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);
-
-        private final APPermission perm;
-
-        Flag(APPermission perm) {
-            this.perm = perm;
-        }
-
-        public boolean hasPermission(SenderAdapter sender) {
-            if (perm == null) {
-                return true;
-            }
-            return perm.hasPermission(sender);
-        }
-    }
 
     private Parameters() {
         plugin = AuxProtectAPI.getInstance();
@@ -274,6 +247,38 @@ public class Parameters {
             return fullName;
         }
         return base;
+    }
+
+    private static List<String> split(final String str, final boolean allowEscape) {
+        String build = "";
+        boolean escape = false;
+        List<String> values = new ArrayList<>();
+        for (char current : str.toCharArray()) {
+            if (allowEscape && current == '\\') {
+                escape = true;
+                continue;
+            }
+            if (!escape && current == ',') {
+                values.add(build);
+                build = "";
+                continue;
+            }
+            if (escape && current != ',') {
+                build += '\\';
+            }
+            build += current;
+
+            if (escape) {
+                escape = false;
+            }
+        }
+        if (escape) {
+            build += '\\';
+        }
+        if (build.length() > 0) {
+            values.add(build);
+        }
+        return values;
     }
 
     /**
@@ -755,38 +760,6 @@ public class Parameters {
         return output;
     }
 
-    private static List<String> split(final String str, final boolean allowEscape) {
-        String build = "";
-        boolean escape = false;
-        List<String> values = new ArrayList<>();
-        for (char current : str.toCharArray()) {
-            if (allowEscape && current == '\\') {
-                escape = true;
-                continue;
-            }
-            if (!escape && current == ',') {
-                values.add(build);
-                build = "";
-                continue;
-            }
-            if (escape && current != ',') {
-                build += '\\';
-            }
-            build += current;
-
-            if (escape) {
-                escape = false;
-            }
-        }
-        if (escape) {
-            build += '\\';
-        }
-        if (build.length() > 0) {
-            values.add(build);
-        }
-        return values;
-    }
-
     private String toGroup(List<?> list) {
         String stmt = "(";
         boolean first = true;
@@ -817,6 +790,11 @@ public class Parameters {
         return negateUser;
     }
 
+    public Parameters setNegateUser(boolean negateUser) {
+        this.negateUser = negateUser;
+        return this;
+    }
+
     /**
      * This is only used in a select few places. Parameters#getUIDS matters more
      *
@@ -838,6 +816,11 @@ public class Parameters {
         return negateTarget;
     }
 
+    public Parameters setNegateTarget(boolean negateTarget) {
+        this.negateTarget = negateTarget;
+        return this;
+    }
+
     public List<String> getTargets() {
         return targets;
     }
@@ -854,6 +837,11 @@ public class Parameters {
         return table;
     }
 
+    public Parameters setTable(Table table) {
+        this.table = table;
+        return this;
+    }
+
     public HashMap<Integer, Boolean> getRadius() {
         return radius;
     }
@@ -862,8 +850,18 @@ public class Parameters {
         return location;
     }
 
+    public Parameters setLocation(Location location) {
+        this.location = location;
+        return this;
+    }
+
     public boolean isNegateWorld() {
         return negateWorld;
+    }
+
+    public Parameters setNegateWorld(boolean negateWorld) {
+        this.negateWorld = negateWorld;
+        return this;
     }
 
     public List<String> getWorld() {
@@ -883,33 +881,8 @@ public class Parameters {
         return this;
     }
 
-    public Parameters setNegateUser(boolean negateUser) {
-        this.negateUser = negateUser;
-        return this;
-    }
-
-    public Parameters setNegateTarget(boolean negateTarget) {
-        this.negateTarget = negateTarget;
-        return this;
-    }
-
-    public Parameters setTable(Table table) {
-        this.table = table;
-        return this;
-    }
-
     public Parameters addRadius(int radius, boolean negate) {
         this.radius.put(radius, negate);
-        return this;
-    }
-
-    public Parameters setLocation(Location location) {
-        this.location = location;
-        return this;
-    }
-
-    public Parameters setNegateWorld(boolean negateWorld) {
-        this.negateWorld = negateWorld;
         return this;
     }
 
@@ -949,6 +922,25 @@ public class Parameters {
 
     public boolean hasFlag(Flag flag) {
         return flags.contains(flag);
+    }
+
+    public static enum Flag {
+        COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
+        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY),
+        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);
+
+        private final APPermission perm;
+
+        Flag(APPermission perm) {
+            this.perm = perm;
+        }
+
+        public boolean hasPermission(SenderAdapter sender) {
+            if (perm == null) {
+                return true;
+            }
+            return perm.hasPermission(sender);
+        }
     }
 
 }

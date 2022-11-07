@@ -9,10 +9,10 @@ import java.io.File;
 import java.io.IOException;
 
 public class YMLManager {
+    private final String fileName;
     IAuxProtect plugin;
     FileConfiguration data;
     File dfile;
-    private final String fileName;
 
     public YMLManager(String fileName, IAuxProtect p) {
         this.fileName = fileName;

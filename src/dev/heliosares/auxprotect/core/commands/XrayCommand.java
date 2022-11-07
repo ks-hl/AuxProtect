@@ -22,12 +22,11 @@ import java.util.List;
 
 public class XrayCommand extends Command {
 
+    public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
+    HashMap<String, Results> results = new HashMap<>();
     public XrayCommand(IAuxProtect plugin) {
         super(plugin, "xray", APPermission.XRAY, "x");
     }
-
-    public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
-    HashMap<String, Results> results = new HashMap<>();
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {

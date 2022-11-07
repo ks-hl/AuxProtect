@@ -12,16 +12,16 @@ import java.awt.*;
 
 public class ChartRenderer extends MapRenderer {
 
-    private Color[][] map = new Color[128][128];
-    private final double values[];
-    public double xScale = 1;
-    public double yScale = 1;
-    private final Color bgColor;
-
     public static final int xShift = 27;
     public static final int yShift = 12;
     public static final int xSize = 100;
     public static final int ySize = 100;
+    private final double values[];
+    private final Color bgColor;
+    private final String title;
+    private final int xDivs;
+    @SuppressWarnings("unused")
+    private final String[] xLabels;
 
 //	public static final byte BLUE = 0x30;
 //	public static final byte BROWN = 0x28;
@@ -38,12 +38,10 @@ public class ChartRenderer extends MapRenderer {
 //	public static final byte TRANSPARENT = 0x0;
 //	public static final byte WHITE = 0x20;
 //	public static final byte BLACK = 0x76;
-
-    private final String title;
-    private final int xDivs;
-    @SuppressWarnings("unused")
-    private final String[] xLabels;
     private final AuxProtectSpigot plugin;
+    public double xScale = 1;
+    public double yScale = 1;
+    private Color[][] map = new Color[128][128];
 
     public ChartRenderer(AuxProtectSpigot plugin, String title, Color bgColor, int values) {
         this.plugin = plugin;
@@ -52,6 +50,14 @@ public class ChartRenderer extends MapRenderer {
         this.values = new double[values];
         this.xDivs = 11;
         this.xLabels = new String[]{"1", "2", "3", "4", "5", "6"};
+    }
+
+    private static String doubleToString(double d) {
+        String output = d + "";
+        if (output.endsWith(".0")) {
+            return output.split("\\.")[0];
+        }
+        return output;
     }
 
     public void update() {
@@ -127,14 +133,6 @@ public class ChartRenderer extends MapRenderer {
         for (int x = 0; x < xDivs; x++) {
             map[(int) Math.round(x * pixelsPerDiv + xShift) - 1][ySize + yShift + 2] = Color.BLACK;
         }
-    }
-
-    private static String doubleToString(double d) {
-        String output = d + "";
-        if (output.endsWith(".0")) {
-            return output.split("\\.")[0];
-        }
-        return output;
     }
 
     private int[] getCoordsForData(double x, double y) {

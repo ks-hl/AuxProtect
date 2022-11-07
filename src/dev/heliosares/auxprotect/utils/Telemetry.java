@@ -8,17 +8,8 @@ import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 
 public class Telemetry {
-    private final Metrics metrics;
     private static final HashMap<String, Boolean> hooks = new HashMap<>();
-
-    public static void reportHook(AuxProtectSpigot plugin, String name, boolean state) {
-        if (state) {
-            plugin.info(name + " hooked");
-        } else {
-            plugin.debug(name + " not hooked");
-        }
-        hooks.put(name.toLowerCase(), state);
-    }
+    private final Metrics metrics;
 
     public Telemetry(AuxProtectSpigot plugin, int pluginId) {
         metrics = new Metrics(plugin, pluginId);
@@ -81,5 +72,14 @@ public class Telemetry {
 //				return entry.getValue() ? "Enabled" : "Disabled";
 //			}
 //		}));
+    }
+
+    public static void reportHook(AuxProtectSpigot plugin, String name, boolean state) {
+        if (state) {
+            plugin.info(name + " hooked");
+        } else {
+            plugin.debug(name + " not hooked");
+        }
+        hooks.put(name.toLowerCase(), state);
     }
 }

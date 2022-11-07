@@ -16,6 +16,21 @@ public enum Table {
 
     protected final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
 
+    public static String getValuesTemplate(int numColumns) {
+        if (numColumns <= 0) {
+            return null;
+        }
+        String output = "(";
+        for (int i = 0; i < numColumns; i++) {
+            if (i > 0) {
+                output += ", ";
+            }
+            output += "?";
+        }
+        output += ")";
+        return output;
+    }
+
     @Override
     public String toString() {
         return SQLManager.getTablePrefix() + super.toString().toLowerCase();
@@ -147,21 +162,6 @@ public enum Table {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         }
         return null;
-    }
-
-    public static String getValuesTemplate(int numColumns) {
-        if (numColumns <= 0) {
-            return null;
-        }
-        String output = "(";
-        for (int i = 0; i < numColumns; i++) {
-            if (i > 0) {
-                output += ", ";
-            }
-            output += "?";
-        }
-        output += ")";
-        return output;
     }
 
     public int getNumColumns(PlatformType platform) {

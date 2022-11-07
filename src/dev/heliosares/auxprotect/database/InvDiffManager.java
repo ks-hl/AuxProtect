@@ -16,11 +16,61 @@ import java.util.Map.Entry;
 public class InvDiffManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
+    private final HashMap<Integer, BlobCache> cache = new HashMap<>();
     private long blobid;
+    private long lastcleanup;
 
     public InvDiffManager(SQLManager sql, IAuxProtect plugin) {
         this.sql = sql;
         this.plugin = plugin;
+    }
+
+    public static PlayerInventoryRecord listToPlayerInv(List<ItemStack> contents, int exp) {
+        ItemStack[] storage = new ItemStack[36];
+        ItemStack[] armor = new ItemStack[4];
+        ItemStack[] extra = new ItemStack[1];
+        ItemStack[] ender = new ItemStack[27];
+        for (int i = 0; i < contents.size(); i++) {
+            ItemStack item = contents.get(i);
+            if (i < 27) {
+                storage[i + 9] = item;
+            } else if (i < 36) {
+                storage[i - 27] = item;
+            } else if (i < 40) {
+                armor[4 - i + 35] = item;
+            } else if (i < 41) {
+                extra[i - 40] = item;
+            } else if (i < 68) {
+                ender[i - 41] = item;
+            } else
+                break;
+        }
+        return new PlayerInventoryRecord(storage, armor, extra, ender, exp);
+    }
+
+    public static List<ItemStack> playerInvToList(PlayerInventoryRecord inv, boolean addender) {
+        if (inv == null) {
+            return null;
+        }
+        List<ItemStack> output = new ArrayList<>();
+        for (int i = 9; i < inv.storage().length; i++) {
+            output.add(inv.storage()[i]);
+        }
+        for (int i = 0; i < 9; i++) {
+            output.add(inv.storage()[i]);
+        }
+        for (int i = inv.armor().length - 1; i >= 0; i--) {
+            output.add(inv.armor()[i]);
+        }
+        for (int i = 0; i < inv.extra().length; i++) {
+            output.add(inv.extra()[i]);
+        }
+        if (addender) {
+            for (ItemStack item : inv.ender()) {
+                output.add(item);
+            }
+        }
+        return output;
     }
 
     public void init(Connection connection) throws SQLException {
@@ -33,24 +83,6 @@ public class InvDiffManager {
             }
         }
     }
-
-    private static class BlobCache {
-        long lastused;
-        final long blobid;
-        final byte[] ablob;
-
-        BlobCache(long blobid, byte[] ablob) {
-            this.blobid = blobid;
-            this.ablob = ablob;
-            touch();
-        }
-
-        public void touch() {
-            this.lastused = System.currentTimeMillis();
-        }
-    }
-
-    private final HashMap<Integer, BlobCache> cache = new HashMap<>();
 
     public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) throws SQLException, BusyException {
         byte[] blob = null;
@@ -135,6 +167,8 @@ public class InvDiffManager {
         return cachedid;
     }
 
+    ;
+
     private long findOrInsertBlob(byte[] blob) throws SQLException, BusyException {
 
         String stmt = "SELECT blobid FROM " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " WHERE ablob=?";
@@ -178,11 +212,6 @@ public class InvDiffManager {
             sql.returnConnection(connection);
         }
     }
-
-    public static record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
-    }
-
-    ;
 
     public DiffInventoryRecord getContentsAt(int uid, final long time)
             throws SQLException, IOException, ClassNotFoundException {
@@ -281,56 +310,6 @@ public class InvDiffManager {
         return new DiffInventoryRecord(after, numdiff, listToPlayerInv(output, inv.exp()));
     }
 
-    public static PlayerInventoryRecord listToPlayerInv(List<ItemStack> contents, int exp) {
-        ItemStack[] storage = new ItemStack[36];
-        ItemStack[] armor = new ItemStack[4];
-        ItemStack[] extra = new ItemStack[1];
-        ItemStack[] ender = new ItemStack[27];
-        for (int i = 0; i < contents.size(); i++) {
-            ItemStack item = contents.get(i);
-            if (i < 27) {
-                storage[i + 9] = item;
-            } else if (i < 36) {
-                storage[i - 27] = item;
-            } else if (i < 40) {
-                armor[4 - i + 35] = item;
-            } else if (i < 41) {
-                extra[i - 40] = item;
-            } else if (i < 68) {
-                ender[i - 41] = item;
-            } else
-                break;
-        }
-        return new PlayerInventoryRecord(storage, armor, extra, ender, exp);
-    }
-
-    public static List<ItemStack> playerInvToList(PlayerInventoryRecord inv, boolean addender) {
-        if (inv == null) {
-            return null;
-        }
-        List<ItemStack> output = new ArrayList<>();
-        for (int i = 9; i < inv.storage().length; i++) {
-            output.add(inv.storage()[i]);
-        }
-        for (int i = 0; i < 9; i++) {
-            output.add(inv.storage()[i]);
-        }
-        for (int i = inv.armor().length - 1; i >= 0; i--) {
-            output.add(inv.armor()[i]);
-        }
-        for (int i = 0; i < inv.extra().length; i++) {
-            output.add(inv.extra()[i]);
-        }
-        if (addender) {
-            for (ItemStack item : inv.ender()) {
-                output.add(item);
-            }
-        }
-        return output;
-    }
-
-    private long lastcleanup;
-
     public void cleanup() {
         synchronized (cache) {
             if (System.currentTimeMillis() - lastcleanup < 300000) {
@@ -345,5 +324,24 @@ public class InvDiffManager {
                 }
             }
         }
+    }
+
+    private static class BlobCache {
+        final long blobid;
+        final byte[] ablob;
+        long lastused;
+
+        BlobCache(long blobid, byte[] ablob) {
+            this.blobid = blobid;
+            this.ablob = ablob;
+            touch();
+        }
+
+        public void touch() {
+            this.lastused = System.currentTimeMillis();
+        }
+    }
+
+    public static record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
     }
 }

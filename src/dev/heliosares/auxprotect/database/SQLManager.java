@@ -25,14 +25,18 @@ import java.util.*;
 import java.util.Map.Entry;
 
 public class SQLManager {
-    private static SQLManager instance;
     public static final int DBVERSION = 6;
     public static final int MAX_LOOKUP_SIZE = 500000;
-
+    private static SQLManager instance;
+    private static String tablePrefix;
+    private final IAuxProtect plugin;
+    private final File sqliteFile;
+    private final LookupManager lookupmanager;
+    private final InvDiffManager invdiffmanager;
+    private final TownyManager townymanager;
+    int rowcount;
     private ConnectionPool conn;
     private String targetString;
-    private final IAuxProtect plugin;
-    private static String tablePrefix;
     private boolean isConnected;
     private int nextWid;
     private int nextActionId = 10000;
@@ -41,52 +45,7 @@ public class SQLManager {
     private HashMap<String, Integer> worlds = new HashMap<>();
     private int version;
     private int originalVersion;
-    int rowcount;
-    private final File sqliteFile;
-    private final LookupManager lookupmanager;
     private MigrationManager migrationmanager;
-    private final InvDiffManager invdiffmanager;
-    private final TownyManager townymanager;
-
-    public LookupManager getLookupManager() {
-        return lookupmanager;
-    }
-
-    public InvDiffManager getInvDiffManager() {
-        return invdiffmanager;
-    }
-
-    public TownyManager getTownyManager() {
-        return townymanager;
-    }
-
-    public static SQLManager getInstance() {
-        return instance;
-    }
-
-    public static String getTablePrefix() {
-        return tablePrefix;
-    }
-
-    public int getCount() {
-        return rowcount;
-    }
-
-    public boolean isConnected() {
-        return isConnected;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public int getOriginalVersion() {
-        return originalVersion;
-    }
-
-    public boolean isMySQL() {
-        return conn.isMySQL();
-    }
 
     public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile) {
         instance = this;
@@ -112,6 +71,46 @@ public class SQLManager {
             this.townymanager = tm;
         }
         this.sqliteFile = sqliteFile;
+    }
+
+    public static SQLManager getInstance() {
+        return instance;
+    }
+
+    public static String getTablePrefix() {
+        return tablePrefix;
+    }
+
+    public LookupManager getLookupManager() {
+        return lookupmanager;
+    }
+
+    public InvDiffManager getInvDiffManager() {
+        return invdiffmanager;
+    }
+
+    public TownyManager getTownyManager() {
+        return townymanager;
+    }
+
+    public int getCount() {
+        return rowcount;
+    }
+
+    public boolean isConnected() {
+        return isConnected;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    public int getOriginalVersion() {
+        return originalVersion;
+    }
+
+    public boolean isMySQL() {
+        return conn.isMySQL();
     }
 
     public void connect(String user, String pass)
@@ -1603,10 +1602,6 @@ public class SQLManager {
         return null;
     }
 
-    public static class AlreadyExistsException extends Exception {
-        private static final long serialVersionUID = -4118326876128319175L;
-    }
-
     /**
      * Creates a new action and stores it in the database for future use. Use
      * EntryAction.getAction(String) to determine if an action already exists, or to
@@ -1787,5 +1782,9 @@ public class SQLManager {
 
     public Collection<String> getCachedUsernames() {
         return Collections.unmodifiableCollection(usernames.values());
+    }
+
+    public static class AlreadyExistsException extends Exception {
+        private static final long serialVersionUID = -4118326876128319175L;
     }
 }

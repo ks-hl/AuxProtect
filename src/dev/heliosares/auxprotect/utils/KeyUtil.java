@@ -12,16 +12,6 @@ import java.util.Base64;
 public class KeyUtil {
 
     private static final String RSA = "RSA";
-
-    public static String do_RSADecryption(byte[] cipherText, Key key) throws Exception {
-        Cipher cipher = Cipher.getInstance(RSA);
-
-        cipher.init(Cipher.DECRYPT_MODE, key);
-        byte[] result = cipher.doFinal(cipherText);
-
-        return new String(result);
-    }
-
     private static final long[] BLACKLIST = new long[]{};
     private static final PublicKey PUBLIC_KEY;
 
@@ -41,7 +31,6 @@ public class KeyUtil {
     private final boolean isMalformed;
     private final boolean isPrivate;
     private final String keyholder;
-
     public KeyUtil(String key) {
         boolean isValid = false;
         boolean isBlacklisted = false;
@@ -84,6 +73,19 @@ public class KeyUtil {
         this.keyholder = keyholder;
     }
 
+    public static String do_RSADecryption(byte[] cipherText, Key key) throws Exception {
+        Cipher cipher = Cipher.getInstance(RSA);
+
+        cipher.init(Cipher.DECRYPT_MODE, key);
+        byte[] result = cipher.doFinal(cipherText);
+
+        return new String(result);
+    }
+
+    private static byte[] decode(String str) {
+        return Base64.getDecoder().decode(str);
+    }
+
     public boolean isValid() {
         if (isBlacklisted || isMalformed) {
             return false;
@@ -108,9 +110,5 @@ public class KeyUtil {
 
     public String getKeyHolder() {
         return keyholder;
-    }
-
-    private static byte[] decode(String str) {
-        return Base64.getDecoder().decode(str);
     }
 }

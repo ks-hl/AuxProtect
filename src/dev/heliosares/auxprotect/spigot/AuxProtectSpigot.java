@@ -41,29 +41,55 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public static final char LEFT_ARROW = 9668;
     public static final char RIGHT_ARROW = 9658;
     public static final char BLOCK = 9608;
+    private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    private static AuxProtectSpigot instance;
+    private static SQLManager sqlManager;
+    private final APConfig config = new APConfig();
+    private final Set<String> hooks = new HashSet<>();
+    // TODO convert to configadapter
+    public YMLManager data;
+    public String update;
+    protected DatabaseRunnable dbRunnable;
+    long lastCheckedForUpdate;
+    long lastloaded;
+    Set<Integer> stackHashHistory = new HashSet<>();
+    private Economy econ;
+    private VeinManager veinManager;
+    private ClaimInvCommand claiminvcommand;
+    private APSCommand apcommand;
+    private int SERVER_VERSION;
+    private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+    private boolean isShuttingDown;
+    private String stackLog = "";
 
     public static IAuxProtect getInstance() {
         return instance;
     }
 
-    protected DatabaseRunnable dbRunnable;
-    // TODO convert to configadapter
-    public YMLManager data;
-    private final APConfig config = new APConfig();
-
-    private Economy econ;
-    private static AuxProtectSpigot instance;
-
-    private static SQLManager sqlManager;
-    private VeinManager veinManager;
-
-    public String update;
-    long lastCheckedForUpdate;
-
-    long lastloaded;
-
-    private ClaimInvCommand claiminvcommand;
-    private APSCommand apcommand;
+    public static String getLabel(Object o) {
+        if (o == null) {
+            return "#null";
+        }
+        if (o instanceof UUID) {
+            return "$" + ((UUID) o).toString();
+        }
+        if (o instanceof Player) {
+            return "$" + ((Player) o).getUniqueId().toString();
+        }
+        if (o instanceof Entity) {
+            return "#" + ((Entity) o).getType().name().toLowerCase();
+        }
+        if (o instanceof Container) {
+            return "#" + ((Container) o).getBlock().getType().toString().toLowerCase();
+        }
+        if (o instanceof Block) {
+            return "#" + ((Block) o).getType().toString().toLowerCase();
+        }
+        if (o instanceof Material) {
+            return ((Material) o).toString().toLowerCase();
+        }
+        return "#null";
+    }
 
     public ClaimInvCommand getClaiminvcommand() {
         return claiminvcommand;
@@ -72,8 +98,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public APSCommand getApcommand() {
         return apcommand;
     }
-
-    private int SERVER_VERSION;
 
     public int getCompatabilityVersion() {
         return SERVER_VERSION;
@@ -495,8 +519,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return hook;
     }
 
-    private final Set<String> hooks = new HashSet<>();
-
     public boolean isHooked(String name) {
         return hooks.contains(name);
     }
@@ -509,8 +531,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
         return null;
     }
-
-    private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
 
     public APPlayer getAPPlayer(Player player) {
         synchronized (apPlayers) {
@@ -547,8 +567,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         dbRunnable = null;
         sqlManager = null;
     }
-
-    private boolean isShuttingDown;
 
     @Override
     public boolean isShuttingDown() {
@@ -605,31 +623,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return econ.format(d);
     }
 
-    public static String getLabel(Object o) {
-        if (o == null) {
-            return "#null";
-        }
-        if (o instanceof UUID) {
-            return "$" + ((UUID) o).toString();
-        }
-        if (o instanceof Player) {
-            return "$" + ((Player) o).getUniqueId().toString();
-        }
-        if (o instanceof Entity) {
-            return "#" + ((Entity) o).getType().name().toLowerCase();
-        }
-        if (o instanceof Container) {
-            return "#" + ((Container) o).getBlock().getType().toString().toLowerCase();
-        }
-        if (o instanceof Block) {
-            return "#" + ((Block) o).getType().toString().toLowerCase();
-        }
-        if (o instanceof Material) {
-            return ((Material) o).toString().toLowerCase();
-        }
-        return "#null";
-    }
-
     @Override
     public void warning(String message) {
         getLogger().warning(message);
@@ -649,10 +642,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private void logToStackLog(String msg) {
         stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
     }
-
-    private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-    Set<Integer> stackHashHistory = new HashSet<>();
-    private String stackLog = "";
 
     @Override
     public String getStackLog() {

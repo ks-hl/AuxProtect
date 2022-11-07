@@ -24,6 +24,10 @@ public class TownyManager {
         this.sql = sql;
     }
 
+    public static String getLabel(Government gov) {
+        return "$t" + gov.getUUID().toString();
+    }
+
     public void init() {
         plugin.info("Checking for new towns/nations...");
         TownyUniverse.getInstance().getTowns().forEach((town) -> {
@@ -82,6 +86,46 @@ public class TownyManager {
         return null;
     }
 
+//	public int getIDFromName(String name, boolean insert) {
+//		if (name == null) {
+//			return -1;
+//		}
+//		if (names.containsValue(name)) {
+//			return names.getKey(name);
+//		}
+//		String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+//				+ " WHERE action_id=? AND lower(target)=?\nORDER BY time DESC\nLIMIT 1;";
+//		plugin.debug(stmt, 3);
+//
+//		Connection connection;
+//		try {
+//			connection = sql.getConnection();
+//		} catch (SQLException e1) {
+//			plugin.print(e1);
+//			return -1;
+//		}
+//		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+//			pstmt.setInt(1, EntryAction.TOWNYNAME.id);
+//			pstmt.setString(2, name.toLowerCase());
+//			try (ResultSet results = pstmt.executeQuery()) {
+//				if (results.next()) {
+//					int uid = results.getInt("uid");
+//					String username_ = results.getString("target");
+//					plugin.debug("Resolved username " + username_ + " to UID " + uid, 5);
+//					if (username_ != null && uid > 0) {
+//						names.put(uid, username_);
+//						return uid;
+//					}
+//				}
+//			}
+//		} catch (SQLException e) {
+//			plugin.print(e);
+//		} finally {
+//			sql.returnConnection(connection);
+//		}
+//		return -1;
+//	}
+
     public int getIDFromName(String name) {
         if (name == null) {
             return -1;
@@ -127,46 +171,6 @@ public class TownyManager {
         return -1;
     }
 
-//	public int getIDFromName(String name, boolean insert) {
-//		if (name == null) {
-//			return -1;
-//		}
-//		if (names.containsValue(name)) {
-//			return names.getKey(name);
-//		}
-//		String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
-//				+ " WHERE action_id=? AND lower(target)=?\nORDER BY time DESC\nLIMIT 1;";
-//		plugin.debug(stmt, 3);
-//
-//		Connection connection;
-//		try {
-//			connection = sql.getConnection();
-//		} catch (SQLException e1) {
-//			plugin.print(e1);
-//			return -1;
-//		}
-//		try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-//			pstmt.setInt(1, EntryAction.TOWNYNAME.id);
-//			pstmt.setString(2, name.toLowerCase());
-//			try (ResultSet results = pstmt.executeQuery()) {
-//				if (results.next()) {
-//					int uid = results.getInt("uid");
-//					String username_ = results.getString("target");
-//					plugin.debug("Resolved username " + username_ + " to UID " + uid, 5);
-//					if (username_ != null && uid > 0) {
-//						names.put(uid, username_);
-//						return uid;
-//					}
-//				}
-//			}
-//		} catch (SQLException e) {
-//			plugin.print(e);
-//		} finally {
-//			sql.returnConnection(connection);
-//		}
-//		return -1;
-//	}
-
     public void updateName(Government gov, boolean async) {
         this.updateName(gov.getUUID(), gov.getName(), async);
     }
@@ -196,10 +200,6 @@ public class TownyManager {
         } else {
             run.run();
         }
-    }
-
-    public static String getLabel(Government gov) {
-        return "$t" + gov.getUUID().toString();
     }
 
     public void cleanup() {

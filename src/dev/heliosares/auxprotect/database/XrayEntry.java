@@ -7,9 +7,10 @@ import java.util.UUID;
 
 public class XrayEntry extends DbEntry {
 
-    private short rating;
     public UUID viewer;
     public long viewingStarted;
+    private short rating;
+    private ArrayList<XrayEntry> children = new ArrayList<>();
 
     public XrayEntry(String user, Location location, String block) {
         super(user, EntryAction.VEIN, false, location, block, "");
@@ -20,8 +21,6 @@ public class XrayEntry extends DbEntry {
         super(time, uid, EntryAction.VEIN, false, world, x, y, z, 0, 0, null, target_id, data);
         this.rating = rating;
     }
-
-    private ArrayList<XrayEntry> children = new ArrayList<>();
 
     public boolean add(XrayEntry entry) {
         return this.add(entry, new ArrayList<>());

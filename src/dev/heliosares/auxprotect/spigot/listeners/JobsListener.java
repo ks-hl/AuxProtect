@@ -71,8 +71,8 @@ public class JobsListener implements Listener {
 
     public static class JobsEntry extends DbEntry {
 
-        private double value;
         public final char type;
+        private double value;
 
         public JobsEntry(String userLabel, Location location, String jobName, char type, double value) {
             super(userLabel, EntryAction.JOBS, false, location, jobName, "");
