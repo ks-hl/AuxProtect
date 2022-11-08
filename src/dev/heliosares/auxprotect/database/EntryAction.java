@@ -1,5 +1,11 @@
 package dev.heliosares.auxprotect.database;
 
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
+
 import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
@@ -7,10 +13,10 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 
-import java.util.*;
-
 public class EntryAction {
+    private static final HashMap<String, EntryAction> values = new HashMap<>();
     private static final Set<Integer> usedids = new HashSet<>();
+
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
@@ -18,6 +24,7 @@ public class EntryAction {
     public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
     public static final EntryAction BUCKET = new EntryAction("bucket", 10, 11);
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
+
     public static final EntryAction ALERT = new EntryAction("alert", 128);
     public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
     //	public static final EntryAction XRAYCHECK = new EntryAction("xraycheck", 130);
@@ -34,29 +41,33 @@ public class EntryAction {
     public static final EntryAction PAY = new EntryAction("pay", 141);
     public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
     public static final EntryAction EXPLODE = new EntryAction("explode", 143);
+    // END MAIN (255)
+
     // START SPAM(256)
     // SKIPPED 256
     public static final EntryAction HURT = new EntryAction("hurt", 257);
     public static final EntryAction INV = new EntryAction("inv", 258, 259);
-    // END MAIN (255)
     // SKIPPED 260
     public static final EntryAction KILL = new EntryAction("kill", 261);
     public static final EntryAction LAND = new EntryAction("land", 262);
     public static final EntryAction ELYTRA = new EntryAction("elytra", 263, 264);
     public static final EntryAction ACTIVITY = new EntryAction("activity", 265);
     public static final EntryAction TOTEM = new EntryAction("totem", 266);
+    // END SPAM(511)
+
     // START IGNOREABANDONED(512)
     public static final EntryAction IGNOREABANDONED = new EntryAction("ignoreabandoned", 512);
+    // END IGNOREABANDONED(767)
+
     // START LONGTERM (768)
     public static final EntryAction IP = new EntryAction("ip", 768);
-    // END SPAM(511)
     public static final EntryAction USERNAME = new EntryAction("username", 769);
-    // END IGNOREABANDONED(767)
     public static final EntryAction TOWNYNAME = new EntryAction("townyname", 770);
+    // END LONGTERM (1023)
+
     // START INVENTORY (1024)
     public static final EntryAction INVENTORY = new EntryAction("inventory", 1024);
     public static final EntryAction LAUNCH = new EntryAction("launch", 1025);
-    // END LONGTERM (1023)
     public static final EntryAction GRAB = new EntryAction("grab", 1026);
     public static final EntryAction DROP = new EntryAction("drop", 1027);
     public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
@@ -64,36 +75,40 @@ public class EntryAction {
     public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
     //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
+
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
+    // END INVENTORY(1279)
+
     // START COMMANDS (1280)
     public static final EntryAction COMMAND = new EntryAction("command", 1280);
+    // END COMMANDS(1289)
+
     // START POSITION (1290)
     public static final EntryAction POS = new EntryAction("pos", 1290);
-    // END INVENTORY(1279)
     public static final EntryAction TP = new EntryAction("tp", 1291, 1292);
-    // END COMMANDS(1289)
+    // END POSITION(1299)
+
     // START XRAY (1300)
     public static final EntryAction VEIN = new EntryAction("vein", 1300);
+    // END XRAY(1309)
+
     // START TOWNY (1310)
     public static final EntryAction TOWNCREATE = new EntryAction("towncreate", 1310);
-    // END POSITION(1299)
     public static final EntryAction TOWNRENAME = new EntryAction("townrename", 1311);
-    // END XRAY(1309)
     public static final EntryAction TOWNDELETE = new EntryAction("towndelete", 1312);
     public static final EntryAction TOWNJOIN = new EntryAction("townjoin", 1313, 1314);
     public static final EntryAction TOWNCLAIM = new EntryAction("townclaim", 1315, 1316);
-    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
+//    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
     public static final EntryAction TOWNMAYOR = new EntryAction("townmayor", 1318);
     public static final EntryAction TOWNBANK = new EntryAction("townbank", 1319, 1320);
+
     public static final EntryAction NATIONCREATE = new EntryAction("nationcreate", 1400);
     public static final EntryAction NATIONRENAME = new EntryAction("nationrename", 1401);
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
-    private static final HashMap<String, EntryAction> values = new HashMap<>();
     // END TOWNY (1499)
 
-    // @formatter:on
     public final boolean hasDual;
     public final int id;
     public final int idPos;
@@ -129,6 +144,12 @@ public class EntryAction {
         values.put(name, this);
     }
 
+    private void validateID(String name, int id) throws IllegalArgumentException {
+        if (!usedids.add(id)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+        }
+    }
+
     protected EntryAction(String key, int nid, int pid, String ntext, String ptext) {
         this(key, nid, pid);
         this.overrideNText = ntext;
@@ -138,31 +159,6 @@ public class EntryAction {
     protected EntryAction(String key, int id, String text) {
         this(key, id);
         this.overrideNText = text;
-    }
-
-    public static Collection<EntryAction> values() {
-        return Collections.unmodifiableCollection(values.values());
-    }
-
-    public static EntryAction getAction(String key) {
-        return values.get(key);
-    }
-
-    public static EntryAction getAction(int id) {
-        if (id == 0)
-            return null;
-        for (EntryAction action : values.values()) {
-            if (action.id == id || action.idPos == id) {
-                return action;
-            }
-        }
-        return null;
-    }
-
-    private void validateID(String name, int id) throws IllegalArgumentException {
-        if (!usedids.add(id)) {
-            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
-        }
     }
 
     public String getText(boolean state) {
@@ -193,6 +189,7 @@ public class EntryAction {
 
     public boolean exists() {
         IAuxProtect plugin = AuxProtectAPI.getInstance();
+        assert plugin != null;
         if (!plugin.getAPConfig().isPrivate()) {
             if (equals(IGNOREABANDONED) || equals(VEIN)) {
                 return false;
@@ -282,6 +279,25 @@ public class EntryAction {
 
     public void setLowestpriority(boolean lowestpriority) {
         this.lowestpriority = lowestpriority;
+    }
+
+    public static Collection<EntryAction> values() {
+        return Collections.unmodifiableCollection(values.values());
+    }
+
+    public static EntryAction getAction(String key) {
+        return values.get(key);
+    }
+
+    public static EntryAction getAction(int id) {
+        if (id == 0)
+            return null;
+        for (EntryAction action : values.values()) {
+            if (action.id == id || action.idPos == id) {
+                return action;
+            }
+        }
+        return null;
     }
 
     public String getNode() {
