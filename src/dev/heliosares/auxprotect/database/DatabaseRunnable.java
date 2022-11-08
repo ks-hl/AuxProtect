@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
+import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -123,8 +124,13 @@ public class DatabaseRunnable implements Runnable {
             for (PickupEntry next : pickups) {
                 if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) continue;
                 if (next.getAction() != entry.getAction()) continue;
-                if (!next.getUserUUID().equals(entry.getUserUUID())) continue;
-                if (!next.getTargetUUID().equals(entry.getTargetUUID())) continue;
+                try {
+                    if (!next.getUserUUID().equals(entry.getUserUUID())) continue;
+                    if (!next.getTargetUUID().equals(entry.getTargetUUID())) continue;
+                } catch (SQLException ignored) {
+                    //Unlikely / N/A
+                    continue;
+                }
                 if (!next.world.equals(entry.world)) continue;
                 if (next.getDistance(entry) > 3) continue;
                 next.add(entry);

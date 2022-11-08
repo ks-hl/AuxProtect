@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class SQLCommand extends Command {
             sender.sendMessageRaw("§aRunning...");
             try {
                 if (args[0].equalsIgnoreCase("sql")) {
-                    plugin.getSqlManager().execute(stmt);
+                    plugin.getSqlManager().execute(stmt, false);
                 } else if (args[0].equalsIgnoreCase("sqli")) {
                     plugin.getSqlManager().executeWrite(stmt);
                 } else {
@@ -49,8 +50,12 @@ public class SQLCommand extends Command {
                         }
                     }
                 }
+            } catch (ConnectionPool.BusyException e) {
+                sender.sendLang(Language.L.DATABASE_BUSY);
+                return;
             } catch (Exception e) {
                 sender.sendLang(Language.L.ERROR);
+                plugin.warning("Error while executing '" + stmt + "'");
                 plugin.print(e);
                 return;
             }

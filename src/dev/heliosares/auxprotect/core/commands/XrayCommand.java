@@ -14,6 +14,7 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -24,6 +25,7 @@ public class XrayCommand extends Command {
 
     public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
     HashMap<String, Results> results = new HashMap<>();
+
     public XrayCommand(IAuxProtect plugin) {
         super(plugin, "xray", APPermission.XRAY, "x");
     }
@@ -166,7 +168,15 @@ public class XrayCommand extends Command {
                                 nextEntry(spigot, sender, true);
                             }
                         } else {
-                            XrayResults.sendEntry(spigot, sender, entry, auto);
+                            try {
+                                XrayResults.sendEntry(spigot, sender, entry, auto);
+                            } catch (ConnectionPool.BusyException e) {
+                                sender.sendLang(Language.L.DATABASE_BUSY);
+                                return;
+                            } catch (SQLException e) {
+                                sender.sendLang(Language.L.ERROR);
+                                return;
+                            }
                         }
 
                     });
@@ -191,7 +201,15 @@ public class XrayCommand extends Command {
                 if (current != null) {
                     sender.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", current.x,
                             current.y, current.z, current.world, 45, 0));
-                    XrayResults.sendEntry(spigot, sender, current, true);
+                    try {
+                        XrayResults.sendEntry(spigot, sender, current, true);
+                    } catch (ConnectionPool.BusyException e) {
+                        sender.sendLang(Language.L.DATABASE_BUSY);
+                        return;
+                    } catch (SQLException e) {
+                        sender.sendLang(Language.L.ERROR);
+                        return;
+                    }
                 }
                 nextEntry(spigot, sender, true);
             }
@@ -207,7 +225,13 @@ public class XrayCommand extends Command {
         final XrayEntry entry = en;
         player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", entry.x, entry.y,
                 entry.z, entry.world, 45, 0));
-        XrayResults.sendEntry(plugin, player, en, auto);
+        try {
+            XrayResults.sendEntry(plugin, player, en, auto);
+        } catch (ConnectionPool.BusyException e) {
+            player.sendLang(Language.L.DATABASE_BUSY);
+        } catch (SQLException e) {
+            player.sendLang(Language.L.ERROR);
+        }
     }
 
     @Override

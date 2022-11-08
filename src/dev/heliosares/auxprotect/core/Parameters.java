@@ -11,7 +11,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -79,14 +78,13 @@ public class Parameters {
      * This method is used by the lookup command to parse commands. This may be used
      * by an API by manually creating a String[] args
      *
-     * @param plugin
-     * @param sender
-     * @param args
+     * @param sender The player sending the command. Used for permission checks. Null to bypass
+     * @param args   Arguments of the command.
      * @return
      * @throws ParseException
      * @throws LookupException
      */
-    public static Parameters parse(@Nonnull SenderAdapter sender, String[] args)
+    public static Parameters parse(@Nullable SenderAdapter sender, String[] args)
             throws ParseException, LookupException {
         IAuxProtect plugin = AuxProtectAPI.getInstance();
         Parameters parameters = new Parameters();
@@ -102,7 +100,7 @@ public class Parameters {
                 } catch (Exception ignored) {
                 }
                 if (flag != null) {
-                    if (!flag.hasPermission(sender)) {
+                    if (sender != null && !flag.hasPermission(sender)) {
                         throw new ParseException(Language.L.NO_PERMISSION_FLAG);
                     }
                     parameters.flags.add(flag);
@@ -123,59 +121,71 @@ public class Parameters {
                 String param = split[1];
                 count++;
                 switch (token) {
-                    case "user":
+                    case "user" -> {
                         parameters.user(param);
                         continue;
-                    case "target":
+                    }
+                    case "target" -> {
                         targetstr = param;
                         continue;
-                    case "data":
+                    }
+                    case "data" -> {
                         datastr = param;
                         continue;
-                    case "action":
+                    }
+                    case "action" -> {
                         parameters.action(sender, param);
                         continue;
-                    case "before":
+                    }
+                    case "before" -> {
                         parameters.time(param, true);
                         continue;
-                    case "after":
+                    }
+                    case "after" -> {
                         parameters.time(param, false);
                         continue;
-                    case "time":
+                    }
+                    case "time" -> {
                         parameters.time(param);
                         continue;
-                    case "radius":
-                        if (sender.getPlatform() != PlatformType.SPIGOT) {
+                    }
+                    case "radius" -> {
+                        if (sender == null)
+                            throw new ParseException(L.NOTPLAYERERROR);
+                        if (sender.getPlatform() != PlatformType.SPIGOT)
                             throw new ParseException(L.INVALID_PARAMETER, line);
-                        }
                         if (sender.getSender() instanceof org.bukkit.entity.Player player) {
                             parameters.radius(player.getLocation(), param);
                         } else {
                             throw new ParseException(L.NOTPLAYERERROR);
                         }
                         continue;
-                    case "world":
+                    }
+                    case "world" -> {
                         parameters.world(param);
                         continue;
-                    case "rating":
+                    }
+                    case "rating" -> {
                         for (String str : param.split(",")) {
                             try {
                                 parameters.ratings.add(Short.parseShort(str));
                             } catch (NumberFormatException e) {
-                                throw new ParseException(Language.L.INVALID_PARAMETER, line);
+                                throw new ParseException(L.INVALID_PARAMETER, line);
                             }
                         }
                         continue;
-                    case "db":
+                    }
+                    case "db" -> {
                         if (!APPermission.ADMIN.hasPermission(sender)) {
-                            throw new ParseException(Language.L.NO_PERMISSION);
+                            throw new ParseException(L.NO_PERMISSION);
                         }
                         try {
                             parameters.table = Table.valueOf(param.toUpperCase());
                         } catch (Exception e) {
-                            throw new ParseException(Language.L.INVALID_PARAMETER, line);
+                            throw new ParseException(L.INVALID_PARAMETER, line);
                         }
                         continue;
+                    }
                 }
             }
             throw new ParseException(Language.L.INVALID_PARAMETER, line);
@@ -419,8 +429,7 @@ public class Parameters {
      * <p>
      * <<<<<<< Updated upstream
      *
-     * @param param  Null will clear
-     * @param negate
+     * @param param Null will clear
      * @throws LookupException
      * @throws IllegalStateException if the table is null
      */
@@ -548,7 +557,12 @@ public class Parameters {
      */
     public Parameters user(UUID uuid, boolean negate) throws LookupException {
         this.negateUser = negate;
-        int uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString());
+        int uid;
+        try {
+            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+        } catch (SQLException e) {
+            throw new LookupException(L.DATABASE_BUSY);
+        }
 
         if (uid > 0) {
             uids.add(Integer.toString(uid));
@@ -565,7 +579,7 @@ public class Parameters {
      * @param sender Will be used for individual action permission checks. Null will
      *               bypass checks
      * @param action The actions to be added
-     * @param int    state -1 for negative, 0 for either, 1 for positive
+     * @param state  -1 for negative, 0 for either, 1 for positive
      * @throws ParseException
      */
     public Parameters addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
@@ -602,7 +616,14 @@ public class Parameters {
      */
     public Parameters target(UUID uuid, boolean negate) throws LookupException {
         this.negateTarget = negate;
-        int uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString());
+        int uid = 0;
+        try {
+            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+        } catch (ConnectionPool.BusyException e) {
+            throw new LookupException(L.DATABASE_BUSY);
+        } catch (SQLException e) {
+            throw new LookupException(L.ERROR);
+        }
 
         if (uid > 0) {
             targets.add(Integer.toString(uid));
@@ -615,7 +636,7 @@ public class Parameters {
     /**
      * Sets the flags. Does not affect any other flags.
      *
-     * @param flag
+     * @param flag the flag to add
      */
     public Parameters flag(Flag flag) {
         flags.add(flag);
@@ -870,7 +891,7 @@ public class Parameters {
         return output;
     }
 
-    public boolean matches(DbEntry entry) {
+    public boolean matches(DbEntry entry) throws SQLException {
         if (!uids.isEmpty()) {
             boolean contains = false;
             for (String user : uids) {

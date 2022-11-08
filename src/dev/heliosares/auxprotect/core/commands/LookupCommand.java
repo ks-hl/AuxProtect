@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
@@ -15,6 +16,7 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 
+import java.sql.SQLException;
 import java.util.*;
 
 public class LookupCommand extends Command {
@@ -150,6 +152,7 @@ public class LookupCommand extends Command {
         return possible;
     }
 
+    @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) {
         if (args.length < 2) {
             sender.sendLang(Language.L.INVALID_SYNTAX);
@@ -159,10 +162,8 @@ public class LookupCommand extends Command {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
         }
-        Runnable run = new Runnable() {
-
-            @Override
-            public void run() {
+        Runnable run = () -> {
+            try {
                 if (args.length == 2) {
                     int page = -1;
                     int perpage = -1;
@@ -178,13 +179,13 @@ public class LookupCommand extends Command {
                                 page = Integer.parseInt(split[0]);
                                 perpage = Integer.parseInt(split[1]);
                                 isPageLookup = true;
-                            } catch (NumberFormatException e) {
+                            } catch (NumberFormatException ignored) {
                             }
                         } else {
                             try {
                                 page = Integer.parseInt(args[1]);
                                 isPageLookup = true;
-                            } catch (NumberFormatException e) {
+                            } catch (NumberFormatException ignored) {
                             }
                         }
                     }
@@ -223,23 +224,11 @@ public class LookupCommand extends Command {
                     }
                 }
 
-                Parameters params = null;
-                try {
-                    params = Parameters.parse(sender, args);
-                } catch (Exception e) {
-                    sender.sendMessageRaw(e.getMessage());
-                    return;
-                }
+                Parameters params = Parameters.parse(sender, args);
 
                 sender.sendLang(Language.L.COMMAND__LOOKUP__LOOKING);
 
-                int count = 0;
-                try {
-                    count = plugin.getSqlManager().getLookupManager().count(params);
-                } catch (LookupException e) {
-                    sender.sendMessageRaw(e.getMessage());
-                    return;
-                }
+                int count = plugin.getSqlManager().getLookupManager().count(params);
                 if (params.getFlags().contains(Flag.COUNT_ONLY)) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, count);
                     return;
@@ -253,13 +242,7 @@ public class LookupCommand extends Command {
                     return;
                 }
 
-                ArrayList<DbEntry> rs = null;
-                try {
-                    rs = plugin.getSqlManager().getLookupManager().lookup(params);
-                } catch (LookupException e) {
-                    sender.sendMessageRaw(e.getMessage());
-                    return;
-                }
+                ArrayList<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params);
                 if (rs == null || rs.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                     return;
@@ -319,7 +302,6 @@ public class LookupCommand extends Command {
                             try {
                                 quantity = Integer.parseInt(entry.getData().substring(1));
                             } catch (Exception ignored) {
-
                             }
                             if (quantity > 0) {
                                 if (entry.getAction().equals(EntryAction.DROP)) {
@@ -353,62 +335,7 @@ public class LookupCommand extends Command {
                         sender.sendMessageRaw(msg);
                     }
                     return;
-                }
-//				else if (params.getFlags().contains(Flag.COUNT1)) {
-//					sender.sendMessage(String.format(plugin.translate(Language.L.COMMAND__LOOKUP__COUNT), rs.size()));
-//					HashMap<String, Double> values = new HashMap<>();
-//					HashMap<String, Integer> qtys = new HashMap<>();
-//					for (DbEntry entry : rs) {
-//						if (entry.getAction().equals(EntryAction.SHOP) && !entry.getState()) {
-//							String[] parts = entry.getData().split(", ");
-//							if (parts.length >= 3) {
-//								try {
-//									String valueStr = parts[1];
-//									double value = -1;
-//									int qty = 1;
-//									if (!valueStr.contains(" each")
-//											|| entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
-//										valueStr = valueStr.replaceAll(" each", "");
-//										value = Double.parseDouble(valueStr.substring(1));
-//									} else {
-//										double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
-//										qty = Integer.parseInt(parts[2].split(" ")[1]);
-//										value = each * qty;
-//									}
-//									if (value > 0) {
-//										double currentvalue = 0;
-//										if (values.containsKey(entry.getTarget())) {
-//											currentvalue = values.get(entry.getTarget());
-//										}
-//										values.put(entry.getTarget(), value + currentvalue);
-//
-//										int currentqty = 0;
-//										if (qtys.containsKey(entry.getTarget())) {
-//											currentqty = qtys.get(entry.getTarget());
-//										}
-//										qtys.put(entry.getTarget(), qty + currentqty);
-//									}
-//								} catch (Exception ignored) {
-//									if (plugin.getDebug() > 0) {
-//										plugin.print(ignored);
-//									}
-//								}
-//							}
-//						}
-//					}
-//					Map<String, Double> sortedMap = values.entrySet().stream().sorted(Entry.comparingByValue()).collect(
-//							Collectors.toMap(Entry::getKey, Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
-//					int limit = 10;
-//					Object[] objmap = sortedMap.entrySet().toArray();
-//					for (int i = sortedMap.size() - 1; i >= sortedMap.size() - 1 - limit; i--) {
-//						@SuppressWarnings("unchecked")
-//						Entry<String, Double> entry = (Entry<String, Double>) objmap[i];
-//						sender.sendMessage(entry.getKey() + ": $" + Math.round(entry.getValue() * 100) / 100.0 + " (x"
-//								+ qtys.get(entry.getKey()) + ")");
-//					}
-//					return;
-//				}
-                else if (params.getFlags().contains(Flag.PT)) {
+                } else if (params.getFlags().contains(Flag.PT)) {
                     List<String> users = params.getUsers();
                     if (users.size() == 0) {
                         sender.sendLang(Language.L.PLAYTIME_NOUSER);
@@ -470,6 +397,14 @@ public class LookupCommand extends Command {
                 if (params.getFlags().contains(Flag.XRAY)) {
                     sender.sendMessage(XraySolver.solve(rs, plugin));
                 }
+            } catch (ConnectionPool.BusyException e) {
+                sender.sendLang(Language.L.DATABASE_BUSY);
+                return;
+            } catch (LookupException | ParseException e) {
+                sender.sendLang(e.getLang());
+            } catch (SQLException e) {
+                sender.sendLang(Language.L.ERROR);
+                return;
             }
         };
         plugin.runAsync(run);

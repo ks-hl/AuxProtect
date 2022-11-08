@@ -26,6 +26,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
@@ -219,7 +220,7 @@ public class InvCommand extends Command {
             int index = -1;
             try {
                 index = Integer.parseInt(args[1]);
-            } catch (NumberFormatException e) {
+            } catch (NumberFormatException ignored) {
 
             }
             if (index < 0) {
@@ -246,7 +247,16 @@ public class InvCommand extends Command {
                         return;
                     }
                     final PlayerInventoryRecord inv = inv_;
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
+                    OfflinePlayer target = null;
+                    try {
+                        target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
+                    } catch (ConnectionPool.BusyException e) {
+                        sender.sendLang(L.DATABASE_BUSY);
+                        return;
+                    } catch (SQLException e) {
+                        sender.sendLang(L.ERROR);
+                        return;
+                    }
                     openSync(plugin, player, makeInventory(plugin, player, target, inv, entry.getTime()));
                 } else if (entry.hasBlob()) {
                     Pane pane = new Pane(Type.SHOW, player);

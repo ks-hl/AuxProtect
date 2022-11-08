@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -40,11 +41,14 @@ public class WatchCommand extends Command {
         while ((entry = queue.poll()) != null) {
             HashSet<UUID> informed = new HashSet<>();
             for (WatchRecord record : records) {
-                if (record.params.matches(entry)) {
-                    if (informed.add(record.sender.getUniqueId())) {
-                        Results.sendEntry(plugin, record.sender, entry, 0, true,
-                                !record.params.getFlags().contains(Flag.HIDE_COORDS));
+                try {
+                    if (record.params.matches(entry)) {
+                        if (informed.add(record.sender.getUniqueId())) {
+                            Results.sendEntry(plugin, record.sender, entry, 0, true,
+                                    !record.params.getFlags().contains(Flag.HIDE_COORDS));
+                        }
                     }
+                } catch (SQLException ignored) {
                 }
             }
         }
@@ -55,7 +59,7 @@ public class WatchCommand extends Command {
             throw new SyntaxException();
         }
         plugin.runAsync(() -> {
-            if (args.length >= 2 && args[1].equalsIgnoreCase("remove")) {
+            if (args[1].equalsIgnoreCase("remove")) {
                 if (args.length != 3) {
                     sender.sendLang(Language.L.INVALID_SYNTAX);
                     return;

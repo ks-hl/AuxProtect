@@ -57,8 +57,18 @@ public class InventoryCommand extends Command {
             final long time = time_;
 
             plugin.runAsync(() -> {
-                int uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
-                String uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
+                int uid;
+                String uuid;
+                try {
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
+                    uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false);
+                } catch (ConnectionPool.BusyException e) {
+                    sender.sendLang(Language.L.DATABASE_BUSY);
+                    return;
+                } catch (SQLException e) {
+                    sender.sendLang(Language.L.ERROR);
+                    return;
+                }
                 OfflinePlayer targetP = Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1)));
                 if (uid < 0) {
                     sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);

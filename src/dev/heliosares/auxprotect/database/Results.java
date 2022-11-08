@@ -15,6 +15,7 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -55,7 +56,7 @@ public class Results {
 
     @SuppressWarnings("deprecation")
     public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time,
-                                 boolean coords) {
+                                 boolean coords) throws SQLException {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
 
@@ -178,11 +179,11 @@ public class Results {
         player.sendMessageRaw(headerColor + line + "  §9AuxProtect Results§7  " + line);
     }
 
-    public void showPage(int page) {
+    public void showPage(int page) throws SQLException {
         showPage(page, perpage);
     }
 
-    public void showPage(int page, int perpage_) {
+    public void showPage(int page, int perpage_) throws SQLException {
         int lastpage = getNumPages(perpage_);
         if (page > lastpage || page < 1) {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
@@ -199,7 +200,7 @@ public class Results {
         sendArrowKeys(page);
     }
 
-    public void sendEntry(DbEntry entry, int index) {
+    public void sendEntry(DbEntry entry, int index) throws SQLException {
         sendEntry(plugin, player, entry, index, true, !params.getFlags().contains(Flag.HIDE_COORDS));
     }
 

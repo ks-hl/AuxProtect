@@ -11,20 +11,18 @@ import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class XraySolver {
 
-    public static BaseComponent[] solve(ArrayList<DbEntry> entries, IAuxProtect plugin) {
+    public static BaseComponent[] solve(ArrayList<DbEntry> entries, IAuxProtect plugin) throws SQLException {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
         for (int i = entries.size() - 1; i >= 0; i--) {
             DbEntry entry = entries.get(i);
-            ArrayList<DbEntry> hits = hash.get(entry.getUserUUID());
-            if (hits == null) {
-                hash.put(entry.getUserUUID(), hits = new ArrayList<>());
-            }
+            ArrayList<DbEntry> hits = hash.computeIfAbsent(entry.getUserUUID(), k -> new ArrayList<>());
             if (entry.getAction().equals(EntryAction.VEIN)) {
                 hits.add(entry);
             }

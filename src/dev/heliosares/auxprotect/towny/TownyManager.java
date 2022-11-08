@@ -39,7 +39,7 @@ public class TownyManager {
         });
     }
 
-    public String getNameFromID(int uid) {
+    public String getNameFromID(int uid, boolean wait) throws SQLException {
         if (uid < 0) {
             return null;
         }
@@ -59,15 +59,7 @@ public class TownyManager {
                 + " WHERE action_id=? AND uid=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
-        Connection connection;
-        try {
-            connection = sql.getConnection();
-        } catch (ConnectionPool.BusyException e1) {
-            return null;
-        } catch (SQLException e1) {
-            plugin.print(e1);
-            return null;
-        }
+        Connection connection = sql.getConnection(wait);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             pstmt.setInt(1, EntryAction.TOWNYNAME.id);
             pstmt.setInt(2, uid);
@@ -129,7 +121,7 @@ public class TownyManager {
 //		return -1;
 //	}
 
-    public int getIDFromName(String name) {
+    public int getIDFromName(String name, boolean wait) throws SQLException {
         if (name == null) {
             return -1;
         }
@@ -146,15 +138,7 @@ public class TownyManager {
                 + " WHERE action_id=? AND target=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
-        Connection connection;
-        try {
-            connection = sql.getConnection();
-        } catch (ConnectionPool.BusyException e1) {
-            return -1;
-        } catch (SQLException e1) {
-            plugin.print(e1);
-            return -1;
-        }
+        Connection connection = sql.getConnection(wait);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             pstmt.setInt(1, EntryAction.TOWNYNAME.id);
             pstmt.setString(2, name);
@@ -185,14 +169,25 @@ public class TownyManager {
 
             @Override
             public void run() {
-                final int uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
+                int uid = -1;
+                try {
+                    uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
+                } catch (SQLException ignored) {
+                    //Unlikely
+                }
                 if (uid <= 0) {
                     plugin.warning("Failed to insert new town/nation name: " + name);
                     return;
                 }
                 plugin.debug("Handling " + name);
 
-                String newestusername = getNameFromID(uid);
+                String newestusername = null;
+                try {
+                    newestusername = getNameFromID(uid, true);
+                } catch (SQLException e) {
+                    plugin.print(e);
+                    return;
+                }
                 if (!name.equalsIgnoreCase(newestusername)) {
                     plugin.debug("New town name: " + name + " for " + newestusername);
                     plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));

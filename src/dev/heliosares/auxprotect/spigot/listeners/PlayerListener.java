@@ -182,8 +182,12 @@ public class PlayerListener implements Listener {
 
             @Override
             public void run() {
-                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
-                        e.getPlayer().getName(), ip);
+                try {
+                    plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
+                            e.getPlayer().getName(), ip);
+                } catch (SQLException ex) {
+                    plugin.print(ex);
+                }
             }
         }.runTaskAsynchronously(plugin);
 
