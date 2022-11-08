@@ -57,6 +57,7 @@ public class DumpCommand extends Command {
             trace += "  Size: " + plugin.getSqlManager().getConnectionPoolSize() + "\n";
             trace += "  Alive: " + ConnectionPool.getNumAlive() + "\n";
             trace += "  Born: " + ConnectionPool.getNumBorn() + "\n";
+            trace += "  Roaming: " + ConnectionPool.getRoaming() + "\n";
         }
         long read[] = ConnectionPool.calculateReadTimes();
         if (read != null) {

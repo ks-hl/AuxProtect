@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import org.bukkit.Bukkit;
+import org.sqlite.SQLiteConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -23,7 +24,7 @@ public class ConnectionPool {
     private static int readTimeIndex;
     private static long writeCheckOut;
     private static int writeTimeIndex;
-    private final LinkedList<Connection> pool = new LinkedList<Connection>();
+    private final LinkedList<Connection> pool = new LinkedList<>();
     private final String connString;
     private final String user;
     private final String pwd;
@@ -32,7 +33,7 @@ public class ConnectionPool {
     private final Connection writeconn;
     private boolean closed;
     private Thread whoHasWriteConnection;
-    private ReentrantLock lock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
 
     public ConnectionPool(IAuxProtect plugin, String connString, String user, String pwd)
             throws SQLException, ClassNotFoundException {
@@ -44,11 +45,11 @@ public class ConnectionPool {
 
         checkDriver();
 
-        writeconn = newConn();
+        writeconn = newConn(false);
 
         synchronized (pool) {
             for (int i = 0; i < CAPACITY; i++) {
-                pool.add(newConn());
+                pool.add(newConn(true));
             }
         }
 
@@ -81,12 +82,12 @@ public class ConnectionPool {
         long last = Long.MIN_VALUE;
         long sum = 0;
         int count = 0;
-        for (int i = 0; i < array.length; i++) {
-            if (array[i] == null) {
+        for (long[] longs : array) {
+            if (longs == null) {
                 continue;
             }
-            long start = array[i][0];
-            long stop = array[i][1];
+            long start = longs[0];
+            long stop = longs[1];
             if (start == 0) {
                 continue;
             }
@@ -109,19 +110,19 @@ public class ConnectionPool {
         return pool.size();
     }
 
-    public String getConnString() {
-        return connString;
-    }
-
-    private synchronized Connection newConn() throws SQLException {
-        alive++;
-        born++;
+    private synchronized Connection newConn(boolean readonly) throws SQLException {
         Connection connection;
-        if (mysql) {
+        if (mysql) { //TODO MySQL readonly
             connection = DriverManager.getConnection(connString, user, pwd);
+        } else if (readonly) {
+            SQLiteConfig config = new SQLiteConfig();
+            config.setReadOnly(true);
+            connection = DriverManager.getConnection(connString, config.toProperties());
         } else {
             connection = DriverManager.getConnection(connString);
         }
+        alive++;
+        born++;
         return connection;
     }
 
@@ -205,7 +206,7 @@ public class ConnectionPool {
         try {
             synchronized (pool) {
                 if (pool.isEmpty()) {
-                    pool.add(newConn());
+                    pool.add(newConn(true));
                 }
                 Connection out = pool.pop();
                 checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
@@ -264,14 +265,14 @@ public class ConnectionPool {
         closed = true;
         try {
             writeconn.close();
-        } catch (SQLException e) {
+        } catch (SQLException ignored) {
         }
         synchronized (pool) {
             while (!pool.isEmpty()) {
                 try {
                     alive--;
                     pool.pop().close();
-                } catch (SQLException e) {
+                } catch (SQLException ignored) {
                 }
             }
         }
@@ -282,7 +283,6 @@ public class ConnectionPool {
     }
 
     public static class BusyException extends SQLException {
-        private static final long serialVersionUID = 4797822287876350186L;
         public final Thread holder;
 
         BusyException(Thread holder) {

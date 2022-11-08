@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.utils;
 
-import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.XrayEntry;
