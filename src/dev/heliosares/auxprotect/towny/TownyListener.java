@@ -178,7 +178,7 @@ public class TownyListener implements Listener {
     public void on(NewNationEvent e) {
         Player king = e.getNation().getKing().getPlayer();
         plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
-        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.TOWNCREATE, false,
+        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.NATIONCREATE, false,
                 toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()), null));
     }
 
@@ -186,7 +186,7 @@ public class TownyListener implements Listener {
     public void on(RenameNationEvent e) {
         plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
         Player mayor = e.getNation().getKing().getPlayer();
-        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.TOWNRENAME, false,
+        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.NATIONRENAME, false,
                 toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()),
                 e.getOldName() + " -> " + e.getNation().getName()));
     }
