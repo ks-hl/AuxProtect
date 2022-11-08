@@ -261,7 +261,12 @@ public class InvCommand extends Command {
                 } else if (entry.hasBlob()) {
                     Pane pane = new Pane(Type.SHOW, player);
                     try {
-                        Inventory inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
+                        Inventory inv;
+                        if (entry instanceof SingleItemEntry sientry) {
+                            inv = InvSerialization.toInventory(pane, "Item Viewer", sientry.getItem());
+                        } else {
+                            inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
+                        }
                         pane.setInventory(inv);
                         openSync(plugin, player, inv);
                     } catch (Exception e1) {

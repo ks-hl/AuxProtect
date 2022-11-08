@@ -13,18 +13,16 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public class InvDiffManager {
+public class InvDiffManager extends BlobManager {
     protected final ConcurrentLinkedQueue<InvDiffRecord> queue = new ConcurrentLinkedQueue<>();
     private final SQLManager sql;
     private final IAuxProtect plugin;
-    private final HashMap<Integer, BlobCache> cache = new HashMap<>();
-    private long blobid;
-    private long lastcleanup;
+    private long nextBlobID;
 
     public InvDiffManager(SQLManager sql, IAuxProtect plugin) {
+        super(Table.AUXPROTECT_INVDIFFBLOB, sql, plugin);
         this.sql = sql;
         this.plugin = plugin;
     }
@@ -68,67 +66,8 @@ public class InvDiffManager {
         return output;
     }
 
-    protected void init(Connection connection) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement("SELECT MAX(blobid) FROM " + Table.AUXPROTECT_INVDIFFBLOB)) {
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    blobid = rs.getLong(1);
-                }
-            }
-        }
-    }
-
     public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) {
         queue.add(new InvDiffRecord(uuid, slot, qty, item));
-    }
-
-    private long getBlobId(Connection connection, final byte[] blob) throws SQLException, IOException {
-        if (blob == null) {
-            return -1;
-        }
-        final int hash = Arrays.hashCode(blob);
-        BlobCache other;
-        synchronized (cache) {
-            other = cache.get(hash);
-        }
-
-        final BlobCache blobCache = new BlobCache(0, blob, hash);
-
-        if (blobCache.equals(other)) {
-            other.touch();
-            plugin.debug("Used cached blob: " + other.blobid, 5);
-            return other.blobid;
-        }
-
-
-        String stmt = "SELECT blobid,ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE hash=?";
-        // synchronized (sql.connection) {
-        long id = -1;
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            statement.setInt(1, hash);
-            try (ResultSet rs = statement.executeQuery()) {
-                if (rs.next()) {
-                    long otherid = rs.getLong(1);
-                    byte[] otherBytes = sql.getBlob(rs, "ablob");
-                    if (blobCache.equals(new BlobCache(otherid, otherBytes, Arrays.hashCode(otherBytes)))) {
-                        plugin.debug("Looked up blobid: " + (id = otherid), 5);
-                    } else {
-                        plugin.warning("Hash collision! " + otherid);
-                    }
-                }
-            }
-        }
-        if (id < 0) {
-            stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFFBLOB + " (blobid, ablob, hash) VALUES (?,?,?)";
-            sql.executeWrite(connection, stmt, id = ++blobid, blob, hash);
-            plugin.debug("NEW blobid: " + blobid, 5);
-        }
-        if (id > 0) {
-            synchronized (cache) {
-                cache.put(hash, new BlobCache(id, blob, hash));
-            }
-        }
-        return id;
     }
 
     protected void put(Connection connection) {
@@ -248,56 +187,6 @@ public class InvDiffManager {
             return new DiffInventoryRecord(after, numdiff, listToPlayerInv(output, inv.exp()));
         } finally {
             sql.returnConnection(connection);
-        }
-    }
-
-    public void cleanup() {
-        synchronized (cache) {
-            if (System.currentTimeMillis() - lastcleanup < 300000) {
-                return;
-            }
-            lastcleanup = System.currentTimeMillis();
-            Iterator<Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
-            for (Entry<Integer, BlobCache> other; it.hasNext(); ) {
-                other = it.next();
-                if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
-                    it.remove();
-                }
-            }
-        }
-    }
-
-    private static class BlobCache {
-        final long blobid;
-        final byte[] ablob;
-        final int hash;
-        long lastused;
-
-        BlobCache(long blobid, byte[] ablob, int hash) {
-            this.blobid = blobid;
-            this.ablob = ablob;
-            this.hash = hash;
-            touch();
-        }
-
-        public void touch() {
-            this.lastused = System.currentTimeMillis();
-        }
-
-        @Override
-        public boolean equals(Object otherObj) {
-            if (otherObj instanceof BlobCache other && ablob.length == other.ablob.length) {
-                if (hash != other.hash) {
-                    return false;
-                }
-                for (int i = 0; i < ablob.length; i++) {
-                    if (ablob[i] != other.ablob[i]) {
-                        return false;
-                    }
-                }
-                return true;
-            }
-            return false;
         }
     }
 

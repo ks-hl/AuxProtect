@@ -8,9 +8,7 @@ import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyManager;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Bukkit;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.File;
 import java.io.IOException;
@@ -29,6 +27,7 @@ public class SQLManager {
     private final File sqliteFile;
     private final LookupManager lookupmanager;
     private final InvDiffManager invdiffmanager;
+    private final BlobManager invblobmanager;
     private final TownyManager townymanager;
     private final SQLUserManager usermanager;
     int rowcount;
@@ -45,6 +44,7 @@ public class SQLManager {
         this.lookupmanager = new LookupManager(this, plugin);
         this.targetString = target;
         this.invdiffmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
+        this.invblobmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
         if (prefix == null || prefix.length() == 0) {
             tablePrefix = "";
         } else {
@@ -83,6 +83,10 @@ public class SQLManager {
 
     public InvDiffManager getInvDiffManager() {
         return invdiffmanager;
+    }
+
+    public BlobManager getInvBlobManager() {
+        return invblobmanager;
     }
 
     public TownyManager getTownyManager() {
@@ -207,6 +211,14 @@ public class SQLManager {
                 this.migrationmanager = new MigrationManager(this, connection, plugin);
                 migrationmanager.preTables();
 
+                if (invdiffmanager != null) {
+                    invdiffmanager.createTable(connection);
+                }
+
+                if (invblobmanager != null) {
+                    invblobmanager.createTable(connection);
+                }
+
                 for (Table table : Table.values()) {
                     if (table.hasAPEntries()) {
                         execute(connection, table.getSQLCreateString(plugin));
@@ -214,16 +226,8 @@ public class SQLManager {
                 }
                 String stmt;
                 if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVBLOB;
-                    stmt += " (time BIGINT, `blob` MEDIUMBLOB);";
-                    execute(connection, stmt);
-
                     stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
                     stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-                    execute(connection, stmt);
-
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFFBLOB;
-                    stmt += " (blobid BIGINT, ablob MEDIUMBLOB, hash INT);";
                     execute(connection, stmt);
 
                     stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
@@ -275,8 +279,13 @@ public class SQLManager {
                 usermanager.init(connection);
 
                 migrationmanager.postTables();
+
                 if (invdiffmanager != null) {
                     invdiffmanager.init(connection);
+                }
+
+                if (invblobmanager != null) {
+                    invblobmanager.init(connection);
                 }
 
                 plugin.debug("init done.");
@@ -526,7 +535,7 @@ public class SQLManager {
         return conn.getPoolSize();
     }
 
-    protected boolean put(Connection connection, Table table) throws SQLException {
+    protected boolean put(Connection connection, Table table) throws SQLException, IOException {
         long start = System.nanoTime();
         int count = 0;
         List<DbEntry> entries = new ArrayList<>();
@@ -556,7 +565,6 @@ public class SQLManager {
                 stmt += ",";
             }
         }
-        HashMap<Long, byte[]> blobsToLog = new HashMap<>();
         try (PreparedStatement statement = connection.prepareStatement(stmt)) {
 
             int i = 1;
@@ -599,13 +607,17 @@ public class SQLManager {
                     statement.setString(i++, dbEntry.getData());
                 }
                 if (table.hasBlob()) {
-                    statement.setBoolean(i++, dbEntry.hasBlob());
                     if (dbEntry.hasBlob()) {
-                        try {
-                            blobsToLog.put(dbEntry.getTime(), dbEntry.getBlob());
-                        } catch (BusyException e) {
-                            plugin.warning("Failed to acquire lock to log blob");
-                            plugin.print(e);
+                        long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
+                        statement.setLong(i++, blobid);
+                    } else statement.setNull(i++, Types.NULL);
+                    if (table.hasItemMeta()) {
+                        if (dbEntry instanceof SingleItemEntry sientry && sientry.getItem() != null) {
+                            statement.setInt(i++, sientry.getQty());
+                            statement.setInt(i++, sientry.getDamage());
+                        } else {
+                            statement.setNull(i++, Types.NULL);
+                            statement.setNull(i++, Types.NULL);
                         }
                     }
                 }
@@ -620,9 +632,6 @@ public class SQLManager {
 
             statement.executeUpdate();
         }
-        if (table.hasBlob() && blobsToLog.size() > 0) {
-            putBlobs(blobsToLog);
-        }
 
         rowcount += entries.size();
 
@@ -632,7 +641,7 @@ public class SQLManager {
         return true;
     }
 
-    private String getSize(double bytes) {
+    public static String getBlobSize(double bytes) {
         int oom = 0;
         while (bytes > 1024) {
             bytes /= 1024;
@@ -657,85 +666,6 @@ public class SQLManager {
                 break;
         }
         return (Math.round(bytes * 100.0) / 100.0) + " " + out;
-    }
-
-    void putBlobs(HashMap<Long, byte[]> blobsToLog) throws SQLException {
-        plugin.debug("Logging " + blobsToLog.size() + " blobs");
-        HashMap<Long, byte[]> subBlobs = new HashMap<>();
-        int size = 0;
-        Iterator<Entry<Long, byte[]>> it = blobsToLog.entrySet().iterator();
-        while (it.hasNext()) {
-            Entry<Long, byte[]> entry = it.next();
-            if (entry.getValue() == null || entry.getValue().length == 0) {
-                continue;
-            }
-            if (size + entry.getValue().length > 16777215 || subBlobs.size() >= 1000) {
-                if (subBlobs.size() == 0) {
-                    plugin.warning("Blob too big. Skipping. " + entry.getKey() + "e");
-                    continue;
-                }
-                plugin.debug("Logging " + subBlobs.size() + " blobs, " + getSize(size));
-                putBlobs_(subBlobs);
-                subBlobs.clear();
-                size = 0;
-            }
-            size += entry.getValue().length;
-            subBlobs.put(entry.getKey(), entry.getValue());
-        }
-        if (!subBlobs.isEmpty()) {
-            plugin.debug("Logging " + subBlobs.size() + " blobs, " + getSize(size));
-            putBlobs_(subBlobs);
-        }
-    }
-
-    private void putBlobs_(HashMap<Long, byte[]> blobsToLog) throws SQLException {
-        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB + " (time, `blob`) VALUES ";
-        for (int i = 0; i < blobsToLog.size(); i++) {
-            stmt += "\n(?, ?),";
-        }
-
-        Connection connection;
-        try {
-            connection = conn.getWriteConnection(30000);
-        } catch (BusyException e) {
-            return;
-        }
-        try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
-            int i = 1;
-            for (Entry<Long, byte[]> entry : blobsToLog.entrySet()) {
-                plugin.debug("blob: " + entry.getKey(), 5);
-                statement.setLong(i++, entry.getKey());
-                setBlob(connection, statement, i++, entry.getValue());
-            }
-
-            statement.executeUpdate();
-        } finally {
-            returnConnection(connection);
-        }
-    }
-
-    private void putBlob(long time, byte[] bytes) throws SQLException {
-        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB + " (time, `blob`) VALUES ";
-        stmt += "\n(?, ?),";
-
-        Connection connection;
-        try {
-            connection = conn.getWriteConnection(30000);
-        } catch (BusyException e) {
-            return;
-        }
-        synchronized (connection) {
-            try (PreparedStatement statement = connection.prepareStatement(stmt.substring(0, stmt.length() - 1))) {
-                int i = 1;
-                plugin.debug("blob: " + time, 5);
-                statement.setLong(i++, time);
-                setBlob(connection, statement, i++, bytes);
-
-                statement.executeUpdate();
-            } finally {
-                returnConnection(connection);
-            }
-        }
     }
 
     public int purge(Table table, long time) throws SQLException {
@@ -764,13 +694,14 @@ public class SQLManager {
         count += executeWriteReturnRows("DELETE FROM " + table + " WHERE (time < ?);",
                 System.currentTimeMillis() - time);
         if (table == Table.AUXPROTECT_INVENTORY) {
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE (time < ?);",
-                    System.currentTimeMillis() - time);
             count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);",
                     System.currentTimeMillis() - time);
             count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
                     + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
                     + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
+            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE "
+                    + Table.AUXPROTECT_INVBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
+                    + Table.AUXPROTECT_INVENTORY + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
         }
         return count;
     }
@@ -975,68 +906,6 @@ public class SQLManager {
         }
     }
 
-    @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException {
-        byte[] blob = null;
-
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB + " WHERE time=?;";
-        plugin.debug(stmt, 3);
-
-        Connection connection;
-        try {
-            connection = getConnection(false);
-        } catch (SQLException e1) {
-            plugin.print(e1);
-            return null;
-        }
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            pstmt.setLong(1, entry.getTime());
-            try (ResultSet results = pstmt.executeQuery()) {
-                if (results.next()) {
-                    // TODO escape?
-                    blob = getBlob(results, "blob");
-                }
-            }
-        } catch (IOException e) {
-            plugin.print(e);
-        } finally {
-            returnConnection(connection);
-        }
-
-        if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
-            boolean hasblob = false;
-            String data = entry.getData();
-            if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
-                data = data.substring(
-                        data.indexOf(InvSerialization.ITEM_SEPARATOR) + InvSerialization.ITEM_SEPARATOR.length());
-                hasblob = true;
-            }
-            try {
-                if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
-                    plugin.info("Migrating inventory in place to v6: " + entry.getTime());
-                    try {
-                        blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
-                    } catch (Exception e) {
-                        plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
-                    }
-                } else if (hasblob) {
-                    plugin.info("Migrating item in place to v6: " + entry.getTime());
-                    blob = Base64Coder.decodeLines(data);
-                } else {
-                    plugin.info("Attempted to migrate invalid log");
-                    return null;
-                }
-                this.putBlob(entry.getTime(), blob);
-                executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=1, data = '' where time="
-                        + entry.getTime());
-            } catch (IllegalArgumentException | SQLException e) {
-                plugin.info("Error while decoding: " + data);
-            }
-
-        }
-        return blob;
-    }
-
     protected void incrementRows() {
         rowcount++;
     }
@@ -1062,7 +931,7 @@ public class SQLManager {
             Arrays.asList(Table.values()).forEach(t -> {
                 try {
                     put(connection, t);
-                } catch (SQLException e) {
+                } catch (SQLException | IOException e) {
                     plugin.print(e);
                 }
             });

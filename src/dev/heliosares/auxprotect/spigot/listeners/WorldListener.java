@@ -2,8 +2,8 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -31,22 +31,10 @@ public class WorldListener implements Listener {
         if (e.getCause() == RemoveCause.ENTITY) {
             return;
         }
-        if (e.getEntity() instanceof ItemFrame) {
-            final ItemFrame item = (ItemFrame) e.getEntity();
-            if (item.getItem() != null) {
-                DbEntry entry = new DbEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false,
-                        item.getLocation(), item.getItem().getType().toString().toLowerCase(), "");
-                if (InvSerialization.isCustom(item.getItem())) {
-                    try {
-                        entry.setBlob(InvSerialization.toByteArray(item.getItem()));
-                    } catch (Exception e1) {
-                        plugin.warning("Error serializing itemframe");
-                        plugin.print(e1);
-                    }
-                }
-                plugin.add(entry);
-                return;
-            }
+        if (e.getEntity() instanceof final ItemFrame item) {
+            DbEntry entry = new SingleItemEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false,
+                    item.getLocation(), item.getItem().getType().toString().toLowerCase(), "", item.getItem());
+            plugin.add(entry);
         }
 
     }

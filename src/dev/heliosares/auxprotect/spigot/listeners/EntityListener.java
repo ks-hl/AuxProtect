@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PickupEntry;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -44,19 +45,8 @@ public class EntityListener implements Listener {
     }
 
     protected static void itemBreak(IAuxProtect plugin, String cause, ItemStack item, Location location) {
-        DbEntry entry = new DbEntry(cause, EntryAction.BREAKITEM, false, location,
-                AuxProtectSpigot.getLabel(item.getType()), "");
-
-        if (InvSerialization.isCustom(item)) {
-            try {
-                entry.setBlob(InvSerialization.toByteArray(item));
-            } catch (Exception e1) {
-                plugin.warning("Error serializing broken item");
-                plugin.print(e1);
-            }
-        } else if (item.getAmount() > 1) {
-            entry.setData("x" + item.getAmount());
-        }
+        DbEntry entry = new SingleItemEntry(cause, EntryAction.BREAKITEM, false, location,
+                AuxProtectSpigot.getLabel(item.getType()), "", item);
         plugin.add(entry);
     }
 
@@ -115,22 +105,11 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void entityDamageByEntityEvent(EntityDamageByEntityEvent e) {
-        if (e.getEntity() instanceof ItemFrame) {
-            final ItemFrame item = (ItemFrame) e.getEntity();
-            if (item.getItem() != null) {
-                DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getDamager()), EntryAction.ITEMFRAME, false,
-                        item.getLocation(), item.getItem().getType().toString().toLowerCase(), "");
-                if (InvSerialization.isCustom(item.getItem())) {
-                    try {
-                        entry.setBlob(InvSerialization.toByteArray(item.getItem()));
-                    } catch (Exception e1) {
-                        plugin.warning("Error serializing itemframe");
-                        plugin.print(e1);
-                    }
-                }
-                plugin.add(entry);
-                return;
-            }
+        if (e.getEntity() instanceof final ItemFrame item) {
+            DbEntry entry = new SingleItemEntry(AuxProtectSpigot.getLabel(e.getDamager()), EntryAction.ITEMFRAME, false,
+                    item.getLocation(), item.getItem().getType().toString().toLowerCase(), "", item.getItem());
+            plugin.add(entry);
+            return;
         }
         if (e.getEntity() instanceof LivingEntity) {
             if (((LivingEntity) e.getEntity()).isDead()) {
@@ -287,17 +266,10 @@ public class EntityListener implements Listener {
     }
 
     private void drop(Entity entity, Location loc, ItemStack item, boolean drop) {
-        DbEntry entry = null;
+        DbEntry entry;
         if (InvSerialization.isCustom(item)) {
-            entry = new DbEntry(AuxProtectSpigot.getLabel(entity), drop ? EntryAction.DROP : EntryAction.PICKUP, false,
-                    loc, item.getType().toString().toLowerCase(), "");
-            try {
-                entry.setBlob(InvSerialization.toByteArray(item));
-            } catch (Exception e1) {
-                plugin.warning("Error serializing item drop/pickup");
-                plugin.print(e1);
-            }
-
+            entry = new SingleItemEntry(AuxProtectSpigot.getLabel(entity), drop ? EntryAction.DROP : EntryAction.PICKUP, false,
+                    loc, item.getType().toString().toLowerCase(), "", item);
         } else {
             entry = new PickupEntry(AuxProtectSpigot.getLabel(entity), drop ? EntryAction.DROP : EntryAction.PICKUP,
                     false, loc, item.getType().toString().toLowerCase(), item.getAmount());

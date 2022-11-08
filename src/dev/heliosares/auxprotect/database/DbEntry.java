@@ -25,7 +25,7 @@ public class DbEntry {
     protected String target;
     protected int target_id;
 
-    private boolean hasBlob;
+    private long blobid = -1;
     private byte[] blob;
 
     private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
@@ -206,7 +206,7 @@ public class DbEntry {
 
     public byte[] getBlob() throws SQLException {
         if (blob == null) {
-            blob = SQLManager.getInstance().getBlob(this);
+            blob = SQLManager.getInstance().getInvBlobManager().getBlob(this);
         }
         return blob;
     }
@@ -216,11 +216,15 @@ public class DbEntry {
     }
 
     public boolean hasBlob() {
-        return hasBlob || blob != null;
+        return blob != null || blobid >= 0;
     }
 
-    public void setHasBlob() {
-        hasBlob = true;
+    protected void setBlobID(long blobid) {
+        this.blobid = blobid;
+    }
+
+    public long getBlobID() {
+        return blobid;
     }
 
     @Override

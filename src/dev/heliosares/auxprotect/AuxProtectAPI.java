@@ -7,27 +7,26 @@ import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
+import javax.annotation.Nonnull;
+
 public class AuxProtectAPI {
 
     private static IAuxProtect instance;
 
+    @Nonnull
     public static IAuxProtect getInstance() {
         if (instance != null) {
             return instance;
         }
         try {
-            if ((instance = AuxProtectSpigot.getInstance()) != null) {
-                return instance;
-            }
+            if ((instance = AuxProtectSpigot.getInstance()) != null) return instance;
         } catch (Throwable ignored) {
         }
         try {
-            if ((instance = AuxProtectBungee.getInstance()) != null) {
-                return instance;
-            }
+            if ((instance = AuxProtectBungee.getInstance()) != null) return instance;
         } catch (Throwable ignored) {
         }
-        return null;
+        throw new RuntimeException("AuxProtect not initialized");
     }
 
     /**

@@ -129,6 +129,9 @@ public class Results {
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
             }
         }
+        if (entry instanceof SingleItemEntry sientry) {
+            message.append(" §8[§7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + "§8]").event((HoverEvent) null).event((ClickEvent) null);
+        }
         if (plugin.getAPConfig().doSkipV6Migration()) {
             if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
                 data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));

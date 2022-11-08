@@ -152,7 +152,7 @@ public enum Table {
                 || this == Table.AUXPROTECT_TOWNY) {
             return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
         } else if (this == Table.AUXPROTECT_INVENTORY) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id, data, hasblob)";
+            return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, qty, damage)";
         } else if (this == Table.AUXPROTECT_ABANDONED) {
             return "(time, uid, action_id, world_id, x, y, z, target_id)";
         } else if (this == Table.AUXPROTECT_POSITION) {
@@ -177,21 +177,13 @@ public enum Table {
             return 5;
         }
 
-        switch (this) {
-            case AUXPROTECT_ABANDONED:
-                return 8;
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_SPAM:
-            case AUXPROTECT_API:
-            case AUXPROTECT_XRAY:
-            case AUXPROTECT_TOWNY:
-                return 9;
-            case AUXPROTECT_POSITION:
-            case AUXPROTECT_INVENTORY:
-                return 10;
-            default:
-                return -1;
-        }
+        return switch (this) {
+            case AUXPROTECT_ABANDONED -> 8;
+            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
+            case AUXPROTECT_POSITION -> 10;
+            case AUXPROTECT_INVENTORY -> 12;
+            default -> -1;
+        };
     }
 
     public String getValuesTemplate(PlatformType platform) {
@@ -235,7 +227,11 @@ public enum Table {
             stmt += ",\n    data LONGTEXT";
         }
         if (hasBlob()) {
-            stmt += ",\n    hasblob BOOL";
+            stmt += ",\n    blobid BIGINT";
+        }
+        if (hasItemMeta()) {
+            stmt += ",\n    qty INTEGER";
+            stmt += ",\n    damage INTEGER";
         }
         stmt += "\n);";
 
@@ -243,7 +239,7 @@ public enum Table {
     }
 
     public boolean hasBlob() {
-        return this == AUXPROTECT_INVENTORY;
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 
     public long getAutoPurgeInterval() {
@@ -258,5 +254,9 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
+    }
+
+    public boolean hasItemMeta() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 }

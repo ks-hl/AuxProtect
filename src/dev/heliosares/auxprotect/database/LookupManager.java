@@ -178,12 +178,23 @@ public class LookupManager {
                     } else {
                         target_id = rs.getInt("target_id");
                     }
+                    int qty = -1;
+                    int damage = -1;
+                    if (table.hasBlob() && table.hasItemMeta()) {
+                        qty = rs.getInt("qty");
+                        if (rs.wasNull()) qty = -1;
+                        damage = rs.getInt("damage");
+                        if (rs.wasNull()) damage = -1;
+                    }
                     if (table == Table.AUXPROTECT_XRAY) {
                         short rating = rs.getShort("rating");
                         entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
                     } else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
                         entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                 target_id, data);
+                    } else if (table.hasBlob() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
+                        entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
+                                target_id, data, qty, damage);
                     } else {
                         entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                 target_id, data);
@@ -191,9 +202,12 @@ public class LookupManager {
                     if (table.hasBlob()) {
                         if (plugin.getAPConfig().doSkipV6Migration()
                                 && (action_id == 1024 || data.contains(InvSerialization.ITEM_SEPARATOR))) {
-                            entry.setHasBlob();
-                        } else if (rs.getBoolean("hasblob")) {
-                            entry.setHasBlob();
+                            entry.setBlobID(0);
+                            // Indicates there is a blob, but not the ID. This allows the lookup to show a [View] button, but will force a lookup when pressed.
+                        } else {
+                            long blobid = rs.getLong("blobid");
+                            if (rs.wasNull()) blobid = -1;
+                            entry.setBlobID(blobid);
                         }
                     }
                     output.add(entry);

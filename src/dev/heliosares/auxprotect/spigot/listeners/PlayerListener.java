@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -114,16 +115,8 @@ public class PlayerListener implements Listener {
                 }
                 if (added.getType() != Material.AIR) {
                     String data = "";
-                    DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
-                            item.getLocation(), added.getType().toString().toLowerCase(), data);
-                    if (InvSerialization.isCustom(added)) {
-                        try {
-                            entry.setBlob(InvSerialization.toByteArray(added));
-                        } catch (Exception e1) {
-                            plugin.warning("Error serializing itemframe");
-                            plugin.print(e1);
-                        }
-                    }
+                    DbEntry entry = new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
+                            item.getLocation(), added.getType().toString().toLowerCase(), data, added);
                     plugin.add(entry);
                 }
             }
@@ -138,8 +131,8 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if ((e.getItem() != null && e.getItem().getType() != null && buckets.contains(e.getItem().getType()))) {
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
+            if ((e.getItem() != null && buckets.contains(e.getItem().getType()))) {
                 DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, false,
                         e.getClickedBlock().getLocation(), e.getItem().getType().toString().toLowerCase(), "");
                 plugin.add(entry);

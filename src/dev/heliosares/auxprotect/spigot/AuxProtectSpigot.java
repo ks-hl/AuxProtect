@@ -57,7 +57,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private ClaimInvCommand claiminvcommand;
     private APSCommand apcommand;
     private int SERVER_VERSION;
-    private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+    private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
     private boolean isShuttingDown;
     private String stackLog = "";
 
@@ -335,14 +335,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
             @Override
             public void run() {
-                if (!sqlManager.isConnected()) {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected()) {
                     return;
                 }
                 List<APPlayer> players = new ArrayList<>();
                 synchronized (apPlayers) {
-                    apPlayers.values().forEach((p) -> {
-                        players.add(p);
-                    });
+                    players.addAll(apPlayers.values());
                 }
                 for (APPlayer apPlayer : players) {
                     if (!apPlayer.player.isOnline()) {
