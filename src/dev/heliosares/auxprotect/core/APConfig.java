@@ -80,6 +80,7 @@ public class APConfig {
         }
 
         autopurge = config.getBoolean("AutoPurge.Enabled");
+        config.set("AutoPurge.Enabled", autopurge);
         long autopurgeinterval = getAutoPurgeInterval("default", -1);
         for (Table table : Table.values()) {
             if (table.exists(plugin) && table.canPurge()) {
@@ -95,9 +96,9 @@ public class APConfig {
 
     private long getAutoPurgeInterval(String table, long autopurgeinterval) {
         String interval = config.getString("AutoPurge." + table);
-        if (interval == null) {
-            config.set("AutoPurge." + table, interval = "default");
-        } else if (interval.equalsIgnoreCase("off") || interval.equals("-1") || interval.equals("0")) {
+        if (interval == null) interval = "default";
+        config.set("AutoPurge." + table, interval);
+        if (interval.equalsIgnoreCase("off") || interval.equals("-1") || interval.equals("0")) {
             return -1;
         }
         if (interval.equalsIgnoreCase("default") && autopurgeinterval >= Table.MIN_PURGE_INTERVAL) {

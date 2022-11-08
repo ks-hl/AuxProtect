@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyManager;
+import dev.heliosares.auxprotect.utils.TimeUtil;
 import org.bukkit.Bukkit;
 
 import java.io.File;
@@ -133,6 +134,11 @@ public class SQLManager {
 
         // Auto Purge
         if (plugin.getAPConfig().doAutoPurge()) {
+            long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE, true);
+            if (timeSincePurge < 3600000L) {
+                plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
+                return;
+            }
             boolean anypurge = false;
             int count = 0;
             for (Table table : Table.values()) {
@@ -145,7 +151,6 @@ public class SQLManager {
                         } catch (Exception e) {
                             plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                             plugin.print(e);
-                            continue;
                         }
                     }
                 }
@@ -155,17 +160,16 @@ public class SQLManager {
                     plugin.info(Language.L.COMMAND__PURGE__UIDS.translate());
                     plugin.getSqlManager().purgeUIDs();
 
-                    // TODO put this back with a last_vacuum variable
-//					if (!plugin.getSqlManager().isMySQL()) {
-//						plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
-//						plugin.getSqlManager().vacuum();
-//					}
+                    if (!plugin.getSqlManager().isMySQL()) {
+                        plugin.getSqlManager().vacuum();
+                    }
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                     plugin.print(e);
                     return;
                 }
                 plugin.info(Language.L.COMMAND__PURGE__COMPLETE_COUNT.translate(count));
+                setLast(LastKeys.AUTO_PURGE, System.currentTimeMillis());
             }
         }
 
@@ -248,7 +252,17 @@ public class SQLManager {
                             }
                         }
                     }
+                }
 
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
+                stmt += " (key SMALLINT, value BIGINT, PRIMARY KEY (key));";
+                execute(connection, stmt);
+                for (LastKeys key : LastKeys.values()) {
+                    try {
+                        executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (key, value) VALUES (?,?)", key.id, 0L);
+                    } catch (SQLException ignored) {
+                        // Ensures each LastKeys has a value, so we can just UPDATE later
+                    }
                 }
 
                 stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
@@ -357,7 +371,14 @@ public class SQLManager {
     }
 
     public void vacuum() throws SQLException {
+        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM, true);
+        if (sinceLastVac < 24L * 3600000L * 6L) {
+            plugin.info(Language.L.COMMAND__PURGE__NOTVACUUM.translate(TimeUtil.millisToString(sinceLastVac)));
+            return;
+        }
+        plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
         executeWrite("VACUUM;");
+        setLast(LastKeys.VACUUM, System.currentTimeMillis());
     }
 
     public void execute(Connection connection, String stmt) throws SQLException {
@@ -392,6 +413,8 @@ public class SQLManager {
                 pstmt.setInt(i + 1, c);
             } else if (o instanceof Long c) {
                 pstmt.setLong(i + 1, c);
+            } else if (o instanceof Short s) {
+                pstmt.setShort(i + 1, s);
             } else if (o instanceof Boolean c) {
                 pstmt.setBoolean(i + 1, c);
             } else if (o instanceof byte[] c) {
@@ -942,5 +965,33 @@ public class SQLManager {
         } finally {
             returnConnection(connection);
         }
+    }
+
+    public static enum LastKeys {
+        AUTO_PURGE(1), VACUUM(2), TELEMETRY(3);
+
+        LastKeys(int id) {
+            this.id = (short) id;
+        }
+
+        public final short id;
+    }
+
+    //TODO implement
+    public void setLast(LastKeys key, long value) throws SQLException {
+        executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE key=?", value, key.id);
+    }
+
+    public long getLast(LastKeys key, boolean wait) throws SQLException {
+        Connection connection = getConnection(wait);
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE key=?")) {
+            stmt.setShort(1, key.id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getLong(1);
+            }
+        } finally {
+            returnConnection(connection);
+        }
+        return -1;
     }
 }

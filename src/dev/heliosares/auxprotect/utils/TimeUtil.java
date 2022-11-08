@@ -54,22 +54,21 @@ public class TimeUtil {
             if (started) {
                 playtimeMsg += " ";
             }
-            playtimeMsg += " " + hours + "h";
+            playtimeMsg += hours + "h";
             started = true;
         }
         if (minutes > 0) {
             if (started) {
                 playtimeMsg += " ";
             }
-            playtimeMsg += " " + minutes + "m";
+            playtimeMsg += minutes + "m";
             started = true;
         }
         if (seconds > 0) {
             if (started) {
                 playtimeMsg += " ";
             }
-            playtimeMsg += " " + seconds + "s";
-            started = true;
+            playtimeMsg += seconds + "s";
         }
         return playtimeMsg;
     }

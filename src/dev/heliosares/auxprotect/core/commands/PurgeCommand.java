@@ -73,7 +73,6 @@ public class PurgeCommand extends Command {
                     plugin.getSqlManager().purgeUIDs();
 
                     if (!plugin.getSqlManager().isMySQL()) {
-                        sender.sendLang(Language.L.COMMAND__PURGE__VACUUM);
                         plugin.getSqlManager().vacuum();
                     }
                 } catch (SQLException e) {

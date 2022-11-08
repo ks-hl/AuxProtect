@@ -31,6 +31,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -50,7 +51,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
-    long lastloaded;
     Set<Integer> stackHashHistory = new HashSet<>();
     private Economy econ;
     private VeinManager veinManager;
@@ -208,6 +208,21 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         return;
                     }
                 }
+                long lastloaded = 0;
+                try {
+                    lastloaded = sqlManager.getLast(SQLManager.LastKeys.TELEMETRY, true);
+                } catch (SQLException ignored) {
+                }
+                long delay = 15 * 20;
+                if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
+                    debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+                            3);
+                } else {
+                    debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+                            3);
+                    delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
+                }
+                getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
 
                 /*
                  * for (Object command : getConfig().getList("purge-cmds")) { String cmd =
@@ -487,23 +502,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(this, 1 * 20, 10 * 20);
-
-        if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
-            debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                    3);
-            new Telemetry(this, 14232);
-        } else {
-            debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                    3);
-            new BukkitRunnable() {
-
-                @Override
-                public void run() {
-                    new Telemetry(AuxProtectSpigot.this, 14232);
-                }
-            }.runTaskLater(this, (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50);
-        }
+        }.runTaskTimerAsynchronously(this, 20, 10 * 20);
     }
 
     private boolean hook(Supplier<Listener> listener, String... names) {

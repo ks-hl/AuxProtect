@@ -88,11 +88,13 @@ public class Language {
         COMMAND__PURGE__PURGING, //
         COMMAND__PURGE__UIDS, //
         COMMAND__PURGE__VACUUM, //
+        COMMAND__PURGE__NOTVACUUM, //
         COMMAND__PURGE__COMPLETE_COUNT, //
         COMMAND__PURGE__ERROR, //
         COMMAND__PURGE__TIME, //
         COMMAND__PURGE__TABLE, //
         COMMAND__PURGE__NOPURGE, //
+        COMMAND__PURGE__SKIPAUTO, //
         BACKUP_SQLITEONLY, //
         UNKNOWN_SUBCOMMAND, //
         COMMAND__HELP, //

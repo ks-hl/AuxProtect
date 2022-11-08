@@ -15,7 +15,6 @@ public class MigrationManager {
     private final Connection connection;
     private final IAuxProtect plugin;
     private boolean isMigrating;
-    private int preMigrateDebug;
     private int version;
     private int rowcountformerge;
     private int originalVersion;
@@ -68,7 +67,6 @@ public class MigrationManager {
             sql.migrationmanager.setVersion(MigrationManager.DBVERSION);
         }
 
-        preMigrateDebug = -1;
         if (sql.getVersion() < DBVERSION) {
             plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + DBVERSION
                     + "...");
@@ -140,12 +138,13 @@ public class MigrationManager {
             sql.execute(connection, "DROP TABLE IF EXISTS " + table + "_temp;");
         }
 
-        if (preMigrateDebug >= 0) {
+        if(isMigrating) {
             try {
-                plugin.getAPConfig().setDebug(preMigrateDebug);
-            } catch (IOException ignored) {
+                sql.vacuum();
+            } catch(SQLException e) {
+                plugin.warning("Error while condensing database, you can ignore this");
+                plugin.print(e);
             }
-            plugin.info("Debug mode restored to " + preMigrateDebug);
         }
         isMigrating = false;
     }
@@ -319,10 +318,8 @@ public class MigrationManager {
                     HashMap<Long, byte[]> blobs = new HashMap<>();
                     int limit = 1;
                     try (PreparedStatement pstmt = connection.prepareStatement(stmt + limit)) {
-                        if (limit < 50) {
-                            limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
+                        if (limit < 50) limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
                             // issue
-                        }
                         pstmt.setFetchSize(500);
                         try (ResultSet results = pstmt.executeQuery()) {
                             while (results.next()) {

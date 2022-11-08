@@ -29,12 +29,14 @@ command:
   purge:
     purging: '&pPurging ''%s''...'
     uids: '&pPurging unused UIDs...'
+    notvacuum: '&cSkipping condensing SQLite file. Last performed %s ago. To force this, run ''ap sqli vacuum'' from the console.'
     vacuum: '&pCondensing SQLite file...'
     complete-count: '&pPurge complete. Purged %d rows.'
     error: '&cAn error occurred while purging.'
     time: '&cThat purge is too short. Try a longer amount of time.'
     table: '&cThat table is invalid or does not exist.'
     nopurge: '&cThat table cannot be purged directly.'
+    skipauto: '&pSkipping auto-purge as it has only been %s since last.'
   lookup:
     unknown-world: '&cUnknown world: %s'
     looking: '&pSearching database...'
