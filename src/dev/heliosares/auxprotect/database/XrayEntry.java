@@ -7,10 +7,10 @@ import java.util.UUID;
 
 public class XrayEntry extends DbEntry {
 
+    private final ArrayList<XrayEntry> children = new ArrayList<>();
     public UUID viewer;
     public long viewingStarted;
     private short rating;
-    private ArrayList<XrayEntry> children = new ArrayList<>();
 
     public XrayEntry(String user, Location location, String block) {
         super(user, EntryAction.VEIN, false, location, block, "");

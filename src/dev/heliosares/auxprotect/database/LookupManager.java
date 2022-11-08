@@ -13,6 +13,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class LookupManager {
     private final SQLManager sql;
@@ -29,9 +30,7 @@ public class LookupManager {
             String[] sqlstmts = param.toSQL(plugin);
 
             ArrayList<String> writeparams = new ArrayList<>();
-            for (int i = 1; i < sqlstmts.length; i++) {
-                writeparams.add(sqlstmts[i]);
-            }
+            writeparams.addAll(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
             String stmt = "SELECT * FROM " + param.getTable().toString();
             if (sqlstmts[0].length() > 1) {
                 stmt += "\nWHERE " + sqlstmts[0];
@@ -57,9 +56,7 @@ public class LookupManager {
                 String[] sqlstmts = param.toSQL(plugin);
 
                 ArrayList<String> writeparams = new ArrayList<>();
-                for (int i = 1; i < sqlstmts.length; i++) {
-                    writeparams.add(sqlstmts[i]);
-                }
+                writeparams.addAll(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
                 String stmt = sql.getCountStmt(param.getTable().toString());
                 if (sqlstmts[0].length() > 1) {
                     stmt += "\nWHERE " + sqlstmts[0];
@@ -103,7 +100,7 @@ public class LookupManager {
     @SuppressWarnings("deprecation")
     public ArrayList<DbEntry> lookup(SQLManager sqlManager, Table table, String stmt, ArrayList<String> writeParams)
             throws LookupException {
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
+        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();
@@ -172,10 +169,7 @@ public class LookupManager {
                         plugin.debug("Unknown action_id: " + action_id, 1);
                         continue;
                     }
-                    boolean state = false;
-                    if (entryAction.hasDual && entryAction.id != action_id) {
-                        state = true;
-                    }
+                    boolean state = entryAction.hasDual && entryAction.id != action_id;
                     DbEntry entry = null;
                     String target = null;
                     int target_id = -1;

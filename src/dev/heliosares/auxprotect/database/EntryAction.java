@@ -10,6 +10,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import java.util.*;
 
 public class EntryAction {
+    private static final Set<Integer> usedids = new HashSet<>();
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
@@ -89,10 +90,10 @@ public class EntryAction {
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
-    // @formatter:off
-    private static final Set<Integer> usedids = new HashSet<>();
     private static final HashMap<String, EntryAction> values = new HashMap<>();
     // END TOWNY (1499)
+
+    // @formatter:on
     public final boolean hasDual;
     public final int id;
     public final int idPos;
@@ -199,9 +200,9 @@ public class EntryAction {
         }
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
             return equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)
-                || equals(CONNECT);
+                    || equals(CONNECT);
         } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            return id!=MSG.id && !equals(CONNECT);
+            return id != MSG.id && !equals(CONNECT);
         }
         return false;
     }

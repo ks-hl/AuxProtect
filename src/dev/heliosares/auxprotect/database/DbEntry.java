@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
@@ -74,8 +73,8 @@ public class DbEntry {
         this(userLabel, action, state, location == null ? null : location.getWorld().getName(),
                 location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
                 location == null ? 0 : location.getBlockZ(),
-                location == null ? 0 : (int) Math.round(location.getPitch()),
-                location == null ? 0 : (int) Math.round(location.getYaw()), targetLabel, data);
+                location == null ? 0 : Math.round(location.getPitch()),
+                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data);
     }
 
     protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,

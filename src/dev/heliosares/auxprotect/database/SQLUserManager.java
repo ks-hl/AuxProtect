@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
 import java.io.IOException;
@@ -14,8 +13,8 @@ import java.util.UUID;
 public class SQLUserManager {
     private final IAuxProtect plugin;
     private final SQLManager sql;
-    private BidiMapCache<Integer, String> uuids = new BidiMapCache<>(300000L, 300000L, true);
-    private BidiMapCache<Integer, String> usernames = new BidiMapCache<>(300000L, 300000L, true);
+    private final BidiMapCache<Integer, String> uuids = new BidiMapCache<>(300000L, 300000L, true);
+    private final BidiMapCache<Integer, String> usernames = new BidiMapCache<>(300000L, 300000L, true);
 
     public SQLUserManager(IAuxProtect plugin, SQLManager sql) {
         this.plugin = plugin;
@@ -39,7 +38,7 @@ public class SQLUserManager {
         String newestusername = null;
         long newestusernametime = 0;
         boolean newip = true;
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString() + " WHERE uid=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE uid=?;";
         plugin.debug(stmt, 3);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             pstmt.setInt(1, uid);
@@ -93,7 +92,7 @@ public class SQLUserManager {
          * null) { usernames.put(uuid, player.getName()); return player.getName
          */
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
                 + " WHERE action_id=? AND uid=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
@@ -119,7 +118,7 @@ public class SQLUserManager {
 
     public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException {
         HashMap<Long, String> out = new HashMap<>();
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString() + " WHERE action_id=? AND uid=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=?;";
         plugin.debug(stmt, 3);
 
         Connection connection = sql.getConnection(wait);
@@ -141,14 +140,14 @@ public class SQLUserManager {
         return out;
     }
 
-    public int getUIDFromUsername(String username, boolean wait) throws SQLException, BusyException {
+    public int getUIDFromUsername(String username, boolean wait) throws SQLException {
         if (username == null) {
             return -1;
         }
         if (usernames.containsValue(username)) {
             return usernames.getKey(username);
         }
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
                 + " WHERE action_id=? AND lower(target)=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
@@ -179,7 +178,7 @@ public class SQLUserManager {
         return getUIDFromUUID(uuid, false, wait);
     }
 
-    public int getUIDFromUUID(String uuid, boolean insert, boolean wait) throws SQLException, BusyException {
+    public int getUIDFromUUID(String uuid, boolean insert, boolean wait) throws SQLException {
         if (uuid == null || uuid.equalsIgnoreCase("#null")) {
             return -1;
         }
@@ -191,7 +190,7 @@ public class SQLUserManager {
             return uuids.getKey(uuid);
         }
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uuid=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uuid=?;";
         plugin.debug(stmt, 3);
         Connection connection = sql.getConnection(wait);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
@@ -208,7 +207,7 @@ public class SQLUserManager {
         }
 
         if (insert) {
-            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid) VALUES (?)";
+            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid) VALUES (?)";
             int uid = sql.executeWriteReturnGenerated(stmt, uuid);
             uuids.put(uid, uuid);
             plugin.debug("New UUID: " + uuid + ":" + uid, 1);
@@ -218,7 +217,7 @@ public class SQLUserManager {
         return -1;
     }
 
-    public String getUUIDFromUID(int uid, boolean wait) throws SQLException, BusyException {
+    public String getUUIDFromUID(int uid, boolean wait) throws SQLException {
         if (uid < 0) {
             return "#null";
         }
@@ -231,7 +230,7 @@ public class SQLUserManager {
 
         Connection connection = sql.getConnection(wait);
         try (Statement statement = connection.createStatement()) {
-            String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uid='" + uid + "';";
+            String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uid='" + uid + "';";
             plugin.debug(stmt, 3);
             try (ResultSet results = statement.executeQuery(stmt)) {
                 if (results.next()) {
@@ -250,7 +249,7 @@ public class SQLUserManager {
         return Collections.unmodifiableCollection(usernames.values());
     }
 
-    public byte[] getPendingInventory(int uid) throws SQLException, IOException, BusyException {
+    public byte[] getPendingInventory(int uid) throws SQLException, IOException {
         if (uid <= 0) {
             return null;
         }
@@ -269,7 +268,7 @@ public class SQLUserManager {
         return null;
     }
 
-    public void setPendingInventory(int uid, byte[] blob) throws SQLException, BusyException {
+    public void setPendingInventory(int uid, byte[] blob) throws SQLException {
         if (uid <= 0) {
             throw new IllegalArgumentException();
         }
@@ -293,8 +292,8 @@ public class SQLUserManager {
         uuids.cleanup();
     }
 
-    public void init(Connection connection) throws SQLException, BusyException {
-        String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS.toString();
+    public void init(Connection connection) throws SQLException {
+        String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS;
         if (sql.isMySQL()) {
             stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(255), PRIMARY KEY (uid));";
         } else {
@@ -302,7 +301,7 @@ public class SQLUserManager {
         }
         plugin.debug(stmt, 3);
         sql.execute(connection, stmt);
-        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV.toString()
+        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV
                 + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)");
     }
 }

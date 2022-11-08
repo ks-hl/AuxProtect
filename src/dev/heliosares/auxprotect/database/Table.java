@@ -13,7 +13,7 @@ public enum Table {
     AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
 
     public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
-    protected final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
     private long autopurgeinterval;
 
     public static String getValuesTemplate(int numColumns) {
@@ -55,10 +55,7 @@ public enum Table {
                     return false;
             }
         }
-        if (!plugin.getAPConfig().isPrivate() && this == AUXPROTECT_ABANDONED) {
-            return false;
-        }
-        return true;
+        return plugin.getAPConfig().isPrivate() || this != AUXPROTECT_ABANDONED;
     }
 
     public boolean hasAPEntries() {
@@ -111,12 +108,7 @@ public enum Table {
     }
 
     public boolean hasLook() {
-        switch (this) {
-            case AUXPROTECT_POSITION:
-                return true;
-            default:
-                return false;
-        }
+        return this == Table.AUXPROTECT_POSITION;
     }
 
     public boolean hasActionId() {
@@ -143,10 +135,7 @@ public enum Table {
         if (this == Table.AUXPROTECT_LONGTERM) {
             return false;
         }
-        if (this.hasAPEntries()) {
-            return true;
-        }
-        return false;
+        return this.hasAPEntries();
     }
 
     public String getValuesHeader(PlatformType platform) {
@@ -213,7 +202,7 @@ public enum Table {
         if (!this.hasAPEntries()) {
             return null;
         }
-        String stmt = "CREATE TABLE IF NOT EXISTS " + toString() + " (\n";
+        String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (\n";
         stmt += "    time BIGINT";
         stmt += ",\n    uid integer";
         if (hasActionId()) {
@@ -254,10 +243,7 @@ public enum Table {
     }
 
     public boolean hasBlob() {
-        if (this == AUXPROTECT_INVENTORY) {
-            return true;
-        }
-        return false;
+        return this == AUXPROTECT_INVENTORY;
     }
 
     public long getAutoPurgeInterval() {
