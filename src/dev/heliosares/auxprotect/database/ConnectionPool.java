@@ -31,9 +31,9 @@ public class ConnectionPool {
     private final boolean mysql;
     private final IAuxProtect plugin;
     private final Connection writeconn;
+    private final ReentrantLock lock = new ReentrantLock();
     private boolean closed;
     private Thread whoHasWriteConnection;
-    private final ReentrantLock lock = new ReentrantLock();
 
     public ConnectionPool(IAuxProtect plugin, String connString, String user, String pwd)
             throws SQLException, ClassNotFoundException {
@@ -66,8 +66,6 @@ public class ConnectionPool {
     public static int getNumBorn() {
         return born;
     }
-
-    ;
 
     public static long[] calculateWriteTimes() {
         return calculateTimes(writeTimes);
@@ -187,7 +185,7 @@ public class ConnectionPool {
         return writeconn;
     }
 
-    public Connection getConnection(boolean wait) throws SQLException, IllegalStateException, BusyException {
+    public Connection getConnection(boolean wait) throws SQLException, IllegalStateException {
         if (closed) {
             throw new IllegalStateException("closed");
         }

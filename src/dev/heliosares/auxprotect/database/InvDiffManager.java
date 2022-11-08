@@ -83,7 +83,7 @@ public class InvDiffManager {
         queue.add(new InvDiffRecord(uuid, slot, qty, item));
     }
 
-    private long getBlobId(Connection connection, final byte[] blob) throws SQLException, BusyException, IOException {
+    private long getBlobId(Connection connection, final byte[] blob) throws SQLException, IOException {
         if (blob == null) {
             return -1;
         }
@@ -161,7 +161,7 @@ public class InvDiffManager {
         }
     }
 
-    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
+    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException {
 
         PlayerInventoryRecord inv = null;
         long after = 0;

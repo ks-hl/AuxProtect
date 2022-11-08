@@ -89,8 +89,9 @@ public class EntryAction {
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
-    private static final HashMap<String, EntryAction> values = new HashMap<>();
+    // @formatter:off
     private static final Set<Integer> usedids = new HashSet<>();
+    private static final HashMap<String, EntryAction> values = new HashMap<>();
     // END TOWNY (1499)
     public final boolean hasDual;
     public final int id;
@@ -197,16 +198,10 @@ public class EntryAction {
             }
         }
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
-            if (equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)
-                    || equals(CONNECT)) {
-                return true;
-            }
-            return false;
+            return equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)
+                || equals(CONNECT);
         } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            if (id == MSG.id || equals(CONNECT)) {
-                return false;
-            }
-            return true;
+            return id!=MSG.id && !equals(CONNECT);
         }
         return false;
     }
@@ -242,7 +237,7 @@ public class EntryAction {
         if (id > 1000000) {
             return Table.AUXPROTECT_API;
         }
-        throw new IllegalArgumentException("Action with unknown table: " + toString() + ", id=" + id);
+        throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
     }
 
     public int getId(boolean state) {

@@ -110,7 +110,7 @@ public class SQLManager {
     }
 
     public void connect(String user, String pass)
-            throws SQLException, IOException, ClassNotFoundException, BusyException {
+            throws SQLException, IOException, ClassNotFoundException {
         plugin.info("Connecting to database...");
 
         conn = new ConnectionPool(plugin, targetString, user, pass);
@@ -199,7 +199,7 @@ public class SQLManager {
         }
     }
 
-    private void init() throws SQLException, IOException, BusyException {
+    private void init() throws SQLException, IOException {
 
         Connection connection = conn.getWriteConnection(60000);
         try {
@@ -214,23 +214,23 @@ public class SQLManager {
                 }
                 String stmt;
                 if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVBLOB.toString();
+                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVBLOB;
                     stmt += " (time BIGINT, `blob` MEDIUMBLOB);";
                     execute(connection, stmt);
 
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF.toString();
+                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
                     stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
                     execute(connection, stmt);
 
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFFBLOB.toString();
+                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFFBLOB;
                     stmt += " (blobid BIGINT, ablob MEDIUMBLOB, hash INT);";
                     execute(connection, stmt);
 
-                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS.toString();
+                    stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
                     stmt += " (name varchar(255), wid SMALLINT);";
                     execute(connection, stmt);
 
-                    stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS.toString() + ";";
+                    stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
                     plugin.debug(stmt, 3);
                     try (Statement statement = connection.createStatement()) {
                         try (ResultSet results = statement.executeQuery(stmt)) {
@@ -247,11 +247,11 @@ public class SQLManager {
 
                 }
 
-                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS.toString()
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
                         + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
                 execute(connection, stmt);
 
-                stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS.toString() + ";";
+                stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
                 plugin.debug(stmt, 3);
                 try (Statement statement = connection.createStatement()) {
                     try (ResultSet results = statement.executeQuery(stmt)) {
@@ -286,7 +286,7 @@ public class SQLManager {
         }
     }
 
-    private Set<Integer> getAllDistinctUIDs(Table table) throws SQLException, BusyException {
+    private Set<Integer> getAllDistinctUIDs(Table table) throws SQLException {
         boolean hasTargetId = !table.hasStringTarget() && table != Table.AUXPROTECT_UIDS;
         String[] columns = new String[hasTargetId ? 2 : 1];
         columns[0] = "uid";
@@ -296,7 +296,7 @@ public class SQLManager {
         Set<Integer> inUseUids = new HashSet<>();
         for (String column : columns) {
             Connection connection = conn.getConnection(true);
-            String stmt = "SELECT DISTINCT " + column + " FROM " + table.toString();
+            String stmt = "SELECT DISTINCT " + column + " FROM " + table;
             plugin.debug(stmt, 3);
             try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
                 pstmt.setFetchSize(500);
@@ -312,7 +312,7 @@ public class SQLManager {
         return inUseUids;
     }
 
-    public int purgeUIDs() throws SQLException, BusyException {
+    public int purgeUIDs() throws SQLException {
         Set<Integer> inUseUids = new HashSet<>();
         for (Table table : Table.values()) {
             if (!table.hasAPEntries() || !table.exists(plugin)) {
@@ -328,7 +328,7 @@ public class SQLManager {
         plugin.debug("Purging " + savedUids.size() + " UIDs");
         int i = 0;
         int count = 0;
-        final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uid IN ";
+        final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE uid IN ";
         String stmt = "";
         for (int uid : savedUids) {
             if (!stmt.isEmpty()) {
@@ -347,7 +347,7 @@ public class SQLManager {
         return count;
     }
 
-    public void vacuum() throws SQLException, BusyException {
+    public void vacuum() throws SQLException {
         executeWrite("VACUUM;");
     }
 
@@ -359,7 +359,7 @@ public class SQLManager {
         }
     }
 
-    public void execute(String stmt, boolean wait) throws SQLException, BusyException {
+    public void execute(String stmt, boolean wait) throws SQLException {
         Connection connection = conn.getConnection(wait);
         try {
             execute(connection, stmt);
@@ -449,7 +449,7 @@ public class SQLManager {
         }
     }
 
-    public int executeWriteReturnGenerated(String stmt, Object... args) throws SQLException, BusyException {
+    public int executeWriteReturnGenerated(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
         Connection connection = conn.getWriteConnection(30000);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
@@ -466,7 +466,7 @@ public class SQLManager {
         return -1;
     }
 
-    public List<List<String>> executeGet(String stmt, String... args) throws SQLException, BusyException {
+    public List<List<String>> executeGet(String stmt, String... args) throws SQLException {
         plugin.debug(stmt, 5);
         final List<List<String>> rowList = new LinkedList<List<String>>();
 
@@ -539,7 +539,7 @@ public class SQLManager {
         if (count == 0) {
             return false;
         }
-        String stmt = "INSERT INTO " + table.toString() + " ";
+        String stmt = "INSERT INTO " + table + " ";
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
         final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
@@ -611,7 +611,7 @@ public class SQLManager {
                 }
                 if (i - prior != numColumns) {
                     plugin.warning("Incorrect number of columns provided inserting action "
-                            + dbEntry.getAction().toString() + " into " + table.toString());
+                            + dbEntry.getAction().toString() + " into " + table);
                     plugin.warning(i - prior + " =/= " + numColumns);
                     plugin.warning("Statement: " + stmt);
                     throw new IllegalArgumentException();
@@ -689,7 +689,7 @@ public class SQLManager {
     }
 
     private void putBlobs_(HashMap<Long, byte[]> blobsToLog) throws SQLException {
-        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, `blob`) VALUES ";
+        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB + " (time, `blob`) VALUES ";
         for (int i = 0; i < blobsToLog.size(); i++) {
             stmt += "\n(?, ?),";
         }
@@ -715,7 +715,7 @@ public class SQLManager {
     }
 
     private void putBlob(long time, byte[] bytes) throws SQLException {
-        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB.toString() + " (time, `blob`) VALUES ";
+        String stmt = "INSERT INTO " + Table.AUXPROTECT_INVBLOB + " (time, `blob`) VALUES ";
         stmt += "\n(?, ?),";
 
         Connection connection;
@@ -738,7 +738,7 @@ public class SQLManager {
         }
     }
 
-    public int purge(Table table, long time) throws SQLException, BusyException {
+    public int purge(Table table, long time) throws SQLException {
         if (!isConnected)
             return 0;
         if (time < Table.MIN_PURGE_INTERVAL) {
@@ -761,21 +761,21 @@ public class SQLManager {
             return count;
         }
 
-        count += executeWriteReturnRows("DELETE FROM " + table.toString() + " WHERE (time < ?);",
+        count += executeWriteReturnRows("DELETE FROM " + table + " WHERE (time < ?);",
                 System.currentTimeMillis() - time);
         if (table == Table.AUXPROTECT_INVENTORY) {
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB.toString() + " WHERE (time < ?);",
+            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE (time < ?);",
                     System.currentTimeMillis() - time);
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF.toString() + " WHERE (time < ?);",
+            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);",
                     System.currentTimeMillis() - time);
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB.toString() + " WHERE "
-                    + Table.AUXPROTECT_INVDIFFBLOB.toString() + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
-                    + Table.AUXPROTECT_INVDIFF.toString() + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
+            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
+                    + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
+                    + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
         }
         return count;
     }
 
-    public void updateXrayEntry(XrayEntry entry) throws SQLException, BusyException {
+    public void updateXrayEntry(XrayEntry entry) throws SQLException {
         if (!isConnected)
             return;
         String stmt = "UPDATE " + entry.getAction().getTable().toString();
@@ -816,7 +816,7 @@ public class SQLManager {
             return -1;
         }
         try {
-            String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS.toString() + " (name, wid)";
+            String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid)";
             stmt += "\nVALUES (?,?)";
             PreparedStatement pstmt = connection.prepareStatement(stmt);
             pstmt.setString(1, world);
@@ -876,7 +876,7 @@ public class SQLManager {
      * @returns The created EntryAction.
      */
     public EntryAction createAction(String key, String ntext, String ptext)
-            throws AlreadyExistsException, SQLException, BusyException {
+            throws AlreadyExistsException, SQLException {
         if (EntryAction.getAction(key) != null) {
             throw new AlreadyExistsException();
         }
@@ -925,7 +925,7 @@ public class SQLManager {
         rowcount = total;
     }
 
-    public int count(Table table) throws SQLException, BusyException {
+    public int count(Table table) throws SQLException {
         return count(table.toString());
     }
 
@@ -937,7 +937,7 @@ public class SQLManager {
         }
     }
 
-    int count(String table) throws SQLException, BusyException {
+    int count(String table) throws SQLException {
         String stmtStr = getCountStmt(table);
         plugin.debug(stmtStr, 5);
 
@@ -976,10 +976,10 @@ public class SQLManager {
     }
 
     @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
+    public byte[] getBlob(DbEntry entry) throws SQLException {
         byte[] blob = null;
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB.toString() + " WHERE time=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_INVBLOB + " WHERE time=?;";
         plugin.debug(stmt, 3);
 
         Connection connection;
@@ -1027,7 +1027,7 @@ public class SQLManager {
                     return null;
                 }
                 this.putBlob(entry.getTime(), blob);
-                executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY.toString() + " SET hasblob=1, data = '' where time="
+                executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=1, data = '' where time="
                         + entry.getTime());
             } catch (IllegalArgumentException | SQLException e) {
                 plugin.info("Error while decoding: " + data);
