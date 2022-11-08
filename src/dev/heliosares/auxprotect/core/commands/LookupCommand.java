@@ -360,7 +360,7 @@ public class LookupCommand extends Command {
                         users.add(entry.getUid());
                     }
                     if (users.size() > 1) {
-                        sender.sendMessage(XraySolver.solve(rs, plugin));
+                        sender.sendMessage(XraySolver.solve(rs));
                         return;
                     }
                     Iterator<DbEntry> it = rs.iterator();
@@ -395,7 +395,7 @@ public class LookupCommand extends Command {
                 results.put(uuid, result);
 
                 if (params.getFlags().contains(Flag.XRAY)) {
-                    sender.sendMessage(XraySolver.solve(rs, plugin));
+                    sender.sendMessage(XraySolver.solve(rs));
                 }
             } catch (ConnectionPool.BusyException e) {
                 sender.sendLang(Language.L.DATABASE_BUSY);

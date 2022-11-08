@@ -83,10 +83,11 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerItemDamageEvent(PlayerItemDamageEvent e) {
         ItemStack item = e.getItem();
-        Damageable meta = (Damageable) item.getItemMeta();
-        if (item.getType().getMaxDurability() - meta.getDamage() - e.getDamage() <= 0) {
-            EntityListener.itemBreak(plugin, AuxProtectSpigot.getLabel(e.getPlayer()), item,
-                    e.getPlayer().getLocation());
+        if (item.getItemMeta() instanceof Damageable meta) {
+            if (item.getType().getMaxDurability() - meta.getDamage() - e.getDamage() <= 0) {
+                EntityListener.itemBreak(plugin, AuxProtectSpigot.getLabel(e.getPlayer()), item,
+                        e.getPlayer().getLocation());
+            }
         }
     }
 
@@ -96,8 +97,7 @@ public class PlayerListener implements Listener {
 
         ItemStack mainhand = e.getPlayer().getInventory().getItemInMainHand();
         ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
-        if ((mainhand != null && mainhand.getType() == Material.WATER_BUCKET)
-                || (offhand != null && offhand.getType() == Material.WATER_BUCKET)) {
+        if (mainhand.getType() == Material.WATER_BUCKET || offhand.getType() == Material.WATER_BUCKET) {
             if (mobs.contains(e.getRightClicked().getType())) {
                 DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
                         e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), "");
@@ -106,12 +106,13 @@ public class PlayerListener implements Listener {
         }
         if (e.getRightClicked() instanceof ItemFrame) {
             final ItemFrame item = (ItemFrame) e.getRightClicked();
-            if (item.getItem() == null || item.getItem().getType() == Material.AIR) {
+            item.getItem();
+            if (item.getItem().getType() == Material.AIR) {
                 ItemStack added = e.getPlayer().getInventory().getItemInMainHand();
-                if (added == null || added.getType() == Material.AIR) {
+                if (added.getType() == Material.AIR) {
                     added = e.getPlayer().getInventory().getItemInOffHand();
                 }
-                if (added != null && added.getType() != Material.AIR) {
+                if (added.getType() != Material.AIR) {
                     String data = "";
                     DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
                             item.getLocation(), added.getType().toString().toLowerCase(), data);
