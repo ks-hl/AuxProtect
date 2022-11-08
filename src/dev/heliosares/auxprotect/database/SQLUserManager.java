@@ -22,7 +22,7 @@ public class SQLUserManager {
     }
 
     public void updateUsernameAndIP(UUID uuid, String name, String ip) throws SQLException {
-        final int uid = this.getUIDFromUUID("$" + uuid, true);
+        final int uid = this.getUIDFromUUID("$" + uuid, true, true);
         if (uid <= 0) {
             return;
         }

@@ -118,7 +118,7 @@ public class DbEntry {
         if (uid > 0) {
             return uid;
         }
-        return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true);
+        return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true, true);
     }
 
     public int getTargetId() throws SQLException {
@@ -128,7 +128,7 @@ public class DbEntry {
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true);
+        return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
     }
 
     public String getUser() throws SQLException {

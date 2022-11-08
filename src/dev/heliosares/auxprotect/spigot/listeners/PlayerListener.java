@@ -201,7 +201,7 @@ public class PlayerListener implements Listener {
                 try {
                     if (plugin.getSqlManager().getUserManager()
                             .getPendingInventory(plugin.getSqlManager().getUserManager()
-                                    .getUIDFromUUID("$" + e.getPlayer().getUniqueId().toString(), false)) == null) {
+                                    .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
                         return;
                     }
                 } catch (SQLException | IOException e1) {
