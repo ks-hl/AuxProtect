@@ -9,7 +9,6 @@ import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.CommandException;
-import dev.heliosares.auxprotect.utils.HasteBinAPI;
 import dev.heliosares.auxprotect.utils.StackUtil;
 
 import java.io.BufferedWriter;
@@ -149,14 +148,14 @@ public class DumpCommand extends Command {
             trace += "\n\n";
         }
 
-        if (!file) {
-            try {
-                return HasteBinAPI.post(trace);
-            } catch (Exception e) {
-                plugin.warning("Failed to upload trace, writing to file...");
-                plugin.print(e);
-            }
-        }
+//        if (!file) {
+//            try {
+//                return HasteBinAPI.post(trace);
+//            } catch (Exception e) {
+//                plugin.warning("Failed to upload trace, writing to file...");
+//                plugin.print(e);
+//            }
+//        }
         File dumpdir = new File(plugin.getDataFolder(), "dump");
         File dump = new File(dumpdir, "dump-" + System.currentTimeMillis() + ".txt");
         dumpdir.mkdirs();
@@ -208,18 +207,14 @@ public class DumpCommand extends Command {
             if (!stats) {
                 for (int i = 1; i < args.length; i++) {
                     switch (args[i].toLowerCase()) {
-                        case "chat":
-                            chat = true;
-                            break;
-                        case "verbose":
-                            verbose = true;
-                            break;
-                        case "file":
-                            file = true;
-                            break;
-                        case "config":
-                            config = true;
-                            break;
+                        case "chat" -> chat = true;
+                        case "verbose" -> verbose = true;
+//                        case "file" -> file = true;
+                        case "config" -> config = true;
+                        default -> {
+                            sender.sendLang(Language.L.INVALID_SYNTAX);
+                            return;
+                        }
                     }
                 }
             }
@@ -246,7 +241,7 @@ public class DumpCommand extends Command {
         List<String> out = new ArrayList<>();
         out.add("verbose");
         out.add("chat");
-        out.add("file");
+//        out.add("file");
         out.add("config");
         return out;
     }

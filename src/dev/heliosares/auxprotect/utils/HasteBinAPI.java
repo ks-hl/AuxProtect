@@ -14,6 +14,10 @@ import java.util.stream.Collectors;
 
 public class HasteBinAPI {
     // Partial credit to mfnalex - https://www.spigotmc.org/threads/how-to-use-the-pastebin-api-in-java.500953/
+    /**
+     * hastebin is blocking pastes for some reason, using files only for now.
+     */
+    @Deprecated
     public static String post(String post) throws Exception {
 //		From https://hastebin.com/about.md:
 //		$ curl -s -X POST https://hastebin.com/documents -d "Hello World!"
