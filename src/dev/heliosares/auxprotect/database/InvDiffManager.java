@@ -107,7 +107,10 @@ public class InvDiffManager extends BlobManager {
         // synchronized (sql.connection) {
         Connection connection = sql.getConnection(false);
         try {
-            try (PreparedStatement statement = connection.prepareStatement("SELECT time,`blob`" + //
+            String stmt = "SELECT time,blobid,ablob FROM " + Table.AUXPROTECT_INVBLOB +
+                    " LEFT JOIN " + Table.AUXPROTECT_INVENTORY + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
+                    ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC";
+            try (PreparedStatement statement = connection.prepareStatement("SELECT blobid,`blob`" + //
                     "\nFROM " + Table.AUXPROTECT_INVBLOB + //
                     "\nWHERE time=(" + "SELECT time FROM " + Table.AUXPROTECT_INVENTORY + " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);")) {
                 statement.setInt(1, uid);
@@ -138,7 +141,9 @@ public class InvDiffManager extends BlobManager {
             List<ItemStack> output = playerInvToList(inv, true);
             // synchronized (sql.connection) {
             int numdiff = 0;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB + ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
+                    " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
+                    ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
                 statement.setInt(1, uid);
                 statement.setLong(2, after);
                 statement.setLong(3, time);
