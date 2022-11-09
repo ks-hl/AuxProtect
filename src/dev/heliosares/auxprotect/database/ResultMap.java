@@ -29,15 +29,31 @@ public class ResultMap {
         while (rs.next()) {
             final List<Object> values = new ArrayList<>();
             for (int column = 1; column <= columnCount; ++column) {
-                if(types[column-1]== Types.BLOB) {
-                    values.add(sql.getBlob(rs, column));
+                Object value;
+                if (types[column - 1] == Types.BLOB) {
+                    value = sql.getBlob(rs, column);
                 } else {
-                    values.add(rs.getObject(column));
+                    value = rs.getObject(column);
                 }
+                if (rs.wasNull()) value = null;
+                values.add(value);
             }
             results_.add(new Result(this, Collections.unmodifiableList(values)));
         }
         results = Collections.unmodifiableList(results_);
+    }
+
+    public <T> T getFirstElement(Class<T> clazz) throws NoSuchElementException {
+        if (results.isEmpty()) throw new NoSuchElementException();
+        return results.get(0).getValue(clazz, 1);
+    }
+
+    public <T> T getFirstElementOrNull(Class<T> clazz) {
+        try {
+            return getFirstElement(clazz);
+        } catch (Exception ignored) {
+            return null;
+        }
     }
 
     public List<Result> getResults() {
@@ -53,14 +69,25 @@ public class ResultMap {
             this.values = values;
         }
 
-        public <T> T getValue(Class<T> clazz, int index) throws ClassCastException {
-            return clazz.cast(values.get(index - 1));
+        public <T> T getValue(Class<T> clazz, int index) throws ClassCastException, IndexOutOfBoundsException {
+            return clazz.cast(getValue(index));
+        }
+
+        public Object getValue(int index) throws IndexOutOfBoundsException {
+            index--;
+            if (index >= values.size())
+                throw new IndexOutOfBoundsException("Specified index " + index + " for size " + values.size());
+            return values.get(index - 1);
         }
 
         public <T> T getValue(Class<T> clazz, String columnName) throws ClassCastException, NoSuchElementException {
+            return clazz.cast(getValue(columnName));
+        }
+
+        public Object getValue(String columnName) throws NoSuchElementException {
             Integer index = parent.labels.get(columnName);
             if (index == null) throw new NoSuchElementException("Unknown column: " + columnName);
-            return getValue(clazz, index);
+            return getValue(index);
         }
     }
 }

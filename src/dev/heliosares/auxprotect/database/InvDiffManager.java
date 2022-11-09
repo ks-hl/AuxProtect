@@ -101,45 +101,26 @@ public class InvDiffManager extends BlobManager {
 
     public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException {
 
-        PlayerInventoryRecord inv = null;
         long after = 0;
 
         // synchronized (sql.connection) {
         Connection connection = sql.getConnection(false);
         try {
-            String stmt = "SELECT time,blobid,ablob FROM " + Table.AUXPROTECT_INVBLOB +
-                    " LEFT JOIN " + Table.AUXPROTECT_INVENTORY + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
-                    ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC";
-            try (PreparedStatement statement = connection.prepareStatement("SELECT blobid,`blob`" + //
-                    "\nFROM " + Table.AUXPROTECT_INVBLOB + //
-                    "\nWHERE time=(" + "SELECT time FROM " + Table.AUXPROTECT_INVENTORY + " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);")) {
-                statement.setInt(1, uid);
-                statement.setInt(2, EntryAction.INVENTORY.id);
-                statement.setLong(3, time);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (rs.next()) {
-                        after = rs.getLong("time");
+            ResultMap map = sql.executeGet2("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
+                    " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);", uid, EntryAction.INVENTORY.id, time);
 
-                        byte[] blob;
-                        if (sql.isMySQL()) {
-                            try (InputStream in = rs.getBlob("blob").getBinaryStream()) {
-                                blob = in.readAllBytes();
-                            }
-                        } else {
-                            blob = rs.getBytes("blob");
-                        }
-                        if (blob != null) {
-                            inv = InvSerialization.toPlayerInventory(blob);
-                        }
-                    }
-                }
+            if (map.getResults().isEmpty()) return null;
+            final long basetime = map.getResults().get(0).getValue(Long.class, 1);
+            final long blobid = map.getResults().get(0).getValue(Long.class, 2);
+
+            PlayerInventoryRecord inv = null;
+            {
+                byte[] blob = sql.executeGet2("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?", blobid).getFirstElementOrNull(byte[].class);
+                if (blob != null) inv = InvSerialization.toPlayerInventory(blob);
             }
-            if (inv == null) {
-                return null;
-            }
-            // }
+            if (inv == null) return null;
             List<ItemStack> output = playerInvToList(inv, true);
-            // synchronized (sql.connection) {
+
             int numdiff = 0;
             try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
                     " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
@@ -150,16 +131,7 @@ public class InvDiffManager extends BlobManager {
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
                         int slot = rs.getInt("slot");
-                        byte[] blob = null;
-                        if (sql.isMySQL()) {
-                            try (InputStream in = rs.getBlob("ablob").getBinaryStream()) {
-                                blob = in.readAllBytes();
-                            } catch (Exception ignored) {
-                            }
-                        } else {
-                            blob = rs.getBytes("ablob");
-                        }
-
+                        byte[] blob = sql.getBlob(rs, "ablob");
                         int qty = rs.getInt("qty");
                         ItemStack item;
                         if (qty == 0 && !rs.wasNull()) {
@@ -189,7 +161,7 @@ public class InvDiffManager extends BlobManager {
                     }
                 }
             }
-            return new DiffInventoryRecord(after, numdiff, listToPlayerInv(output, inv.exp()));
+            return new DiffInventoryRecord(basetime, numdiff, listToPlayerInv(output, inv.exp()));
         } finally {
             sql.returnConnection(connection);
         }
