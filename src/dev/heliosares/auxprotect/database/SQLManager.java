@@ -640,7 +640,7 @@ public class SQLManager {
                     statement.setString(i++, dbEntry.getData());
                 }
                 if (table.hasBlob()) {
-                    if (dbEntry.hasBlob()) {
+                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
                         long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
                         statement.setLong(i++, blobid);
                     } else statement.setNull(i++, Types.NULL);

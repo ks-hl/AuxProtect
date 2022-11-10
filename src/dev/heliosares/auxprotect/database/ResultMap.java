@@ -56,6 +56,11 @@ public class ResultMap {
         }
     }
 
+
+    public Map<String, Integer> getLabels() {
+        return labels;
+    }
+
     public List<Result> getResults() {
         return results;
     }

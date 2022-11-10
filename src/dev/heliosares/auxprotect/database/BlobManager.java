@@ -17,7 +17,7 @@ import java.util.Map;
 public class BlobManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
-    protected final HashMap<Integer, BlobManager.BlobCache> cache = new HashMap<>();
+    protected final HashMap<Integer, BlobCache> cache = new HashMap<>();
     private long nextBlobID = 1;
     private long lastcleanup;
 
@@ -48,12 +48,12 @@ public class BlobManager {
             return -1;
         }
         final int hash = Arrays.hashCode(blob);
-        InvDiffManager.BlobCache other;
+        BlobCache other;
         synchronized (cache) {
             other = cache.get(hash);
         }
 
-        final InvDiffManager.BlobCache blobCache = new InvDiffManager.BlobCache(0, blob, hash);
+        final BlobCache blobCache = new BlobCache(0, blob, hash);
 
         if (blobCache.equals(other)) {
             other.touch();
@@ -95,7 +95,7 @@ public class BlobManager {
 
     @SuppressWarnings("deprecation")
     public byte[] getBlob(DbEntry entry) throws SQLException {
-        if (entry.getBlobID() <= 0) {
+        if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
             return null;
         }
         byte[] blob = null;
@@ -165,8 +165,8 @@ public class BlobManager {
                 return;
             }
             lastcleanup = System.currentTimeMillis();
-            Iterator<Map.Entry<Integer, BlobManager.BlobCache>> it = cache.entrySet().iterator();
-            for (Map.Entry<Integer, BlobManager.BlobCache> other; it.hasNext(); ) {
+            Iterator<Map.Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
+            for (Map.Entry<Integer, BlobCache> other; it.hasNext(); ) {
                 other = it.next();
                 if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
                     it.remove();
