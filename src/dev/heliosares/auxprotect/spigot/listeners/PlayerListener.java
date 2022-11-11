@@ -11,7 +11,6 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -40,7 +39,7 @@ public class PlayerListener implements Listener {
 
     private final ArrayList<Material> buckets;
     private final ArrayList<EntityType> mobs;
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public PlayerListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -69,16 +68,9 @@ public class PlayerListener implements Listener {
         if (plugin.getEconomy() == null) {
             return;
         }
-        plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
+        plugin.getAPPlayer(player).lastLoggedMoney = System.currentTimeMillis();
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
                 reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
-    }
-
-    public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,
-                              String string) {
-        apPlayer.lastLoggedPos = System.currentTimeMillis();
-        auxProtect
-                .add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location, string, ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -105,9 +97,7 @@ public class PlayerListener implements Listener {
                 plugin.add(entry);
             }
         }
-        if (e.getRightClicked() instanceof ItemFrame) {
-            final ItemFrame item = (ItemFrame) e.getRightClicked();
-            item.getItem();
+        if (e.getRightClicked() instanceof final ItemFrame item) {
             if (item.getItem().getType() == Material.AIR) {
                 ItemStack added = e.getPlayer().getInventory().getItemInMainHand();
                 if (added.getType() == Material.AIR) {
@@ -232,9 +222,9 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent e) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, false, e.getFrom(), "", ""));
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, true, e.getTo(), "", ""));
         APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+        apPlayer.logPreTeleportPos(e.getFrom());
+        apPlayer.logPostTeleportPos(e.getTo());
         apPlayer.lastLoggedPos = System.currentTimeMillis();
         if (!plugin.getAPConfig().isInventoryOnWorldChange() || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
             return;

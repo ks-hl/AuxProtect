@@ -8,12 +8,14 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class LookupManager {
     private final SQLManager sql;
@@ -24,25 +26,25 @@ public class LookupManager {
         this.plugin = plugin;
     }
 
-    public ArrayList<DbEntry> lookup(Parameters... params) throws LookupException {
-        ArrayList<DbEntry> out = null;
-        for (Parameters param : params) {
-            String[] sqlstmts = param.toSQL(plugin);
+    public List<DbEntry> lookup(Parameters param) throws LookupException {
+        String[] sqlstmts = param.toSQL(plugin);
 
-            ArrayList<String> writeparams = new ArrayList<>();
-            writeparams.addAll(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
-            String stmt = "SELECT * FROM " + param.getTable().toString();
-            if (sqlstmts[0].length() > 1) {
-                stmt += "\nWHERE " + sqlstmts[0];
-            }
-            stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
-            ArrayList<DbEntry> results = lookup(sql, param.getTable(), stmt, writeparams);
-            if (out == null) {
-                out = results;
-            } else {
-                out.addAll(results);
+        ArrayList<String> writeparams = new ArrayList<>(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
+        String stmt = "SELECT * FROM " + param.getTable().toString();
+        if (sqlstmts[0].length() > 1) {
+            stmt += "\nWHERE " + sqlstmts[0];
+        }
+        stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
+        List<DbEntry> out = lookup(sql, param.getTable(), stmt, writeparams);
+
+        if (param.hasFlag(Parameters.Flag.PLAYBACK)) {
+            try {
+                sql.getMultipleBlobs(out.toArray(new DbEntry[0]));
+            } catch (SQLException | IOException e) {
+                plugin.print(e);
             }
         }
+
         return out;
     }
 
@@ -180,7 +182,7 @@ public class LookupManager {
                     }
                     int qty = -1;
                     int damage = -1;
-                    if (table.hasBlob() && table.hasItemMeta()) {
+                    if (table.hasBlobID() && table.hasItemMeta()) {
                         qty = rs.getInt("qty");
                         if (rs.wasNull()) qty = -1;
                         damage = rs.getInt("damage");
@@ -192,16 +194,25 @@ public class LookupManager {
                     } else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
                         entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                 target_id, data);
-                    } else if (table.hasBlob() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
+                    } else if (table.hasBlobID() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
                         entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                 target_id, data, qty, damage);
                     } else {
                         entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                 target_id, data);
                     }
-                    if (table.hasBlob()) {
+                    // More efficient to load on lookup, or only when using?
+//                    if (table.hasBlob()) {
+//                        try {
+//                            entry.setBlob(sql.getBlob(rs, "ablob"));
+//                        } catch (IOException e) {
+//                            plugin.warning("Error while getting blob for " + time + "e");
+//                            plugin.print(e);
+//                        }
+//                    } else
+                    if (table.hasBlobID()) {
                         if (plugin.getAPConfig().doSkipV6Migration()
-                                && (action_id == 1024 || data.contains(InvSerialization.ITEM_SEPARATOR))) {
+                                && (action_id == 1024 || data != null && data.contains(InvSerialization.ITEM_SEPARATOR))) {
                             entry.setBlobID(0);
                             // Indicates there is a blob, but not the ID. This allows the lookup to show a [View] button, but will force a lookup when pressed.
                         } else {

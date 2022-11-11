@@ -258,7 +258,7 @@ public class InvCommand extends Command {
                         return;
                     }
                     openSync(plugin, player, makeInventory(plugin, player, target, inv, entry.getTime()));
-                } else if (entry.hasBlob()) {
+                } else if (entry.hasBlob() && entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY) {
                     Pane pane = new Pane(Type.SHOW, player);
                     try {
                         Inventory inv;

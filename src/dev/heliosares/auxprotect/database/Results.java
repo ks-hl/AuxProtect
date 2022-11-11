@@ -9,17 +9,19 @@ import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.PosEncoder;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Results {
@@ -27,12 +29,12 @@ public class Results {
     public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
     protected final SenderAdapter player;
     final IAuxProtect plugin;
-    private final ArrayList<DbEntry> entries;
+    private final List<DbEntry> entries;
     private final Parameters params;
     public int perpage = 4;
     public int prevpage = 0;
 
-    public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, SenderAdapter player, Parameters params) {
+    public Results(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
         this.entries = entries;
         this.player = player;
         this.plugin = plugin;
@@ -160,7 +162,7 @@ public class Results {
         player.sendMessage(message.create());
     }
 
-    public ArrayList<DbEntry> getEntries() {
+    public List<DbEntry> getEntries() {
         return entries;
     }
 

@@ -21,6 +21,7 @@ public class APConfig {
     private long moneyInterval;
     private boolean overrideCommands;
     private boolean skipV6Migration;
+    private boolean logIncrementalPosition;
     private KeyUtil key;
     private ConfigAdapter config;
     private int debug;
@@ -61,6 +62,7 @@ public class APConfig {
             inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
             inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 0);
             moneyInterval = config.getLong("Actions.money.Interval", 600000);
+            logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
         }
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
@@ -240,4 +242,9 @@ public class APConfig {
     public boolean doAutoPurge() {
         return autopurge;
     }
+
+    public boolean doLogIncrementalPosition() {
+        return logIncrementalPosition;
+    }
+
 }

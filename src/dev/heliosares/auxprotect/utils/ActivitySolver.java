@@ -17,10 +17,11 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class ActivitySolver {
-    public static BaseComponent[] solveActivity(ArrayList<DbEntry> entries, long rangeStart, long rangeEnd) {
+    public static BaseComponent[] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
 //		if (minutes > 60 * 12) {
 //			message.append("Time period too long. Max 12 hours.");
@@ -34,9 +35,7 @@ public class ActivitySolver {
         final int minutes = (int) Math.ceil((rangeEnd - rangeStart) / 1000.0 / 60.0);
         int[] counter = new int[minutes];
         Location[] locations = new Location[minutes];
-        for (int i = 0; i < counter.length; i++) {
-            counter[i] = -1;
-        }
+        Arrays.fill(counter, -1);
         String line = "§7§m";
         for (int i = 0; i < 6; i++) {
             line += (char) 65293;

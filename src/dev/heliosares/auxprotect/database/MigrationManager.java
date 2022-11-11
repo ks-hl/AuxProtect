@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int DBVERSION = 8;
+    public static final int DBVERSION = 9;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -124,6 +124,10 @@ public class MigrationManager {
             migrateToV8();
         }
 
+        if (sql.getVersion() < 9) {
+            migrateToV9();
+        }
+
         /*
          * This should never be reached and is only here as a fail safe
          */
@@ -138,10 +142,10 @@ public class MigrationManager {
             sql.execute(connection, "DROP TABLE IF EXISTS " + table + "_temp;");
         }
 
-        if(isMigrating) {
+        if (isMigrating) {
             try {
                 sql.vacuum();
-            } catch(SQLException e) {
+            } catch (SQLException e) {
                 plugin.warning("Error while condensing database, you can ignore this");
                 plugin.print(e);
             }
@@ -318,8 +322,9 @@ public class MigrationManager {
                     HashMap<Long, byte[]> blobs = new HashMap<>();
                     int limit = 1;
                     try (PreparedStatement pstmt = connection.prepareStatement(stmt + limit)) {
-                        if (limit < 50) limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
-                            // issue
+                        if (limit < 50)
+                            limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
+                        // issue
                         pstmt.setFetchSize(500);
                         try (ResultSet results = pstmt.executeQuery()) {
                             while (results.next()) {
@@ -649,6 +654,14 @@ public class MigrationManager {
                 }
             });
         }
+    }
+
+
+    void migrateToV9() throws SQLException {
+        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN ablob BLOB");
+        }
+        sql.migrationmanager.setVersion(9);
     }
 
     private void setVersion(int version) throws SQLException {

@@ -13,10 +13,11 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class XraySolver {
 
-    public static BaseComponent[] solve(ArrayList<DbEntry> entries) throws SQLException {
+    public static BaseComponent[] solve(List<DbEntry> entries) throws SQLException {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
         for (int i = entries.size() - 1; i >= 0; i--) {

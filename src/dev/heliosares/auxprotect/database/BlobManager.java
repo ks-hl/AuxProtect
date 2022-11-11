@@ -94,7 +94,7 @@ public class BlobManager {
     }
 
     @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException {
+    public byte[] getBlob(DbEntry entry) throws SQLException, IOException {
         if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
             return null;
         }
@@ -103,13 +103,7 @@ public class BlobManager {
         String stmt = "SELECT * FROM " + table + " WHERE blobid=?;";
         plugin.debug(stmt, 3);
 
-        Connection connection;
-        try {
-            connection = sql.getConnection(false);
-        } catch (SQLException e1) {
-            plugin.print(e1);
-            return null;
-        }
+        Connection connection = sql.getConnection(false);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             pstmt.setLong(1, entry.getBlobID());
             try (ResultSet results = pstmt.executeQuery()) {
@@ -118,8 +112,6 @@ public class BlobManager {
                     blob = sql.getBlob(results, "ablob");
                 }
             }
-        } catch (IOException e) {
-            plugin.print(e);
         } finally {
             sql.returnConnection(connection);
         }
@@ -132,29 +124,23 @@ public class BlobManager {
                         data.indexOf(InvSerialization.ITEM_SEPARATOR) + InvSerialization.ITEM_SEPARATOR.length());
                 hasblob = true;
             }
-            try {
-                if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
-                    plugin.info("Migrating inventory in place to v6: " + entry.getTime());
-                    try {
-                        blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
-                    } catch (Exception e) {
-                        plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
-                    }
-                } else if (hasblob) {
-                    plugin.info("Migrating item in place to v6: " + entry.getTime());
-                    blob = Base64Coder.decodeLines(data);
-                } else {
-                    plugin.info("Attempted to migrate invalid log");
-                    return null;
+            if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
+                plugin.info("Migrating inventory in place to v6: " + entry.getTime());
+                try {
+                    blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
+                } catch (Exception e) {
+                    plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
                 }
-                long blobid = getBlobId(connection, blob);
-                sql.executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", blobid, entry.getTime());
-            } catch (IllegalArgumentException | SQLException e) {
-                plugin.info("Error while decoding: " + data);
-                plugin.print(e);
-            } catch (IOException e) {
-                plugin.print(e);
+            } else if (hasblob) {
+                plugin.info("Migrating item in place to v6: " + entry.getTime());
+                blob = Base64Coder.decodeLines(data);
+            } else {
+                plugin.info("Attempted to migrate invalid log");
+                return null;
             }
+            long blobid = getBlobId(connection, blob);
+            sql.executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", blobid, entry.getTime());
+
         }
         return blob;
     }

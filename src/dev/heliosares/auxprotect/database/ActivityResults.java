@@ -10,13 +10,14 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ActivityResults extends Results {
 
     private final long rangeStart;
     private final long rangeEnd;
 
-    public ActivityResults(IAuxProtect plugin, ArrayList<DbEntry> entries, SenderAdapter player, Parameters params) {
+    public ActivityResults(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
         super(plugin, entries, player, params);
 
         rangeEnd = entries.get(0).getTime();

@@ -641,6 +641,10 @@ public class SQLManager {
                 }
                 if (table.hasBlob()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
+                        setBlob(connection, statement, i++, dbEntry.getBlob());
+                    } else statement.setNull(i++, Types.NULL);
+                } else if (table.hasBlobID()) {
+                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
                         long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
                         statement.setLong(i++, blobid);
                     } else statement.setNull(i++, Types.NULL);
@@ -926,6 +930,38 @@ public class SQLManager {
             statement.setBlob(index, ablob);
         } else {
             statement.setBytes(index, bytes);
+        }
+    }
+
+    public byte[] getBlob(DbEntry entry) throws SQLException, IOException {
+        if (entry.getAction().getTable().hasBlob())
+            return executeGet2("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", entry.getTime()).getFirstElementOrNull(byte[].class);
+        if (entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY)
+            return invblobmanager.getBlob(entry);
+        return null;
+    }
+
+    public void getMultipleBlobs(DbEntry... entries) throws SQLException, IOException {
+        Table table = null;
+        String stmt = "SELECT time,ablob FROM %s WHERE time IN (";
+        HashMap<Long, DbEntry> entryHash = new HashMap<>();
+        for (DbEntry entry : entries) {
+            if (table == null) table = entry.getAction().getTable();
+            else if (table != entry.getAction().getTable()) throw new IllegalArgumentException("Incompatible actions");
+            stmt += entry.getTime() + ",";
+            entryHash.put(entry.getTime(), entry);
+        }
+        if (table == null) return;
+        stmt = String.format(stmt.substring(0, stmt.length() - 1), table.toString()) + ")";
+        Connection connection = getConnection(false);
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    entryHash.get(rs.getLong("time")).setBlob(getBlob(rs, "ablob"));
+                }
+            }
+        } finally {
+            returnConnection(connection);
         }
     }
 

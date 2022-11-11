@@ -13,7 +13,7 @@ import java.util.Map.Entry;
 
 public class RetentionSolver {
 
-    public static void showRetention(IAuxProtect plugin, SenderAdapter sender, ArrayList<DbEntry> entries,
+    public static void showRetention(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries,
                                      long startTime, long endTime) throws SQLException {
         long start = System.currentTimeMillis();
         Set<Integer> lookupUids = new HashSet<>();

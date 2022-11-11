@@ -20,15 +20,15 @@ public enum Table {
         if (numColumns <= 0) {
             return null;
         }
-        String output = "(";
+        StringBuilder output = new StringBuilder("(");
         for (int i = 0; i < numColumns; i++) {
             if (i > 0) {
-                output += ", ";
+                output.append(", ");
             }
-            output += "?";
+            output.append("?");
         }
-        output += ")";
-        return output;
+        output.append(")");
+        return output.toString();
     }
 
     @Override
@@ -156,7 +156,7 @@ public enum Table {
         } else if (this == Table.AUXPROTECT_ABANDONED) {
             return "(time, uid, action_id, world_id, x, y, z, target_id)";
         } else if (this == Table.AUXPROTECT_POSITION) {
-            return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id)";
+            return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id, ablob)";
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         }
@@ -180,7 +180,7 @@ public enum Table {
         return switch (this) {
             case AUXPROTECT_ABANDONED -> 8;
             case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
-            case AUXPROTECT_POSITION -> 10;
+            case AUXPROTECT_POSITION -> 11;
             case AUXPROTECT_INVENTORY -> 12;
             default -> -1;
         };
@@ -226,9 +226,10 @@ public enum Table {
         if (hasData()) {
             stmt += ",\n    data LONGTEXT";
         }
-        if (hasBlob()) {
-            stmt += ",\n    blobid BIGINT";
-        }
+
+        if (hasBlob()) stmt += ",\n    ablob BLOB";
+        else if (hasBlobID()) stmt += ",\n    blobid BIGINT";
+
         if (hasItemMeta()) {
             stmt += ",\n    qty INTEGER";
             stmt += ",\n    damage INTEGER";
@@ -238,8 +239,12 @@ public enum Table {
         return stmt;
     }
 
-    public boolean hasBlob() {
+    public boolean hasBlobID() {
         return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+    }
+
+    public boolean hasBlob() {
+        return this == AUXPROTECT_POSITION;
     }
 
     public long getAutoPurgeInterval() {

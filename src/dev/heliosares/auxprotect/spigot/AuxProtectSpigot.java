@@ -15,16 +15,13 @@ import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.Zombie;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
@@ -34,8 +31,6 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -353,112 +348,146 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         new BukkitRunnable() {
 
+            private boolean running;
+
             @Override
             public void run() {
-                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected()) {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
                     return;
                 }
-                List<APPlayer> players = new ArrayList<>();
-                synchronized (apPlayers) {
-                    players.addAll(apPlayers.values());
-                }
-                for (APPlayer apPlayer : players) {
-                    if (!apPlayer.player.isOnline()) {
-                        continue;
+                running = true;
+                try {
+                    List<APPlayer> players;
+                    // Make a new list to not tie up other calls to apPlayers
+                    synchronized (apPlayers) {
+                        players = new ArrayList<>(apPlayers.values());
                     }
-
-                    if (config.getInventoryInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
-                                .getInventoryInterval()) {
-                            apPlayer.logInventory("periodic");
-                        }
-                    }
-
-                    if (config.getInventoryDiffInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
-                                .getInventoryDiffInterval()) {
-                            apPlayer.diff();
-                        }
-                    }
-
-                    if (config.getMoneyInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
-                            PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
-                        }
-                    }
-
-                    if (config.getPosInterval() > 0) {
-                        if (apPlayer.lastMoved > apPlayer.lastLoggedPos
-                                && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
-                            PlayerListener.logPos(AuxProtectSpigot.this, apPlayer, apPlayer.player,
-                                    apPlayer.player.getLocation(), "");
-                        }
-                    }
-
-                    if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-                        if (apPlayer.lastLocation != null
-                                && apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
-                            apPlayer.movedAmountThisMinute += Math
-                                    .min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
-                        }
-                        apPlayer.lastLocation = apPlayer.player.getLocation();
-                        apPlayer.lastCheckedMovement = System.currentTimeMillis();
-                    }
-
-                    if (apPlayer.lastLoggedActivity == 0) {
-                        apPlayer.lastLoggedActivity = System.currentTimeMillis();
-                    }
-                    if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
-                        if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
-                            apPlayer.activity[apPlayer.activityIndex] += 100;
-                        }
-                        apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
-                        apPlayer.movedAmountThisMinute = 0;
-
-                        if (apPlayer.hasMovedThisMinute) {
-                            apPlayer.addActivity(1);
-                            apPlayer.hasMovedThisMinute = false;
+                    for (APPlayer apPlayer : players) {
+                        if (!apPlayer.player.isOnline()) {
+                            continue;
                         }
 
-                        add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
-                                apPlayer.player.getLocation(), "",
-                                (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
-                        apPlayer.lastLoggedActivity = System.currentTimeMillis();
-
-                        int tallied = 0;
-                        int inactive = 0;
-                        for (double activity : apPlayer.activity) {
-                            if (activity < 0) {
-                                continue;
-                            }
-                            tallied++;
-                            if (activity < 10) {
-                                inactive++;
+                        if (config.getInventoryInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
+                                    .getInventoryInterval()) {
+                                apPlayer.logInventory("periodic");
                             }
                         }
-                        if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
-                            if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
-                                apPlayer.lastNotifyInactive = System.currentTimeMillis();
-                                String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
-                                        inactive, tallied);
-                                for (Player player : Bukkit.getOnlinePlayers()) {
-                                    if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
-                                        player.sendMessage(msg);
-                                    }
+
+                        if (config.getMoneyInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
+                                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
+                            }
+                        }
+
+                        if (config.getPosInterval() > 0) {
+                            if (apPlayer.lastMoved > apPlayer.lastLoggedPos
+                                    && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
+                                apPlayer.logPos(apPlayer.player.getLocation());
+                            } else if (config.doLogIncrementalPosition()) {
+                                apPlayer.tickDiffPos();
+                            }
+                        }
+
+                        if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
+                            if (apPlayer.lastLocation != null
+                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.player.getWorld())) {
+                                apPlayer.movedAmountThisMinute += Math
+                                        .min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
+                            }
+                            apPlayer.lastLocation = apPlayer.player.getLocation();
+                            apPlayer.lastCheckedMovement = System.currentTimeMillis();
+                        }
+
+                        if (apPlayer.lastLoggedActivity == 0) {
+                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
+                        }
+                        if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
+                            if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
+                                apPlayer.activity[apPlayer.activityIndex] += 100;
+                            }
+                            apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
+                            apPlayer.movedAmountThisMinute = 0;
+
+                            if (apPlayer.hasMovedThisMinute) {
+                                apPlayer.addActivity(1);
+                                apPlayer.hasMovedThisMinute = false;
+                            }
+
+                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
+                                    apPlayer.player.getLocation(), "",
+                                    (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
+                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
+
+                            int tallied = 0;
+                            int inactive = 0;
+                            for (double activity : apPlayer.activity) {
+                                if (activity < 0) {
+                                    continue;
                                 }
-                                info(msg);
-                                add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
-                                        apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+                                tallied++;
+                                if (activity < 10) {
+                                    inactive++;
+                                }
+                            }
+                            if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
+                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
+                                if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
+                                    apPlayer.lastNotifyInactive = System.currentTimeMillis();
+                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
+                                            inactive, tallied);
+                                    for (Player player : Bukkit.getOnlinePlayers()) {
+                                        if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+                                            player.sendMessage(msg);
+                                        }
+                                    }
+                                    info(msg);
+                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
+                                            apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+                                }
+                            }
+
+                            apPlayer.activityIndex++;
+                            if (apPlayer.activityIndex >= apPlayer.activity.length) {
+                                apPlayer.activityIndex = 0;
+                            }
+                            apPlayer.activity[apPlayer.activityIndex] = 0;
+                        }
+                    }
+                } finally {
+                    running = false;
+                }
+            }
+        }.runTaskTimerAsynchronously(this, 40, 4);
+        new BukkitRunnable() {
+
+            private boolean running;
+
+            @Override
+            public void run() {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
+                    return;
+                }
+                running = true;
+                try {
+                    List<APPlayer> players;
+                    // Make a new list to not tie up other calls to apPlayers
+                    synchronized (apPlayers) {
+                        players = new ArrayList<>(apPlayers.values());
+                    }
+                    for (APPlayer apPlayer : players) {
+                        if (!apPlayer.player.isOnline()) {
+                            continue;
+                        }
+                        if (config.getInventoryDiffInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
+                                    .getInventoryDiffInterval()) {
+                                apPlayer.tickDiffInventory();
                             }
                         }
-
-                        apPlayer.activityIndex++;
-                        if (apPlayer.activityIndex >= apPlayer.activity.length) {
-                            apPlayer.activityIndex = 0;
-                        }
-                        apPlayer.activity[apPlayer.activityIndex] = 0;
                     }
+                } finally {
+                    running = false;
                 }
             }
         }.runTaskTimerAsynchronously(this, 40, 20);
@@ -469,137 +498,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 WatchCommand.tick(AuxProtectSpigot.this);
             }
         }.runTaskTimerAsynchronously(this, 1, 1);
-        // TODO EXPERIMENTAL
-        new BukkitRunnable() {
-            private Player player;
-            Zombie zombie;
-            Location track;
-            Location lastLoc;
-
-            byte[][] hist = new byte[40][];
-            int hisind = 0;
-            boolean start;
-
-            @Override
-            public void run() {
-                if (player == null) player = Bukkit.getPlayer("Heliosares");
-                if (player == null) return;
-                if (zombie == null || zombie.isDead()) {
-                    zombie = (Zombie) player.getWorld().spawnEntity(player.getLocation(), EntityType.ZOMBIE);
-                    track = player.getLocation().clone();
-                }
-                zombie.setAI(false);
-                zombie.setHealth(20);
-                zombie.setAware(false);
-                zombie.setInvulnerable(true);
-
-                if (lastLoc != null) {
-                    hist[hisind++] = encode(player, lastLoc);
-                    if (hisind >= hist.length) {
-                        hisind = 0;
-                        start = true;
-                    }
-                    if (start) {
-                        double[] dec = decode(hist[hisind]);
-                        track.add(dec[0], dec[1], dec[2]);
-                        track.setPitch((float) dec[3]);
-                        track.setYaw((float) dec[4]);
-                        zombie.teleport(track);
-                    }
-                }
-                lastLoc = player.getLocation();
-            }
-
-            record Simpl(byte[] array, boolean fine) {
-            }
-
-            public byte[] encode(Player player, Location lastLoc) {
-                Simpl diffX = simplify(player.getLocation().getX() - lastLoc.getX());
-                Simpl diffY = simplify(player.getLocation().getY() - lastLoc.getY());
-                Simpl diffZ = simplify(player.getLocation().getZ() - lastLoc.getZ());
-                byte pitch = (byte) player.getLocation().getPitch();
-                boolean doPitch = player.getLocation().getPitch() != lastLoc.getPitch();
-                byte yaw = (byte) ((player.getLocation().getYaw() / 180.0) * 127);
-                boolean doYaw = player.getLocation().getYaw() != lastLoc.getYaw();
-                byte hdr = 0;
-
-                hdr |= diffX.fine ? 3 : diffX.array.length;
-                hdr |= (diffY.fine ? 3 : diffY.array.length) << 2;
-                hdr |= (diffZ.fine ? 3 : diffZ.array.length) << 4;
-                if (doPitch) hdr |= 1 << 6;
-                if (doYaw) hdr -= 128;
-
-                int len = 1 + diffX.array.length + diffY.array.length + diffZ.array.length;
-                if (doPitch) len++;
-                if (doYaw) len++;
-                ByteBuffer bb = ByteBuffer.allocate(len);
-                bb.order(ByteOrder.LITTLE_ENDIAN);
-                bb.put(hdr);
-                bb.put(diffX.array);
-                bb.put(diffY.array);
-                bb.put(diffZ.array);
-                if (doPitch) bb.put(pitch);
-                if (doYaw) bb.put(yaw);
-
-                return bb.array();
-            }
-
-            public double[] decode(byte[] bytes) {
-                double[] out = new double[5];
-                byte hdr = bytes[0];
-
-                boolean yaw = hdr < 0;
-                if (yaw) hdr += 128;
-
-                int xlen = hdr & 0b11;
-                int ylen = (hdr >> 2) & 0b11;
-                int zlen = (hdr >> 4) & 0b11;
-
-                if (xlen > 0) out[0] = toDouble(bytes, 1, xlen);
-                if (xlen == 3) xlen = 1;
-                if (ylen > 0) out[1] = toDouble(bytes, 1 + xlen, ylen);
-                if (ylen == 3) ylen = 1;
-                if (zlen > 0) out[2] = toDouble(bytes, 1 + xlen + ylen, zlen);
-
-                if ((hdr >> 6 & 1) == 1) out[3] = bytes[bytes.length - 2];
-                if (yaw) out[4] = (double) bytes[bytes.length - 1] / 127.0 * 180;
-
-                return out;
-            }
-
-            private double toDouble(byte[] bytes, int index, int hdr) {
-                double sig = 10.0;
-                if (hdr == 3) {
-                    hdr = 1;
-                    sig = 100.0;
-                }
-                if (hdr == 0) return 0;
-                if (hdr == 1) return (double) bytes[index] / sig;
-                return Math.round((((int) bytes[index]) << 8) | (bytes[index + 1] & 0xff)) / sig;
-            }
-
-
-            private Simpl simplify(double d) {
-                info("" + d);
-                boolean fine = Math.abs(d) < 1;
-                d *= 10;
-                if (fine) d *= 10;
-                short s = (short) Math.round(d);
-
-                //0
-                if (s == 0) return new Simpl(new byte[0], false);
-
-                //1
-                byte lower = (byte) s;
-                if (s == lower) return new Simpl(new byte[]{lower}, fine);
-
-                //2
-                if (d > Short.MAX_VALUE) s = Short.MAX_VALUE;
-                else if (d < Short.MIN_VALUE) s = Short.MIN_VALUE;
-
-                return new Simpl(new byte[]{(byte) (s >> 8), lower}, false);
-            }
-        }.runTaskTimer(this, 5, 1);
 
         new BukkitRunnable() {
 

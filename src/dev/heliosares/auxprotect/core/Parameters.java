@@ -224,6 +224,16 @@ public class Parameters {
             parameters.actions.add(EntryAction.ACTIVITY.id);
             parameters.actions.add(EntryAction.ACTIVITY.idPos);
         }
+        if (parameters.hasFlag(Flag.PLAYBACK)) {
+            if (plugin.getPlatform() != PlatformType.SPIGOT || sender == null)
+                throw new ParseException(L.INVALID_PARAMETER, "#playback");
+            parameters.actions.clear();
+            parameters.actions.add(EntryAction.TP.id);
+            parameters.actions.add(EntryAction.TP.idPos);
+            parameters.actions.add(EntryAction.POS.id);
+            parameters.worlds.clear();
+            parameters.worlds.add(((org.bukkit.entity.Player) sender.getSender()).getWorld().getName());
+        }
         if (parameters.ratings.size() > 0) {
             if (!parameters.actions.isEmpty()) {
                 for (int id : parameters.actions) {
@@ -1007,7 +1017,7 @@ public class Parameters {
 
     public static enum Flag {
         COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
-        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY),
+        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK),
         RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);
 
         private final APPermission perm;

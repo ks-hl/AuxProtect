@@ -7,15 +7,13 @@ import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.MoneySolver;
-import dev.heliosares.auxprotect.utils.PlayTimeSolver;
-import dev.heliosares.auxprotect.utils.RetentionSolver;
-import dev.heliosares.auxprotect.utils.XraySolver;
+import dev.heliosares.auxprotect.utils.*;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -242,7 +240,7 @@ public class LookupCommand extends Command {
                     return;
                 }
 
-                ArrayList<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params);
+                List<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params);
                 if (rs == null || rs.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                     return;
@@ -388,6 +386,9 @@ public class LookupCommand extends Command {
                 } else if (params.getFlags().contains(Flag.RETENTION)) {
                     RetentionSolver.showRetention(plugin, sender, rs, params.getAfter(), params.getBefore());
                     return;
+                } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
+                    new PlaybackSolver(plugin, sender, rs, params.getAfter()).runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
+                    return;
                 }
                 String uuid = sender.getUniqueId().toString();
                 Results result = new Results(plugin, rs, sender, params);
@@ -399,12 +400,10 @@ public class LookupCommand extends Command {
                 }
             } catch (ConnectionPool.BusyException e) {
                 sender.sendLang(Language.L.DATABASE_BUSY);
-                return;
             } catch (LookupException | ParseException e) {
                 sender.sendLang(e.getLang());
-            } catch (SQLException e) {
+            } catch (SQLException | IOException e) {
                 sender.sendLang(Language.L.ERROR);
-                return;
             }
         };
         plugin.runAsync(run);
