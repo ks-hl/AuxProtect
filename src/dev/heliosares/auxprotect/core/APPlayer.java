@@ -21,6 +21,7 @@ public class APPlayer {
     public long lastMoved;
     public long lastLoggedActivity;
     public Location lastLocation;
+    public Location lastLocationDiff;
     public long lastCheckedMovement;
     public double movedAmountThisMinute;
     public boolean hasMovedThisMinute;
