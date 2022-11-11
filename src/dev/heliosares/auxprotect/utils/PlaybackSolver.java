@@ -4,7 +4,7 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
-import org.bukkit.Bukkit;
+import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -39,21 +39,20 @@ public class PlaybackSolver extends BukkitRunnable {
         this.entries = entries;
         realReferenceTime = System.currentTimeMillis();
         long min = Long.MAX_VALUE;
-        Location lastEntryLoc = null;
-        long lastEntryTime = 0;
+        Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
         for (DbEntry entry : entries) {
-            Location entryLoc = new Location(Bukkit.getWorld(entry.world), entry.x, entry.y, entry.z, entry.yaw, entry.pitch);
-            if (lastEntryLoc != null && entry.getBlob() != null) {
+            DbEntry lastEntry = lastEntries.get(entry.getUser());
+            Location entryLoc = DbEntryBukkit.getLocation(entry);
+            if (lastEntry != null && entry.getBlob() != null) {
                 List<PosEncoder.DecodedPositionIncrement> decoded = PosEncoder.decode(entry.getBlob());
-                Location lastLoc = lastEntryLoc;
-                final long incrementBy = (entry.getTime() - lastEntryTime) / (decoded.size() + 1);
+                Location lastLoc = DbEntryBukkit.getLocation(lastEntry);
+                final long incrementBy = (entry.getTime() - lastEntry.getTime()) / (decoded.size() + 1);
                 for (int i = 0; i < decoded.size(); i++) {
                     PosEncoder.DecodedPositionIncrement inc = decoded.get(i);
-                    long time = lastEntryTime + (i + 1) * incrementBy;
+                    long time = lastEntry.getTime() + (i + 1) * incrementBy;
                     if (time < startTime) continue;
                     org.bukkit.util.Vector add = new org.bukkit.util.Vector(inc.x(), inc.y(), inc.z());
-                    plugin.info("add " + add);
                     Location incLoc = lastLoc.clone().add(add);
                     incLoc.setPitch(inc.pitch());
                     incLoc.setYaw(inc.yaw());
@@ -64,8 +63,7 @@ public class PlaybackSolver extends BukkitRunnable {
             }
             points.add(new PosPoint(entry.getTime(), entry.getUser(), entryLoc, false));
             if (entry.getTime() < min) min = entry.getTime();
-            lastEntryLoc = entryLoc;
-            lastEntryTime = entry.getTime();
+            lastEntries.put(entry.getUser(), entry);
         }
         points.sort(Comparator.comparingLong(a -> a.time));
         this.startTime = Math.max(min - 250, startTime);
@@ -87,7 +85,6 @@ public class PlaybackSolver extends BukkitRunnable {
         for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
             PosPoint point = it.next();
             if (timeNow > point.time()) {
-                plugin.info((point.inc ? "inc: " : "main: ") + point.time + " (" + (timeNow - point.time) + "rem): " + point.location.toVector().toString());
                 LivingEntity actor = actors.get(point.name());
                 if (actor == null || actor.isDead()) {
                     actor = (LivingEntity) point.location().getWorld().spawnEntity(point.location(), EntityType.VILLAGER);
