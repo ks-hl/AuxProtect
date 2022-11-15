@@ -76,10 +76,11 @@ public class PosEncoder {
         if (pitch) out[3] = bytes[offset + 1 + xlen + ylen + zlen];
         if (yaw) out[4] = (double) bytes[offset + 1 + xlen + ylen + zlen + (pitch ? 1 : 0)] / 127.0 * 180;
 
-        return new DecodedPositionIncrement(out[0], out[1], out[2], (float) out[3], (float) out[4], 1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
+        return new DecodedPositionIncrement(xlen > 0, out[0], ylen > 0, out[1], zlen > 0, out[2], pitch, (float) out[3], yaw, (float) out[4], 1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
     }
 
-    public record DecodedPositionIncrement(double x, double y, double z, float pitch, float yaw, int bytes) {
+    public record DecodedPositionIncrement(boolean hasx, double x, boolean hasy, double y, boolean hasz, double z,
+                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
         @Override
         public String toString() {
             return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;

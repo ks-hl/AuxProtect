@@ -43,7 +43,6 @@ public class PlaybackSolver extends BukkitRunnable {
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
         for (DbEntry entry : entries) {
             DbEntry lastEntry = lastEntries.get(entry.getUser());
-            Location entryLoc = DbEntryBukkit.getLocation(entry);
             if (lastEntry != null && entry.getBlob() != null) {
                 List<PosEncoder.DecodedPositionIncrement> decoded = PosEncoder.decode(entry.getBlob());
                 Location lastLoc = DbEntryBukkit.getLocation(lastEntry);
@@ -54,13 +53,16 @@ public class PlaybackSolver extends BukkitRunnable {
                     if (time < startTime) continue;
                     org.bukkit.util.Vector add = new org.bukkit.util.Vector(inc.x(), inc.y(), inc.z());
                     Location incLoc = lastLoc.clone().add(add);
-                    incLoc.setPitch(inc.pitch());
-                    incLoc.setYaw(inc.yaw());
+                    if (inc.hasPitch()) incLoc.setPitch(inc.pitch());
+                    if (inc.hasYaw()) incLoc.setYaw(inc.yaw());
                     lastLoc = incLoc;
                     points.add(new PosPoint(time, entry.getUser(), incLoc, true));
                     if (time < min) min = time;
                 }
             }
+            Location entryLoc = DbEntryBukkit.getLocation(entry);
+            entryLoc.setYaw(entry.yaw);
+            entryLoc.setPitch(entry.pitch);
             points.add(new PosPoint(entry.getTime(), entry.getUser(), entryLoc, false));
             if (entry.getTime() < min) min = entry.getTime();
             lastEntries.put(entry.getUser(), entry);
