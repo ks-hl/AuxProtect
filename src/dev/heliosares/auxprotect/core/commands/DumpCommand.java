@@ -23,84 +23,83 @@ import java.util.List;
 public class DumpCommand extends Command {
 
     public DumpCommand(IAuxProtect plugin) {
-        super(plugin, "dump", APPermission.ADMIN, "stats");
+        super(plugin, "dump", APPermission.ADMIN, true, "stats");
     }
 
     public static String dump(IAuxProtect plugin, boolean verbose, boolean chat, boolean file, boolean config,
                               boolean stats) throws Exception {
-        String trace = "";
+        StringBuilder trace = new StringBuilder();
         if (!stats) {
-            trace += "Generated: " + LocalDateTime.now().format(Results.dateFormatter) + " ("
-                    + System.currentTimeMillis() + ")\n";
+            trace.append("Generated: ").append(LocalDateTime.now().format(Results.dateFormatter)).append(" (").append(System.currentTimeMillis()).append(")\n");
         }
-        trace += "Plugin version: " + plugin.getPluginVersion() + "\n";
-        trace += "Key: ";
+        trace.append("Plugin version: ").append(plugin.getPluginVersion()).append("\n");
+        trace.append("Key: ");
         if (plugin.getAPConfig().isPrivate()) {
-            trace += "private." + plugin.getAPConfig().getKeyHolder();
+            trace.append("private.").append(plugin.getAPConfig().getKeyHolder());
         } else if (plugin.getAPConfig().isDonor()) {
-            trace += "donor." + plugin.getAPConfig().getKeyHolder();
+            trace.append("donor.").append(plugin.getAPConfig().getKeyHolder());
         } else {
-            trace += "none";
+            trace.append("none");
         }
-        trace += "\n";
-        trace += "Language: " + Language.getLocale() + "\n";
-        trace += "DB version: " + plugin.getSqlManager().getVersion() + "\n";
-        trace += "Original DB version: " + plugin.getSqlManager().getOriginalVersion() + "\n";
+        trace.append("\n");
+        trace.append("Language: ").append(Language.getLocale()).append("\n");
+        trace.append("DB version: ").append(plugin.getSqlManager().getVersion()).append("\n");
+        trace.append("Original DB version: ").append(plugin.getSqlManager().getOriginalVersion()).append("\n");
         if (!stats) {
-            trace += "Server Version: " + plugin.getPlatformVersion() + "\n";
-            trace += "Java: " + Runtime.version().toString() + "\n";
+            trace.append("Server Version: ").append(plugin.getPlatformVersion()).append("\n");
+            trace.append("Java: ").append(Runtime.version().toString()).append("\n");
         }
-        trace += "Queued: " + plugin.queueSize() + "\n";
+        trace.append("Queued: ").append(plugin.queueSize()).append("\n");
         if (!stats) {
-            trace += "Pool:\n";
-            trace += "  Size: " + plugin.getSqlManager().getConnectionPoolSize() + "\n";
-            trace += "  Alive: " + ConnectionPool.getNumAlive() + "\n";
-            trace += "  Born: " + ConnectionPool.getNumBorn() + "\n";
-            trace += "  Roaming: " + ConnectionPool.getRoaming() + "\n";
+            trace.append("Pool:\n");
+            trace.append("  Size: ").append(plugin.getSqlManager().getConnectionPoolSize()).append("\n");
+            trace.append("  Alive: ").append(ConnectionPool.getNumAlive()).append("\n");
+            trace.append("  Born: ").append(ConnectionPool.getNumBorn()).append("\n");
+            trace.append("  Roaming: ").append(ConnectionPool.getRoaming()).append("\n");
         }
-        long read[] = ConnectionPool.calculateReadTimes();
+        long[] read = ConnectionPool.calculateReadTimes();
         if (read != null) {
-            trace += "Read:\n";
-            trace += "  Average Time: " + Math.round((double) read[1] / read[2] * 100.0) / 100.0 + "ms\n";
-            trace += "  Duty: " + Math.round((double) read[1] / read[0] * 10000.0) / 100.0 + "%\n";
+            trace.append("Read:\n");
+            trace.append("  Average Time: ").append(Math.round((double) read[1] / read[2] * 100.0) / 100.0).append("ms\n");
+            trace.append("  Duty: ").append(Math.round((double) read[1] / read[0] * 10000.0) / 100.0).append("%\n");
             if (verbose) {
-                trace += "  Across: " + read[0] + "ms\n";
-                trace += "  Count: " + read[2] + "\n";
+                trace.append("  Across: ").append(read[0]).append("ms\n");
+                trace.append("  Count: ").append(read[2]).append("\n");
             }
         }
-        long write[] = ConnectionPool.calculateWriteTimes();
+        long[] write = ConnectionPool.calculateWriteTimes();
         if (write != null) {
-            trace += "Write:\n";
-            trace += "  Average Time: " + Math.round((double) write[1] / write[2] * 100.0) / 100.0 + "ms\n";
-            trace += "  Duty: " + Math.round((double) write[1] / write[0] * 10000.0) / 100.0 + "%\n";
+            trace.append("Write:\n");
+            trace.append("  Average Time: ").append(Math.round((double) write[1] / write[2] * 100.0) / 100.0).append("ms\n");
+            trace.append("  Duty: ").append(Math.round((double) write[1] / write[0] * 10000.0) / 100.0).append("%\n");
             if (verbose) {
-                trace += "  Across: " + write[0] + "ms\n";
-                trace += "  Count: " + write[2] + "\n";
+                trace.append("  Across: ").append(write[0]).append("ms\n");
+                trace.append("  Count: ").append(write[2]).append("\n");
             }
         }
         if (!stats) {
-            trace += "Database type: " + (plugin.getSqlManager().isMySQL() ? "mysql" : "sqlite") + "\n";
+            trace.append("Database type: ").append(plugin.getSqlManager().isMySQL() ? "mysql" : "sqlite").append("\n");
             if (!plugin.getSqlManager().isMySQL()) {
                 boolean size = false;
                 try {
                     File sqlitefile = new File(plugin.getDataFolder(), "database/auxprotect.db");
                     if (sqlitefile.exists()) {
-                        trace += "File size: " + (Files.size(sqlitefile.toPath()) / 1024 / 1024) + "MB\n";
+                        trace.append("File size: ").append(Files.size(sqlitefile.toPath()) / 1024 / 1024).append("MB\n");
                         size = true;
                     }
                 } catch (Exception ignored) {
                 }
                 if (!size) {
-                    trace += "*No file\n";
+                    trace.append("*No file\n");
                 }
             }
         }
-        trace += "Row counts: " + plugin.getSqlManager().getCount() + " total\n";
+        trace.append("Row counts: ").append(plugin.getSqlManager().getCount()).append(" total\n");
         if (verbose) {
             ArrayList<String[]> counts = new ArrayList<>();
             int widest = 0;
             for (Table table : Table.values()) {
-                String[] arr = null;
+                String[] arr;
                 try {
                     arr = (new String[]{table.toString(), String.valueOf(plugin.getSqlManager().count(table))});
                 } catch (SQLException e) {
@@ -113,39 +112,35 @@ public class DumpCommand extends Command {
                 counts.add(arr);
             }
             for (String[] arr : counts) {
-                String pad = "";
+                StringBuilder pad = new StringBuilder();
                 int width = arr[0].length() + arr[1].length();
-                for (int i = 0; i < widest - width + 3; i++) {
-                    pad += ".";
-                }
-                trace += "  " + arr[0] + pad + arr[1] + "\n";
+                pad.append(".".repeat(Math.max(0, widest - width + 3)));
+                trace.append("  ").append(arr[0]).append(pad).append(arr[1]).append("\n");
             }
         }
         if ((chat && !verbose) || stats) {
-            return trace;
+            return trace.toString();
         }
 
-        trace += "\n";
+        trace.append("\n");
 
         if (config) {
             try {
-                trace += "config.yml:";
-                trace += dumpContents(plugin);
+                trace.append("config.yml:");
+                trace.append(dumpContents(plugin));
             } catch (Exception e) {
-                trace += "Error reading config.yml\n";
+                trace.append("Error reading config.yml\n");
             }
-        } else {
-
         }
 
-        trace += "\n";
+        trace.append("\n");
 
-        trace += "Error Log:\n" + plugin.getStackLog() + "\n\n";
+        trace.append("Error Log:\n").append(plugin.getStackLog()).append("\n\n");
 
         if (verbose) {
-            trace += "Thread Trace:\n";
-            trace += StackUtil.dumpThreadStack();
-            trace += "\n\n";
+            trace.append("Thread Trace:\n");
+            trace.append(StackUtil.dumpThreadStack());
+            trace.append("\n\n");
         }
 
 //        if (!file) {
@@ -160,7 +155,7 @@ public class DumpCommand extends Command {
         File dump = new File(dumpdir, "dump-" + System.currentTimeMillis() + ".txt");
         dumpdir.mkdirs();
         BufferedWriter writer = new BufferedWriter(new FileWriter(dump));
-        writer.write(trace);
+        writer.write(trace.toString());
         writer.close();
         return dump.getAbsolutePath();
     }
@@ -170,65 +165,61 @@ public class DumpCommand extends Command {
     }
 
     private static String dumpContents(IAuxProtect plugin, String parent, int depth) {
-        String build = "";
+        StringBuilder build = new StringBuilder();
         if (parent.length() > 0) {
-            for (int i = 0; i < depth; i++) {
-                build += " ";
-            }
-            build += parent.substring(parent.lastIndexOf(".") + 1) + ": ";
+            build.append(" ".repeat(Math.max(0, depth)));
+            build.append(parent.substring(parent.lastIndexOf(".") + 1)).append(": ");
         }
         if (parent.toLowerCase().contains("mysql") || parent.toLowerCase().contains("passw")) {
-            build += "REDACTED\n";
-            return build;
+            build.append("REDACTED\n");
+            return build.toString();
         }
         if (plugin.getAPConfig().getConfig().isSection(parent)) {
-            build += "\n";
+            build.append("\n");
             for (String key : plugin.getAPConfig().getConfig().getKeys(parent, false)) {
                 if (key.length() == 0) {
                     continue;
                 }
-                build += dumpContents(plugin, parent + (parent.length() > 0 ? "." : "") + key, depth + 2);
+                build.append(dumpContents(plugin, parent + (parent.length() > 0 ? "." : "") + key, depth + 2));
             }
         } else {
-            build += plugin.getAPConfig().getConfig().get(parent) + "\n";
+            build.append(plugin.getAPConfig().getConfig().get(parent)).append("\n");
         }
-        return build;
+        return build.toString();
     }
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         sender.sendMessageRaw("§aBuilding trace...");
-        plugin.runAsync(() -> {
-            boolean verbose = false;
-            boolean chat = false;
-            boolean file = false;
-            boolean config = false;
-            boolean stats = args[0].equalsIgnoreCase("stats");
-            if (!stats) {
-                for (int i = 1; i < args.length; i++) {
-                    switch (args[i].toLowerCase()) {
-                        case "chat" -> chat = true;
-                        case "verbose" -> verbose = true;
+        boolean verbose = false;
+        boolean chat = false;
+        boolean file = false;
+        boolean config = false;
+        boolean stats = args[0].equalsIgnoreCase("stats");
+        if (!stats) {
+            for (int i = 1; i < args.length; i++) {
+                switch (args[i].toLowerCase()) {
+                    case "chat" -> chat = true;
+                    case "verbose" -> verbose = true;
 //                        case "file" -> file = true;
-                        case "config" -> config = true;
-                        default -> {
-                            sender.sendLang(Language.L.INVALID_SYNTAX);
-                            return;
-                        }
+                    case "config" -> config = true;
+                    default -> {
+                        sender.sendLang(Language.L.INVALID_SYNTAX);
+                        return;
                     }
                 }
             }
-            try {
-                sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
-            } catch (Exception e) {
-                plugin.print(e);
-                sender.sendLang(Language.L.ERROR);
-            }
-            if (config) {
-                sender.sendMessageRaw(
-                        "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
-            }
-        });
+        }
+        try {
+            sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
+        } catch (Exception e) {
+            plugin.print(e);
+            sender.sendLang(Language.L.ERROR);
+        }
+        if (config) {
+            sender.sendMessageRaw(
+                    "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
+        }
     }
 
     @Override

@@ -13,12 +13,11 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class PurgeCommand extends Command {
 
     public PurgeCommand(IAuxProtect plugin) {
-        super(plugin, "purge", APPermission.PURGE);
+        super(plugin, "purge", APPermission.PURGE, true);
     }
 
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
@@ -35,7 +34,7 @@ public class PurgeCommand extends Command {
         if (!args[1].equalsIgnoreCase("all")) {
             try {
                 table_ = Table.valueOf(args[1].toUpperCase());
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException ignored) {
             }
             if (table_ == null || !table_.exists(plugin)) {
                 sender.sendLang(Language.L.COMMAND__PURGE__TABLE);
@@ -62,27 +61,23 @@ public class PurgeCommand extends Command {
 
         final long time = time_;
         sender.sendLang(Language.L.COMMAND__PURGE__PURGING, table == null ? "all" : table.toString());
-        plugin.runAsync(new Runnable() {
 
-            @Override
-            public void run() {
-                int count = 0;
-                try {
-                    count += plugin.getSqlManager().purge(table, time);
-                    sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
-                    plugin.getSqlManager().purgeUIDs();
+        int count = 0;
+        try {
+            count += plugin.getSqlManager().purge(table, time);
+            sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
+            plugin.getSqlManager().purgeUIDs();
 
-                    if (!plugin.getSqlManager().isMySQL()) {
-                        plugin.getSqlManager().vacuum();
-                    }
-                } catch (SQLException e) {
-                    plugin.print(e);
-                    sender.sendLang(Language.L.COMMAND__PURGE__ERROR);
-                    return;
-                }
-                sender.sendLang(Language.L.COMMAND__PURGE__COMPLETE_COUNT, count);
+            if (!plugin.getSqlManager().isMySQL()) {
+                plugin.getSqlManager().vacuum();
             }
-        });
+        } catch (SQLException e) {
+            plugin.print(e);
+            sender.sendLang(Language.L.COMMAND__PURGE__ERROR);
+            return;
+        }
+        sender.sendLang(Language.L.COMMAND__PURGE__COMPLETE_COUNT, count);
+
     }
 
     @Override
@@ -95,8 +90,7 @@ public class PurgeCommand extends Command {
         List<String> possible = new ArrayList<>();
 
         if (args.length == 2) {
-            possible.addAll(Arrays.asList(Table.values()).stream().filter(t -> t.exists(plugin) && t.canPurge())
-                    .map(t -> t.getName()).collect(Collectors.toList()));
+            possible.addAll(Arrays.stream(Table.values()).filter(t -> t.exists(plugin) && t.canPurge()).map(Table::getName).toList());
             possible.add("all");
         }
         if (args.length == 3) {

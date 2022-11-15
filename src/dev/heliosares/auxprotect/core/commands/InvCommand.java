@@ -34,7 +34,7 @@ import java.util.UUID;
 
 public class InvCommand extends Command {
     public InvCommand(IAuxProtect plugin) {
-        super(plugin, "inv", APPermission.INV);
+        super(plugin, "inv", APPermission.INV, true);
     }
 
     public static void openSync(IAuxProtect plugin, Player player, Inventory inventory) {
@@ -146,7 +146,7 @@ public class InvCommand extends Command {
                                         targetO.spigot().sendMessage(message.create());
                                         targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                                     }
-                                    plugin.runSync(() -> player.closeInventory());
+                                    plugin.runSync(player::closeInventory);
 
                                     plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
                                             player.getLocation(), AuxProtectSpigot.getLabel(target), "regular"));
@@ -216,7 +216,7 @@ public class InvCommand extends Command {
         if (sender.getPlatform() != PlatformType.SPIGOT) {
             throw new PlatformException();
         }
-        if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
+        if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot) {
             int index = -1;
             try {
                 index = Integer.parseInt(args[1]);
@@ -235,48 +235,45 @@ public class InvCommand extends Command {
             if (entry == null) {
                 throw new SyntaxException();
             }
-            plugin.runAsync(() -> {
-                if (entry.getAction().equals(EntryAction.INVENTORY)) {
-                    PlayerInventoryRecord inv_ = null;
-                    try {
-                        inv_ = InvSerialization.toPlayerInventory(entry.getBlob());
-                    } catch (Exception e1) {
-                        plugin.warning("Error serializing inventory lookup");
-                        plugin.print(e1);
-                        sender.sendLang(Language.L.ERROR);
-                        return;
-                    }
-                    final PlayerInventoryRecord inv = inv_;
-                    OfflinePlayer target = null;
-                    try {
-                        target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
-                    } catch (ConnectionPool.BusyException e) {
-                        sender.sendLang(L.DATABASE_BUSY);
-                        return;
-                    } catch (SQLException e) {
-                        sender.sendLang(L.ERROR);
-                        return;
-                    }
-                    openSync(plugin, player, makeInventory(plugin, player, target, inv, entry.getTime()));
-                } else if (entry.hasBlob() && entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY) {
-                    Pane pane = new Pane(Type.SHOW, player);
-                    try {
-                        Inventory inv;
-                        if (entry instanceof SingleItemEntry sientry) {
-                            inv = InvSerialization.toInventory(pane, "Item Viewer", sientry.getItem());
-                        } else {
-                            inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
-                        }
-                        pane.setInventory(inv);
-                        openSync(plugin, player, inv);
-                    } catch (Exception e1) {
-                        plugin.warning("Error serializing itemviewer");
-                        plugin.print(e1);
-                        sender.sendLang(Language.L.ERROR);
-                        return;
-                    }
+            if (entry.getAction().equals(EntryAction.INVENTORY)) {
+                PlayerInventoryRecord inv_ = null;
+                try {
+                    inv_ = InvSerialization.toPlayerInventory(entry.getBlob());
+                } catch (Exception e1) {
+                    plugin.warning("Error serializing inventory lookup");
+                    plugin.print(e1);
+                    sender.sendLang(Language.L.ERROR);
+                    return;
                 }
-            });
+                final PlayerInventoryRecord inv = inv_;
+                OfflinePlayer target = null;
+                try {
+                    target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
+                } catch (ConnectionPool.BusyException e) {
+                    sender.sendLang(L.DATABASE_BUSY);
+                    return;
+                } catch (SQLException e) {
+                    sender.sendLang(L.ERROR);
+                    return;
+                }
+                openSync(plugin, player, makeInventory(plugin, player, target, inv, entry.getTime()));
+            } else if (entry.hasBlob() && entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY) {
+                Pane pane = new Pane(Type.SHOW, player);
+                try {
+                    Inventory inv;
+                    if (entry instanceof SingleItemEntry sientry) {
+                        inv = InvSerialization.toInventory(pane, "Item Viewer", sientry.getItem());
+                    } else {
+                        inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
+                    }
+                    pane.setInventory(inv);
+                    openSync(plugin, player, inv);
+                } catch (Exception e1) {
+                    plugin.warning("Error serializing itemviewer");
+                    plugin.print(e1);
+                    sender.sendLang(Language.L.ERROR);
+                }
+            }
         } else {
             throw new PlatformException();
         }

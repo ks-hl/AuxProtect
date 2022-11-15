@@ -45,7 +45,7 @@ public class APCommand extends Command {
     }
 
     public APCommand(IAuxProtect plugin, String label, String... aliases) {
-        super(plugin, label, APPermission.NONE, aliases);
+        super(plugin, label, APPermission.NONE, false, aliases);
     }
 
     public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String label,
@@ -86,22 +86,25 @@ public class APCommand extends Command {
                 }
                 match = true;
                 if (c.hasPermission(sender)) {
-                    try {
-                        c.onCommand(sender, label, args);
-                    } catch (PlatformException ignored) {
-                        continue;
-                    } catch (NotPlayerException e) {
-                        sender.sendLang(Language.L.NOTPLAYERERROR);
-                    } catch (CommandException e) {
-                        if (e.getMessage() != null) {
-                            sender.sendMessageRaw(e.getMessage());
-                        } else {
-                            sender.sendLang(Language.L.INVALID_SYNTAX);
+                    Runnable run = () -> {
+                        try {
+                            c.onCommand(sender, label, args);
+                        } catch (PlatformException ignored) {
+                        } catch (NotPlayerException e) {
+                            sender.sendLang(Language.L.NOTPLAYERERROR);
+                        } catch (CommandException e) {
+                            if (e.getMessage() != null) {
+                                sender.sendMessageRaw(e.getMessage());
+                            } else {
+                                sender.sendLang(Language.L.INVALID_SYNTAX);
+                            }
+                        } catch (Throwable t) {
+                            sender.sendLang(Language.L.ERROR);
+                            plugin.print(t);
                         }
-                    } catch (Throwable t) {
-                        sender.sendLang(Language.L.ERROR);
-                        plugin.print(t);
-                    }
+                    };
+                    if (c.isAsync()) plugin.runAsync(run);
+                    else run.run();
                 } else {
                     sender.sendLang(Language.L.NO_PERMISSION);
                 }

@@ -16,12 +16,12 @@ import java.util.List;
 public class TimeCommand extends Command {
 
     public TimeCommand(IAuxProtect plugin) {
-        super(plugin, "time", APPermission.LOOKUP, "t");
+        super(plugin, "time", APPermission.LOOKUP, false, "t");
     }
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm.ss");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMMyy HH:mm.ss");
         if (args.length == 1) {
             sender.sendMessageRaw("§9Server time:");
             sender.sendMessageRaw("§7" + LocalDateTime.now().format(formatter));

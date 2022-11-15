@@ -11,7 +11,7 @@ import java.util.List;
 public class ActivityCommand extends Command {
 
     public ActivityCommand(IAuxProtect plugin) {
-        super(plugin, "activity", APPermission.LOOKUP_ACTIVITY);
+        super(plugin, "activity", APPermission.LOOKUP_ACTIVITY, false);
     }
 
     @Override

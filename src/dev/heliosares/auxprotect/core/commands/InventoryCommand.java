@@ -13,7 +13,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -23,7 +22,7 @@ import java.util.UUID;
 public class InventoryCommand extends Command {
 
     public InventoryCommand(IAuxProtect plugin) {
-        super(plugin, "inventory", APPermission.INV);
+        super(plugin, "inventory", APPermission.INV, true);
     }
 
     @Override
@@ -34,7 +33,7 @@ public class InventoryCommand extends Command {
         if (sender.getPlatform() != PlatformType.SPIGOT) {
             throw new PlatformException();
         }
-        if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
+        if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot) {
             String target = args[1];
             String paramtime = args[2];
 
@@ -56,57 +55,50 @@ public class InventoryCommand extends Command {
 
             final long time = time_;
 
-            plugin.runAsync(() -> {
-                int uid;
-                String uuid;
-                try {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
-                    uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false);
-                } catch (ConnectionPool.BusyException e) {
-                    sender.sendLang(Language.L.DATABASE_BUSY);
-                    return;
-                } catch (SQLException e) {
-                    sender.sendLang(Language.L.ERROR);
-                    return;
-                }
-                OfflinePlayer targetP = Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1)));
-                if (uid < 0) {
-                    sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);
-                    return;
-                }
-                DiffInventoryRecord inv = null;
-                try {
-                    inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
-                } catch (ConnectionPool.BusyException e) {
-                    sender.sendLang(Language.L.DATABASE_BUSY);
-                    return;
-                } catch (ClassNotFoundException | SQLException | IOException e) {
-                    plugin.print(e);
-                    sender.sendLang(Language.L.ERROR);
-                    return;
-                }
-                if (inv == null) {
-                    sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
-                    return;
-                }
+            int uid;
+            String uuid;
+            try {
+                uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
+                uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false);
+            } catch (ConnectionPool.BusyException e) {
+                sender.sendLang(Language.L.DATABASE_BUSY);
+                return;
+            } catch (SQLException e) {
+                sender.sendLang(Language.L.ERROR);
+                return;
+            }
+            OfflinePlayer targetP = Bukkit.getOfflinePlayer(UUID.fromString(uuid.substring(1)));
+            if (uid < 0) {
+                sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);
+                return;
+            }
+            DiffInventoryRecord inv = null;
+            try {
+                inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
+            } catch (ConnectionPool.BusyException e) {
+                sender.sendLang(Language.L.DATABASE_BUSY);
+                return;
+            } catch (ClassNotFoundException | SQLException | IOException e) {
+                plugin.print(e);
+                sender.sendLang(Language.L.ERROR);
+                return;
+            }
+            if (inv == null) {
+                sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
+                return;
+            }
 
-                Inventory output = InvCommand.makeInventory(plugin, player, targetP, inv.inventory(), time);
+            Inventory output = InvCommand.makeInventory(plugin, player, targetP, inv.inventory(), time);
 
-                sender.sendMessageRaw(String.format("§fDisplaying inventory of §9%s§f from §9%s ago §7(%s)",
-                        targetP.getName(), TimeUtil.millisToString(System.currentTimeMillis() - time), time + "e"));
-                sender.sendMessageRaw(
-                        String.format("§fBased on inventory from §9%s§f ago §7(%s)§f with §9%s§f differences",
-                                TimeUtil.millisToString(System.currentTimeMillis() - inv.basetime()),
-                                inv.basetime() + "e", inv.numdiff()));
-                ;
+            sender.sendMessageRaw(String.format("§fDisplaying inventory of §9%s§f from §9%s ago §7(%s)",
+                    targetP.getName(), TimeUtil.millisToString(System.currentTimeMillis() - time), time + "e"));
+            sender.sendMessageRaw(
+                    String.format("§fBased on inventory from §9%s§f ago §7(%s)§f with §9%s§f differences",
+                            TimeUtil.millisToString(System.currentTimeMillis() - inv.basetime()),
+                            inv.basetime() + "e", inv.numdiff()));
+            ;
 
-                new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        player.openInventory(output);
-                    }
-                }.runTask(spigot);
-            });
+            plugin.runSync(() -> player.openInventory(output));
         } else {
             throw new PlatformException();
         }

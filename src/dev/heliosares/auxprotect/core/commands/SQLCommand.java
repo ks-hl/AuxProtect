@@ -13,7 +13,7 @@ import java.util.List;
 public class SQLCommand extends Command {
 
     public SQLCommand(IAuxProtect plugin) {
-        super(plugin, "sql", APPermission.ADMIN, "sqli", "sqlu");
+        super(plugin, "sql", APPermission.ADMIN, true, "sqli", "sqlu");
     }
 
     @Override
@@ -23,45 +23,42 @@ public class SQLCommand extends Command {
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
-        String msg = "";
+        StringBuilder msg = new StringBuilder();
         for (int i = 1; i < args.length; i++) {
-            msg += args[i] + " ";
+            msg.append(args[i]).append(" ");
         }
-        final String stmt = msg.trim();
-        plugin.runAsync(() -> {
-            sender.sendMessageRaw("§aRunning...");
-            try {
-                if (args[0].equalsIgnoreCase("sql")) {
-                    plugin.getSqlManager().execute(stmt, false);
-                } else if (args[0].equalsIgnoreCase("sqli")) {
-                    plugin.getSqlManager().executeWrite(stmt);
-                } else {
-                    List<List<String>> results = plugin.getSqlManager().executeGet(stmt);
-                    if (results != null) {
-                        for (List<String> result : results) {
-                            String line = "";
-                            for (String part : result) {
-                                if (line.length() > 0) {
-                                    line += ", ";
-                                }
-                                line += part;
+        final String stmt = msg.toString().trim();
+        sender.sendMessageRaw("§aRunning...");
+        try {
+            if (args[0].equalsIgnoreCase("sql")) {
+                plugin.getSqlManager().execute(stmt, false);
+            } else if (args[0].equalsIgnoreCase("sqli")) {
+                plugin.getSqlManager().executeWrite(stmt);
+            } else {
+                List<List<String>> results = plugin.getSqlManager().executeGet(stmt);
+                if (results != null) {
+                    for (List<String> result : results) {
+                        StringBuilder line = new StringBuilder();
+                        for (String part : result) {
+                            if (line.length() > 0) {
+                                line.append(", ");
                             }
-                            sender.sendMessageRaw(line);
+                            line.append(part);
                         }
+                        sender.sendMessageRaw(line.toString());
                     }
                 }
-            } catch (ConnectionPool.BusyException e) {
-                sender.sendLang(Language.L.DATABASE_BUSY);
-                return;
-            } catch (Exception e) {
-                sender.sendLang(Language.L.ERROR);
-                plugin.warning("Error while executing '" + stmt + "'");
-                plugin.print(e);
-                return;
             }
-            sender.sendMessageRaw("§aSQL statement executed successfully.");
-
-        });
+        } catch (ConnectionPool.BusyException e) {
+            sender.sendLang(Language.L.DATABASE_BUSY);
+            return;
+        } catch (Exception e) {
+            sender.sendLang(Language.L.ERROR);
+            plugin.warning("Error while executing '" + stmt + "'");
+            plugin.print(e);
+            return;
+        }
+        sender.sendMessageRaw("§aSQL statement executed successfully.");
     }
 
     @Override

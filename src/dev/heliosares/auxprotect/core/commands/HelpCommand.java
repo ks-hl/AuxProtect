@@ -15,7 +15,7 @@ public class HelpCommand extends Command {
     private final List<Command> commands;
 
     public HelpCommand(IAuxProtect plugin, List<Command> commands) {
-        super(plugin, "help", APPermission.HELP);
+        super(plugin, "help", APPermission.HELP, false);
         this.commands = commands;
     }
 

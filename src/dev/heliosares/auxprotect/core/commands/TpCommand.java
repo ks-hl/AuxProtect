@@ -15,7 +15,7 @@ import java.util.List;
 public class TpCommand extends Command {
 
     public TpCommand(IAuxProtect plugin) {
-        super(plugin, "tp", APPermission.TP);
+        super(plugin, "tp", APPermission.TP, false);
     }
 
     @Override
