@@ -543,7 +543,7 @@ public class SQLManager {
                         statement.setInt(i++, dbEntry.yaw);
                     }
                     if (table.hasStringTarget()) {
-                        statement.setString(i++, dbEntry.getTargetUUID());
+                        statement.setString(i++, sanitize(dbEntry.getTargetUUID()));
                     } else {
                         statement.setInt(i++, getUIDFromUUID(dbEntry.getTargetUUID(), true));
                     }
@@ -551,7 +551,7 @@ public class SQLManager {
                         statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
                     }
                     if (hasData) {
-                        statement.setString(i++, dbEntry.getData());
+                        statement.setString(i++, sanitize(dbEntry.getData()));
                     }
                     if (table.hasBlob()) {
                         statement.setBoolean(i++, dbEntry.hasBlob());
@@ -588,6 +588,15 @@ public class SQLManager {
         plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
                 + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
         return true;
+    }
+
+    public static String sanitize(String str) {
+        StringBuilder out = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            if (c > 126) c = '?';
+            out.append(c);
+        }
+        return out.toString();
     }
 
     private String getSize(double bytes) {
@@ -1050,7 +1059,7 @@ public class SQLManager {
     @SuppressWarnings("deprecation")
     public ArrayList<DbEntry> lookup(Table table, String stmt, @Nullable ArrayList<String> writeParams)
             throws LookupException {
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
+        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();
@@ -1075,7 +1084,7 @@ public class SQLManager {
                 int i1 = 1;
                 plugin.debug("writeParamsSize: " + writeParams.size());
                 for (String param : writeParams) {
-                    pstmt.setString(i1++, param);
+                    pstmt.setString(i1++, sanitize(param));
                 }
             }
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -1224,7 +1233,7 @@ public class SQLManager {
         try (PreparedStatement statement = connection.prepareStatement(stmt)) {
             int i = 1;
             statement.setShort(i++, entry.getRating());
-            statement.setString(i++, entry.getData());
+            statement.setString(i++, sanitize(entry.getData()));
             statement.setLong(i++, entry.getTime());
             statement.setInt(i++, entry.getUid());
             statement.setInt(i++, entry.getTargetId());
@@ -1509,7 +1518,7 @@ public class SQLManager {
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uuid=?;";
         plugin.debug(stmt, 3);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            pstmt.setString(1, uuid);
+            pstmt.setString(1, sanitize(uuid));
             try (ResultSet results = pstmt.executeQuery()) {
                 if (results.next()) {
                     int uid = results.getInt("uid");
@@ -1530,7 +1539,7 @@ public class SQLManager {
             }
             stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid)\nVALUES (?)";
             try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-                pstmt.setString(1, uuid);
+                pstmt.setString(1, sanitize(uuid));
                 pstmt.execute();
 
                 try (ResultSet result = pstmt.getGeneratedKeys()) {
