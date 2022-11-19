@@ -10,6 +10,8 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import java.util.*;
 
 public class EntryAction {
+    private static final HashMap<String, EntryAction> values = new HashMap<>();
+    private static final Set<Integer> usedids = new HashSet<>();
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
@@ -89,8 +91,6 @@ public class EntryAction {
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
-    private static final HashMap<String, EntryAction> values = new HashMap<>();
-    private static final Set<Integer> usedids = new HashSet<>();
     // END TOWNY (1499)
     public final boolean hasDual;
     public final int id;
