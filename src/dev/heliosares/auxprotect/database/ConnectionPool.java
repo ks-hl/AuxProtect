@@ -42,23 +42,22 @@ public class ConnectionPool {
         this.mysql = user != null && pwd != null;
 
         boolean driver = false;
-        if (!driver)
-            try {
-                Class.forName("org.sqlite.JDBC");
-                driver = true;
-            } catch (ClassNotFoundException e1) {
-            }
+        try {
+            Class.forName("org.sqlite.JDBC");
+            driver = true;
+        } catch (ClassNotFoundException ignored) {
+        }
         if (!driver)
             try {
                 Class.forName("com.mysql.cj.jdbc.Driver");
                 driver = true;
-            } catch (ClassNotFoundException e1) {
+            } catch (ClassNotFoundException ignored) {
             }
         if (!driver)
             try {
                 Class.forName("com.mysql.jdbc.Driver");
                 driver = true;
-            } catch (ClassNotFoundException e1) {
+            } catch (ClassNotFoundException ignored) {
             }
         if (!driver) {
             throw new ClassNotFoundException("SQL Driver not found");
