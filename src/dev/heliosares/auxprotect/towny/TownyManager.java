@@ -176,24 +176,20 @@ public class TownyManager {
     }
 
     public void updateName(UUID uuid, String name, boolean async) {
-        Runnable run = new Runnable() {
-
-            @Override
-            public void run() {
-                final int uid = sql.getUIDFromUUID("$t" + uuid, true);
-                if (uid <= 0) {
-                    plugin.warning("Failed to insert new town/nation name: " + name);
-                    return;
-                }
-                plugin.debug("Handling " + name);
-
-                String newestusername = getNameFromID(uid);
-                if (!name.equalsIgnoreCase(newestusername)) {
-                    plugin.debug("New town name: " + name + " for " + newestusername);
-                    plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));
-                }
-                names.put(uid, name);
+        Runnable run = () -> {
+            final int uid = sql.getUIDFromUUID("$t" + uuid, true);
+            if (uid <= 0) {
+                plugin.warning("Failed to insert new town/nation name: " + name);
+                return;
             }
+            plugin.debug("Handling " + name);
+
+            String newestusername = getNameFromID(uid);
+            if (!name.equalsIgnoreCase(newestusername)) {
+                plugin.debug("New town name: " + name + " for " + newestusername);
+                plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));
+            }
+            names.put(uid, name);
         };
         if (async) {
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, run);

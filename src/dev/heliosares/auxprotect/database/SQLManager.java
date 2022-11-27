@@ -497,7 +497,7 @@ public class SQLManager {
             String stmt = "INSERT INTO " + table.toString() + " ";
             int numColumns = table.getNumColumns(plugin.getPlatform());
             String inc = Table.getValuesTemplate(numColumns);
-            final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT ? table.hasLocation() : false;
+            final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
             final boolean hasData = table.hasData();
             final boolean hasAction = table.hasActionId();
             final boolean hasLook = table.hasLook();
@@ -510,6 +510,12 @@ public class SQLManager {
                 } else {
                     stmt += ",";
                 }
+            }
+            // Patch to fix SQLNonTransientConnectionException
+            // TODO cleanup
+            for (DbEntry dbEntry : entries) {
+                getUIDFromUUID(dbEntry.getUserUUID(), true);
+                getUIDFromUUID(dbEntry.getTargetUUID(), true);
             }
             HashMap<Long, byte[]> blobsToLog = new HashMap<>();
             try (PreparedStatement statement = connection.prepareStatement(stmt)) {

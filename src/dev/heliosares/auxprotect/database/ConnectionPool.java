@@ -31,7 +31,7 @@ public class ConnectionPool {
     private final Connection writeconn;
     private boolean closed;
     private Thread whoHasWriteConnection;
-    private ReentrantLock lock = new ReentrantLock();
+    private final ReentrantLock lock = new ReentrantLock();
 
     public ConnectionPool(IAuxProtect plugin, String connString, String user, String pwd)
             throws SQLException, ClassNotFoundException {

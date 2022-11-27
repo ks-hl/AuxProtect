@@ -17,10 +17,9 @@ public class EssentialsListener implements Listener {
         this.plugin = plugin;
     }
 
-    @SuppressWarnings("deprecation")
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTransactionEvent(TransactionEvent e) {
-        String label = null;
+        String label;
         Location loc = null;
         if (e.getRequester().getPlayer() != null) {
             loc = e.getRequester().getPlayer().getLocation();
