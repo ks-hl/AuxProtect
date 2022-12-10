@@ -383,9 +383,7 @@ public class SQLManager {
     public void executeWrite(String stmt) throws SQLException, BusyException {
         Connection connection = conn.getWriteConnection(30000);
         try {
-            synchronized (connection) {
-                execute(connection, stmt);
-            }
+            execute(connection, stmt);
         } finally {
             returnConnection(connection);
         }
@@ -393,7 +391,7 @@ public class SQLManager {
 
     public List<List<String>> executeUpdate(String string, String... args) throws SQLException {
         plugin.debug(string, 2);
-        final List<List<String>> rowList = new LinkedList<List<String>>();
+        final List<List<String>> rowList = new LinkedList<>();
 
         Connection connection = getConnection();
         try (Statement statement = connection.createStatement()) {
@@ -401,14 +399,14 @@ public class SQLManager {
                 final ResultSetMetaData meta = rs.getMetaData();
                 final int columnCount = meta.getColumnCount();
                 {
-                    final List<String> columnList = new LinkedList<String>();
+                    final List<String> columnList = new LinkedList<>();
                     rowList.add(columnList);
                     for (int i = 0; i < columnCount; i++) {
                         columnList.add(meta.getColumnName(i + 1));
                     }
                 }
                 while (rs.next()) {
-                    final List<String> columnList = new LinkedList<String>();
+                    final List<String> columnList = new LinkedList<>();
                     rowList.add(columnList);
 
                     for (int column = 1; column <= columnCount; ++column) {
@@ -425,7 +423,7 @@ public class SQLManager {
 
     /**
      * Do not use this Connection to modify the database, use
-     * {@link SQLManager#getWriteConnection()}
+     * {@link #getWriteConnection(long)}
      * <p>
      * You MUST call {@link SQLManager#returnConnection(Connection)} when you are
      * done with this Connection
@@ -458,32 +456,34 @@ public class SQLManager {
     /**
      * Called to return a connection to the pool
      *
-     * @param connection a Connection obtained from {@link #getConnection()} or
-     *                   {@link #getWriteConnection()}
+     * @param connection a Connection obtained from {@link #getConnection()}
      */
     public void returnConnection(Connection connection) {
         conn.returnConnection(connection);
+    }
+
+    public @Nullable StackTraceElement[] getWhoHasWriteConnection() {
+        return conn.getWhoHasWriteConnection();
+    }
+
+    public long getWriteCheckOutTime() {
+        return conn.getWriteCheckOutTime();
     }
 
     public int getConnectionPoolSize() {
         return conn.getPoolSize();
     }
 
-    protected boolean put(Table table) throws SQLException {
-        Connection connection = null;
+    protected synchronized boolean put(Table table) throws SQLException {
+        Connection connection;
         try {
             connection = conn.getWriteConnection(0);
-        } catch (BusyException e) {
-        }
-        if (connection == null) {
+        } catch (BusyException ignored) {
             return false;
         }
         long start = System.nanoTime();
-        int count = 0;
+        int count;
         try {
-            if (table.queue == null) {
-                return false;
-            }
             List<DbEntry> entries = new ArrayList<>();
 
             DbEntry entry;
@@ -494,36 +494,34 @@ public class SQLManager {
             if (count == 0) {
                 return false;
             }
-            String stmt = "INSERT INTO " + table.toString() + " ";
+            StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
             int numColumns = table.getNumColumns(plugin.getPlatform());
             String inc = Table.getValuesTemplate(numColumns);
             final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
             final boolean hasData = table.hasData();
             final boolean hasAction = table.hasActionId();
             final boolean hasLook = table.hasLook();
-            stmt += table.getValuesHeader(plugin.getPlatform());
-            stmt += " VALUES";
+            stmt.append(table.getValuesHeader(plugin.getPlatform()));
+            stmt.append(" VALUES");
             for (int i = 0; i < entries.size(); i++) {
-                stmt += "\n" + inc;
+                stmt.append("\n").append(inc);
                 if (i + 1 == entries.size()) {
-                    stmt += ";";
+                    stmt.append(";");
                 } else {
-                    stmt += ",";
+                    stmt.append(",");
                 }
             }
-            // Patch to fix SQLNonTransientConnectionException
-            // TODO cleanup
+
             for (DbEntry dbEntry : entries) {
                 getUIDFromUUID(dbEntry.getUserUUID(), true);
                 getUIDFromUUID(dbEntry.getTargetUUID(), true);
             }
             HashMap<Long, byte[]> blobsToLog = new HashMap<>();
-            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+            try (PreparedStatement statement = connection.prepareStatement(stmt.toString())) {
 
                 int i = 1;
                 for (DbEntry dbEntry : entries) {
                     int prior = i;
-                    // statement.setString(i++, table);
                     statement.setLong(i++, dbEntry.getTime());
                     statement.setInt(i++, getUIDFromUUID(dbEntry.getUserUUID(), true));
                     int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
@@ -1521,7 +1519,7 @@ public class SQLManager {
             plugin.print(e1);
             return -1;
         }
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS.toString() + " WHERE uuid=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uuid=?;";
         plugin.debug(stmt, 3);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             pstmt.setString(1, sanitize(uuid));
@@ -1543,7 +1541,7 @@ public class SQLManager {
             } catch (BusyException e1) {
                 return -1;
             }
-            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS.toString() + " (uuid)\nVALUES (?)";
+            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid)\nVALUES (?)";
             try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
                 pstmt.setString(1, sanitize(uuid));
                 pstmt.execute();

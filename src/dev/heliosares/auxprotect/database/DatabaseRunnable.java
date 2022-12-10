@@ -13,13 +13,13 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 public class DatabaseRunnable implements Runnable {
     private static final long pickupCacheTime = 1500;
     private static final long jobsCacheTime = 10000;
-    private static HashMap<Table, Long> lastTimes = new HashMap<>();
+    private static final HashMap<Table, Long> lastTimes = new HashMap<>();
     private final SQLManager sqlManager;
     private final IAuxProtect plugin;
     private long running = 0;
     private long lastWarn = 0;
-    private ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
-    private ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
+    private final ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
 
     public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
         this.sqlManager = sqlManager;
@@ -50,15 +50,14 @@ public class DatabaseRunnable implements Runnable {
             return;
         }
         Table table = entry.getAction().getTable();
-        if (table == null || table.queue == null) {
+        if (table == null) {
             return;
         }
         table.queue.add(entry);
     }
 
     public int queueSize() {
-        return Arrays.asList(Table.values()).stream().filter(t -> t.queue != null).map(t -> t.queue.size())
-                .reduce((a, b) -> a + b).get();
+        return Arrays.stream(Table.values()).map(t -> t.queue.size()).reduce(Integer::sum).orElse(0);
     }
 
     @Override
@@ -87,13 +86,13 @@ public class DatabaseRunnable implements Runnable {
 
             checkCache();
 
-            Arrays.asList(Table.values()).forEach(t -> {
+            for (Table table : Table.values()) {
                 try {
-                    sqlManager.put(t);
+                    sqlManager.put(table);
                 } catch (SQLException e) {
                     plugin.print(e);
                 }
-            });
+            }
             sqlManager.cleanup();
         } catch (Throwable e) {
             plugin.print(e);
@@ -109,7 +108,7 @@ public class DatabaseRunnable implements Runnable {
                 PickupEntry next = itr.next();
                 if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
                     Table.AUXPROTECT_INVENTORY.queue.add(next);
-                    pickups.remove(next);
+                    itr.remove();
                 }
             }
         }
@@ -119,7 +118,7 @@ public class DatabaseRunnable implements Runnable {
                 JobsEntry next = itr.next();
                 if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
                     EntryAction.JOBS.getTable().queue.add(next);
-                    jobsentries.remove(next);
+                    itr.remove();
                 }
             }
         }
@@ -127,9 +126,7 @@ public class DatabaseRunnable implements Runnable {
 
     private void addPickup(PickupEntry entry) {
         synchronized (pickups) {
-            Iterator<PickupEntry> itr = pickups.iterator();
-            while (itr.hasNext()) {
-                PickupEntry next = itr.next();
+            for (PickupEntry next : pickups) {
                 if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
                     continue;
                 }
@@ -153,9 +150,7 @@ public class DatabaseRunnable implements Runnable {
 
     private void addJobs(JobsEntry entry) {
         synchronized (jobsentries) {
-            Iterator<JobsEntry> itr = jobsentries.iterator();
-            while (itr.hasNext()) {
-                JobsEntry next = itr.next();
+            for (JobsEntry next : jobsentries) {
                 if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
                     continue;
                 }

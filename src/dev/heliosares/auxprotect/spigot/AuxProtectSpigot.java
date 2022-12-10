@@ -582,12 +582,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             return false;
         }
         econ = rsp.getProvider();
-        return econ != null;
+        return true;
     }
 
     @Override
     public void info(String string) {
         this.getLogger().info(string);
+        logToStackLog("[INFO] " + string);
     }
 
     @Override
@@ -611,7 +612,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     public String formatMoney(double d) {
-        if (!Double.isFinite(d)) {
+        if (!Double.isFinite(d) || Double.isNaN(d)) {
             return "NaN";
         }
         if (d <= 0) {

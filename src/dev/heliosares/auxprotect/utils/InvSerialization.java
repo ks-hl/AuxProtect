@@ -47,10 +47,6 @@ public class InvSerialization {
         }
     }
 
-    public static byte[] toByteArray(Inventory inventory) throws IOException {
-        return toByteArray(inventory.getContents());
-    }
-
     public static Inventory toInventory(byte[] bytes, InventoryHolder holder, String title)
             throws ClassNotFoundException, IOException {
         ItemStack[] contents = toItemStackArray(bytes);
@@ -106,10 +102,7 @@ public class InvSerialization {
         if (i.hasItemMeta()) {
             return true;
         }
-        if (i.getEnchantments().size() > 0) {
-            return true;
-        }
-        return false;
+        return i.getEnchantments().size() > 0;
     }
 
     public static byte[] playerToByteArray(Player player) throws IOException {
@@ -151,12 +144,7 @@ public class InvSerialization {
             stream.writeInt(record.exp());
             stream.flush(); // This little boi took me at least 2 hours to figure out...
 
-            byte[] out = byteArrayOutputStream.toByteArray();
-//			AuxProtectSpigot.getInstance().debug("Serialized inventory to " + out.length + "B");
-//			if (AuxProtectSpigot.getInstance().getDebug() > 0) {
-//				debug(out);
-//			}
-            return out;
+            return byteArrayOutputStream.toByteArray();
         }
     }
 
@@ -170,8 +158,7 @@ public class InvSerialization {
                 try {
                     System.out.println(stream.readInt());
                     keep = true;
-                } catch (Exception e) {
-
+                } catch (Exception ignored) {
                 }
                 try {
                     Object o = stream.readObject();
@@ -184,19 +171,18 @@ public class InvSerialization {
                     }
                     System.out.println(out);
                     keep = true;
-                } catch (Exception e) {
-
+                } catch (Exception ignored) {
                 }
             }
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         System.out.println("EOF");
     }
 
     public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
-
+        if (bytes == null) return null;
         ItemStack[][] contents = new ItemStack[4][];
-        int exp = 0;
+        int exp;
 
         ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
         try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
@@ -239,7 +225,7 @@ public class InvSerialization {
         return toItemStackArray(Base64Coder.decodeLines(base64));
     }
 
-    public static record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,
-                                               ItemStack[] ender, int exp) {
+    public record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,
+                                        ItemStack[] ender, int exp) {
     }
 }
