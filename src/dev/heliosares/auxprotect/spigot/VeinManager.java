@@ -34,15 +34,15 @@ public class VeinManager {
         switch (severity) {
             case -2:
             case -1:
-                return "�5";
+                return "§5";
             case 0:
-                return "�a";
+                return "§a";
             case 1:
-                return "�e";
+                return "§e";
             case 2:
-                return "�c";
+                return "§c";
             case 3:
-                return "�4";
+                return "§4";
             default:
                 return "";
         }

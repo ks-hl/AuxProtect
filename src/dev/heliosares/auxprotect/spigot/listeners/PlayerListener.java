@@ -205,14 +205,14 @@ public class PlayerListener implements Listener {
 
                 @Override
                 public void run() {
-                    e.getPlayer().sendMessage("ï¿½aYou have an inventory waiting to be claimed!");
-                    e.getPlayer().sendMessage("ï¿½7Ensure you have room in your inventory before claiming!");
+                    e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
+                    e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
                     ComponentBuilder message = new ComponentBuilder();
-                    message.append("ï¿½f\n         ");
-                    message.append("ï¿½a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                    message.append("§f\n         ");
+                    message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
                             .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    new Text("ï¿½aClick to claim your recovered inventory")));
-                    message.append("\nï¿½f").event((ClickEvent) null).event((HoverEvent) null);
+                                    new Text("§aClick to claim your recovered inventory")));
+                    message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
                     e.getPlayer().spigot().sendMessage(message.create());
                     e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                 }
