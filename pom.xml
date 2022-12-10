@@ -4,7 +4,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.2.3-pre5</version>
+	<version>1.2.3</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -117,7 +117,7 @@
 		<dependency>
 			<groupId>org.spigotmc</groupId>
 			<artifactId>spigot-api</artifactId>
-			<version>1.19.1-R0.1-SNAPSHOT</version>
+			<version>1.19.2-R0.1-SNAPSHOT</version>
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
