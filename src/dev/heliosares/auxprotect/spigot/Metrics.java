@@ -15,6 +15,8 @@ package dev.heliosares.auxprotect.spigot;
  * Violations will result in a ban of your plugin and account from bStats.
  */
 
+import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.database.SQLManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -26,6 +28,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
@@ -301,6 +304,10 @@ public class Metrics {
                     if (logErrors) {
                         errorLogger.accept("Could not submit bStats metrics data", e);
                     }
+                }
+                try {
+                    AuxProtectAPI.getInstance().getSqlManager().setLast(SQLManager.LastKeys.TELEMETRY, System.currentTimeMillis());
+                } catch (SQLException ignored) {
                 }
             });
         }

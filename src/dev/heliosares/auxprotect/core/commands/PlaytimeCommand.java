@@ -13,7 +13,7 @@ import java.util.List;
 public class PlaytimeCommand extends Command {
 
     public PlaytimeCommand(IAuxProtect plugin) {
-        super(plugin, "playtime", APPermission.LOOKUP_PLAYTIME, "pt");
+        super(plugin, "playtime", APPermission.LOOKUP_PLAYTIME, false, "pt");
     }
 
     @Override

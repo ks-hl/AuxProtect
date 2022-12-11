@@ -27,7 +27,7 @@ public class InvSerialization {
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
 
-            stream.writeInt(array.length);
+            if (array.length > 1) stream.writeInt(array.length);
 
             for (ItemStack itemStack : array) {
                 stream.writeObject(itemStack);
@@ -46,19 +46,6 @@ public class InvSerialization {
             return byteArrayOutputStream.toByteArray();
         }
     }
-
-    public static Inventory toInventory(byte[] bytes, InventoryHolder holder, String title)
-            throws ClassNotFoundException, IOException {
-        ItemStack[] contents = toItemStackArray(bytes);
-        if (contents == null) {
-            return null;
-        }
-        int size = (int) Math.ceil(contents.length / 9.0) * 9;
-        Inventory inventory = Bukkit.getServer().createInventory(holder, size, title);
-        inventory.setContents(contents);
-        return inventory;
-    }
-
     public static ItemStack[] toItemStackArray(byte[] bytes) throws ClassNotFoundException, IOException {
         if (bytes == null) {
             return null;
@@ -69,6 +56,7 @@ public class InvSerialization {
             try {
                 size = stream.readInt();
             } catch (Exception ignored) {
+                //Allows reading a single item as an array
             }
             if (size < 1) {
                 AuxProtectSpigot.getInstance().warning("Empty BLOB");
@@ -84,14 +72,16 @@ public class InvSerialization {
         }
     }
 
+    /**
+     * Equivalent to {@link InvSerialization#toItemStackArray(byte[])}[0]
+     *
+     * @param bytes blob
+     * @return The itemstack or the first if it's an array
+     * @throws ClassNotFoundException Not an itemstack
+     * @throws IOException            Malformed blob
+     */
     public static ItemStack toItemStack(byte[] bytes) throws ClassNotFoundException, IOException {
-        if (bytes == null) {
-            return null;
-        }
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-        try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
-            return (ItemStack) stream.readObject();
-        }
+        return toItemStackArray(bytes)[0];
     }
 
     public static boolean isCustom(ItemStack i) {
@@ -103,6 +93,24 @@ public class InvSerialization {
             return true;
         }
         return i.getEnchantments().size() > 0;
+    }
+
+
+    public static Inventory toInventory(byte[] bytes, InventoryHolder holder, String title)
+            throws ClassNotFoundException, IOException {
+        ItemStack[] contents = toItemStackArray(bytes);
+        return toInventory(holder, title, contents);
+    }
+
+    public static Inventory toInventory(InventoryHolder holder, String title, ItemStack... contents) {
+        if (contents == null) {
+            return null;
+        }
+        int size = (int) Math.ceil(contents.length / 9.0) * 9;
+        if (size < 9) size = 9;
+        Inventory inventory = Bukkit.getServer().createInventory(holder, size, title);
+        inventory.setContents(contents);
+        return inventory;
     }
 
     public static byte[] playerToByteArray(Player player) throws IOException {
@@ -208,10 +216,6 @@ public class InvSerialization {
 
         return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3],
                 Integer.parseInt(parts[4]));
-    }
-
-    public static String toBase64(byte[] bytes) {
-        return Base64Coder.encodeLines(bytes);
     }
 
     @Deprecated

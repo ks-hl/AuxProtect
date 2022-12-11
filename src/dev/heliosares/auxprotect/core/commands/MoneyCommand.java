@@ -13,7 +13,7 @@ import java.util.List;
 public class MoneyCommand extends Command {
 
     public MoneyCommand(IAuxProtect plugin) {
-        super(plugin, "money", APPermission.LOOKUP_MONEY);
+        super(plugin, "money", APPermission.LOOKUP_MONEY, false);
     }
 
     @Override

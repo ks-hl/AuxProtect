@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 public class SaveInvCommand extends Command {
 
     public SaveInvCommand(IAuxProtect plugin) {
-        super(plugin, "saveinv", APPermission.INV_SAVE);
+        super(plugin, "saveinv", APPermission.INV_SAVE, false);
     }
 
     @Override
@@ -49,7 +49,7 @@ public class SaveInvCommand extends Command {
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         if (args.length == 2 && plugin instanceof AuxProtectSpigot spigot) {
-            return spigot.getServer().getOnlinePlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
+            return spigot.getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
         }
         return null;
     }

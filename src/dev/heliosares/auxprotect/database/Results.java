@@ -9,16 +9,19 @@ import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.PosEncoder;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 public class Results {
@@ -26,12 +29,12 @@ public class Results {
     public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
     protected final SenderAdapter player;
     final IAuxProtect plugin;
-    private final ArrayList<DbEntry> entries;
+    private final List<DbEntry> entries;
     private final Parameters params;
     public int perpage = 4;
     public int prevpage = 0;
 
-    public Results(IAuxProtect plugin, ArrayList<DbEntry> entries, SenderAdapter player, Parameters params) {
+    public Results(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
         this.entries = entries;
         this.player = player;
         this.plugin = plugin;
@@ -55,7 +58,7 @@ public class Results {
 
     @SuppressWarnings("deprecation")
     public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time,
-                                 boolean coords) {
+                                 boolean coords) throws SQLException {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
 
@@ -128,6 +131,9 @@ public class Results {
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
             }
         }
+        if (entry instanceof SingleItemEntry sientry) {
+            message.append(" §8[§7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + "§8]").event((HoverEvent) null).event((ClickEvent) null);
+        }
         if (plugin.getAPConfig().doSkipV6Migration()) {
             if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
                 data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));
@@ -156,7 +162,7 @@ public class Results {
         player.sendMessage(message.create());
     }
 
-    public ArrayList<DbEntry> getEntries() {
+    public List<DbEntry> getEntries() {
         return entries;
     }
 
@@ -178,11 +184,11 @@ public class Results {
         player.sendMessageRaw(headerColor + line + "  §9AuxProtect Results§7  " + line);
     }
 
-    public void showPage(int page) {
+    public void showPage(int page) throws SQLException {
         showPage(page, perpage);
     }
 
-    public void showPage(int page, int perpage_) {
+    public void showPage(int page, int perpage_) throws SQLException {
         int lastpage = getNumPages(perpage_);
         if (page > lastpage || page < 1) {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
@@ -199,7 +205,7 @@ public class Results {
         sendArrowKeys(page);
     }
 
-    public void sendEntry(DbEntry entry, int index) {
+    public void sendEntry(DbEntry entry, int index) throws SQLException {
         sendEntry(plugin, player, entry, index, true, !params.getFlags().contains(Flag.HIDE_COORDS));
     }
 

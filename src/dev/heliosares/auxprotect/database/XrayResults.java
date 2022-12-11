@@ -8,13 +8,15 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
+import java.sql.SQLException;
+
 public class XrayResults {
 
     public static void sendHeader(SenderAdapter sender) {
         sender.sendMessageRaw("§f------  §9AuxProtect Xray Check Results§7  ------"); // TODO lang
     }
 
-    public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) {
+    public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) throws SQLException {
         sendHeader(sender);
 
         Results.sendEntry(plugin, sender, en, -1, true, true);

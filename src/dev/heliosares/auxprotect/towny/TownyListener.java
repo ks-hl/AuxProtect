@@ -15,6 +15,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 
+import java.sql.SQLException;
+
 public class TownyListener implements Listener {
     private final AuxProtectSpigot plugin;
 
@@ -53,12 +55,22 @@ public class TownyListener implements Listener {
     }
 
     private void handledeleted(String name, boolean nation) {
-        int uid = plugin.getSqlManager().getTownyManager().getIDFromName(name);
+        int uid = 0;
+        try {
+            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+        } catch (SQLException ignored) {
+            //Unlikely
+        }
         if (uid <= 0) {
             plugin.info("Unknown town/nation " + name);
             return;
         }
-        String uuid = plugin.getSqlManager().getUUIDFromUID(uid);
+        String uuid = null;
+        try {
+            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, true);
+        } catch (SQLException ignored) {
+            //Unlikely
+        }
         if (uuid == null) {
             plugin.info("Unknown town/nation " + name + " with uid " + uid);
             return;
@@ -166,7 +178,7 @@ public class TownyListener implements Listener {
     public void on(NewNationEvent e) {
         Player king = e.getNation().getKing().getPlayer();
         plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
-        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.TOWNCREATE, false,
+        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.NATIONCREATE, false,
                 toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()), null));
     }
 
@@ -174,7 +186,7 @@ public class TownyListener implements Listener {
     public void on(RenameNationEvent e) {
         plugin.getSqlManager().getTownyManager().updateName(e.getNation(), true);
         Player mayor = e.getNation().getKing().getPlayer();
-        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.TOWNRENAME, false,
+        plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(mayor), EntryAction.NATIONRENAME, false,
                 toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()),
                 e.getOldName() + " -> " + e.getNation().getName()));
     }

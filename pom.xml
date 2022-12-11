@@ -1,10 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.2.4-pre1</version>
+	<version>1.2.5-pre1</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
@@ -39,8 +37,7 @@
 						<phase>prepare-package</phase>
 						<configuration>
 							<target>
-								<replace token="%VERSION%" value="${project.version}"
-									dir="target/classes/">
+								<replace token="%VERSION%" value="${project.version}" dir="target/classes/">
 									<include name="**plugin.yml" />
 									<include name="**bungee.yml" />
 								</replace>
@@ -55,23 +52,17 @@
 						<phase>package</phase>
 						<configuration>
 							<target>
-								<delete dir="${testserver}/Test1/plugins"
-									failonerror="false" includes="${project.artifactId}-*.jar" />
+								<delete dir="${testserver}/Test1/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
 								<copy todir="${testserver}/Test1/plugins">
-									<fileset dir="${basedir}/target"
-										includes="${project.artifactId}-${project.version}.jar" />
+									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
 								</copy>
-								<delete dir="${testserver}/Test2/plugins"
-									failonerror="false" includes="${project.artifactId}-*.jar" />
+								<delete dir="${testserver}/Test2/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
 								<copy todir="${testserver}/Test2/plugins">
-									<fileset dir="${basedir}/target"
-										includes="${project.artifactId}-${project.version}.jar" />
+									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
 								</copy>
-								<delete dir="${testserver}/Proxy/plugins"
-									failonerror="false" includes="${project.artifactId}-*.jar" />
+								<delete dir="${testserver}/Proxy/plugins" failonerror="false" includes="${project.artifactId}-*.jar" />
 								<copy todir="${testserver}/Proxy/plugins">
-									<fileset dir="${basedir}/target"
-										includes="${project.artifactId}-${project.version}.jar" />
+									<fileset dir="${basedir}/target" includes="${project.artifactId}-${project.version}.jar" />
 								</copy>
 							</target>
 						</configuration>
@@ -170,7 +161,7 @@
 		<dependency>
 			<groupId>com.github.Gypopo</groupId>
 			<artifactId>EconomyShopGUI-API</artifactId>
-			<version>1.2.0</version>
+			<version>1.4.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.github.7sat</groupId>

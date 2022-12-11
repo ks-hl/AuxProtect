@@ -5,6 +5,8 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import org.bukkit.Location;
 
+import java.sql.SQLException;
+
 public class TownyEntry extends DbEntry {
 
     public TownyEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel,
@@ -21,38 +23,30 @@ public class TownyEntry extends DbEntry {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
     }
 
-    public String getUser() {
+    @Override
+    public String getUser() throws SQLException {
         if (user != null) {
             return user;
         }
         if (!getUserUUID().startsWith("$t") || getUserUUID().length() != 38) {
             return super.getUser();
         }
-        user = SQLManager.getInstance().getTownyManager().getNameFromID(getUid());
+        user = SQLManager.getInstance().getTownyManager().getNameFromID(getUid(), false);
         if (user == null) {
             user = getUserUUID();
         }
         return user;
     }
 
-    public int getTargetId() {
-        if (action.getTable().hasStringTarget()) {
-            return -1;
-        }
-        if (target_id > 0) {
-            return target_id;
-        }
-        return target_id = SQLManager.getInstance().getUIDFromUUID(getTargetUUID(), true);
-    }
-
-    public String getTarget() {
+    @Override
+    public String getTarget() throws SQLException {
         if (target != null) {
             return target;
         }
         if (!getTargetUUID().startsWith("$t") || getTargetUUID().length() != 38) {
             return super.getTarget();
         }
-        target = SQLManager.getInstance().getTownyManager().getNameFromID(getTargetId());
+        target = SQLManager.getInstance().getTownyManager().getNameFromID(getTargetId(), false);
         if (target == null) {
             target = getTargetUUID();
         }

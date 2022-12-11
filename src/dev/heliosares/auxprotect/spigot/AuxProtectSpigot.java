@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.spigot.listeners.*;
 import dev.heliosares.auxprotect.towny.TownyListener;
+import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
@@ -30,6 +31,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -46,19 +48,16 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private static SQLManager sqlManager;
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
-    // TODO convert to configadapter
-    public YMLManager data;
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
-    long lastloaded;
     Set<Integer> stackHashHistory = new HashSet<>();
     private Economy econ;
     private VeinManager veinManager;
     private ClaimInvCommand claiminvcommand;
     private APSCommand apcommand;
     private int SERVER_VERSION;
-    private HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+    private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
     private boolean isShuttingDown;
     private String stackLog = "";
 
@@ -128,11 +127,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             print(e1);
         }
 
-        data = new YMLManager("data", this);
-        data.load();
-        lastloaded = data.getData().getLong("lastloaded");
-        data.getData().set("lastloaded", System.currentTimeMillis());
-        data.save();
+        // TODO readd
+//		lastloaded = data.getData().getLong("lastloaded");
+//		data.getData().set("lastloaded", System.currentTimeMillis());
+//		data.save();
 
         debug("Parsing: " + Bukkit.getBukkitVersion());
         try {
@@ -153,7 +151,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {
                 if (!sqliteFile.getParentFile().mkdirs()) {
-                    this.getLogger().severe("Failed to create database directory.");
+                    this.getLogger().severe("Failed to create database directory. Disabling");
                     this.setEnabled(false);
                     return;
                 }
@@ -164,7 +162,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         throw new IOException();
                     }
                 } catch (IOException e) {
-                    this.getLogger().severe("Failed to create database file.");
+                    this.getLogger().severe("Failed to create database file. Disabling");
                     this.setEnabled(false);
                     return;
                 }
@@ -173,6 +171,11 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
+        if (sqlManager == null) {
+            this.getLogger().severe("Failed to connect to database. Disabling");
+            this.setEnabled(false);
+            return;
+        }
         veinManager = new VeinManager();
 
         new BukkitRunnable() {
@@ -205,6 +208,21 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         return;
                     }
                 }
+                long lastloaded = 0;
+                try {
+                    lastloaded = sqlManager.getLast(SQLManager.LastKeys.TELEMETRY, true);
+                } catch (SQLException ignored) {
+                }
+                long delay = 15 * 20;
+                if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
+                    debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+                            3);
+                } else {
+                    debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
+                            3);
+                    delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
+                }
+                getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
 
                 /*
                  * for (Object command : getConfig().getList("purge-cmds")) { String cmd =
@@ -237,27 +255,37 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         // this feels cursed to run setupEconomy() like this...
         Telemetry.reportHook(this, "Vault", setupEconomy());
 
-        hook(() -> {
+        boolean shop = hook(() -> {
             return new ShopGUIPlusListener(this);
         }, "ShopGuiPlus");
-        hook(() -> {
+        shop = hook(() -> {
             return new EconomyShopGUIListener(this);
-        }, "EconomyShopGUI", "EconomyShopGUI-Premium");
-        hook(() -> {
+        }, "EconomyShopGUI", "EconomyShopGUI-Premium") || shop;
+        shop = hook(() -> {
             return new DynamicShopListener(this);
-        }, "DynamicShop");
-        hook(() -> {
+        }, "DynamicShop") || shop;
+        shop = hook(() -> {
             return new ChestShopListener(this);
-        }, "ChestShop");
-        hook(() -> {
+        }, "ChestShop") || shop;
+        if (!shop) {
+            EntryAction.SHOP.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new AuctionHouseListener(this);
-        }, "AuctionHouse");
-        hook(() -> {
+        }, "AuctionHouse")) {
+            EntryAction.AUCTIONBUY.setEnabled(false);
+            EntryAction.AUCTIONLIST.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new JobsListener(this);
-        }, "Jobs");
-        hook(() -> {
+        }, "Jobs")) {
+            EntryAction.JOBS.setEnabled(false);
+        }
+        if (!hook(() -> {
             return new EssentialsListener(this);
-        }, "Essentials");
+        }, "Essentials")) {
+            EntryAction.PAY.setEnabled(false);
+        }
         if (!hook(() -> {
             return new TownyListener(this);
         }, "Towny")) {
@@ -320,114 +348,146 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         new BukkitRunnable() {
 
+            private boolean running;
+
             @Override
             public void run() {
-                if (!sqlManager.isConnected()) {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
                     return;
                 }
-                List<APPlayer> players = new ArrayList<>();
-                synchronized (apPlayers) {
-                    apPlayers.values().forEach((p) -> {
-                        players.add(p);
-                    });
-                }
-                for (APPlayer apPlayer : players) {
-                    if (!apPlayer.player.isOnline()) {
-                        continue;
+                running = true;
+                try {
+                    List<APPlayer> players;
+                    // Make a new list to not tie up other calls to apPlayers
+                    synchronized (apPlayers) {
+                        players = new ArrayList<>(apPlayers.values());
                     }
-
-                    if (config.getInventoryInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
-                                .getInventoryInterval()) {
-                            apPlayer.logInventory("periodic");
-                        }
-                    }
-
-                    if (config.getInventoryDiffInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
-                                .getInventoryDiffInterval()) {
-                            apPlayer.diff();
-                        }
-                    }
-
-                    if (config.getMoneyInterval() > 0) {
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
-                            PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
-                        }
-                    }
-
-                    if (config.getPosInterval() > 0) {
-                        if (apPlayer.lastMoved > apPlayer.lastLoggedPos
-                                && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
-                            PlayerListener.logPos(AuxProtectSpigot.this, apPlayer, apPlayer.player,
-                                    apPlayer.player.getLocation(), "");
-                        }
-                    }
-
-                    if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-                        if (apPlayer.lastLocation != null
-                                && apPlayer.lastLocation.getWorld().equals(apPlayer.player.getWorld())) {
-                            apPlayer.movedAmountThisMinute += Math
-                                    .min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
-                        }
-                        apPlayer.lastLocation = apPlayer.player.getLocation();
-                        apPlayer.lastCheckedMovement = System.currentTimeMillis();
-                    }
-
-                    if (apPlayer.lastLoggedActivity == 0) {
-                        apPlayer.lastLoggedActivity = System.currentTimeMillis();
-                    }
-                    if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
-                        if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
-                            apPlayer.activity[apPlayer.activityIndex] += 100;
-                        }
-                        apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
-                        apPlayer.movedAmountThisMinute = 0;
-
-                        if (apPlayer.hasMovedThisMinute) {
-                            apPlayer.addActivity(1);
-                            apPlayer.hasMovedThisMinute = false;
+                    for (APPlayer apPlayer : players) {
+                        if (!apPlayer.player.isOnline()) {
+                            continue;
                         }
 
-                        add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
-                                apPlayer.player.getLocation(), "",
-                                (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
-                        apPlayer.lastLoggedActivity = System.currentTimeMillis();
-
-                        int tallied = 0;
-                        int inactive = 0;
-                        for (double activity : apPlayer.activity) {
-                            if (activity < 0) {
-                                continue;
-                            }
-                            tallied++;
-                            if (activity < 10) {
-                                inactive++;
+                        if (config.getInventoryInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
+                                    .getInventoryInterval()) {
+                                apPlayer.logInventory("periodic");
                             }
                         }
-                        if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
-                            if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
-                                apPlayer.lastNotifyInactive = System.currentTimeMillis();
-                                String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
-                                        inactive, tallied);
-                                for (Player player : Bukkit.getOnlinePlayers()) {
-                                    if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
-                                        player.sendMessage(msg);
-                                    }
+
+                        if (config.getMoneyInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
+                                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
+                            }
+                        }
+
+                        if (config.getPosInterval() > 0) {
+                            if (apPlayer.lastMoved > apPlayer.lastLoggedPos
+                                    && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
+                                apPlayer.logPos(apPlayer.player.getLocation());
+                            } else if (config.doLogIncrementalPosition()) {
+                                apPlayer.tickDiffPos();
+                            }
+                        }
+
+                        if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
+                            if (apPlayer.lastLocation != null
+                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.player.getWorld())) {
+                                apPlayer.movedAmountThisMinute += Math
+                                        .min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
+                            }
+                            apPlayer.lastLocation = apPlayer.player.getLocation();
+                            apPlayer.lastCheckedMovement = System.currentTimeMillis();
+                        }
+
+                        if (apPlayer.lastLoggedActivity == 0) {
+                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
+                        }
+                        if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
+                            if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
+                                apPlayer.activity[apPlayer.activityIndex] += 100;
+                            }
+                            apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
+                            apPlayer.movedAmountThisMinute = 0;
+
+                            if (apPlayer.hasMovedThisMinute) {
+                                apPlayer.addActivity(1);
+                                apPlayer.hasMovedThisMinute = false;
+                            }
+
+                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
+                                    apPlayer.player.getLocation(), "",
+                                    (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
+                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
+
+                            int tallied = 0;
+                            int inactive = 0;
+                            for (double activity : apPlayer.activity) {
+                                if (activity < 0) {
+                                    continue;
                                 }
-                                info(msg);
-                                add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
-                                        apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+                                tallied++;
+                                if (activity < 10) {
+                                    inactive++;
+                                }
+                            }
+                            if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
+                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
+                                if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
+                                    apPlayer.lastNotifyInactive = System.currentTimeMillis();
+                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
+                                            inactive, tallied);
+                                    for (Player player : Bukkit.getOnlinePlayers()) {
+                                        if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+                                            player.sendMessage(msg);
+                                        }
+                                    }
+                                    info(msg);
+                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
+                                            apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+                                }
+                            }
+
+                            apPlayer.activityIndex++;
+                            if (apPlayer.activityIndex >= apPlayer.activity.length) {
+                                apPlayer.activityIndex = 0;
+                            }
+                            apPlayer.activity[apPlayer.activityIndex] = 0;
+                        }
+                    }
+                } finally {
+                    running = false;
+                }
+            }
+        }.runTaskTimerAsynchronously(this, 40, 4);
+        new BukkitRunnable() {
+
+            private boolean running;
+
+            @Override
+            public void run() {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
+                    return;
+                }
+                running = true;
+                try {
+                    List<APPlayer> players;
+                    // Make a new list to not tie up other calls to apPlayers
+                    synchronized (apPlayers) {
+                        players = new ArrayList<>(apPlayers.values());
+                    }
+                    for (APPlayer apPlayer : players) {
+                        if (!apPlayer.player.isOnline()) {
+                            continue;
+                        }
+                        if (config.getInventoryDiffInterval() > 0) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
+                                    .getInventoryDiffInterval()) {
+                                apPlayer.tickDiffInventory();
                             }
                         }
-
-                        apPlayer.activityIndex++;
-                        if (apPlayer.activityIndex >= apPlayer.activity.length) {
-                            apPlayer.activityIndex = 0;
-                        }
-                        apPlayer.activity[apPlayer.activityIndex] = 0;
                     }
+                } finally {
+                    running = false;
                 }
             }
         }.runTaskTimerAsynchronously(this, 40, 20);
@@ -476,23 +536,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(this, 1 * 20, 10 * 20);
-
-        if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
-            debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                    3);
-            new Telemetry(this, 14232);
-        } else {
-            debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                    3);
-            new BukkitRunnable() {
-
-                @Override
-                public void run() {
-                    new Telemetry(AuxProtectSpigot.this, 14232);
-                }
-            }.runTaskLater(this, (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50);
-        }
+        }.runTaskTimerAsynchronously(this, 20, 10 * 20);
     }
 
     private boolean hook(Supplier<Listener> listener, String... names) {
@@ -566,6 +610,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
         dbRunnable = null;
         sqlManager = null;
+        Pane.shutdown();
     }
 
     @Override

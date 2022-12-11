@@ -5,19 +5,19 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class PurgeCommand extends Command {
 
     public PurgeCommand(IAuxProtect plugin) {
-        super(plugin, "purge", APPermission.PURGE);
+        super(plugin, "purge", APPermission.PURGE, true);
     }
 
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
@@ -34,15 +34,15 @@ public class PurgeCommand extends Command {
         if (!args[1].equalsIgnoreCase("all")) {
             try {
                 table_ = Table.valueOf(args[1].toUpperCase());
-            } catch (IllegalArgumentException e) {
+            } catch (IllegalArgumentException ignored) {
             }
             if (table_ == null || !table_.exists(plugin)) {
-                sender.sendLang(Language.L.PURGE_TABLE);
+                sender.sendLang(Language.L.COMMAND__PURGE__TABLE);
                 return;
             }
         }
-        if (table_ == Table.AUXPROTECT_LONGTERM) {
-            sender.sendLang(Language.L.PURGE_TABLE);
+        if (table_ != null && !table_.canPurge()) {
+            sender.sendLang(Language.L.COMMAND__PURGE__NOPURGE);
             return;
         }
         final Table table = table_;
@@ -54,34 +54,30 @@ public class PurgeCommand extends Command {
             return;
         }
 
-        if (time_ < 1000 * 3600 * 24 * 14) {
-            sender.sendLang(Language.L.PURGE_TIME);
+        if (time_ < Table.MIN_PURGE_INTERVAL) {
+            sender.sendLang(Language.L.COMMAND__PURGE__TIME);
             return;
         }
 
         final long time = time_;
-        sender.sendLang(Language.L.PURGE_PURGING, table == null ? "all" : table.toString());
-        plugin.runAsync(new Runnable() {
+        sender.sendLang(Language.L.COMMAND__PURGE__PURGING, table == null ? "all" : table.toString());
 
-            @Override
-            public void run() {
-                try {
-                    plugin.getSqlManager().purge(sender, table, time);
-                    sender.sendLang(Language.L.PURGE_UIDS);
-                    plugin.getSqlManager().purgeUIDs();
+        int count = 0;
+        try {
+            count += plugin.getSqlManager().purge(table, time);
+            sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
+            plugin.getSqlManager().purgeUIDs();
 
-                    if (!plugin.getSqlManager().isMySQL()) {
-                        sender.sendLang(Language.L.PURGE_VACUUM);
-                        plugin.getSqlManager().vacuum();
-                    }
-                } catch (SQLException | BusyException e) {
-                    plugin.print(e);
-                    sender.sendLang(Language.L.PURGE_ERROR);
-                    return;
-                }
-                sender.sendLang(Language.L.PURGE_COMPLETE);
+            if (!plugin.getSqlManager().isMySQL()) {
+                plugin.getSqlManager().vacuum();
             }
-        });
+        } catch (SQLException e) {
+            plugin.print(e);
+            sender.sendLang(Language.L.COMMAND__PURGE__ERROR);
+            return;
+        }
+        sender.sendLang(Language.L.COMMAND__PURGE__COMPLETE_COUNT, count);
+
     }
 
     @Override
@@ -94,9 +90,7 @@ public class PurgeCommand extends Command {
         List<String> possible = new ArrayList<>();
 
         if (args.length == 2) {
-            for (Table table : Table.values()) {
-                possible.add(table.toString());
-            }
+            possible.addAll(Arrays.stream(Table.values()).filter(t -> t.exists(plugin) && t.canPurge()).map(Table::getName).toList());
             possible.add("all");
         }
         if (args.length == 3) {

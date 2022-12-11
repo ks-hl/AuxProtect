@@ -7,13 +7,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.Map.Entry;
 
 public class RetentionSolver {
 
-    public static void showRetention(IAuxProtect plugin, SenderAdapter sender, ArrayList<DbEntry> entries,
-                                     long startTime, long endTime) {
+    public static void showRetention(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries,
+                                     long startTime, long endTime) throws SQLException {
         long start = System.currentTimeMillis();
         Set<Integer> lookupUids = new HashSet<>();
         for (DbEntry entry : entries) {
@@ -25,7 +26,7 @@ public class RetentionSolver {
 
         HashMap<OfflinePlayer, Integer> playtimes = new HashMap<>();
         HashMap<Integer, Integer> thresholds = new HashMap<>();
-        thresholds.put(1 * 60 * 20, 0);
+        thresholds.put(60 * 20, 0);
         thresholds.put(5 * 60 * 20, 0);
         thresholds.put(10 * 60 * 20, 0);
         thresholds.put(30 * 60 * 20, 0);
@@ -33,7 +34,7 @@ public class RetentionSolver {
         thresholds.put(3 * 60 * 60 * 20, 0);
         int onlinern = 0;
         for (int uid : lookupUids) {
-            HashMap<Long, String> usernames = plugin.getSqlManager().getUsernamesFromUID(uid);
+            HashMap<Long, String> usernames = plugin.getSqlManager().getUserManager().getUsernamesFromUID(uid, false);
             boolean valid = true;
             for (long time : usernames.keySet()) {
                 if (time < startTime) {
@@ -45,11 +46,7 @@ public class RetentionSolver {
                 continue;
             }
             OfflinePlayer player = Bukkit
-                    .getOfflinePlayer(UUID.fromString(plugin.getSqlManager().getUUIDFromUID(uid).substring(1)));
-            if (player == null) {
-                sender.sendMessageRaw("§cPlayer not found. UID=" + uid);
-                return;
-            }
+                    .getOfflinePlayer(UUID.fromString(plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false).substring(1)));
             int playtime = player.getStatistic(Statistic.PLAY_ONE_MINUTE);
             playtimes.put(player, playtime);
             for (int threshold : thresholds.keySet()) {

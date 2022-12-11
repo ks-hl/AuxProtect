@@ -1,7 +1,9 @@
 package dev.heliosares.auxprotect.spigot;
 
+import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.XrayEntry;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -34,15 +36,15 @@ public class VeinManager {
         switch (severity) {
             case -2:
             case -1:
-                return "ยง5";
+                return "ง5";
             case 0:
-                return "ยงa";
+                return "งa";
             case 1:
-                return "ยงe";
+                return "งe";
             case 2:
-                return "ยงc";
+                return "งc";
             case 3:
-                return "ยง4";
+                return "ง4";
             default:
                 return "";
         }
@@ -68,7 +70,14 @@ public class VeinManager {
                 return false;
             }
             entries.add(entry);
-            entries.sort((o1, o2) -> o1.getUser().compareTo(o2.getUser()));
+            entries.sort((o1, o2) -> {
+                try {
+                    return o1.getUser().compareTo(o2.getUser());
+                } catch (SQLException e) {
+                    AuxProtectAPI.getInstance().print(e);
+                    return 0;
+                }
+            });
             entries.sort((o1, o2) -> o1.world.compareTo(o2.world));
         }
         return false;

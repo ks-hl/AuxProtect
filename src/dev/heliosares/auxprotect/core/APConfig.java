@@ -2,7 +2,9 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.adapters.ConfigAdapter;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.KeyUtil;
+import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.io.File;
 import java.io.IOException;
@@ -19,6 +21,7 @@ public class APConfig {
     private long moneyInterval;
     private boolean overrideCommands;
     private boolean skipV6Migration;
+    private boolean logIncrementalPosition;
     private KeyUtil key;
     private ConfigAdapter config;
     private int debug;
@@ -29,6 +32,7 @@ public class APConfig {
     private String pass;
     private String database;
     private String tablePrefix;
+    private boolean autopurge;
 
     public void load(IAuxProtect plugin, ConfigAdapter config) throws IOException {
         this.plugin = plugin;
@@ -58,6 +62,7 @@ public class APConfig {
             inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
             inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 0);
             moneyInterval = config.getLong("Actions.money.Interval", 600000);
+            logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
         }
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
@@ -75,7 +80,43 @@ public class APConfig {
             action.setLowestpriority(priority);
             config.set("Actions." + action.toString().toLowerCase() + ".Enabled", enabled);
         }
+
+        autopurge = config.getBoolean("AutoPurge.Enabled");
+        config.set("AutoPurge.Enabled", autopurge);
+        long autopurgeinterval = getAutoPurgeInterval("default", -1);
+        for (Table table : Table.values()) {
+            if (table.exists(plugin) && table.canPurge()) {
+                long purge = getAutoPurgeInterval("Table." + table.getName(), autopurgeinterval);
+                if (autopurge) { // Checking here instead of at the beginning allows defaults to be set at first
+                    // run
+                    table.setAutoPurgeInterval(purge);
+                }
+            }
+        }
         config.save();
+    }
+
+    private long getAutoPurgeInterval(String table, long autopurgeinterval) {
+        String interval = config.getString("AutoPurge." + table);
+        if (interval == null) interval = "default";
+        config.set("AutoPurge." + table, interval);
+        if (interval.equalsIgnoreCase("off") || interval.equals("-1") || interval.equals("0")) {
+            return -1;
+        }
+        if (interval.equalsIgnoreCase("default") && autopurgeinterval >= Table.MIN_PURGE_INTERVAL) {
+            return autopurgeinterval;
+        }
+        long time = TimeUtil.stringToMillis(interval);
+        try {
+            if (time >= Table.MIN_PURGE_INTERVAL || time == 0) {
+                return time;
+            } else {
+                plugin.warning("Auto purge interval for '" + table + "' too short: '" + interval + "', min 2w");
+            }
+        } catch (NumberFormatException e) {
+            plugin.warning(e.getMessage());
+        }
+        return -1;
     }
 
     private void loadKey(IAuxProtect plugin) {
@@ -197,4 +238,13 @@ public class APConfig {
         }
         return tablePrefix;
     }
+
+    public boolean doAutoPurge() {
+        return autopurge;
+    }
+
+    public boolean doLogIncrementalPosition() {
+        return logIncrementalPosition;
+    }
+
 }

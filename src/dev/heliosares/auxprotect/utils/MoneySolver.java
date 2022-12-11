@@ -24,7 +24,7 @@ public class MoneySolver extends ChartRenderer {
     private double[] values = new double[100];
     private List<LocalDate> xDivs;
 
-    private MoneySolver(AuxProtectSpigot plugin, Player player, ArrayList<DbEntry> results, int time, String user)
+    private MoneySolver(AuxProtectSpigot plugin, Player player, List<DbEntry> results, int time, String user)
             throws IllegalArgumentException {
         super(plugin, user + "'" + (user.toLowerCase().endsWith("s") ? "" : "s") + " Money", Color.LIGHT_GRAY, 100);
         if (results.size() < 3) {
@@ -103,7 +103,7 @@ public class MoneySolver extends ChartRenderer {
 
     }
 
-    public static void showMoney(IAuxProtect plugin, Player player, ArrayList<DbEntry> results, int time,
+    public static void showMoney(IAuxProtect plugin, Player player, List<DbEntry> results, int time,
                                  String users) {
         if (!(plugin instanceof AuxProtectSpigot)) {
             return;

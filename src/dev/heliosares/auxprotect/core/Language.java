@@ -85,18 +85,22 @@ public class Language {
         WATCH_ING, //
         WATCH_REMOVED, //
         WATCH_NOW, //
-        PURGE_PURGING, //
-        PURGE_UIDS, //
-        PURGE_VACUUM, //
-        PURGE_COMPLETE, //
-        PURGE_ERROR, //
-        PURGE_TIME, //
-        PURGE_TABLE, //
+        COMMAND__PURGE__PURGING, //
+        COMMAND__PURGE__UIDS, //
+        COMMAND__PURGE__VACUUM, //
+        COMMAND__PURGE__NOTVACUUM, //
+        COMMAND__PURGE__COMPLETE_COUNT, //
+        COMMAND__PURGE__ERROR, //
+        COMMAND__PURGE__TIME, //
+        COMMAND__PURGE__TABLE, //
+        COMMAND__PURGE__NOPURGE, //
+        COMMAND__PURGE__SKIPAUTO, //
         BACKUP_SQLITEONLY, //
         UNKNOWN_SUBCOMMAND, //
         COMMAND__HELP, //
         LOOKUP_PLAYTIME_NOUSER, //
         LOOKUP_PLAYTIME_TOOMANYUSERS, //
+        PLAYERNOTFOUND, //
         LOOKUP_PLAYERNOTFOUND, //
         LOOKUP_UNKNOWNACTION, //
         PLAYTIME_TOOMANYUSERS, //
@@ -114,7 +118,12 @@ public class Language {
         INV_MANUAL_SUCCESS, //
         INV_TOOSOON, //
         DATABASE_BUSY, //
-        ACTIONS,//
+        ACTIONS, //
+        COMMAND__CLAIMINV__CANCELLED, //
+        COMMAND__CLAIMINV__CANCELLED_OTHER, //
+        COMMAND__CLAIMINV__YOUHAVENONE, //
+        COMMAND__CLAIMINV__OTHERHASNONE, //
+        COMMAND__CLAIMINV__HEADER,//
         ;
 
         public final String name;
@@ -152,7 +161,7 @@ public class Language {
             if (format == null || format.length == 0) {
                 return message;
             }
-            return String.format(message, format);
+            return String.format(message, format).replace("\\n", "\n");
         }
 
         public List<String> translateList() {
@@ -168,6 +177,7 @@ public class Language {
             if (lang != null && !lang.isNull()) {
                 message = lang.getStringList(name);
             }
+
             if (message == null || message.size() == 0) {
                 return null;
             }

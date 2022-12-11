@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.utils;
 
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
@@ -8,15 +9,28 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 
 public class Pane implements InventoryHolder {
+    private static final List<Pane> openPanes = new ArrayList<>();
     public final Type type;
+    private final Player player;
     private Inventory inventory;
     private ArrayList<Button> buttons;
-    private List<Runnable> onClose = new ArrayList<>();
+    private List<Consumer<Pane>> onClose = new ArrayList<>();
+    private boolean cancelled;
 
-    public Pane(Type type) {
+    public Pane(Type type, Player player) {
         this.type = type;
+        this.player = player;
+        openPanes.add(this);
+    }
+
+    public static void shutdown() {
+        openPanes.forEach((p) -> {
+            p.cancelled = true;
+            p.getPlayer().closeInventory();
+        });
     }
 
     @Override
@@ -51,7 +65,7 @@ public class Pane implements InventoryHolder {
     }
 
     public boolean click(int slot) {
-        if (buttons == null) {
+        if (buttons == null || cancelled) {
             return false;
         }
         for (Button button : buttons) {
@@ -65,14 +79,32 @@ public class Pane implements InventoryHolder {
         return false;
     }
 
-    public void onClose(Runnable run) {
+    public void onClose(Consumer<Pane> run) {
         this.onClose.add(run);
     }
 
     public void close() {
-        for (Runnable run : onClose) {
-            run.run();
+        if (cancelled) {
+            return;
         }
+        for (Consumer<Pane> run : onClose) {
+            run.accept(this);
+        }
+        cancelled = true;
+        openPanes.remove(this);
+    }
+
+    public void cancel() {
+        openPanes.remove(this);
+        cancelled = true;
+    }
+
+    public boolean isCancelled() {
+        return cancelled;
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 
     public static enum Type {

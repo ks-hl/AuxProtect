@@ -15,10 +15,10 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
+import java.util.List;
 
 public class PlayTimeSolver {
-    public static BaseComponent[] solvePlaytime(ArrayList<DbEntry> entries, long startTimeMillis, int hours,
+    public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours,
                                                 String player) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         if (hours > 840) {

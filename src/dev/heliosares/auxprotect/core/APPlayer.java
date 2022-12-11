@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.PosEncoder;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -89,7 +90,7 @@ public class APPlayer {
         return entry.getTime();
     }
 
-    public synchronized void diff() {
+    public synchronized void tickDiffInventory() {
         lastLoggedInventoryDiff = System.currentTimeMillis();
         if (invDiffItems == null) {
             logInventory("diff");
@@ -119,7 +120,6 @@ public class APPlayer {
 
             if (newItem == null) {
                 qty = 0;
-                item = null;
             } else {
                 if (!sameqty) {
                     qty = newItem.getAmount();
@@ -139,5 +139,47 @@ public class APPlayer {
             }
             invDiffItems.set(i, newItem);
         }
+    }
+
+    private final List<Byte> inventoryBlob = new ArrayList<>();
+    private Location lastLocationDiff;
+
+    public void tickDiffPos() {
+        if (lastLocationDiff != null) {
+            synchronized (inventoryBlob) {
+                for (byte b : PosEncoder.encode(player, lastLocationDiff)) {
+                    inventoryBlob.add(b);
+                }
+            }
+        }
+        lastLocationDiff = player.getLocation().clone();
+    }
+
+    public void logPos(Location location) {
+        logPos(location, false);
+    }
+
+    public void logPreTeleportPos(Location location) {
+        logPos(location, true);
+    }
+
+    public void logPostTeleportPos(Location location) {
+        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.TP, true, location, "", ""));
+        lastLocationDiff = null; // Set to null to force a one-tick pause before checking again
+    }
+
+    private void logPos(Location location, boolean tp) {
+        lastLoggedPos = System.currentTimeMillis();
+        DbEntry entry = new DbEntry("$" + player.getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "", "");
+
+        synchronized (inventoryBlob) {
+            byte[] blob = new byte[inventoryBlob.size()];
+            for (int i = 0; i < blob.length; i++) blob[i] = inventoryBlob.get(i);
+            entry.setBlob(blob);
+            inventoryBlob.clear();
+        }
+
+        plugin.add(entry);
+
     }
 }

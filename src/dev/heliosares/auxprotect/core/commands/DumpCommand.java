@@ -9,7 +9,6 @@ import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.CommandException;
-import dev.heliosares.auxprotect.utils.HasteBinAPI;
 import dev.heliosares.auxprotect.utils.StackUtil;
 
 import java.io.BufferedWriter;
@@ -24,7 +23,7 @@ import java.util.List;
 public class DumpCommand extends Command {
 
     public DumpCommand(IAuxProtect plugin) {
-        super(plugin, "dump", APPermission.ADMIN, "stats");
+        super(plugin, "dump", APPermission.ADMIN, true, "stats");
     }
 
     public static String dump(IAuxProtect plugin, boolean verbose, boolean chat, boolean file, boolean config,
@@ -56,6 +55,7 @@ public class DumpCommand extends Command {
             trace.append("  Size: ").append(plugin.getSqlManager().getConnectionPoolSize()).append("\n");
             trace.append("  Alive: ").append(ConnectionPool.getNumAlive()).append("\n");
             trace.append("  Born: ").append(ConnectionPool.getNumBorn()).append("\n");
+            trace.append("  Roaming: ").append(ConnectionPool.getRoaming()).append("\n");
         }
         long[] read = ConnectionPool.calculateReadTimes();
         if (read != null) {
@@ -152,14 +152,14 @@ public class DumpCommand extends Command {
             trace.append("\n\n");
         }
 
-        if (!file) {
-            try {
-                return HasteBinAPI.post(trace.toString());
-            } catch (Exception e) {
-                plugin.warning("Failed to upload trace, writing to file...");
-                plugin.print(e);
-            }
-        }
+//        if (!file) {
+//            try {
+//                return HasteBinAPI.post(trace);
+//            } catch (Exception e) {
+//                plugin.warning("Failed to upload trace, writing to file...");
+//                plugin.print(e);
+//            }
+//        }
         File dumpdir = new File(plugin.getDataFolder(), "dump");
         File dump = new File(dumpdir, "dump-" + System.currentTimeMillis() + ".txt");
         dumpdir.mkdirs();
@@ -200,33 +200,35 @@ public class DumpCommand extends Command {
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         sender.sendMessageRaw("§aBuilding trace...");
-        plugin.runAsync(() -> {
-            boolean verbose = false;
-            boolean chat = false;
-            boolean file = false;
-            boolean config = false;
-            boolean stats = args[0].equalsIgnoreCase("stats");
-            if (!stats) {
-                for (int i = 1; i < args.length; i++) {
-                    switch (args[i].toLowerCase()) {
-                        case "chat" -> chat = true;
-                        case "verbose" -> verbose = true;
-                        case "file" -> file = true;
-                        case "config" -> config = true;
+        boolean verbose = false;
+        boolean chat = false;
+        boolean file = false;
+        boolean config = false;
+        boolean stats = args[0].equalsIgnoreCase("stats");
+        if (!stats) {
+            for (int i = 1; i < args.length; i++) {
+                switch (args[i].toLowerCase()) {
+                    case "chat" -> chat = true;
+                    case "verbose" -> verbose = true;
+//                        case "file" -> file = true;
+                    case "config" -> config = true;
+                    default -> {
+                        sender.sendLang(Language.L.INVALID_SYNTAX);
+                        return;
                     }
                 }
             }
-            try {
-                sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
-            } catch (Exception e) {
-                plugin.print(e);
-                sender.sendLang(Language.L.ERROR);
-            }
-            if (config) {
-                sender.sendMessageRaw(
-                        "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
-            }
-        });
+        }
+        try {
+            sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
+        } catch (Exception e) {
+            plugin.print(e);
+            sender.sendLang(Language.L.ERROR);
+        }
+        if (config) {
+            sender.sendMessageRaw(
+                    "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
+        }
     }
 
     @Override
@@ -239,7 +241,7 @@ public class DumpCommand extends Command {
         List<String> out = new ArrayList<>();
         out.add("verbose");
         out.add("chat");
-        out.add("file");
+//        out.add("file");
         out.add("config");
         return out;
     }

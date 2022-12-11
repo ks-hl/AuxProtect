@@ -4,13 +4,13 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
-import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -30,6 +30,8 @@ import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.io.IOException;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -37,7 +39,7 @@ public class PlayerListener implements Listener {
 
     private final ArrayList<Material> buckets;
     private final ArrayList<EntityType> mobs;
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public PlayerListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -66,38 +68,19 @@ public class PlayerListener implements Listener {
         if (plugin.getEconomy() == null) {
             return;
         }
-        plugin.getAPPlayer(player.getPlayer()).lastLoggedMoney = System.currentTimeMillis();
+        plugin.getAPPlayer(player).lastLoggedMoney = System.currentTimeMillis();
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
                 reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
-    }
-
-    public static void logPos(AuxProtectSpigot auxProtect, APPlayer apPlayer, Player player, Location location,
-                              String string) {
-        apPlayer.lastLoggedPos = System.currentTimeMillis();
-        auxProtect
-                .add(new DbEntry("$" + player.getUniqueId().toString(), EntryAction.POS, false, location, string, ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerItemDamageEvent(PlayerItemDamageEvent e) {
         ItemStack item = e.getItem();
-        Damageable meta = (Damageable) item.getItemMeta();
-        int durability = item.getType().getMaxDurability() - (meta.getDamage() + 1);
-        if (durability <= 0) {
-            DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BREAKITEM, false,
-                    e.getPlayer().getLocation(), AuxProtectSpigot.getLabel(item.getType()), "");
-
-            if (InvSerialization.isCustom(item)) {
-                try {
-                    entry.setBlob(InvSerialization.toByteArray(item));
-                } catch (Exception e1) {
-                    plugin.warning("Error serializing broken item");
-                    plugin.print(e1);
-                }
-            } else if (item.getAmount() > 1) {
-                entry.setData("x" + item.getAmount());
+        if (item.getItemMeta() instanceof Damageable meta) {
+            if (item.getType().getMaxDurability() - meta.getDamage() - e.getDamage() <= 0) {
+                EntityListener.itemBreak(plugin, AuxProtectSpigot.getLabel(e.getPlayer()), item,
+                        e.getPlayer().getLocation());
             }
-            plugin.add(entry);
         }
     }
 
@@ -107,33 +90,23 @@ public class PlayerListener implements Listener {
 
         ItemStack mainhand = e.getPlayer().getInventory().getItemInMainHand();
         ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
-        if ((mainhand != null && mainhand.getType() == Material.WATER_BUCKET)
-                || (offhand != null && offhand.getType() == Material.WATER_BUCKET)) {
+        if (mainhand.getType() == Material.WATER_BUCKET || offhand.getType() == Material.WATER_BUCKET) {
             if (mobs.contains(e.getRightClicked().getType())) {
                 DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
                         e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), "");
                 plugin.add(entry);
             }
         }
-        if (e.getRightClicked() instanceof ItemFrame) {
-            final ItemFrame item = (ItemFrame) e.getRightClicked();
-            if (item.getItem() == null || item.getItem().getType() == Material.AIR) {
+        if (e.getRightClicked() instanceof final ItemFrame item) {
+            if (item.getItem().getType() == Material.AIR) {
                 ItemStack added = e.getPlayer().getInventory().getItemInMainHand();
-                if (added == null || added.getType() == Material.AIR) {
+                if (added.getType() == Material.AIR) {
                     added = e.getPlayer().getInventory().getItemInOffHand();
                 }
-                if (added != null && added.getType() != Material.AIR) {
+                if (added.getType() != Material.AIR) {
                     String data = "";
-                    DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
-                            item.getLocation(), added.getType().toString().toLowerCase(), data);
-                    if (InvSerialization.isCustom(added)) {
-                        try {
-                            entry.setBlob(InvSerialization.toByteArray(added));
-                        } catch (Exception e1) {
-                            plugin.warning("Error serializing itemframe");
-                            plugin.print(e1);
-                        }
-                    }
+                    DbEntry entry = new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
+                            item.getLocation(), added.getType().toString().toLowerCase(), data, added);
                     plugin.add(entry);
                 }
             }
@@ -148,8 +121,8 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        if (e.getAction() == Action.RIGHT_CLICK_BLOCK) {
-            if ((e.getItem() != null && e.getItem().getType() != null && buckets.contains(e.getItem().getType()))) {
+        if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
+            if ((e.getItem() != null && buckets.contains(e.getItem().getType()))) {
                 DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, false,
                         e.getClickedBlock().getLocation(), e.getItem().getType().toString().toLowerCase(), "");
                 plugin.add(entry);
@@ -193,31 +166,41 @@ public class PlayerListener implements Listener {
 
             @Override
             public void run() {
-                plugin.getSqlManager().updateUsernameAndIP(e.getPlayer().getUniqueId(), e.getPlayer().getName(), ip);
+                try {
+                    plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
+                            e.getPlayer().getName(), ip);
+                } catch (SQLException ex) {
+                    plugin.print(ex);
+                }
             }
         }.runTaskAsynchronously(plugin);
 
         apPlayer.logInventory("join");
 
-        final String data = plugin.data.getData().getString("Recoverables." + e.getPlayer().getUniqueId().toString());
-        if (data != null) {
-            new BukkitRunnable() {
-
-                @Override
-                public void run() {
-                    e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
-                    e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
-                    ComponentBuilder message = new ComponentBuilder();
-                    message.append("§f\n         ");
-                    message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                            .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                    new Text("§aClick to claim your recovered inventory")));
-                    message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
-                    e.getPlayer().spigot().sendMessage(message.create());
-                    e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                try {
+                    if (plugin.getSqlManager().getUserManager()
+                            .getPendingInventory(plugin.getSqlManager().getUserManager()
+                                    .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
+                        return;
+                    }
+                } catch (SQLException | IOException e1) {
+                    return;
                 }
-            }.runTaskLater(plugin, 60);
-        }
+                e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
+                e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
+                ComponentBuilder message = new ComponentBuilder();
+                message.append("§f\n         ");
+                message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new Text("§aClick to claim your recovered inventory")));
+                message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                e.getPlayer().spigot().sendMessage(message.create());
+                e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+            }
+        }.runTaskLaterAsynchronously(plugin, 40);
 
         if (plugin.update != null && APPermission.ADMIN.hasPermission(e.getPlayer())) {
             new BukkitRunnable() {
@@ -238,9 +221,9 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent e) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, false, e.getFrom(), "", ""));
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.TP, true, e.getTo(), "", ""));
         APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+        apPlayer.logPreTeleportPos(e.getFrom());
+        apPlayer.logPostTeleportPos(e.getTo());
         apPlayer.lastLoggedPos = System.currentTimeMillis();
         if (!plugin.getAPConfig().isInventoryOnWorldChange() || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
             return;

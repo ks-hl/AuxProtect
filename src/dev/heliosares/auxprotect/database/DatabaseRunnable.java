@@ -4,24 +4,28 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
+import javax.annotation.Nonnull;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class DatabaseRunnable implements Runnable {
+    private static final HashMap<Table, Long> lastTimes = new HashMap<>();
     private static final long pickupCacheTime = 1500;
     private static final long jobsCacheTime = 10000;
-    private static final HashMap<Table, Long> lastTimes = new HashMap<>();
+    @Nonnull
     private final SQLManager sqlManager;
+    @Nonnull
     private final IAuxProtect plugin;
-    private long running = 0;
-    private long lastWarn = 0;
     private final ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
+    private long lastWarn = 0;
+    private long lockedSince;
 
-    public DatabaseRunnable(IAuxProtect plugin, SQLManager sqlManager) {
+    public DatabaseRunnable(@Nonnull IAuxProtect plugin, @Nonnull SQLManager sqlManager) {
         this.sqlManager = sqlManager;
         this.plugin = plugin;
     }
@@ -57,47 +61,38 @@ public class DatabaseRunnable implements Runnable {
     }
 
     public int queueSize() {
-        return Arrays.stream(Table.values()).map(t -> t.queue.size()).reduce(Integer::sum).orElse(0);
+        Optional<Integer> opt = Arrays.stream(Table.values()).map(t -> t.queue.size()).reduce(Integer::sum);
+        if (opt.isEmpty())
+            return 0;
+        return opt.get();
     }
 
     @Override
     public void run() {
-        try {
-            if (!sqlManager.isConnected()) {
+        if (!plugin.isEnabled() || !sqlManager.isConnected()) {
+            return;
+        }
+        if (lockedSince > 0) {
+            long locked = System.currentTimeMillis() - lockedSince;
+            if (locked > 20000 && System.currentTimeMillis() - lastWarn > 60000) {
+                lastWarn = System.currentTimeMillis();
+                plugin.warning("Overlapping logging windows by " + locked + " ms.");
+            }
+            plugin.debug("Overlapping logging windows by " + locked + " ms.", 1);
+            if (locked < 300000) {
                 return;
+            } else {
+                plugin.warning("Overlapping logging windows by 5 minutes, continuing.");
             }
-            // TODO was this necessary?
-            if (running > 0) {
-                if (System.currentTimeMillis() - running > 20000) {
-                    if (System.currentTimeMillis() - lastWarn > 60000) {
-                        lastWarn = System.currentTimeMillis();
-                        plugin.warning("Overlapping logging windows > 20 seconds by "
-                                + (System.currentTimeMillis() - running) + " ms.");
-                    }
-                }
-                plugin.debug("Overlapping logging windows by " + (System.currentTimeMillis() - running) + " ms.", 1);
-                if (System.currentTimeMillis() - running < 300000) {
-                    return;
-                } else {
-                    plugin.warning("Overlapping logging windows by 5 minutes, continuing.");
-                }
-            }
-            running = System.currentTimeMillis();
-
+        }
+        lockedSince = System.currentTimeMillis();
+        try {
             checkCache();
-
-            for (Table table : Table.values()) {
-                try {
-                    sqlManager.put(table);
-                } catch (SQLException e) {
-                    plugin.print(e);
-                }
-            }
-            sqlManager.cleanup();
+            sqlManager.tick();
         } catch (Throwable e) {
             plugin.print(e);
         } finally {
-            running = 0;
+            lockedSince = 0;
         }
     }
 
@@ -127,22 +122,19 @@ public class DatabaseRunnable implements Runnable {
     private void addPickup(PickupEntry entry) {
         synchronized (pickups) {
             for (PickupEntry next : pickups) {
-                if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
+                if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) continue;
+                if (next.getAction() != entry.getAction()) continue;
+                try {
+                    if (!next.getUserUUID().equals(entry.getUserUUID())) continue;
+                    if (!next.getTargetUUID().equals(entry.getTargetUUID())) continue;
+                } catch (SQLException ignored) {
+                    //Unlikely / N/A
                     continue;
                 }
-                if (next.getAction() != entry.getAction()) {
-                    continue;
-                }
-                if (next.getUserUUID().equals(entry.getUserUUID())) {
-                    if (next.getTargetUUID().equals(entry.getTargetUUID())) {
-                        if (next.world.equals(entry.world)) {
-                            if (next.getDistance(entry) <= 3) {
-                                next.add(entry);
-                                return;
-                            }
-                        }
-                    }
-                }
+                if (!next.world.equals(entry.world)) continue;
+                if (next.getDistance(entry) > 3) continue;
+                next.add(entry);
+                return;
             }
             pickups.add(entry);
         }
@@ -151,12 +143,8 @@ public class DatabaseRunnable implements Runnable {
     private void addJobs(JobsEntry entry) {
         synchronized (jobsentries) {
             for (JobsEntry next : jobsentries) {
-                if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
-                    continue;
-                }
-                if (next.add(entry)) {
-                    return;
-                }
+                if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) continue;
+                if (next.add(entry)) return;
             }
             jobsentries.add(entry);
         }

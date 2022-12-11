@@ -16,6 +16,7 @@ import xyz.olivermartin.multichat.bungee.MultiChat;
 import xyz.olivermartin.multichat.bungee.MultiChatUtil;
 
 import java.net.InetSocketAddress;
+import java.sql.SQLException;
 import java.util.UUID;
 
 public class APBListener implements Listener {
@@ -102,12 +103,12 @@ public class APBListener implements Listener {
 
         final String ip = ip_;
 
-        plugin.runAsync(new Runnable() {
-
-            @Override
-            public void run() {
-                plugin.getSqlManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
+        plugin.runAsync(() -> {
+            try {
+                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
                         ip);
+            } catch (SQLException ex) {
+                plugin.print(ex);
             }
         });
         plugin.dbRunnable.add(new DbEntry(AuxProtectBungee.getLabel(e.getConnection().getUniqueId()),

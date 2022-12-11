@@ -1,9 +1,10 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
+import java.io.IOException;
+import java.sql.SQLException;
 
 public class DbEntry {
 
@@ -25,7 +26,7 @@ public class DbEntry {
     protected String target;
     protected int target_id;
 
-    private boolean hasBlob;
+    private long blobid = -1;
     private byte[] blob;
 
     private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
@@ -73,8 +74,8 @@ public class DbEntry {
         this(userLabel, action, state, location == null ? null : location.getWorld().getName(),
                 location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
                 location == null ? 0 : location.getBlockZ(),
-                location == null ? 0 : (int) Math.round(location.getPitch()),
-                location == null ? 0 : (int) Math.round(location.getYaw()), targetLabel, data);
+                location == null ? 0 : Math.round(location.getPitch()),
+                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data);
     }
 
     protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
@@ -114,57 +115,57 @@ public class DbEntry {
         this.data = data;
     }
 
-    public String getUser() {
-        if (user != null) {
-            return user;
-        }
-        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
-            return user = getUserUUID();
-        }
-        user = SQLManager.getInstance().getUsernameFromUID(getUid());
-        if (user == null) {
-            user = getUserUUID();
-        }
-        return user;
-    }
-
-    public int getUid() {
+    public int getUid() throws SQLException {
         if (uid > 0) {
             return uid;
         }
-        return uid = SQLManager.getInstance().getUIDFromUUID(getUserUUID(), true);
+        return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true, true);
     }
 
-    public int getTargetId() {
+    public int getTargetId() throws SQLException {
         if (action.getTable().hasStringTarget()) {
             return -1;
         }
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = SQLManager.getInstance().getUIDFromUUID(getTargetUUID(), true);
+        return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
     }
 
-    public String getTarget() {
+    public String getUser() throws SQLException {
+        if (user != null) {
+            return user;
+        }
+        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+            return user = getUserUUID();
+        }
+        user = SQLManager.getInstance().getUserManager().getUsernameFromUID(getUid(), false);
+        if (user == null) {
+            user = getUserUUID();
+        }
+        return user;
+    }
+
+    public String getTarget() throws SQLException {
         if (target != null) {
             return target;
         }
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
             return target = getTargetUUID();
         }
-        target = SQLManager.getInstance().getUsernameFromUID(getTargetId());
+        target = SQLManager.getInstance().getUserManager().getUsernameFromUID(getTargetId(), false);
         if (target == null) {
             target = getTargetUUID();
         }
         return target;
     }
 
-    public String getTargetUUID() {
+    public String getTargetUUID() throws SQLException {
         if (targetLabel != null) {
             return targetLabel;
         }
         if (target_id > 0) {
-            targetLabel = SQLManager.getInstance().getUUIDFromUID(target_id);
+            targetLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(target_id, false);
         } else if (target_id == 0) {
             return targetLabel = "";
         }
@@ -174,12 +175,12 @@ public class DbEntry {
         return targetLabel;
     }
 
-    public String getUserUUID() {
+    public String getUserUUID() throws SQLException {
         if (userLabel != null) {
             return userLabel;
         }
         if (uid > 0) {
-            userLabel = SQLManager.getInstance().getUUIDFromUID(uid);
+            userLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(uid, false);
         } else if (uid == 0) {
             return userLabel = "";
         }
@@ -204,7 +205,7 @@ public class DbEntry {
         return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
     }
 
-    public byte[] getBlob() throws BusyException {
+    public byte[] getBlob() throws SQLException, IOException {
         if (blob == null) {
             blob = SQLManager.getInstance().getBlob(this);
         }
@@ -216,18 +217,26 @@ public class DbEntry {
     }
 
     public boolean hasBlob() {
-        return hasBlob || blob != null;
+        return blob != null || blobid >= 0;
     }
 
-    public void setHasBlob() {
-        hasBlob = true;
+    protected void setBlobID(long blobid) {
+        this.blobid = blobid;
+    }
+
+    public long getBlobID() {
+        return blobid;
     }
 
     @Override
     public String toString() {
-        String out = String.format("%s %s(%d) %s ", getUser(),
-                getAction().getText(getState()),
-                getAction().getId(getState()), getTarget());
+        String out;
+        try {
+            out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
+                    getAction().getId(getState()), getTarget());
+        } catch (SQLException e) {
+            out = "ERROR ";
+        }
         if (getData() != null && getData().length() > 0) {
             String data = getData();
             if (data.length() > 64) {

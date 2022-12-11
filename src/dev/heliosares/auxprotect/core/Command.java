@@ -9,14 +9,18 @@ import java.util.List;
 public abstract class Command {
     protected final IAuxProtect plugin;
     protected final String label;
+
+
+    private final boolean async;
     protected final String[] aliases;
     protected final APPermission permission;
     protected boolean tabComplete = true;
 
-    public Command(IAuxProtect plugin, String label, APPermission permission, String... aliases) {
+    public Command(IAuxProtect plugin, String label, APPermission permission, boolean async, String... aliases) {
         this.plugin = plugin;
         this.label = label;
         this.permission = permission;
+        this.async = async;
         this.aliases = aliases;
     }
 
@@ -61,4 +65,8 @@ public abstract class Command {
     }
 
     public abstract boolean exists();
+
+    public boolean isAsync() {
+        return async;
+    }
 }

@@ -7,28 +7,28 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public enum Table {
     AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
-    AUXPROTECT_COMMANDS, AUXPROTECT_POSITION,
+    AUXPROTECT_COMMANDS, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
 
-    AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB,
-    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB,
+    AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS,
+    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
 
-    AUXPROTECT_TOWNY;
-
-    protected final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
+    final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    private long autopurgeinterval;
 
     public static String getValuesTemplate(int numColumns) {
         if (numColumns <= 0) {
             return null;
         }
-        String output = "(";
+        StringBuilder output = new StringBuilder("(");
         for (int i = 0; i < numColumns; i++) {
             if (i > 0) {
-                output += ", ";
+                output.append(", ");
             }
-            output += "?";
+            output.append("?");
         }
-        output += ")";
-        return output;
+        output.append(")");
+        return output.toString();
     }
 
     @Override
@@ -36,14 +36,26 @@ public enum Table {
         return SQLManager.getTablePrefix() + super.toString().toLowerCase();
     }
 
+    public String getName() {
+        return super.toString().toLowerCase();
+    }
+
     public boolean exists(IAuxProtect plugin) {
-        if (plugin.getPlatform() == PlatformType.BUNGEE && !this.isOnBungee()) {
-            return false;
+        if (plugin.getPlatform() == PlatformType.BUNGEE) {
+            switch (this) {
+                case AUXPROTECT_MAIN:
+                case AUXPROTECT_COMMANDS:
+                case AUXPROTECT_LONGTERM:
+                case AUXPROTECT_API:
+                case AUXPROTECT_UIDS:
+                case AUXPROTECT_API_ACTIONS:
+                case AUXPROTECT_VERSION:
+                    return true;
+                default:
+                    return false;
+            }
         }
-        if (!plugin.getAPConfig().isPrivate() && this == AUXPROTECT_ABANDONED) {
-            return false;
-        }
-        return true;
+        return plugin.getAPConfig().isPrivate() || this != AUXPROTECT_ABANDONED;
     }
 
     public boolean hasAPEntries() {
@@ -78,21 +90,6 @@ public enum Table {
         }
     }
 
-    public boolean isOnBungee() {
-        switch (this) {
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_LONGTERM:
-            case AUXPROTECT_API:
-            case AUXPROTECT_UIDS:
-            case AUXPROTECT_API_ACTIONS:
-            case AUXPROTECT_VERSION:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     public boolean hasLocation() {
         switch (this) {
             case AUXPROTECT_MAIN:
@@ -111,12 +108,7 @@ public enum Table {
     }
 
     public boolean hasLook() {
-        switch (this) {
-            case AUXPROTECT_POSITION:
-                return true;
-            default:
-                return false;
-        }
+        return this == Table.AUXPROTECT_POSITION;
     }
 
     public boolean hasActionId() {
@@ -139,6 +131,13 @@ public enum Table {
         }
     }
 
+    public boolean canPurge() {
+        if (this == Table.AUXPROTECT_LONGTERM) {
+            return false;
+        }
+        return this.hasAPEntries();
+    }
+
     public String getValuesHeader(PlatformType platform) {
         if (this == Table.AUXPROTECT_LONGTERM) {
             return "(time, uid, action_id, target)";
@@ -153,11 +152,11 @@ public enum Table {
                 || this == Table.AUXPROTECT_TOWNY) {
             return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
         } else if (this == Table.AUXPROTECT_INVENTORY) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id, data, hasblob)";
+            return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, qty, damage)";
         } else if (this == Table.AUXPROTECT_ABANDONED) {
             return "(time, uid, action_id, world_id, x, y, z, target_id)";
         } else if (this == Table.AUXPROTECT_POSITION) {
-            return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id)";
+            return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id, ablob)";
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         }
@@ -178,21 +177,13 @@ public enum Table {
             return 5;
         }
 
-        switch (this) {
-            case AUXPROTECT_ABANDONED:
-                return 8;
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_SPAM:
-            case AUXPROTECT_API:
-            case AUXPROTECT_XRAY:
-            case AUXPROTECT_TOWNY:
-                return 9;
-            case AUXPROTECT_POSITION:
-            case AUXPROTECT_INVENTORY:
-                return 10;
-            default:
-                return -1;
-        }
+        return switch (this) {
+            case AUXPROTECT_ABANDONED -> 8;
+            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
+            case AUXPROTECT_POSITION -> 11;
+            case AUXPROTECT_INVENTORY -> 12;
+            default -> -1;
+        };
     }
 
     public String getValuesTemplate(PlatformType platform) {
@@ -203,7 +194,7 @@ public enum Table {
         if (!this.hasAPEntries()) {
             return null;
         }
-        String stmt = "CREATE TABLE IF NOT EXISTS " + toString() + " (\n";
+        String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (\n";
         stmt += "    time BIGINT";
         stmt += ",\n    uid integer";
         if (hasActionId()) {
@@ -235,19 +226,42 @@ public enum Table {
         if (hasData()) {
             stmt += ",\n    data LONGTEXT";
         }
-        if (hasBlob()) {
-            stmt += ",\n    hasblob BOOL";
+
+        if (hasBlob()) stmt += ",\n    ablob BLOB";
+        else if (hasBlobID()) stmt += ",\n    blobid BIGINT";
+
+        if (hasItemMeta()) {
+            stmt += ",\n    qty INTEGER";
+            stmt += ",\n    damage INTEGER";
         }
         stmt += "\n);";
 
         return stmt;
     }
 
-    public boolean hasBlob() {
-        if (this == AUXPROTECT_INVENTORY) {
-            return true;
-        }
-        return false;
+    public boolean hasBlobID() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 
+    public boolean hasBlob() {
+        return this == AUXPROTECT_POSITION;
+    }
+
+    public long getAutoPurgeInterval() {
+        if (!canPurge()) {
+            throw new UnsupportedOperationException();
+        }
+        return autopurgeinterval;
+    }
+
+    public void setAutoPurgeInterval(long autopurgeinterval) {
+        if (!canPurge()) {
+            throw new UnsupportedOperationException();
+        }
+        this.autopurgeinterval = autopurgeinterval;
+    }
+
+    public boolean hasItemMeta() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+    }
 }

@@ -14,6 +14,7 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -24,8 +25,9 @@ public class XrayCommand extends Command {
 
     public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
     HashMap<String, Results> results = new HashMap<>();
+
     public XrayCommand(IAuxProtect plugin) {
-        super(plugin, "xray", APPermission.XRAY, "x");
+        super(plugin, "xray", APPermission.XRAY, true, "x");
     }
 
     @Override
@@ -48,11 +50,9 @@ public class XrayCommand extends Command {
                 final boolean auto = auto_;
                 final boolean override = override_;
 
+
                 boolean skip = args[1].equalsIgnoreCase("skip");
                 if (args[1].equalsIgnoreCase("rate") || skip) {
-                    if (args.length < 2) {
-                        throw new SyntaxException();
-                    }
 
                     long time_ = 0;
                     if (!args[2].equalsIgnoreCase("current") || skip) {
@@ -80,95 +80,102 @@ public class XrayCommand extends Command {
                     }
 
                     final long time = time_;
-
-                    plugin.runAsync(() -> {
-                        XrayEntry entry = null;
-                        if (time > 0) {
-                            ArrayList<DbEntry> entries;
-                            try {
-                                entries = plugin.getSqlManager().lookup(Table.AUXPROTECT_XRAY,
-                                        "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
-                            } catch (LookupException e) {
-                                plugin.print(e);
-                                sender.sendMessageRaw(e.getMessage());
-                                return;
-                            }
-                            if (entries.size() > 1 && !override) {
-                                sender.sendLang(Language.L.XRAY_TOOMANY);
-                                return;
-                            }
-                            if (entries.size() == 0 && !override) {
-                                sender.sendLang(Language.L.XRAY_NOTFOUND);
-                                return;
-                            }
-
-                            entry = (XrayEntry) entries.get(0);
-                        } else {
-                            entry = spigot.getVeinManager().current(sender.getUniqueId());
+                    XrayEntry entry = null;
+                    if (time > 0) {
+                        ArrayList<DbEntry> entries;
+                        try {
+                            entries = plugin.getSqlManager().getLookupManager().lookup(plugin.getSqlManager(),
+                                    Table.AUXPROTECT_XRAY,
+                                    "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
+                        } catch (LookupException e) {
+                            plugin.print(e);
+                            sender.sendMessageRaw(e.getMessage());
+                            return;
+                        }
+                        if (entries.size() > 1 && !override) {
+                            sender.sendLang(Language.L.XRAY_TOOMANY);
+                            return;
+                        }
+                        if (entries.size() == 0 && !override) {
+                            sender.sendLang(Language.L.XRAY_NOTFOUND);
+                            return;
                         }
 
-                        if (args.length >= 4) {
-                            short rating;
-                            try {
-                                rating = Short.parseShort(args[3]);
-                            } catch (NumberFormatException e) {
-                                sender.sendLang(Language.L.ERROR);
-                                return;
-                            }
-                            if (rating < -1 || rating > 3) {
-                                sender.sendLang(Language.L.ERROR);
-                                return;
-                            }
-                            if (entry == null) {
-                                sender.executeCommand("ap xray");
-                                return;
-                            }
-                            if (entry.getRating() >= 0 && !override) {
-                                sender.sendLang(Language.L.XRAY_ALREADY_RATED);
-                                ComponentBuilder message = new ComponentBuilder();
-                                message.append("§c§l[Overwrite]");
-                                String thiscmd = "/" + label;
-                                for (String arg : args) {
-                                    thiscmd += " " + arg;
-                                }
-                                message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, thiscmd + " -i"));
-                                message.event(
-                                        new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
-                                player.spigot().sendMessage(message.create());
-                                sender.sendMessageRaw("");
+                        entry = (XrayEntry) entries.get(0);
+                    } else {
+                        entry = spigot.getVeinManager().current(sender.getUniqueId());
+                    }
 
-                                return;
+                    if (args.length >= 4) {
+                        short rating;
+                        try {
+                            rating = Short.parseShort(args[3]);
+                        } catch (NumberFormatException e) {
+                            sender.sendLang(Language.L.ERROR);
+                            return;
+                        }
+                        if (rating < -1 || rating > 3) {
+                            sender.sendLang(Language.L.ERROR);
+                            return;
+                        }
+                        if (entry == null) {
+                            sender.executeCommand("ap xray");
+                            return;
+                        }
+                        if (entry.getRating() >= 0 && !override) {
+                            sender.sendLang(Language.L.XRAY_ALREADY_RATED);
+                            ComponentBuilder message = new ComponentBuilder();
+                            message.append("§c§l[Overwrite]");
+                            StringBuilder thiscmd = new StringBuilder("/" + label);
+                            for (String arg : args) {
+                                thiscmd.append(" ").append(arg);
                             }
-                            if (rating == entry.getRating() && !override) {
-                                sender.sendLang(Language.L.XRAY_RATE_NOCHANGE);
-                                return;
-                            }
-                            entry.setRating(rating);
-                            String data = entry.getData();
-                            if (data.length() > 0) {
-                                data += "; ";
-                            }
-                            String ratedBy = LocalDateTime.now().format(ratedByDateFormatter) + ": " + sender.getName()
-                                    + " rated " + rating;
-                            data += ratedBy;
-                            entry.setData(data);
+                            message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, thiscmd + " -i"));
+                            message.event(
+                                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
+                            player.spigot().sendMessage(message.create());
+                            sender.sendMessageRaw("");
 
-                            try {
-                                plugin.getSqlManager().updateXrayEntry(entry);
-                            } catch (Exception e) {
-                                plugin.print(e);
-                                sender.sendLang(Language.L.ERROR);
-                                return;
-                            }
-                            sender.sendLang(Language.L.XRAY_RATE_WRITTEN);
-                            if (auto) {
-                                nextEntry(spigot, sender, true);
-                            }
-                        } else {
+                            return;
+                        }
+                        if (rating == entry.getRating() && !override) {
+                            sender.sendLang(Language.L.XRAY_RATE_NOCHANGE);
+                            return;
+                        }
+                        entry.setRating(rating);
+                        String data = entry.getData();
+                        if (data.length() > 0) {
+                            data += "; ";
+                        }
+                        String ratedBy = LocalDateTime.now().format(ratedByDateFormatter) + ": " + sender.getName()
+                                + " rated " + rating;
+                        data += ratedBy;
+                        entry.setData(data);
+
+                        try {
+                            plugin.getSqlManager().updateXrayEntry(entry);
+                        } catch (Exception e) {
+                            plugin.print(e);
+                            sender.sendLang(Language.L.ERROR);
+                            return;
+                        }
+                        sender.sendLang(Language.L.XRAY_RATE_WRITTEN);
+                        if (auto) {
+                            nextEntry(spigot, sender, true);
+                        }
+                    } else {
+                        try {
                             XrayResults.sendEntry(spigot, sender, entry, auto);
+                        } catch (ConnectionPool.BusyException e) {
+                            sender.sendLang(Language.L.DATABASE_BUSY);
+                            return;
+                        } catch (SQLException e) {
+                            sender.sendLang(Language.L.ERROR);
+                            return;
                         }
+                    }
 
-                    });
+
                 } else if (args[1].equalsIgnoreCase("report")) {
                     String cmd = plugin.getCommandPrefix() + " l a:vein #xray";
                     if (args.length > 2) {
@@ -190,7 +197,15 @@ public class XrayCommand extends Command {
                 if (current != null) {
                     sender.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", current.x,
                             current.y, current.z, current.world, 45, 0));
-                    XrayResults.sendEntry(spigot, sender, current, true);
+                    try {
+                        XrayResults.sendEntry(spigot, sender, current, true);
+                    } catch (ConnectionPool.BusyException e) {
+                        sender.sendLang(Language.L.DATABASE_BUSY);
+                        return;
+                    } catch (SQLException e) {
+                        sender.sendLang(Language.L.ERROR);
+                        return;
+                    }
                 }
                 nextEntry(spigot, sender, true);
             }
@@ -203,10 +218,15 @@ public class XrayCommand extends Command {
             player.sendLang(Language.L.XRAY_DONE);
             return;
         }
-        final XrayEntry entry = en;
-        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", entry.x, entry.y,
-                entry.z, entry.world, 45, 0));
-        XrayResults.sendEntry(plugin, player, en, auto);
+        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", en.x, en.y,
+                en.z, en.world, 45, 0));
+        try {
+            XrayResults.sendEntry(plugin, player, en, auto);
+        } catch (ConnectionPool.BusyException e) {
+            player.sendLang(Language.L.DATABASE_BUSY);
+        } catch (SQLException e) {
+            player.sendLang(Language.L.ERROR);
+        }
     }
 
     @Override

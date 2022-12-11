@@ -2,8 +2,8 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Location;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -62,12 +62,10 @@ public class ProjectileListener implements Listener {
             if (entity.getShooter() == null) {
                 return;
             }
-            if (entity.getShooter() instanceof BlockProjectileSource) {
-                BlockProjectileSource shooter = (BlockProjectileSource) entity.getShooter();
+            if (entity.getShooter() instanceof BlockProjectileSource shooter) {
                 actorLabel = AuxProtectSpigot.getLabel(shooter.getBlock());
                 location = shooter.getBlock().getLocation();
-            } else if (entity.getShooter() instanceof LivingEntity) {
-                LivingEntity shooter = (LivingEntity) entity.getShooter();
+            } else if (entity.getShooter() instanceof LivingEntity shooter) {
                 actorLabel = AuxProtectSpigot.getLabel(shooter);
                 location = shooter.getLocation();
             } else {
@@ -84,16 +82,7 @@ public class ProjectileListener implements Listener {
             item = ((ThrownPotion) entity).getItem();
         }
 
-        DbEntry entry = new DbEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity), "");
-
-        if (item != null && logData && InvSerialization.isCustom(item)) {
-            try {
-                entry.setBlob(InvSerialization.toByteArray(item));
-            } catch (Exception e1) {
-                plugin.warning("Error serializing projectile");
-                plugin.print(e1);
-            }
-        }
+        DbEntry entry = new SingleItemEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity), "", logData ? item : null);
         plugin.add(entry);
     }
 }

@@ -14,7 +14,7 @@ import java.util.List;
 public class RetentionCommand extends Command {
 
     public RetentionCommand(IAuxProtect plugin) {
-        super(plugin, "retention", APPermission.LOOKUP_RETENTION);
+        super(plugin, "retention", APPermission.LOOKUP_RETENTION, false);
     }
 
     @Override

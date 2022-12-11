@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
@@ -10,8 +11,8 @@ import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -19,28 +20,46 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class Parameters {
+
+    // ----------------------------------------------
+    // ------------------- FIELDS -------------------
+    // ----------------------------------------------
     public final long time_created = System.currentTimeMillis();
     private final IAuxProtect plugin;
+    // user
     boolean negateUser;
+    // target
     boolean negateTarget;
+    // data
     boolean negateData;
+    // world
     boolean negateWorld;
+    // time
     private long after;
     private long before = Long.MAX_VALUE;
     private List<Long> exactTime = new ArrayList<>();
     private List<String> uids = new ArrayList<>();
     private List<String> users = new ArrayList<>();
+    // action
     private List<Integer> actions = new ArrayList<>();
     private List<String> targets = new ArrayList<>();
     private List<String> datas = new ArrayList<>();
+    // table
     private Table table;
+    // radius
     private HashMap<Integer, Boolean> radius = new HashMap<>();
     private Location location;
     private List<String> worlds = new ArrayList<>();
 
+    // flags
     private List<Flag> flags = new ArrayList<>();
 
+    // ratings
     private List<Short> ratings = new ArrayList<>();
+
+    // ----------------------------------------------------
+    // ------------------- CONSTRUCTORS -------------------
+    // ----------------------------------------------------
 
     private Parameters() {
         plugin = AuxProtectAPI.getInstance();
@@ -51,25 +70,24 @@ public class Parameters {
         this.table = table;
     }
 
+    // -----------------------------------------------
+    // ---------------- COMMAND BASED ----------------
+    // -----------------------------------------------
+
     /**
      * This method is used by the lookup command to parse commands. This may be used
      * by an API by manually creating a String[] args
      *
-     * @param plugin
-     * @param sender
-     * @param args
+     * @param sender The player sending the command. Used for permission checks. Null to bypass
+     * @param args   Arguments of the command.
      * @return
      * @throws ParseException
      * @throws LookupException
      */
-    public static Parameters parse(@Nonnull SenderAdapter sender, String[] args)
+    public static Parameters parse(@Nullable SenderAdapter sender, String[] args)
             throws ParseException, LookupException {
         IAuxProtect plugin = AuxProtectAPI.getInstance();
         Parameters parameters = new Parameters();
-        if (sender.getPlatform() == PlatformType.SPIGOT
-                && sender.getSender() instanceof org.bukkit.entity.Player player) {
-            parameters.location = player.getLocation();
-        }
         int count = 0;
         String datastr = null;
         String targetstr = null;
@@ -82,7 +100,7 @@ public class Parameters {
                 } catch (Exception ignored) {
                 }
                 if (flag != null) {
-                    if (!flag.hasPermission(sender)) {
+                    if (sender != null && !flag.hasPermission(sender)) {
                         throw new ParseException(Language.L.NO_PERMISSION_FLAG);
                     }
                     parameters.flags.add(flag);
@@ -101,82 +119,73 @@ public class Parameters {
 
             if (split.length == 2) {
                 String param = split[1];
-                boolean negate = false;
-                if (param.startsWith("!")) {
-                    if (token.equals("action")) {
-                        throw new LookupException(Language.L.COMMAND__LOOKUP__ACTION_NEGATE);
-                    } else if (!token.equals("radius")) {
-                        negate = true;
-                        param = param.substring(1);
-                    }
-                }
                 count++;
                 switch (token) {
-                    case "user":
-                        parameters.user(param, negate);
+                    case "user" -> {
+                        parameters.user(param);
                         continue;
-                    case "target":
-                        parameters.negateTarget = negate;
+                    }
+                    case "target" -> {
                         targetstr = param;
                         continue;
-                    case "data":
-                        parameters.negateData = negate;
+                    }
+                    case "data" -> {
                         datastr = param;
                         continue;
-                    case "action":
+                    }
+                    case "action" -> {
                         parameters.action(sender, param);
                         continue;
-                    case "before":
+                    }
+                    case "before" -> {
                         parameters.time(param, true);
                         continue;
-                    case "after":
+                    }
+                    case "after" -> {
                         parameters.time(param, false);
                         continue;
-                    case "time":
+                    }
+                    case "time" -> {
                         parameters.time(param);
                         continue;
-                    case "radius":
-                        for (String str : param.split(",")) {
-                            try {
-                                negate = str.startsWith("!");
-                                if (negate) {
-                                    str = str.substring(1);
-                                }
-                                parameters.radius.put(Integer.parseInt(str), negate);
-                            } catch (Exception e) {
-                                throw new ParseException(Language.L.INVALID_PARAMETER, line);
-                            }
+                    }
+                    case "radius" -> {
+                        if (sender == null)
+                            throw new ParseException(L.NOTPLAYERERROR);
+                        if (sender.getPlatform() != PlatformType.SPIGOT)
+                            throw new ParseException(L.INVALID_PARAMETER, line);
+                        if (sender.getSender() instanceof org.bukkit.entity.Player player) {
+                            parameters.radius(player.getLocation(), param);
+                        } else {
+                            throw new ParseException(L.NOTPLAYERERROR);
                         }
                         continue;
-                    case "world":
-                        parameters.negateWorld = negate;
-                        for (String str : param.split(",")) {
-                            World world = Bukkit.getWorld(str);
-                            if (world == null) {
-                                throw new ParseException(Language.L.COMMAND__LOOKUP__UNKNOWN_WORLD, str);
-                            }
-                            parameters.worlds.add(world.getName());
-                        }
+                    }
+                    case "world" -> {
+                        parameters.world(param);
                         continue;
-                    case "rating":
+                    }
+                    case "rating" -> {
                         for (String str : param.split(",")) {
                             try {
                                 parameters.ratings.add(Short.parseShort(str));
                             } catch (NumberFormatException e) {
-                                throw new ParseException(Language.L.INVALID_PARAMETER, line);
+                                throw new ParseException(L.INVALID_PARAMETER, line);
                             }
                         }
                         continue;
-                    case "db":
+                    }
+                    case "db" -> {
                         if (!APPermission.ADMIN.hasPermission(sender)) {
-                            throw new ParseException(Language.L.NO_PERMISSION);
+                            throw new ParseException(L.NO_PERMISSION);
                         }
                         try {
                             parameters.table = Table.valueOf(param.toUpperCase());
                         } catch (Exception e) {
-                            throw new ParseException(Language.L.INVALID_PARAMETER, line);
+                            throw new ParseException(L.INVALID_PARAMETER, line);
                         }
                         continue;
+                    }
                 }
             }
             throw new ParseException(Language.L.INVALID_PARAMETER, line);
@@ -215,6 +224,16 @@ public class Parameters {
             parameters.actions.add(EntryAction.ACTIVITY.id);
             parameters.actions.add(EntryAction.ACTIVITY.idPos);
         }
+        if (parameters.hasFlag(Flag.PLAYBACK)) {
+            if (plugin.getPlatform() != PlatformType.SPIGOT || sender == null)
+                throw new ParseException(L.INVALID_PARAMETER, "#playback");
+            parameters.actions.clear();
+            parameters.actions.add(EntryAction.TP.id);
+            parameters.actions.add(EntryAction.TP.idPos);
+            parameters.actions.add(EntryAction.POS.id);
+            parameters.worlds.clear();
+            parameters.worlds.add(((org.bukkit.entity.Player) sender.getSender()).getWorld().getName());
+        }
         if (parameters.ratings.size() > 0) {
             if (!parameters.actions.isEmpty()) {
                 for (int id : parameters.actions) {
@@ -225,18 +244,12 @@ public class Parameters {
             } else {
                 parameters.actions.add(EntryAction.VEIN.id);
             }
-
         }
         if (datastr != null) {
-            if (!parameters.table.hasData()) {
-                throw new ParseException(Language.L.COMMAND__LOOKUP__NODATA);
-            }
-            for (String data : split(datastr, true)) {
-                parameters.datas.add(data);
-            }
+            parameters.data(datastr);
         }
 
-        parameters.target(targetstr, parameters.negateTarget);
+        parameters.target(targetstr);
 
         plugin.debug("After:" + parameters.after + " Before:" + parameters.before);
         return parameters;
@@ -282,179 +295,7 @@ public class Parameters {
     }
 
     /**
-     * Sets the user of the lookup
-     *
-     * @param param
-     * @param negate
-     * @throws LookupException
-     */
-    public Parameters user(String param, boolean negate) throws LookupException {
-        if (param == null) {
-            users.clear();
-            uids.clear();
-            return this;
-        }
-        negateUser = negate;
-        for (String user : param.split(",")) {
-            int uid = plugin.getSqlManager().getUIDFromUsername(user);
-            int altuid = plugin.getSqlManager().getUIDFromUUID(user);
-            boolean good = false;
-            if (uid > 0) {
-                uids.add(Integer.toString(uid));
-                good = true;
-            }
-            if (altuid > 0) {
-                uids.add(Integer.toString(altuid));
-                good = true;
-            }
-            if (!good) {
-                throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, user);
-            }
-            users.add(user);
-        }
-        return this;
-    }
-
-    /**
-     * Adds the specified UUID to the list of users
-     *
-     * @param uuid   The UUID to be added
-     * @param negate Whether to negate
-     * @throws LookupException If the user is not found
-     */
-    public Parameters user(UUID uuid, boolean negate) throws LookupException {
-        this.negateUser = negate;
-        int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
-        if (uid > 0) {
-            uids.add(Integer.toString(uid));
-        } else {
-            throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
-        }
-        users.add(uuid.toString());
-        return this;
-    }
-
-    /**
-     * Adds the specified UUID to the list of users
-     *
-     * @param uuid   The UUID to be added
-     * @param negate Whether to negate
-     * @throws LookupException If the user is not found
-     */
-    public Parameters target(UUID uuid, boolean negate) throws LookupException {
-        this.negateTarget = negate;
-        int uid = plugin.getSqlManager().getUIDFromUUID("$" + uuid.toString());
-        if (uid > 0) {
-            targets.add(Integer.toString(uid));
-        } else {
-            throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
-        }
-        return this;
-    }
-
-    /**
-     * Used to set the target of the lookup. Action/Table must be set before calling
-     * this method.
-     *
-     * @param param  Null will clear
-     * @param negate
-     * @throws LookupException
-     * @throws IllegalStateException if the table is null
-     */
-    public Parameters target(@Nullable String param, boolean negate) throws LookupException {
-        if (param == null) {
-            targets.clear();
-            return this;
-        }
-        if (table == null) {
-            throw new IllegalStateException("action or table must be set before target");
-        }
-        if (table.hasStringTarget()) {
-            for (String target : split(param, true)) {
-                targets.add(target);
-            }
-        } else {
-            for (String target : param.split(",")) {
-                int uid = plugin.getSqlManager().getUIDFromUsername(target);
-                int altuid = plugin.getSqlManager().getUIDFromUUID(target);
-                boolean good = false;
-                if (uid > 0) {
-                    targets.add(Integer.toString(uid));
-                    good = true;
-                }
-                if (altuid > 0) {
-                    targets.add(Integer.toString(altuid));
-                    good = true;
-                }
-                if (!good) {
-                    throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, target);
-                }
-            }
-        }
-        return this;
-    }
-
-    /**
-     * Sets the actions of this parameter instance
-     *
-     * @param sender Will be used for individual action permission checks. Null will
-     *               bypass checks
-     * @param param  CSV of actions
-     * @throws ParseException
-     */
-    public Parameters action(@Nullable SenderAdapter sender, String param) throws ParseException {
-        for (String actionStr : param.split(",")) {
-            int state = 0;
-            boolean pos = actionStr.startsWith("+");
-            if (pos || actionStr.startsWith("-")) {
-                state = pos ? 1 : -1;
-                actionStr = actionStr.substring(1);
-            }
-            EntryAction action = EntryAction.getAction(actionStr);
-            if (action == null) {
-                throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
-            }
-            addAction(sender, action, state);
-        }
-        return this;
-    }
-
-    /**
-     * Adds actions to this parameter instance
-     *
-     * @param sender Will be used for individual action permission checks. Null will
-     *               bypass checks
-     * @param action The actions to be added
-     * @param int    state -1 for negative, 0 for either, 1 for positive
-     * @throws ParseException
-     */
-    public Parameters addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
-        if (!action.isEnabled()) {
-            throw new ParseException(Language.L.ACTION_DISABLED);
-        }
-
-        if (sender != null && !action.hasPermission(sender)) {
-            throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_PERM, action.getNode());
-        }
-        if (table != null && table != action.getTable()) {
-            throw new ParseException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
-        }
-        table = action.getTable();
-        if (action.hasDual) {
-            if (state != -1) {
-                actions.add(action.idPos);
-            }
-            if (state != 1) {
-                actions.add(action.id);
-            }
-        } else {
-            actions.add(action.id);
-        }
-        return this;
-    }
-
-    /**
-     * Used to parse time:
+     * Sets the time. Equivalent to time:<param>
      *
      * @param param May be a range, a single time, or an exact time
      * @throws ParseException
@@ -512,45 +353,8 @@ public class Parameters {
         return this;
     }
 
-    public Parameters time(long start, long stop) {
-        after(Math.min(start, stop));
-        before(Math.max(start, stop));
-
-        return this;
-    }
-
-    private Parameters time(String param, boolean before) throws ParseException {
-        try {
-            long time = TimeUtil.stringToMillis(param);
-            if (time < 0) {
-                throw new ParseException(Language.L.INVALID_PARAMETER, param);
-            }
-            if (!param.endsWith("e")) {
-                time = System.currentTimeMillis() - time;
-            }
-            if (before) {
-                this.before = time;
-            } else {
-                this.after = time;
-            }
-        } catch (NumberFormatException e) {
-            throw new ParseException(Language.L.INVALID_PARAMETER, param);
-        }
-        return this;
-    }
-
-    public Parameters before(long time) {
-        this.before = time;
-        return this;
-    }
-
     public Parameters before(String time) throws ParseException {
         time(time, true);
-        return this;
-    }
-
-    public Parameters after(long time) {
-        this.after = time;
         return this;
     }
 
@@ -559,85 +363,422 @@ public class Parameters {
         return this;
     }
 
-    public boolean matches(DbEntry entry) {
-        if (!uids.isEmpty()) {
-            boolean contains = false;
-            for (String user : uids) {
-                if (user.equalsIgnoreCase(entry.getUserUUID())) {
-                    contains = true;
-                    break;
-                }
+    /**
+     * Sets the user of the lookup. Equivalent to user:<param>
+     *
+     * @param param The user, or null to clear.
+     * @throws LookupException The user is not found
+     */
+    public Parameters user(@Nullable String param) throws LookupException {
+        if (param == null) {
+            users.clear();
+            uids.clear();
+            return this;
+        }
+        if (negateUser = param.startsWith("!")) {
+            param = param.substring(1);
+        }
+        for (String user : param.split(",")) {
+            int uid;
+            int altuid;
+            try {
+                uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(user, false);
+                altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(user, false);
+            } catch (ConnectionPool.BusyException e) {
+                throw new LookupException(L.DATABASE_BUSY);
+            } catch (SQLException e) {
+                throw new LookupException(L.ERROR);
             }
-            if (contains == negateUser) {
-                return false;
-            }
-        }
-        if (!targets.isEmpty()) {
-            boolean contains = false;
-            for (String target : targets) {
-                if (target.equalsIgnoreCase(entry.getTargetUUID())) {
-                    contains = true;
-                    break;
-                }
-            }
-            if (contains == negateTarget) {
-                return false;
-            }
-        }
-        if (!exactTime.isEmpty() && !exactTime.contains(entry.getTime())) {
-            return false;
-        }
-        if (entry.getTime() < after || entry.getTime() > before) {
-            return false;
-        }
-        if (!actions.isEmpty() && !actions.contains(entry.getAction().getId(entry.getState()))) {
-            return false;
-        }
-        if (!ratings.isEmpty() && entry instanceof XrayEntry && !ratings.contains(((XrayEntry) entry).getRating())) {
-            return false;
-        }
-        if (datas != null) {
-            boolean any = false;
-            for (String data : datas) {
-                String node = "";
-                for (String part : data.split("[\\*\\-]")) {
-                    if (node.length() > 0) {
-                        node += ".*";
-                    }
-                    node += Pattern.quote(part);
-                }
-                if (any = data.matches(node)) {
-                    break;
-                }
-            }
-            if (!any) {
-                return false;
-            }
-        }
-        if (!radius.isEmpty() && location != null) {
-            if (radius.entrySet().stream().anyMatch((e) -> e.getValue() == distance(entry) > e.getKey())) {
-                return false;
-            }
-        }
-        if (!worlds.isEmpty()) {
-            if (worlds.contains(entry.world) == negateWorld) {
-                return false;
-            }
-        }
 
-        return true;
+            boolean good = false;
+            if (uid > 0) {
+                uids.add(Integer.toString(uid));
+                good = true;
+            }
+            if (altuid > 0) {
+                uids.add(Integer.toString(altuid));
+                good = true;
+            }
+            if (!good) {
+                throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, user);
+            }
+            users.add(user);
+        }
+        return this;
     }
 
-    private int distance(DbEntry entry) {
-        if (location == null) {
-            return -1;
+    /**
+     * Sets the action. Equivalent to action:<param>
+     *
+     * @param sender Only used for permission checks.
+     * @param param  The action
+     * @throws ParseException
+     */
+    public Parameters action(@Nullable SenderAdapter sender, String param) throws ParseException {
+        if (param.startsWith("!")) {
+            throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NEGATE);
         }
-        if (!entry.world.equals(location.getWorld().getName())) {
-            return Integer.MAX_VALUE;
+        for (String actionStr : param.split(",")) {
+            int state = 0;
+            boolean pos = actionStr.startsWith("+");
+            if (pos || actionStr.startsWith("-")) {
+                state = pos ? 1 : -1;
+                actionStr = actionStr.substring(1);
+            }
+            EntryAction action = EntryAction.getAction(actionStr);
+            if (action == null) {
+                throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
+            }
+            addAction(sender, action, state);
         }
-        return Math.max(Math.max(Math.abs(entry.x - location.getBlockX()), Math.abs(entry.y - location.getBlockY())),
-                Math.abs(entry.z - location.getBlockZ()));
+        return this;
     }
+
+    /**
+     * Sets the target of the lookup. Equivalent to target:<target>
+     * <p>
+     * <<<<<<< Updated upstream
+     *
+     * @param param Null will clear
+     * @throws LookupException
+     * @throws IllegalStateException if the table is null
+     */
+    public Parameters target(@Nullable String param) throws LookupException {
+        if (param == null) {
+            targets.clear();
+            return this;
+        }
+        if (table == null) {
+            throw new IllegalStateException("action or table must be set before target");
+        }
+        if (negateTarget = param.startsWith("!")) {
+            param = param.substring(1);
+        }
+        if (table.hasStringTarget()) {
+            for (String target : split(param, true)) {
+                targets.add(target);
+            }
+        } else {
+            for (String target : param.split(",")) {
+                int uid;
+                int altuid;
+                try {
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
+                    altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(target, false);
+                } catch (ConnectionPool.BusyException e) {
+                    throw new LookupException(L.DATABASE_BUSY);
+                } catch (SQLException e) {
+                    throw new LookupException(L.ERROR);
+                }
+                boolean good = false;
+                if (uid > 0) {
+                    targets.add(Integer.toString(uid));
+                    good = true;
+                }
+                if (altuid > 0) {
+                    targets.add(Integer.toString(altuid));
+                    good = true;
+                }
+                if (!good) {
+                    throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, target);
+                }
+            }
+        }
+        return this;
+    }
+
+    /**
+     * Sets the data. Equivalent to data:<param>
+     *
+     * @param param
+     * @throws ParseException
+     * @throws IllegalStateException
+     */
+    public void data(String param) throws ParseException {
+        if (table == null) {
+            throw new IllegalStateException("action or table must be set before target");
+        }
+        if (!table.hasData()) {
+            throw new ParseException(Language.L.COMMAND__LOOKUP__NODATA);
+        }
+        if (negateData = param.startsWith("!")) {
+            param = param.substring(1);
+        }
+        for (String data : split(param, true)) {
+            datas.add(data);
+        }
+    }
+
+    // -------------------------------------------------
+    // ------------------- API BASED -------------------
+    // -------------------------------------------------
+
+    public void radius(Location location, String param) throws ParseException {
+        this.location = location;
+        for (String str : param.split(",")) {
+            try {
+                boolean negate = str.startsWith("!");
+                if (negate) {
+                    str = str.substring(1);
+                }
+                radius.put(Integer.parseInt(str), negate);
+            } catch (Exception e) {
+                throw new ParseException(Language.L.INVALID_PARAMETER, param);
+            }
+        }
+    }
+
+    public void world(String param) throws ParseException {
+        if (negateWorld = param.startsWith("!")) {
+            param = param.substring(1);
+        }
+        for (String str : param.split(",")) {
+            World world = Bukkit.getWorld(str);
+            if (world == null) {
+                throw new ParseException(Language.L.COMMAND__LOOKUP__UNKNOWN_WORLD, str);
+            }
+            worlds.add(world.getName());
+        }
+    }
+
+    public Parameters time(long start, long stop) {
+        after(Math.min(start, stop));
+        before(Math.max(start, stop));
+
+        return this;
+    }
+
+    public Parameters before(long time) {
+        this.before = time;
+        return this;
+    }
+
+    public Parameters after(long time) {
+        this.after = time;
+        return this;
+    }
+
+    /**
+     * Adds the specified UUID to the list of users
+     *
+     * @param uuid   The UUID to be added
+     * @param negate Whether to negate
+     * @throws LookupException If the user is not found
+     */
+    public Parameters user(UUID uuid, boolean negate) throws LookupException {
+        this.negateUser = negate;
+        int uid;
+        try {
+            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+        } catch (SQLException e) {
+            throw new LookupException(L.DATABASE_BUSY);
+        }
+
+        if (uid > 0) {
+            uids.add(Integer.toString(uid));
+        } else {
+            throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
+        }
+        users.add(uuid.toString());
+        return this;
+    }
+
+    /**
+     * Adds actions to this parameter instance
+     *
+     * @param sender Will be used for individual action permission checks. Null will
+     *               bypass checks
+     * @param action The actions to be added
+     * @param state  -1 for negative, 0 for either, 1 for positive
+     * @throws ParseException
+     */
+    public Parameters addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
+        if (!action.isEnabled()) {
+            throw new ParseException(Language.L.ACTION_DISABLED);
+        }
+
+        if (sender != null && !action.hasPermission(sender)) {
+            throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_PERM, action.getNode());
+        }
+        if (table != null && table != action.getTable()) {
+            throw new ParseException(Language.L.COMMAND__LOOKUP__INCOMPATIBLE_TABLES);
+        }
+        table = action.getTable();
+        if (action.hasDual) {
+            if (state != -1) {
+                actions.add(action.idPos);
+            }
+            if (state != 1) {
+                actions.add(action.id);
+            }
+        } else {
+            actions.add(action.id);
+        }
+        return this;
+    }
+
+    /**
+     * Adds the specified UUID to the list of users
+     *
+     * @param uuid   The UUID to be added
+     * @param negate Whether to negate
+     * @throws LookupException If the user is not found
+     */
+    public Parameters target(UUID uuid, boolean negate) throws LookupException {
+        this.negateTarget = negate;
+        int uid = 0;
+        try {
+            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+        } catch (ConnectionPool.BusyException e) {
+            throw new LookupException(L.DATABASE_BUSY);
+        } catch (SQLException e) {
+            throw new LookupException(L.ERROR);
+        }
+
+        if (uid > 0) {
+            targets.add(Integer.toString(uid));
+        } else {
+            throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, uuid);
+        }
+        return this;
+    }
+
+    /**
+     * Sets the flags. Does not affect any other flags.
+     *
+     * @param flag the flag to add
+     */
+    public Parameters flag(Flag flag) {
+        flags.add(flag);
+        return this;
+    }
+
+    public Parameters addExactTime(long exactTime) {
+        this.exactTime.add(exactTime);
+        return this;
+    }
+
+    public Parameters addRadius(int radius, boolean negate) {
+        this.radius.put(radius, negate);
+        return this;
+    }
+
+    public Parameters addWorld(String world) {
+        this.worlds.add(world);
+        return this;
+    }
+
+    /**
+     * Clears the flags
+     */
+    public Parameters resetFlags() {
+        this.flags.clear();
+        return this;
+    }
+
+    public Parameters addRating(short rating) {
+        this.ratings.add(rating);
+        return this;
+    }
+
+    // -----------------------------------------------
+    // ------------------- GETTERS -------------------
+    // -----------------------------------------------
+
+    public long getAfter() {
+        return after;
+    }
+
+    public long getBefore() {
+        return before;
+    }
+
+    public List<Long> getExactTime() {
+        return exactTime;
+    }
+
+    public boolean isNegateUser() {
+        return negateUser;
+    }
+
+    /**
+     * This is only used in a select few places. Parameters#getUIDS matters more
+     *
+     * @return the list of users
+     */
+    public List<String> getUsers() {
+        return users;
+    }
+
+    public List<String> getUIDs() {
+        return uids;
+    }
+
+    public List<Integer> getActions() {
+        return actions;
+    }
+
+    public boolean isNegateTarget() {
+        return negateTarget;
+    }
+
+    public List<String> getTargets() {
+        return targets;
+    }
+
+    public boolean isNegateData() {
+        return negateData;
+    }
+
+    public List<String> getDatas() {
+        return datas;
+    }
+
+    public Table getTable() {
+        return table;
+    }
+
+    public HashMap<Integer, Boolean> getRadius() {
+        return radius;
+    }
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public Parameters setLocation(Location location) {
+        this.location = location;
+        return this;
+    }
+
+    public boolean isNegateWorld() {
+        return negateWorld;
+    }
+
+    public Parameters setNegateWorld(boolean negateWorld) {
+        this.negateWorld = negateWorld;
+        return this;
+    }
+
+    public List<String> getWorld() {
+        return worlds;
+    }
+
+    public List<Flag> getFlags() {
+        return flags;
+    }
+
+    public List<Short> getRatings() {
+        return ratings;
+    }
+
+    public boolean hasFlag(Flag flag) {
+        return flags.contains(flag);
+    }
+
+    // -----------------------------------------------
+    // ------------------- PRIVATE -------------------
+    // -----------------------------------------------
 
     public String[] toSQL(IAuxProtect plugin) {
         if (table == null) {
@@ -760,6 +901,106 @@ public class Parameters {
         return output;
     }
 
+    public boolean matches(DbEntry entry) throws SQLException {
+        if (!uids.isEmpty()) {
+            boolean contains = false;
+            for (String user : uids) {
+                if (user.equalsIgnoreCase(entry.getUserUUID())) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (contains == negateUser) {
+                return false;
+            }
+        }
+        if (!targets.isEmpty()) {
+            boolean contains = false;
+            for (String target : targets) {
+                if (target.equalsIgnoreCase(entry.getTargetUUID())) {
+                    contains = true;
+                    break;
+                }
+            }
+            if (contains == negateTarget) {
+                return false;
+            }
+        }
+        if (!exactTime.isEmpty() && !exactTime.contains(entry.getTime())) {
+            return false;
+        }
+        if (entry.getTime() < after || entry.getTime() > before) {
+            return false;
+        }
+        if (!actions.isEmpty() && !actions.contains(entry.getAction().getId(entry.getState()))) {
+            return false;
+        }
+        if (!ratings.isEmpty() && entry instanceof XrayEntry && !ratings.contains(((XrayEntry) entry).getRating())) {
+            return false;
+        }
+        if (datas != null) {
+            boolean any = false;
+            for (String data : datas) {
+                String node = "";
+                for (String part : data.split("[\\*\\-]")) {
+                    if (node.length() > 0) {
+                        node += ".*";
+                    }
+                    node += Pattern.quote(part);
+                }
+                if (any = data.matches(node)) {
+                    break;
+                }
+            }
+            if (!any) {
+                return false;
+            }
+        }
+        if (!radius.isEmpty() && location != null) {
+            if (radius.entrySet().stream().anyMatch((e) -> e.getValue() == distance(entry) > e.getKey())) {
+                return false;
+            }
+        }
+        if (!worlds.isEmpty()) {
+            if (worlds.contains(entry.world) == negateWorld) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    private Parameters time(String param, boolean before) throws ParseException {
+        try {
+            long time = TimeUtil.stringToMillis(param);
+            if (time < 0) {
+                throw new ParseException(Language.L.INVALID_PARAMETER, param);
+            }
+            if (!param.endsWith("e")) {
+                time = System.currentTimeMillis() - time;
+            }
+            if (before) {
+                this.before = time;
+            } else {
+                this.after = time;
+            }
+        } catch (NumberFormatException e) {
+            throw new ParseException(Language.L.INVALID_PARAMETER, param);
+        }
+        return this;
+    }
+
+    private int distance(DbEntry entry) {
+        if (location == null) {
+            return -1;
+        }
+        if (!entry.world.equals(location.getWorld().getName())) {
+            return Integer.MAX_VALUE;
+        }
+        return Math.max(Math.max(Math.abs(entry.x - location.getBlockX()), Math.abs(entry.y - location.getBlockY())),
+                Math.abs(entry.z - location.getBlockZ()));
+    }
+
     private String toGroup(List<?> list) {
         String stmt = "(";
         boolean first = true;
@@ -774,159 +1015,9 @@ public class Parameters {
         return stmt + ")";
     }
 
-    public long getAfter() {
-        return after;
-    }
-
-    public long getBefore() {
-        return before;
-    }
-
-    public List<Long> getExactTime() {
-        return exactTime;
-    }
-
-    public boolean isNegateUser() {
-        return negateUser;
-    }
-
-    public Parameters setNegateUser(boolean negateUser) {
-        this.negateUser = negateUser;
-        return this;
-    }
-
-    /**
-     * This is only used in a select few places. Parameters#getUIDS matters more
-     *
-     * @return the list of users
-     */
-    public List<String> getUsers() {
-        return users;
-    }
-
-    public List<String> getUIDs() {
-        return uids;
-    }
-
-    public List<Integer> getActions() {
-        return actions;
-    }
-
-    public boolean isNegateTarget() {
-        return negateTarget;
-    }
-
-    public Parameters setNegateTarget(boolean negateTarget) {
-        this.negateTarget = negateTarget;
-        return this;
-    }
-
-    public List<String> getTargets() {
-        return targets;
-    }
-
-    public boolean isNegateData() {
-        return negateData;
-    }
-
-    public List<String> getDatas() {
-        return datas;
-    }
-
-    public Table getTable() {
-        return table;
-    }
-
-    public Parameters setTable(Table table) {
-        this.table = table;
-        return this;
-    }
-
-    public HashMap<Integer, Boolean> getRadius() {
-        return radius;
-    }
-
-    public Location getLocation() {
-        return location;
-    }
-
-    public Parameters setLocation(Location location) {
-        this.location = location;
-        return this;
-    }
-
-    public boolean isNegateWorld() {
-        return negateWorld;
-    }
-
-    public Parameters setNegateWorld(boolean negateWorld) {
-        this.negateWorld = negateWorld;
-        return this;
-    }
-
-    public List<String> getWorld() {
-        return worlds;
-    }
-
-    public List<Flag> getFlags() {
-        return flags;
-    }
-
-    public List<Short> getRatings() {
-        return ratings;
-    }
-
-    public Parameters addExactTime(long exactTime) {
-        this.exactTime.add(exactTime);
-        return this;
-    }
-
-    public Parameters addRadius(int radius, boolean negate) {
-        this.radius.put(radius, negate);
-        return this;
-    }
-
-    public Parameters addWorld(String world) {
-        this.worlds.add(world);
-        return this;
-    }
-
-    /**
-     * Clears the flags
-     */
-    public Parameters resetFlags() {
-        this.flags.clear();
-        return this;
-    }
-
-    /**
-     * Sets or unsets the flags. Does not affect any other flags.
-     *
-     * @param flags
-     */
-    public Parameters setFlags(boolean state, Flag... flags) {
-        for (Flag flag : flags) {
-            if (state) {
-                this.flags.add(flag);
-            } else {
-                this.flags.remove(flag);
-            }
-        }
-        return this;
-    }
-
-    public Parameters addRating(short rating) {
-        this.ratings.add(rating);
-        return this;
-    }
-
-    public boolean hasFlag(Flag flag) {
-        return flags.contains(flag);
-    }
-
     public static enum Flag {
         COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
-        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY),
+        MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK),
         RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);
 
         private final APPermission perm;
