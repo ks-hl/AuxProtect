@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
+import dev.heliosares.auxprotect.database.EntryAction;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -31,12 +32,12 @@ public class PlaybackSolver extends BukkitRunnable {
         }
         instances.put(sender.getUniqueId(), this);
         realReferenceTime = System.currentTimeMillis();
-        points = getLocations(plugin, sender, entries, startTime);
+        points = getLocations(plugin, entries, startTime);
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
         this.startTime = Math.max(min - 250, startTime);
     }
 
-    record PosPoint(long time, String name, Location location, boolean inc) {
+    public record PosPoint(long time, String name, int uid, Location location, boolean inc) {
     }
 
     @Override
@@ -78,12 +79,8 @@ public class PlaybackSolver extends BukkitRunnable {
 
     private boolean closed;
 
-    public static List<PosPoint> getLocations(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, IOException {
+    public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, IOException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
-        PlaybackSolver instance = instances.get(sender.getUniqueId());
-        if (instance != null) {
-            instance.close();
-        }
         long min = Long.MAX_VALUE;
         Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
@@ -103,18 +100,30 @@ public class PlaybackSolver extends BukkitRunnable {
                     if (inc.hasPitch()) incLoc.setPitch(inc.pitch());
                     if (inc.hasYaw()) incLoc.setYaw(inc.yaw());
                     lastLoc = incLoc;
-                    points.add(new PosPoint(time, entry.getUser(), incLoc, true));
+                    PosPoint point = new PosPoint(time, entry.getUser(), entry.getUid(), incLoc, true);
+                    plugin.debug("Adding point " + point, 3);
+                    points.add(point);
                     if (time < min) min = time;
                 }
             }
             Location entryLoc = DbEntryBukkit.getLocation(entry);
             entryLoc.setYaw(entry.yaw);
             entryLoc.setPitch(entry.pitch);
-            points.add(new PosPoint(entry.getTime(), entry.getUser(), entryLoc, false));
+            PosPoint point = new PosPoint(entry.getTime(), entry.getUser(), entry.getUid(), entryLoc, false);
+            plugin.debug("Adding point " + point, 3);
+            points.add(point);
             if (entry.getTime() < min) min = entry.getTime();
             lastEntries.put(entry.getUser(), entry);
         }
         points.sort(Comparator.comparingLong(a -> a.time));
         return points;
+    }
+
+    public static class PosEntry extends DbEntry {
+        public PosEntry(long time, int uid, Location location) {
+            super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
+                    (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
+                    Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "");
+        }
     }
 }

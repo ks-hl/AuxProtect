@@ -37,7 +37,7 @@ public class LookupManager {
         stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
         List<DbEntry> out = lookup(sql, param.getTable(), stmt, writeparams);
 
-        if (param.hasFlag(Parameters.Flag.PLAYBACK)) {
+        if (param.hasFlag(Parameters.Flag.PLAYBACK) || param.hasFlag(Parameters.Flag.INCREMENTAL_POS)) {
             try {
                 sql.getMultipleBlobs(out.toArray(new DbEntry[0]));
             } catch (SQLException | IOException e) {

@@ -385,6 +385,14 @@ public class LookupCommand extends Command {
             } else if (params.getFlags().contains(Flag.RETENTION)) {
                 RetentionSolver.showRetention(plugin, sender, rs, params.getAfter(), params.getBefore());
                 return;
+            } else if (params.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
+                List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
+                List<DbEntry> newResults = new ArrayList<>();
+                for (PlaybackSolver.PosPoint point : points) {
+                    newResults.add(new PlaybackSolver.PosEntry(point.time(), point.uid(), point.location()));
+                }
+                Collections.reverse(newResults);
+                rs = newResults;
             } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
                 new PlaybackSolver(plugin, sender, rs, params.getAfter()).runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
                 return;
