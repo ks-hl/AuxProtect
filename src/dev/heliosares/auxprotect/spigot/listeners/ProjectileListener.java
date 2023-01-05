@@ -57,32 +57,26 @@ public class ProjectileListener implements Listener {
             return;
         }
         String actorLabel = null;
-        Location location = null;
         if (actor == null) {
             if (entity.getShooter() == null) {
                 return;
             }
             if (entity.getShooter() instanceof BlockProjectileSource shooter) {
                 actorLabel = AuxProtectSpigot.getLabel(shooter.getBlock());
-                location = shooter.getBlock().getLocation();
             } else if (entity.getShooter() instanceof LivingEntity shooter) {
                 actorLabel = AuxProtectSpigot.getLabel(shooter);
-                location = shooter.getLocation();
             } else {
                 return;
             }
         } else {
             actorLabel = AuxProtectSpigot.getLabel(actor);
-            location = actor.getLocation();
         }
         ItemStack item = null;
         if (entity instanceof ThrowableProjectile) {
             item = ((ThrowableProjectile) entity).getItem();
-        } else if (entity instanceof ThrownPotion) {
-            item = ((ThrownPotion) entity).getItem();
         }
 
-        DbEntry entry = new SingleItemEntry(actorLabel, action, false, location, AuxProtectSpigot.getLabel(entity), "", logData ? item : null);
+        DbEntry entry = new SingleItemEntry(actorLabel, action, false, entity.getLocation(), AuxProtectSpigot.getLabel(entity), "", logData ? item : null);
         plugin.add(entry);
     }
 }
