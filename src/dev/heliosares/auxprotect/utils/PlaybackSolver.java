@@ -17,11 +17,7 @@ import java.util.*;
 
 public class PlaybackSolver extends BukkitRunnable {
     private static final Map<UUID, PlaybackSolver> instances = new HashMap<>();
-
-    private final IAuxProtect plugin;
-    private final SenderAdapter sender;
-    private final List<DbEntry> entries;
-    private final List<PosPoint> points = new ArrayList<>();
+    private final List<PosPoint> points;
     private final long startTime;
     private final long realReferenceTime;
 
@@ -34,13 +30,64 @@ public class PlaybackSolver extends BukkitRunnable {
             instance.close();
         }
         instances.put(sender.getUniqueId(), this);
-        this.plugin = plugin;
-        this.sender = sender;
-        this.entries = entries;
         realReferenceTime = System.currentTimeMillis();
+        points = getLocations(plugin, sender, entries, startTime);
+        long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
+        this.startTime = Math.max(min - 250, startTime);
+    }
+
+    record PosPoint(long time, String name, Location location, boolean inc) {
+    }
+
+    @Override
+    public void run() {
+        if (closed || isCancelled()) {
+            actors.values().forEach(Entity::remove);
+            actors.clear();
+            cancel();
+            return;
+        }
+        final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
+
+        for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
+            PosPoint point = it.next();
+            if (timeNow > point.time()) {
+                LivingEntity actor = actors.get(point.name());
+                if (actor == null || actor.isDead()) {
+                    Location loc = point.location;
+                    assert loc.getWorld() != null;
+                    actor = (LivingEntity) loc.getWorld().spawnEntity(point.location(), EntityType.VILLAGER);
+                    actor.setAI(false);
+                    actor.setInvulnerable(true);
+                    actor.setCustomName(point.name());
+                    actor.setCustomNameVisible(true);
+                }
+                actors.put(point.name(), actor);
+                actor.teleport(point.location());
+                actor.setHealth(20);
+                it.remove();
+            } else break;
+        }
+        if (points.isEmpty()) close();
+    }
+
+    public void close() {
+        if (closed) return;
+        closed = true;
+    }
+
+    private boolean closed;
+
+    public static List<PosPoint> getLocations(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, IOException {
+        if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
+        PlaybackSolver instance = instances.get(sender.getUniqueId());
+        if (instance != null) {
+            instance.close();
+        }
         long min = Long.MAX_VALUE;
         Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
+        List<PosPoint> points = new ArrayList<>();
         for (DbEntry entry : entries) {
             DbEntry lastEntry = lastEntries.get(entry.getUser());
             if (lastEntry != null && entry.getBlob() != null) {
@@ -68,46 +115,6 @@ public class PlaybackSolver extends BukkitRunnable {
             lastEntries.put(entry.getUser(), entry);
         }
         points.sort(Comparator.comparingLong(a -> a.time));
-        this.startTime = Math.max(min - 250, startTime);
+        return points;
     }
-
-    record PosPoint(long time, String name, Location location, boolean inc) {
-    }
-
-    @Override
-    public void run() {
-        if (closed || isCancelled()) {
-            actors.values().forEach(Entity::remove);
-            actors.clear();
-            cancel();
-            return;
-        }
-        final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
-
-        for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
-            PosPoint point = it.next();
-            if (timeNow > point.time()) {
-                LivingEntity actor = actors.get(point.name());
-                if (actor == null || actor.isDead()) {
-                    actor = (LivingEntity) point.location().getWorld().spawnEntity(point.location(), EntityType.VILLAGER);
-                    actor.setAI(false);
-                    actor.setInvulnerable(true);
-                    actor.setCustomName(point.name());
-                    actor.setCustomNameVisible(true);
-                }
-                actors.put(point.name(), actor);
-                actor.teleport(point.location());
-                actor.setHealth(20);
-                it.remove();
-            } else break;
-        }
-        if (points.isEmpty()) close();
-    }
-
-    public void close() {
-        if (closed) return;
-        closed = true;
-    }
-
-    private boolean closed;
 }
