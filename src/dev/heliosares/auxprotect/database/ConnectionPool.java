@@ -9,6 +9,7 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -23,6 +24,7 @@ public class ConnectionPool {
     private static int alive = 0;
     private static int born = 0;
     private static int roaming = 0;
+    private static int expired = 0;
     private static int readTimeIndex;
     private static long writeCheckOut;
     private static int writeTimeIndex;
@@ -68,6 +70,10 @@ public class ConnectionPool {
 
     public static int getNumBorn() {
         return born;
+    }
+
+    public static int getExpired() {
+        return expired;
     }
 
     public static long[] calculateWriteTimes() {
@@ -216,6 +222,9 @@ public class ConnectionPool {
                 Connection out = pool.pop();
                 checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
                 roaming++;
+                if (!isConnectionValid(out)) {
+                    out = newConn(true);
+                }
                 return out;
             }
         } finally {
@@ -254,6 +263,7 @@ public class ConnectionPool {
             if (closed || pool.size() >= CAPACITY) {
                 try {
                     connection.close();
+                    lastChecked.remove(connection);
                     alive--;
                 } catch (Exception ignored) {
                 }
@@ -277,11 +287,50 @@ public class ConnectionPool {
             while (!pool.isEmpty()) {
                 try {
                     alive--;
-                    pool.pop().close();
+                    Connection conn = pool.pop();
+                    conn.close();
+                    lastChecked.remove(conn);
+                } catch (SQLException ignored) {
+                }
+            }
+            //Ensures any roaming connections are closed, because they won't be in the pool.
+            for (Connection connection : lastChecked.keySet()) {
+                try {
+                    connection.close();
                 } catch (SQLException ignored) {
                 }
             }
         }
+    }
+
+    HashMap<Connection, Long> lastChecked;
+
+    private boolean isConnectionValid(@Nullable Connection connection) {
+        if (!isMySQL()) return true;
+        if (connection == null) return false;
+        Long lastCheck = lastChecked.get(connection);
+        if (lastCheck != null && System.currentTimeMillis() - lastCheck < 30000L) return true;
+        if (testConnection(connection)) {
+            lastChecked.put(connection, System.currentTimeMillis());
+            return true;
+        } else {
+            expired++;
+            try {
+                connection.close();
+            } catch (SQLException ignored) {
+            }
+            lastChecked.remove(connection);
+            return false;
+        }
+    }
+
+    private boolean testConnection(Connection connection) {
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT 1")) {
+            stmt.execute();
+        } catch (SQLException ignored) {
+            return false;
+        }
+        return true;
     }
 
     public boolean isMySQL() {

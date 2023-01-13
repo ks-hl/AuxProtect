@@ -56,6 +56,7 @@ public class DumpCommand extends Command {
             trace.append("  Alive: ").append(ConnectionPool.getNumAlive()).append("\n");
             trace.append("  Born: ").append(ConnectionPool.getNumBorn()).append("\n");
             trace.append("  Roaming: ").append(ConnectionPool.getRoaming()).append("\n");
+            trace.append("  Expired: ").append(ConnectionPool.getExpired()).append("\n");
         }
         long[] read = ConnectionPool.calculateReadTimes();
         if (read != null) {
