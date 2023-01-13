@@ -36,6 +36,7 @@ public class ConnectionPool {
     private final IAuxProtect plugin;
     private final Connection writeconn;
     private final ReentrantLock lock = new ReentrantLock();
+    private final HashMap<Connection, Long> lastChecked = new HashMap<>();
     private boolean closed;
     @Nullable
     private StackTraceElement[] whoHasWriteConnection;
@@ -302,8 +303,6 @@ public class ConnectionPool {
             }
         }
     }
-
-    HashMap<Connection, Long> lastChecked;
 
     private boolean isConnectionValid(@Nullable Connection connection) {
         if (!isMySQL()) return true;
