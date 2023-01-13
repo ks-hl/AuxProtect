@@ -4,7 +4,7 @@ main: dev.heliosares.auxprotect.spigot.AuxProtectSpigot
 description: A plugin designed to supplement CoreProtect in a few ways.
 api-version: 1.13
 softdepend: [ShopGUIPlus, ChestShop, AuctionHouse, Vault, CoreProtect, EconomyShopGUI, EconomyShopGUI-Premium, DynamicShop, Jobs, Essentials, Towny]
-loadbefore: [AdvancedPortals]
+loadbefore: [AdvancedPortals,ajParkour]
 
 commands:
     auxprotect:
