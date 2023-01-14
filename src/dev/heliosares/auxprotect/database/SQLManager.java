@@ -115,11 +115,11 @@ public class SQLManager {
         return conn.isMySQL();
     }
 
-    public void connect(String user, String pass)
+    public void connect(boolean mysql, @Nullable String user, @Nullable String pass)
             throws SQLException, IOException, ClassNotFoundException {
         plugin.info("Connecting to database...");
 
-        conn = new ConnectionPool(plugin, targetString, user, pass);
+        conn = new ConnectionPool(plugin, targetString, mysql, user, pass);
         try {
             init();
         } catch (Exception e) {

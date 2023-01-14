@@ -41,13 +41,13 @@ public class ConnectionPool {
     @Nullable
     private StackTraceElement[] whoHasWriteConnection;
 
-    public ConnectionPool(IAuxProtect plugin, String connString, String user, String pwd)
+    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd)
             throws SQLException, ClassNotFoundException {
         this.connString = connString;
         this.plugin = plugin;
         this.user = user;
         this.pwd = pwd;
-        this.mysql = user != null && pwd != null;
+        this.mysql = mysql;
 
         checkDriver();
 

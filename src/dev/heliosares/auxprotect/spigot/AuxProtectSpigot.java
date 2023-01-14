@@ -183,11 +183,14 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             @Override
             public void run() {
                 try {
-                    if (getAPConfig().isMySQL()) {
-                        sqlManager.connect(getAPConfig().getUser(), getAPConfig().getPass());
-                    } else {
-                        sqlManager.connect(null, null);
+                    String user = null;
+                    String pass = null;
+                    boolean mysql = getAPConfig().isMySQL();
+                    if (mysql) {
+                        user = getAPConfig().getUser();
+                        pass = getAPConfig().getPass();
                     }
+                    sqlManager.connect(mysql, user, pass);
                 } catch (Exception e) {
                     print(e);
                     getLogger().severe("Failed to connect to SQL database. Disabling.");

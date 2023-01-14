@@ -8,6 +8,8 @@ import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 public class MigrationManager {
     public static final int DBVERSION = 9;
@@ -27,6 +29,15 @@ public class MigrationManager {
 
     public int getOriginalVersion() {
         return originalVersion;
+    }
+
+    private static class MigrationAction {
+        private final boolean backup;
+
+        public MigrationAction(boolean backup, Consumer<Connection> preTableAction, Consumer<Connection> postTableAction) {
+
+            this.backup = backup;
+        }
     }
 
     public int getVersion() {
