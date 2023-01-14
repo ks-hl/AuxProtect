@@ -9,7 +9,6 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -36,13 +35,10 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     Set<Integer> stackHashHistory = new HashSet<>();
     private boolean isShuttingDown;
     private String stackLog = "";
+    private boolean enabled;
 
     public AuxProtectBungee() {
         instance = this;
-    }
-
-    public static void tell(CommandSender to, String message) {
-        to.sendMessage(TextComponent.fromLegacyText(message));
     }
 
     public static IAuxProtect getInstance() {
@@ -54,7 +50,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
             return "#null";
         }
         if (o instanceof UUID) {
-            return "$" + ((UUID) o).toString();
+            return "$" + o;
         }
         if (o instanceof ProxiedPlayer) {
             return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
@@ -64,9 +60,10 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public void onEnable() {
+        enabled = true;
         try {
             config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
-                    (s) -> getResourceAsStream(s), false));
+                    this::getResourceAsStream, false));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
@@ -76,7 +73,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
             Language.load(this,
                     () -> new BungeeConfigAdapter(getDataFolder(),
                             "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            (s) -> getResourceAsStream(s), false));
+                            this::getResourceAsStream, false));
 
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
@@ -158,6 +155,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public void onDisable() {
+        enabled = false;
         isShuttingDown = true;
         getProxy().getPluginManager().unregisterListeners(this);
         getProxy().getPluginManager().unregisterCommands(this);
@@ -293,12 +291,12 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public List<String> listPlayers() {
-        return getProxy().getPlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
+        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toList());
     }
 
     @Override
     public boolean isEnabled() {
-        return this.isEnabled();
+        return enabled;
     }
 
     @Override

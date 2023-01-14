@@ -350,20 +350,20 @@ public class SQLManager {
         int i = 0;
         int count = 0;
         final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE uid IN ";
-        String stmt = "";
+        StringBuilder stmt = new StringBuilder();
         for (int uid : savedUids) {
-            if (!stmt.isEmpty()) {
-                stmt += ",";
+            if (stmt.length() > 0) {
+                stmt.append(",");
             }
             plugin.debug("Purging UID " + uid, 5);
-            stmt += uid;
+            stmt.append(uid);
             if (++i >= 1000) {
                 count += executeWriteReturnRows(hdr + "(" + stmt + ")");
-                stmt = "";
+                stmt = new StringBuilder();
                 i = 0;
             }
         }
-        if (!stmt.isEmpty())
+        if (stmt.length() > 0)
             count += executeWriteReturnRows(hdr + "(" + stmt + ")");
         return count;
     }
@@ -423,13 +423,7 @@ public class SQLManager {
     }
 
     /**
-     * {@link PreparedStatement#execute()}
-     *
-     * @param stmt
-     * @param args
-     * @return
-     * @throws SQLException
-     * @throws BusyException
+     * @see PreparedStatement#execute()
      */
     public boolean executeWrite(String stmt, Object... args) throws SQLException, BusyException {
         plugin.debug(stmt, 5);
@@ -442,13 +436,7 @@ public class SQLManager {
     }
 
     /**
-     * {@link PreparedStatement#execute()}
-     *
-     * @param stmt
-     * @param args
-     * @return
-     * @throws SQLException
-     * @throws BusyException
+     * @see PreparedStatement#execute()
      */
     public boolean executeWrite(Connection connection, String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
@@ -459,13 +447,7 @@ public class SQLManager {
     }
 
     /**
-     * {@link PreparedStatement#executeUpdate()}
-     *
-     * @param stmt
-     * @param args
-     * @return
-     * @throws SQLException
-     * @throws BusyException
+     * @see PreparedStatement#executeUpdate()
      */
     public int executeWriteReturnRows(String stmt, Object... args) throws SQLException, BusyException {
         plugin.debug(stmt, 5);
@@ -549,10 +531,9 @@ public class SQLManager {
      * done with this Connection
      *
      * @return returns a READ-ONLY connection to the database
-     * @throws SQLException
      * @throws BusyException if the database is busy for longer than 3 seconds
      */
-    public Connection getConnection(boolean wait) throws SQLException, BusyException {
+    public Connection getConnection(boolean wait) throws SQLException {
         return conn.getConnection(wait);
     }
 
@@ -588,7 +569,7 @@ public class SQLManager {
 
     protected boolean put(Connection connection, Table table) throws SQLException, IOException {
         long start = System.nanoTime();
-        int count = 0;
+        int count;
         List<DbEntry> entries = new ArrayList<>();
 
         DbEntry entry;
@@ -599,29 +580,28 @@ public class SQLManager {
         if (count == 0) {
             return false;
         }
-        String stmt = "INSERT INTO " + table + " ";
+        StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
         final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();
-        stmt += table.getValuesHeader(plugin.getPlatform());
-        stmt += " VALUES";
+        stmt.append(table.getValuesHeader(plugin.getPlatform()));
+        stmt.append(" VALUES");
         for (int i = 0; i < entries.size(); i++) {
-            stmt += "\n" + inc;
+            stmt.append("\n").append(inc);
             if (i + 1 == entries.size()) {
-                stmt += ";";
+                stmt.append(";");
             } else {
-                stmt += ",";
+                stmt.append(",");
             }
         }
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+        try (PreparedStatement statement = connection.prepareStatement(stmt.toString())) {
 
             int i = 1;
             for (DbEntry dbEntry : entries) {
                 int prior = i;
-                // statement.setString(i++, table);
                 statement.setLong(i++, dbEntry.getTime());
                 statement.setInt(i++, dbEntry.getUid());
                 int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
@@ -702,24 +682,14 @@ public class SQLManager {
             bytes /= 1024;
             oom++;
         }
-        String out = "";
-        switch (oom) {
-            case 0:
-                out = "B";
-                break;
-            case 1:
-                out = "KB";
-                break;
-            case 2:
-                out = "MB";
-                break;
-            case 3:
-                out = "GB";
-                break;
-            case 4:
-                out = "TB";
-                break;
-        }
+        String out = switch (oom) {
+            case 0 -> "B";
+            case 1 -> "KB";
+            case 2 -> "MB";
+            case 3 -> "GB";
+            case 4 -> "TB";
+            default -> "";
+        };
         return (Math.round(bytes * 100.0) / 100.0) + " " + out;
     }
 
@@ -855,11 +825,11 @@ public class SQLManager {
      *              negative actions.
      * @param ptext The text which will be displayed for this action in looks for
      *              positive actions, or null for singular actions.
+     * @return The created EntryAction.
      * @throws AlreadyExistsException if the action you are attempting to create
      *                                already exists or the name is taken.
      * @throws SQLException           if there is a problem connecting to the
      *                                database.
-     * @returns The created EntryAction.
      */
     public EntryAction createAction(String key, String ntext, String ptext)
             throws AlreadyExistsException, SQLException {
@@ -961,18 +931,18 @@ public class SQLManager {
 
     public void getMultipleBlobs(DbEntry... entries) throws SQLException, IOException {
         Table table = null;
-        String stmt = "SELECT time,ablob FROM %s WHERE time IN (";
+        StringBuilder stmt = new StringBuilder("SELECT time,ablob FROM %s WHERE time IN (");
         HashMap<Long, DbEntry> entryHash = new HashMap<>();
         for (DbEntry entry : entries) {
             if (table == null) table = entry.getAction().getTable();
             else if (table != entry.getAction().getTable()) throw new IllegalArgumentException("Incompatible actions");
-            stmt += entry.getTime() + ",";
+            stmt.append(entry.getTime()).append(",");
             entryHash.put(entry.getTime(), entry);
         }
         if (table == null) return;
-        stmt = String.format(stmt.substring(0, stmt.length() - 1), table.toString()) + ")";
+        stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table.toString()) + ")");
         Connection connection = getConnection(false);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt.toString())) {
             try (ResultSet rs = pstmt.executeQuery()) {
                 while (rs.next()) {
                     entryHash.get(rs.getLong("time")).setBlob(getBlob(rs, "ablob"));

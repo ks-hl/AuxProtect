@@ -70,10 +70,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             return "#null";
         }
         if (o instanceof UUID) {
-            return "$" + ((UUID) o).toString();
+            return "$" + o;
         }
         if (o instanceof Player) {
-            return "$" + ((Player) o).getUniqueId().toString();
+            return "$" + ((Player) o).getUniqueId();
         }
         if (o instanceof Entity) {
             return "#" + ((Entity) o).getType().name().toLowerCase();
@@ -85,7 +85,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             return "#" + ((Block) o).getType().toString().toLowerCase();
         }
         if (o instanceof Material) {
-            return ((Material) o).toString().toLowerCase();
+            return o.toString().toLowerCase();
         }
         return "#null";
     }
@@ -111,7 +111,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         try {
             config.load(this, new SpigotConfigAdapter(this.getRootDirectory(), "config.yml", this.getConfig(),
-                    s -> this.getResource(s), false));
+                    this::getResource, false));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
@@ -119,7 +119,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         try {
             Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(),
-                    "lang/" + config.getConfig().getString("lang") + ".yml", null, s -> this.getResource(s), false));
+                    "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource, false));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
@@ -134,7 +134,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         debug("Parsing: " + Bukkit.getBukkitVersion());
         try {
-            SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("[\\.-]")[1]);
+            SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("[.-]")[1]);
         } catch (Exception e) {
             warning("Failed to parse version string: \"" + Bukkit.getBukkitVersion() + "\". Defaulting to 1.16");
             SERVER_VERSION = 16;
@@ -171,11 +171,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
-        if (sqlManager == null) {
-            this.getLogger().severe("Failed to connect to database. Disabling");
-            this.setEnabled(false);
-            return;
-        }
         veinManager = new VeinManager();
 
         new BukkitRunnable() {
@@ -300,9 +295,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             EntryAction.TOWNYNAME.setEnabled(false);
         }
 
-        this.getCommand("claiminv").setExecutor(claiminvcommand = new ClaimInvCommand(this));
-        this.getCommand("auxprotect").setExecutor((apcommand = new APSCommand(this)));
-        this.getCommand("auxprotect").setTabCompleter(apcommand);
+        Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
+        Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = new APSCommand(this)));
+        Objects.requireNonNull(this.getCommand("auxprotect")).setTabCompleter(apcommand);
 
         new BukkitRunnable() {
 
@@ -325,8 +320,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     warning(output);
                     if (config.isOverrideCommands()) {
                         warning("Attempting to re-register tab completer.");
-                        getCommand("auxprotect").setTabCompleter(apcommand);
-                        getCommand(getCommandAlias()).setTabCompleter(apcommand);
+                        Objects.requireNonNull(getCommand("auxprotect")).setTabCompleter(apcommand);
+                        Objects.requireNonNull(getCommand(getCommandAlias())).setTabCompleter(apcommand);
                     } else {
                         warning("If this is causing issues, try enabling 'OverrideCommands' in the config.");
                     }
@@ -769,7 +764,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public List<String> listPlayers() {
-        return getServer().getOnlinePlayers().stream().map((p) -> p.getName()).collect(Collectors.toList());
+        return getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
     }
 
     @Override
