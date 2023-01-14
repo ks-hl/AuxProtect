@@ -159,10 +159,10 @@ public class SQLManager {
             if (anypurge) {
                 try {
                     plugin.info(Language.L.COMMAND__PURGE__UIDS.translate());
-                    plugin.getSqlManager().purgeUIDs();
+                    purgeUIDs();
 
-                    if (!plugin.getSqlManager().isMySQL()) {
-                        plugin.getSqlManager().vacuum();
+                    if (!isMySQL()) {
+                        vacuum();
                     }
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
@@ -254,7 +254,7 @@ public class SQLManager {
             }
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-            stmt += " (key SMALLINT, value BIGINT, PRIMARY KEY (key));";
+            stmt += " (key SMALLINT PRIMARY KEY, value BIGINT);";
             execute(connection, stmt);
             for (LastKeys key : LastKeys.values()) {
                 try {

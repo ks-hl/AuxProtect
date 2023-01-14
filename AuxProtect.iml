@@ -43,7 +43,7 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
     <orderEntry type="library" name="Maven: com.github.MultiChat:Development:1.9.5" level="project" />
     <orderEntry type="library" name="Maven: com.github.brcdev-minecraft:shopgui-api:3.0.0" level="project" />
-    <orderEntry type="library" name="Maven: com.github.Gypopo:EconomyShopGUI-API:1.2.0" level="project" />
+    <orderEntry type="library" name="Maven: com.github.Gypopo:EconomyShopGUI-API:1.4.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.7sat:SSDynamicShop:f99e33d4e4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bstats:bstats-bukkit:2.2.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bstats:bstats-base:2.2.1" level="project" />

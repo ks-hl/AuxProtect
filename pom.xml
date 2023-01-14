@@ -2,7 +2,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<groupId>AuxProtect</groupId>
 	<artifactId>AuxProtect</artifactId>
-	<version>1.2.4-pre4</version>
+	<version>1.2.4-pre5</version>
 	<name>AuxProtect</name>
 	<build>
 		<finalName>${project.artifactId}-${project.version}</finalName>
