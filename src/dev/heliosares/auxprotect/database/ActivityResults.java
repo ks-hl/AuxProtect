@@ -9,7 +9,6 @@ import dev.heliosares.auxprotect.utils.ActivitySolver;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.ArrayList;
 import java.util.List;
 
 public class ActivityResults extends Results {

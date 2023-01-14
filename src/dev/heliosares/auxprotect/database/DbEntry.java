@@ -220,12 +220,12 @@ public class DbEntry {
         return blob != null || blobid >= 0;
     }
 
-    protected void setBlobID(long blobid) {
-        this.blobid = blobid;
-    }
-
     public long getBlobID() {
         return blobid;
+    }
+
+    protected void setBlobID(long blobid) {
+        this.blobid = blobid;
     }
 
     @Override

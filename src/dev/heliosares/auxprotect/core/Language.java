@@ -56,7 +56,7 @@ public class Language {
         return ColorTranslate.cc(s);
     }
 
-    public static enum L {
+    public enum L {
         UPDATE, //
         NO_PERMISSION, //
         NO_PERMISSION_NODE, //

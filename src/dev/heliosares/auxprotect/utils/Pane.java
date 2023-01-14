@@ -8,6 +8,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -17,7 +18,7 @@ public class Pane implements InventoryHolder {
     private final Player player;
     private Inventory inventory;
     private ArrayList<Button> buttons;
-    private List<Consumer<Pane>> onClose = new ArrayList<>();
+    private final List<Consumer<Pane>> onClose = new ArrayList<>();
     private boolean cancelled;
 
     public Pane(Type type, Player player) {
@@ -54,9 +55,7 @@ public class Pane implements InventoryHolder {
         }
         if (lore != null) {
             ArrayList<String> loreA = new ArrayList<>();
-            for (String lore_ : lore) {
-                loreA.add(lore_);
-            }
+            Collections.addAll(loreA, lore);
             meta.setLore(loreA);
         }
         item.setItemMeta(meta);
@@ -107,7 +106,7 @@ public class Pane implements InventoryHolder {
         return player;
     }
 
-    public static enum Type {
+    public enum Type {
         CLAIM, SHOW
     }
 

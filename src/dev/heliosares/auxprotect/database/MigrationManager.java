@@ -15,30 +15,13 @@ public class MigrationManager {
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
+    private final Map<Integer, MigrationAction> migrationActions;
     private boolean isMigrating;
     private int version;
     private int originalVersion;
     private int complete;
     private int total;
-
     private int migratingToVersion;
-
-    public int getComplete() {
-        return complete;
-    }
-
-    public int getTotal() {
-        return total;
-    }
-
-    public String getProgressString() {
-        if (!isMigrating()) return null;
-        if (migratingToVersion <= 0) return null;
-        int progressPercentage = (int) Math.floor((double) getComplete() / getTotal() * 100);
-        return String.format("Migration to v%d %d%% complete. (%d/%d). DO NOT INTERRUPT", migratingToVersion, progressPercentage, getComplete(), getTotal());
-    }
-
-    private final Map<Integer, MigrationAction> migrationActions;
 
     MigrationManager(SQLManager sql, Connection connection, IAuxProtect plugin) {
         this.sql = sql;
@@ -392,21 +375,33 @@ public class MigrationManager {
         }
     }
 
+    public int getComplete() {
+        return complete;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public String getProgressString() {
+        if (!isMigrating()) return null;
+        if (migratingToVersion <= 0) return null;
+        int progressPercentage = (int) Math.floor((double) getComplete() / getTotal() * 100);
+        return String.format("Migration to v%d %d%% complete. (%d/%d). DO NOT INTERRUPT", migratingToVersion, progressPercentage, getComplete(), getTotal());
+    }
+
     public int getOriginalVersion() {
         return originalVersion;
     }
 
-    @FunctionalInterface
-    interface MigrateRunnable {
-        void run() throws SQLException;
-    }
-
-    private record MigrationAction(boolean backup, boolean necessary, @Nullable MigrateRunnable preTableAction,
-                                   @Nullable MigrateRunnable postTableAction) {
-    }
-
     public int getVersion() {
         return version;
+    }
+
+    private void setVersion(int version) throws SQLException {
+        sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
+                + System.currentTimeMillis() + "," + (this.version = version) + ")");
+        plugin.info("Done migrating to version " + version);
     }
 
     boolean isMigrating() {
@@ -581,13 +576,6 @@ public class MigrationManager {
         }
     }
 
-
-    private void setVersion(int version) throws SQLException {
-        sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-                + System.currentTimeMillis() + "," + (this.version = version) + ")");
-        plugin.info("Done migrating to version " + version);
-    }
-
     private void tryExecute(String stmt) {
         try {
             sql.execute(connection, stmt);
@@ -595,5 +583,15 @@ public class MigrationManager {
             plugin.warning("Error, if you are reattempting migration this is expected.");
             plugin.print(e);
         }
+    }
+
+
+    @FunctionalInterface
+    interface MigrateRunnable {
+        void run() throws SQLException;
+    }
+
+    private record MigrationAction(boolean backup, boolean necessary, @Nullable MigrateRunnable preTableAction,
+                                   @Nullable MigrateRunnable postTableAction) {
     }
 }

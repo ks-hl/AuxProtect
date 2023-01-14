@@ -23,6 +23,7 @@ public class PlaybackSolver extends BukkitRunnable {
     private final long realReferenceTime;
 
     private final Map<String, LivingEntity> actors = new HashMap<>();
+    private boolean closed;
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, IOException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
@@ -36,48 +37,6 @@ public class PlaybackSolver extends BukkitRunnable {
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
         this.startTime = Math.max(min - 250, startTime);
     }
-
-    public record PosPoint(long time, String name, int uid, Location location, boolean inc) {
-    }
-
-    @Override
-    public void run() {
-        if (closed || isCancelled()) {
-            actors.values().forEach(Entity::remove);
-            actors.clear();
-            cancel();
-            return;
-        }
-        final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
-
-        for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
-            PosPoint point = it.next();
-            if (timeNow > point.time()) {
-                LivingEntity actor = actors.get(point.name());
-                if (actor == null || actor.isDead()) {
-                    Location loc = point.location;
-                    assert loc.getWorld() != null;
-                    actor = (LivingEntity) loc.getWorld().spawnEntity(point.location(), EntityType.VILLAGER);
-                    actor.setAI(false);
-                    actor.setInvulnerable(true);
-                    actor.setCustomName(point.name());
-                    actor.setCustomNameVisible(true);
-                }
-                actors.put(point.name(), actor);
-                actor.teleport(point.location());
-                actor.setHealth(20);
-                it.remove();
-            } else break;
-        }
-        if (points.isEmpty()) close();
-    }
-
-    public void close() {
-        if (closed) return;
-        closed = true;
-    }
-
-    private boolean closed;
 
     public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, IOException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
@@ -117,6 +76,46 @@ public class PlaybackSolver extends BukkitRunnable {
         }
         points.sort(Comparator.comparingLong(a -> a.time));
         return points;
+    }
+
+    @Override
+    public void run() {
+        if (closed || isCancelled()) {
+            actors.values().forEach(Entity::remove);
+            actors.clear();
+            cancel();
+            return;
+        }
+        final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
+
+        for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
+            PosPoint point = it.next();
+            if (timeNow > point.time()) {
+                LivingEntity actor = actors.get(point.name());
+                if (actor == null || actor.isDead()) {
+                    Location loc = point.location;
+                    assert loc.getWorld() != null;
+                    actor = (LivingEntity) loc.getWorld().spawnEntity(point.location(), EntityType.VILLAGER);
+                    actor.setAI(false);
+                    actor.setInvulnerable(true);
+                    actor.setCustomName(point.name());
+                    actor.setCustomNameVisible(true);
+                }
+                actors.put(point.name(), actor);
+                actor.teleport(point.location());
+                actor.setHealth(20);
+                it.remove();
+            } else break;
+        }
+        if (points.isEmpty()) close();
+    }
+
+    public void close() {
+        if (closed) return;
+        closed = true;
+    }
+
+    public record PosPoint(long time, String name, int uid, Location location, boolean inc) {
     }
 
     public static class PosEntry extends DbEntry {

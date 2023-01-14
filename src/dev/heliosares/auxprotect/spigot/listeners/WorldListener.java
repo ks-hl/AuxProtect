@@ -14,7 +14,7 @@ import org.bukkit.event.weather.LightningStrikeEvent;
 
 public class WorldListener implements Listener {
 
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public WorldListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

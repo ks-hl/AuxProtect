@@ -96,7 +96,6 @@ public class InventoryCommand extends Command {
                     String.format("§fBased on inventory from §9%s§f ago §7(%s)§f with §9%s§f differences",
                             TimeUtil.millisToString(System.currentTimeMillis() - inv.basetime()),
                             inv.basetime() + "e", inv.numdiff()));
-            ;
 
             plugin.runSync(() -> player.openInventory(output));
         } else {

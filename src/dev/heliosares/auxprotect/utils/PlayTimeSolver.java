@@ -27,7 +27,6 @@ public class PlayTimeSolver {
         }
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withMinute(0).withSecond(0).withNano(0);
-        ;
         long firstTime = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         long start = System.currentTimeMillis();
         long login = 0;
@@ -63,7 +62,7 @@ public class PlayTimeSolver {
                     continue;
                 }
                 while (hour < counter.length) {
-                    long hourTime = firstTime + hour * 3600 * 1000;
+                    long hourTime = firstTime + (long) hour * 3600 * 1000;
                     long hourTimeEnd = hourTime + 3600 * 1000;
 
                     long overlap = 0;

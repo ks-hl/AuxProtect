@@ -6,7 +6,6 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -34,7 +33,7 @@ public class AuctionHouseListener implements Listener {
             }
         }
         DbEntry entry = new SingleItemEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
-                e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()),e.getItem());
+                e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()), e.getItem());
         plugin.add(entry);
     }
 

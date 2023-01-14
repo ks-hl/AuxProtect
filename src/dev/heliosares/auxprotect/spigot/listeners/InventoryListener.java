@@ -16,7 +16,7 @@ import org.bukkit.inventory.ItemStack;
 
 public class InventoryListener implements Listener {
 
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public InventoryListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

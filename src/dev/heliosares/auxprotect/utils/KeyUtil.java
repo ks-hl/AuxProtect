@@ -31,6 +31,7 @@ public class KeyUtil {
     private final boolean isMalformed;
     private final boolean isPrivate;
     private final String keyholder;
+
     public KeyUtil(String key) {
         boolean isValid = false;
         boolean isBlacklisted = false;

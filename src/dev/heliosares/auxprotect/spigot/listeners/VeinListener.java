@@ -31,7 +31,7 @@ public class VeinListener implements Listener {
     private static final int ORE_RADIUS = 5;
     private static final int NON_ORE_THRESHOLD = 2;
     PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public VeinListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

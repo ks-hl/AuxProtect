@@ -21,8 +21,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class MoneySolver extends ChartRenderer {
-    private double[] values = new double[100];
-    private List<LocalDate> xDivs;
+    private final double[] values = new double[100];
+    private final List<LocalDate> xDivs;
 
     private MoneySolver(AuxProtectSpigot plugin, Player player, List<DbEntry> results, int time, String user)
             throws IllegalArgumentException {

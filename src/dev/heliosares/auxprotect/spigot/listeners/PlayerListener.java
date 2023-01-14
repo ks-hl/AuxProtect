@@ -146,8 +146,7 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onConsume(PlayerItemConsumeEvent e) {
         String sup = "";
-        if (e.getItem().getType() == Material.POTION && e.getItem().getItemMeta() instanceof PotionMeta) {
-            PotionMeta pm = (PotionMeta) e.getItem().getItemMeta();
+        if (e.getItem().getType() == Material.POTION && e.getItem().getItemMeta() instanceof PotionMeta pm) {
             sup = pm.getBasePotionData().getType().toString().toLowerCase();
         }
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
@@ -287,10 +286,9 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerUnleashEntityEvent(PlayerUnleashEntityEvent e) {
-        if (!(e.getEntity() instanceof LivingEntity)) {
+        if (!(e.getEntity() instanceof LivingEntity entity)) {
             return;
         }
-        LivingEntity entity = (LivingEntity) e.getEntity();
         if (!entity.isLeashed()) {
             return;
         }
@@ -320,7 +318,6 @@ public class PlayerListener implements Listener {
     public void onChat(AsyncPlayerChatEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(5);
         if (e.isCancelled()) {
-            return;
         }
     }
 }

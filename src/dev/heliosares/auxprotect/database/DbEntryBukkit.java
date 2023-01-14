@@ -5,7 +5,7 @@ import org.bukkit.Location;
 
 import javax.annotation.Nullable;
 
-public class DbEntryBukkit extends DbEntry{
+public class DbEntryBukkit extends DbEntry {
 
     public DbEntryBukkit(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
         super(userLabel, action, state, targetLabel, data);

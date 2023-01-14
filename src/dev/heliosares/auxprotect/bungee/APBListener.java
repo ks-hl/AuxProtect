@@ -35,8 +35,7 @@ public class APBListener implements Listener {
     @EventHandler
     public void chatEvent(ChatEvent e) {
         try {
-            if (e.getSender() instanceof ProxiedPlayer) {
-                ProxiedPlayer player = (ProxiedPlayer) e.getSender();
+            if (e.getSender() instanceof ProxiedPlayer player) {
                 if (e.isCommand()) {
                     DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.COMMAND, false,
                             e.getMessage(), "");
@@ -54,9 +53,9 @@ public class APBListener implements Listener {
                     }
                 } else if (Events.PMToggle.containsKey(player.getUniqueId())) {
                     String message = e.getMessage();
-                    if (ProxyServer.getInstance().getPlayer((UUID) Events.PMToggle.get(player.getUniqueId())) != null) {
+                    if (ProxyServer.getInstance().getPlayer(Events.PMToggle.get(player.getUniqueId())) != null) {
                         ProxiedPlayer target = ProxyServer.getInstance()
-                                .getPlayer((UUID) Events.PMToggle.get(player.getUniqueId()));
+                                .getPlayer(Events.PMToggle.get(player.getUniqueId()));
                         handlePM(player, target, message);
                     }
 
@@ -82,7 +81,7 @@ public class APBListener implements Listener {
             String message = MultiChatUtil.getMessageFromArgs(args);
             if (MultiChat.lastmsg.containsKey(player.getUniqueId())) {
                 ProxiedPlayer target = ProxyServer.getInstance()
-                        .getPlayer((UUID) MultiChat.lastmsg.get(player.getUniqueId()));
+                        .getPlayer(MultiChat.lastmsg.get(player.getUniqueId()));
                 if (target != null) {
 
                     handlePM(player, target, message);

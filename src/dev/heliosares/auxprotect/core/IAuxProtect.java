@@ -32,33 +32,33 @@ public interface IAuxProtect {
 
     void add(DbEntry dbEntry);
 
-    public void runAsync(Runnable run);
+    void runAsync(Runnable run);
 
-    public void runSync(Runnable runnable);
+    void runSync(Runnable runnable);
 
-    public String getCommandPrefix();
+    String getCommandPrefix();
 
-    public String getCommandAlias();
+    String getCommandAlias();
 
-    public SenderAdapter getConsoleSender();
+    SenderAdapter getConsoleSender();
 
-    public boolean isShuttingDown();
+    boolean isShuttingDown();
 
-    public boolean isHooked(String name);
+    boolean isHooked(String name);
 
-    public File getRootDirectory();
+    File getRootDirectory();
 
-    public String getPlatformVersion();
+    String getPlatformVersion();
 
-    public String getPluginVersion();
+    String getPluginVersion();
 
-    public APPlayer getAPPlayer(SenderAdapter sender);
+    APPlayer getAPPlayer(SenderAdapter sender);
 
-    public int queueSize();
+    int queueSize();
 
-    public String getStackLog();
+    String getStackLog();
 
-    public List<String> listPlayers();
+    List<String> listPlayers();
 
-    public boolean isEnabled();
+    boolean isEnabled();
 }

@@ -1,17 +1,13 @@
 package dev.heliosares.auxprotect.database;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
-
 import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
+
+import java.util.*;
 
 public class EntryAction {
     private static final HashMap<String, EntryAction> values = new HashMap<>();
@@ -98,7 +94,7 @@ public class EntryAction {
     public static final EntryAction TOWNDELETE = new EntryAction("towndelete", 1312);
     public static final EntryAction TOWNJOIN = new EntryAction("townjoin", 1313, 1314);
     public static final EntryAction TOWNCLAIM = new EntryAction("townclaim", 1315, 1316);
-//    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
+    //    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
     public static final EntryAction TOWNMAYOR = new EntryAction("townmayor", 1318);
     public static final EntryAction TOWNBANK = new EntryAction("townbank", 1319, 1320);
 
@@ -144,12 +140,6 @@ public class EntryAction {
         values.put(name, this);
     }
 
-    private void validateID(String name, int id) throws IllegalArgumentException {
-        if (!usedids.add(id)) {
-            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
-        }
-    }
-
     protected EntryAction(String key, int nid, int pid, String ntext, String ptext) {
         this(key, nid, pid);
         this.overrideNText = ntext;
@@ -159,6 +149,31 @@ public class EntryAction {
     protected EntryAction(String key, int id, String text) {
         this(key, id);
         this.overrideNText = text;
+    }
+
+    public static Collection<EntryAction> values() {
+        return Collections.unmodifiableCollection(values.values());
+    }
+
+    public static EntryAction getAction(String key) {
+        return values.get(key);
+    }
+
+    public static EntryAction getAction(int id) {
+        if (id == 0)
+            return null;
+        for (EntryAction action : values.values()) {
+            if (action.id == id || action.idPos == id) {
+                return action;
+            }
+        }
+        return null;
+    }
+
+    private void validateID(String name, int id) throws IllegalArgumentException {
+        if (!usedids.add(id)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+        }
     }
 
     public String getText(boolean state) {
@@ -279,25 +294,6 @@ public class EntryAction {
 
     public void setLowestpriority(boolean lowestpriority) {
         this.lowestpriority = lowestpriority;
-    }
-
-    public static Collection<EntryAction> values() {
-        return Collections.unmodifiableCollection(values.values());
-    }
-
-    public static EntryAction getAction(String key) {
-        return values.get(key);
-    }
-
-    public static EntryAction getAction(int id) {
-        if (id == 0)
-            return null;
-        for (EntryAction action : values.values()) {
-            if (action.id == id || action.idPos == id) {
-                return action;
-            }
-        }
-        return null;
     }
 
     public String getNode() {

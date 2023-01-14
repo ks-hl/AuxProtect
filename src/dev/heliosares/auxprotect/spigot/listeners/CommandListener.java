@@ -8,7 +8,7 @@ import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 
 public class CommandListener implements Listener {
 
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public CommandListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -19,15 +19,13 @@ public class CommandListener implements Listener {
         if (!plugin.getAPConfig().isOverrideCommands()) {
             return;
         }
-        String args1[] = e.getMessage().substring(1).split(" ");
+        String[] args1 = e.getMessage().substring(1).split(" ");
         String label = args1[0];
         boolean auxprotect = label.equalsIgnoreCase("auxprotect") || label.equalsIgnoreCase("ap");
         boolean claiminv = label.equalsIgnoreCase("claiminv");
         if (auxprotect || claiminv) {
-            String args[] = new String[args1.length - 1];
-            for (int i = 0; i < args.length; i++) {
-                args[i] = args1[i + 1];
-            }
+            String[] args = new String[args1.length - 1];
+            System.arraycopy(args1, 1, args, 0, args.length);
             if (auxprotect) {
                 plugin.getApcommand().onCommand(e.getPlayer(), null, label, args);
             } else if (claiminv) {

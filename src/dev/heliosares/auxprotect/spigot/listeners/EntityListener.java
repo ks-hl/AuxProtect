@@ -33,7 +33,7 @@ import java.util.ArrayList;
 public class EntityListener implements Listener {
 
     ArrayList<DamageCause> blacklistedDamageCauses;
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public EntityListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -52,8 +52,7 @@ public class EntityListener implements Listener {
 
     public static boolean isChartMap(ItemStack item) {
         if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
-            if (item.getItemMeta() instanceof MapMeta) {
-                MapMeta meta = (MapMeta) item.getItemMeta();
+            if (item.getItemMeta() instanceof MapMeta meta) {
                 for (MapRenderer renderer : meta.getMapView().getRenderers()) {
                     if (renderer instanceof ChartRenderer) {
                         return true;
@@ -112,14 +111,13 @@ public class EntityListener implements Listener {
             return;
         }
         if (e.getEntity() instanceof LivingEntity) {
-            if (((LivingEntity) e.getEntity()).isDead()) {
+            if (e.getEntity().isDead()) {
                 return;
             }
         }
         String itemname = "";
         Entity source = e.getDamager();
-        if (e.getDamager() instanceof Projectile) {
-            Projectile projectile = (Projectile) e.getDamager();
+        if (e.getDamager() instanceof Projectile projectile) {
             ProjectileSource projsource = projectile.getShooter();
             if (projsource instanceof LivingEntity) {
                 source = (LivingEntity) projsource;
@@ -130,8 +128,7 @@ public class EntityListener implements Listener {
         String targetName = AuxProtectSpigot.getLabel(e.getEntity());
         String sourceName = source == null ? targetName : AuxProtectSpigot.getLabel(source);
 
-        if (source instanceof Player) {
-            Player sourcePl = (Player) source;
+        if (source instanceof Player sourcePl) {
             plugin.getAPPlayer(sourcePl).addActivity(0.25);
             itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
         }
@@ -142,10 +139,9 @@ public class EntityListener implements Listener {
         itemname += (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP";
 
         EntryAction action = EntryAction.HURT;
-        if (e.getEntity() instanceof LivingEntity
+        if (e.getEntity() instanceof LivingEntity livingEntity
                 && ((LivingEntity) e.getEntity()).getHealth() - e.getFinalDamage() <= 0) {
             boolean totem = false;
-            LivingEntity livingEntity = (LivingEntity) e.getEntity();
             EntityEquipment equip = livingEntity.getEquipment();
             if (equip != null) {
                 ItemStack hand = equip.getItem(EquipmentSlot.HAND);
@@ -184,7 +180,7 @@ public class EntityListener implements Listener {
                 @Override
                 public void run() {
                     if (e.getEntity().isDead() || !e.getEntity().isValid()) {
-                        itemBreak(plugin, "#" + e.getCause().toString(), item.getItemStack(), item.getLocation());
+                        itemBreak(plugin, "#" + e.getCause(), item.getItemStack(), item.getLocation());
                     }
                 }
             }.runTaskLater(plugin, 1);
@@ -206,7 +202,7 @@ public class EntityListener implements Listener {
             reason = EntryAction.KILL;
         }
         DbEntry entry = new DbEntry("#env", reason, false, e.getEntity().getLocation(), targetName,
-                e.getCause().toString() + ", " + (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP");
+                e.getCause() + ", " + (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP");
         plugin.add(entry);
     }
 
@@ -250,8 +246,7 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPickupEvent(EntityPickupItemEvent e) {
-        if (e.getEntity() instanceof Player) {
-            Player player = (Player) e.getEntity();
+        if (e.getEntity() instanceof Player player) {
 
             plugin.getAPPlayer(player).addActivity(1);
 

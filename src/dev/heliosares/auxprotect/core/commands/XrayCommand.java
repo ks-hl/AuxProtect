@@ -168,10 +168,8 @@ public class XrayCommand extends Command {
                             XrayResults.sendEntry(spigot, sender, entry, auto);
                         } catch (ConnectionPool.BusyException e) {
                             sender.sendLang(Language.L.DATABASE_BUSY);
-                            return;
                         } catch (SQLException e) {
                             sender.sendLang(Language.L.ERROR);
-                            return;
                         }
                     }
 

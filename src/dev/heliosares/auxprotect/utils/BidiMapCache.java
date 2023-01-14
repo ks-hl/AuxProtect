@@ -11,10 +11,11 @@ public class BidiMapCache<K, V> {
     private final long timeToLive;
     private final long cleanupInterval;
     private final boolean updateWhenAccessed;
-    private HashMap<K, V> set;
-    private HashMap<V, K> reverse;
-    private HashMap<K, Long> timeAdded;
+    private final HashMap<K, V> set;
+    private final HashMap<V, K> reverse;
+    private final HashMap<K, Long> timeAdded;
     private long lastCleanup;
+
     public BidiMapCache(long timeToLive, long cleanupInterval, boolean updateWhenAccessed) {
         set = new HashMap<>();
         reverse = new HashMap<>();

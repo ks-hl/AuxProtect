@@ -6,8 +6,9 @@ import java.util.Set;
 
 public class BidiMap<K, V> {
 
-    private HashMap<K, V> set;
-    private HashMap<V, K> reverse;
+    private final HashMap<K, V> set;
+    private final HashMap<V, K> reverse;
+
     public BidiMap() {
         set = new HashMap<>();
         reverse = new HashMap<>();

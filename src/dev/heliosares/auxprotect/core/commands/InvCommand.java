@@ -117,7 +117,7 @@ public class InvCommand extends Command {
                                     }
                                     try {
                                         plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
-                                                        .getUserManager().getUIDFromUUID("$" + target.getUniqueId().toString(), true),
+                                                        .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
                                                 recover);
                                         plugin.getSqlManager().executeWrite(
                                                 "UPDATE " + Table.AUXPROTECT_INVENTORY

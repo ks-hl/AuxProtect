@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 public class HasteBinAPI {
     // Partial credit to mfnalex - https://www.spigotmc.org/threads/how-to-use-the-pastebin-api-in-java.500953/
+
     /**
      * hastebin is blocking pastes for some reason, using files only for now.
      */
@@ -30,7 +31,7 @@ public class HasteBinAPI {
         http.setDoOutput(true);
         http.setDoInput(true);
 
-        byte[] out = post.toString().getBytes(StandardCharsets.UTF_8);
+        byte[] out = post.getBytes(StandardCharsets.UTF_8);
         int length = out.length;
         http.setFixedLengthStreamingMode(length);
         http.setRequestProperty("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8");

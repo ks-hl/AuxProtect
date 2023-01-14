@@ -46,6 +46,7 @@ public class InvSerialization {
             return byteArrayOutputStream.toByteArray();
         }
     }
+
     public static ItemStack[] toItemStackArray(byte[] bytes) throws ClassNotFoundException, IOException {
         if (bytes == null) {
             return null;

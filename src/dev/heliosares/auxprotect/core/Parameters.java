@@ -37,25 +37,25 @@ public class Parameters {
     // time
     private long after;
     private long before = Long.MAX_VALUE;
-    private List<Long> exactTime = new ArrayList<>();
-    private List<String> uids = new ArrayList<>();
-    private List<String> users = new ArrayList<>();
+    private final List<Long> exactTime = new ArrayList<>();
+    private final List<String> uids = new ArrayList<>();
+    private final List<String> users = new ArrayList<>();
     // action
-    private List<Integer> actions = new ArrayList<>();
+    private final List<Integer> actions = new ArrayList<>();
     private List<String> targets = new ArrayList<>();
-    private List<String> datas = new ArrayList<>();
+    private final List<String> datas = new ArrayList<>();
     // table
     private Table table;
     // radius
-    private HashMap<Integer, Boolean> radius = new HashMap<>();
+    private final HashMap<Integer, Boolean> radius = new HashMap<>();
     private Location location;
-    private List<String> worlds = new ArrayList<>();
+    private final List<String> worlds = new ArrayList<>();
 
     // flags
-    private List<Flag> flags = new ArrayList<>();
+    private final List<Flag> flags = new ArrayList<>();
 
     // ratings
-    private List<Short> ratings = new ArrayList<>();
+    private final List<Short> ratings = new ArrayList<>();
 
     // ----------------------------------------------------
     // ------------------- CONSTRUCTORS -------------------
@@ -962,9 +962,7 @@ public class Parameters {
             }
         }
         if (!worlds.isEmpty()) {
-            if (worlds.contains(entry.world) == negateWorld) {
-                return false;
-            }
+            return worlds.contains(entry.world) != negateWorld;
         }
 
         return true;
@@ -1015,7 +1013,7 @@ public class Parameters {
         return stmt + ")";
     }
 
-    public static enum Flag {
+    public enum Flag {
         COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
         RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);

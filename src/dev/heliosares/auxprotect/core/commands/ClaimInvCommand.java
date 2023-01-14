@@ -24,7 +24,7 @@ import java.util.UUID;
 
 public class ClaimInvCommand implements CommandExecutor {
 
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public ClaimInvCommand(AuxProtectSpigot plugin) {
         this.plugin = plugin;
@@ -47,7 +47,7 @@ public class ClaimInvCommand implements CommandExecutor {
                     target = Bukkit.getOfflinePlayer(UUID.fromString(
                             plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false).substring(1)));
                 } else if (sender instanceof Player player) {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + player.getUniqueId().toString(),
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + player.getUniqueId(),
                             false);
                     target = player;
                 } else {

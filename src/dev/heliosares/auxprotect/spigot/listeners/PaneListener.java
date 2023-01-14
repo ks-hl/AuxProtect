@@ -12,7 +12,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 public class PaneListener implements Listener {
 
     @SuppressWarnings("unused")
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public PaneListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

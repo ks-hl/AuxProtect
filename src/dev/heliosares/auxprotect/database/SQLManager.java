@@ -75,6 +75,32 @@ public class SQLManager {
         return tablePrefix;
     }
 
+    public static String sanitize(String str) {
+        StringBuilder out = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            if (c > 126) c = '?';
+            out.append(c);
+        }
+        return out.toString();
+    }
+
+    public static String getBlobSize(double bytes) {
+        int oom = 0;
+        while (bytes > 1024) {
+            bytes /= 1024;
+            oom++;
+        }
+        String out = switch (oom) {
+            case 0 -> "B";
+            case 1 -> "KB";
+            case 2 -> "MB";
+            case 3 -> "GB";
+            case 4 -> "TB";
+            default -> "";
+        };
+        return (Math.round(bytes * 100.0) / 100.0) + " " + out;
+    }
+
     public SQLUserManager getUserManager() {
         return usermanager;
     }
@@ -425,7 +451,7 @@ public class SQLManager {
     /**
      * @see PreparedStatement#execute()
      */
-    public boolean executeWrite(String stmt, Object... args) throws SQLException, BusyException {
+    public boolean executeWrite(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
         Connection connection = conn.getWriteConnection(30000);
         try {
@@ -449,7 +475,7 @@ public class SQLManager {
     /**
      * @see PreparedStatement#executeUpdate()
      */
-    public int executeWriteReturnRows(String stmt, Object... args) throws SQLException, BusyException {
+    public int executeWriteReturnRows(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
         Connection connection = conn.getWriteConnection(30000);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
@@ -556,15 +582,6 @@ public class SQLManager {
 
     public int getConnectionPoolSize() {
         return conn.getPoolSize();
-    }
-
-    public static String sanitize(String str) {
-        StringBuilder out = new StringBuilder();
-        for (char c : str.toCharArray()) {
-            if (c > 126) c = '?';
-            out.append(c);
-        }
-        return out.toString();
     }
 
     protected boolean put(Connection connection, Table table) throws SQLException, IOException {
@@ -674,23 +691,6 @@ public class SQLManager {
         plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
                 + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
         return true;
-    }
-
-    public static String getBlobSize(double bytes) {
-        int oom = 0;
-        while (bytes > 1024) {
-            bytes /= 1024;
-            oom++;
-        }
-        String out = switch (oom) {
-            case 0 -> "B";
-            case 1 -> "KB";
-            case 2 -> "MB";
-            case 3 -> "GB";
-            case 4 -> "TB";
-            default -> "";
-        };
-        return (Math.round(bytes * 100.0) / 100.0) + " " + out;
     }
 
     public int purge(Table table, long time) throws SQLException {
@@ -940,7 +940,7 @@ public class SQLManager {
             entryHash.put(entry.getTime(), entry);
         }
         if (table == null) return;
-        stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table.toString()) + ")");
+        stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table) + ")");
         Connection connection = getConnection(false);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt.toString())) {
             try (ResultSet rs = pstmt.executeQuery()) {
@@ -1011,16 +1011,6 @@ public class SQLManager {
         }
     }
 
-    public static enum LastKeys {
-        AUTO_PURGE(1), VACUUM(2), TELEMETRY(3);
-
-        LastKeys(int id) {
-            this.id = (short) id;
-        }
-
-        public final short id;
-    }
-
     //TODO implement
     public void setLast(LastKeys key, long value) throws SQLException {
         executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE `key`=?", value, key.id);
@@ -1043,5 +1033,15 @@ public class SQLManager {
     public String getMigrationStatus() {
         if (migrationmanager == null) return null;
         return migrationmanager.getProgressString();
+    }
+
+    public enum LastKeys {
+        AUTO_PURGE(1), VACUUM(2), TELEMETRY(3);
+
+        public final short id;
+
+        LastKeys(int id) {
+            this.id = (short) id;
+        }
     }
 }

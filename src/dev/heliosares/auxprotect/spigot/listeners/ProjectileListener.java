@@ -4,8 +4,10 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import org.bukkit.Location;
-import org.bukkit.entity.*;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.ThrowableProjectile;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -20,7 +22,7 @@ import java.util.ArrayList;
 public class ProjectileListener implements Listener {
 
     ArrayList<EntityType> whitelist;
-    private AuxProtectSpigot plugin;
+    private final AuxProtectSpigot plugin;
 
     public ProjectileListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;

@@ -37,8 +37,7 @@ public class JobsListener implements Listener {
         }
         Location location = null;
 //		double boost = 1;
-        if (oplayer instanceof Player) {
-            Player player = (Player) oplayer;
+        if (oplayer instanceof Player player) {
             location = player.getLocation();
 //			try {
 //				boost += Jobs.getPlayerManager().getBoost(Jobs.getPlayerManager().getJobsPlayer(player), job, type);

@@ -15,6 +15,7 @@ import java.util.List;
 public class APPlayer {
     public final Player player;
     private final IAuxProtect plugin;
+    private final List<Byte> inventoryBlob = new ArrayList<>();
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
@@ -30,6 +31,7 @@ public class APPlayer {
     public long lastNotifyInactive;
     // hotbar, main, armor, offhand, echest
     private List<ItemStack> invDiffItems;
+    private Location lastLocationDiff;
 
     public APPlayer(IAuxProtect plugin, Player player) {
         this.player = player;
@@ -140,9 +142,6 @@ public class APPlayer {
             invDiffItems.set(i, newItem);
         }
     }
-
-    private final List<Byte> inventoryBlob = new ArrayList<>();
-    private Location lastLocationDiff;
 
     public void tickDiffPos() {
         if (lastLocationDiff != null) {

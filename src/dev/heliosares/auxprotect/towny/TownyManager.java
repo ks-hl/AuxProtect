@@ -17,7 +17,7 @@ import java.util.UUID;
 public class TownyManager {
     private final AuxProtectSpigot plugin;
     private final SQLManager sql;
-    private BidiMapCache<Integer, String> names = new BidiMapCache<>(300000L, 300000L, true);
+    private final BidiMapCache<Integer, String> names = new BidiMapCache<>(300000L, 300000L, true);
 
     public TownyManager(AuxProtectSpigot plugin, SQLManager sql) {
         this.plugin = plugin;
@@ -54,7 +54,7 @@ public class TownyManager {
          * null) { usernames.put(uuid, player.getName()); return player.getName
          */
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
                 + " WHERE action_id=? AND uid=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
@@ -133,7 +133,7 @@ public class TownyManager {
          * null) { usernames.put(uuid, player.getName()); return player.getName
          */
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM.toString()
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
                 + " WHERE action_id=? AND target=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 

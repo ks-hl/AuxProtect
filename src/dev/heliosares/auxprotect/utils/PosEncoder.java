@@ -10,9 +10,6 @@ import java.util.List;
 
 public class PosEncoder {
 
-    record Simpl(byte[] array, boolean fine) {
-    }
-
     public static byte[] encode(Player player, Location lastLoc) {
         Simpl diffX = simplify(player.getLocation().getX() - lastLoc.getX());
         Simpl diffY = simplify(player.getLocation().getY() - lastLoc.getY());
@@ -79,14 +76,6 @@ public class PosEncoder {
         return new DecodedPositionIncrement(xlen > 0, out[0], ylen > 0, out[1], zlen > 0, out[2], pitch, (float) out[3], yaw, (float) out[4], 1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
     }
 
-    public record DecodedPositionIncrement(boolean hasx, double x, boolean hasy, double y, boolean hasz, double z,
-                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
-        @Override
-        public String toString() {
-            return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
-        }
-    }
-
     private static double toDouble(byte[] bytes, int index, int hdr) {
         double sig;
         if (hdr == 3) {
@@ -97,7 +86,6 @@ public class PosEncoder {
         if (hdr == 1) return (double) bytes[index] / sig;
         return Math.round((((int) bytes[index]) << 8) | (bytes[index + 1] & 0xff)) / sig;
     }
-
 
     private static Simpl simplify(double d) {
         boolean fine = Math.abs(d) < 1;
@@ -117,5 +105,16 @@ public class PosEncoder {
         else if (d < Short.MIN_VALUE) s = Short.MIN_VALUE;
 
         return new Simpl(new byte[]{(byte) (s >> 8), lower}, false);
+    }
+
+    record Simpl(byte[] array, boolean fine) {
+    }
+
+    public record DecodedPositionIncrement(boolean hasx, double x, boolean hasy, double y, boolean hasz, double z,
+                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
+        @Override
+        public String toString() {
+            return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
+        }
     }
 }

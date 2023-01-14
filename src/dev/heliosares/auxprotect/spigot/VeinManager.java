@@ -9,9 +9,9 @@ import java.util.HashMap;
 import java.util.UUID;
 
 public class VeinManager {
-    private ArrayList<XrayEntry> entries = new ArrayList<>();
-    private ArrayList<XrayEntry> ignoredentries = new ArrayList<>();
-    private HashMap<UUID, ArrayList<Long>> skipped = new HashMap<>();
+    private final ArrayList<XrayEntry> entries = new ArrayList<>();
+    private final ArrayList<XrayEntry> ignoredentries = new ArrayList<>();
+    private final HashMap<UUID, ArrayList<Long>> skipped = new HashMap<>();
 
     public static String getSeverityDescription(int severity) {
         switch (severity) {// TODO lang

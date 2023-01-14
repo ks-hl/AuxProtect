@@ -18,10 +18,9 @@ public class BlobManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
     protected final HashMap<Integer, BlobCache> cache = new HashMap<>();
+    private final Table table;
     private long nextBlobID = 1;
     private long lastcleanup;
-
-    private final Table table;
 
     public BlobManager(Table table, SQLManager sqlManager, IAuxProtect plugin) {
         this.table = table;

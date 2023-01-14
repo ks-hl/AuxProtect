@@ -132,7 +132,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
                     print(e);
                     getLogger().severe("Failed to connect to SQL database. Disabling.");
                     onDisable();
-                    return;
                 }
 
                 /*

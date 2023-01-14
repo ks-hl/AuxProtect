@@ -48,6 +48,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private static SQLManager sqlManager;
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
+    private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
@@ -57,7 +58,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private ClaimInvCommand claiminvcommand;
     private APSCommand apcommand;
     private int SERVER_VERSION;
-    private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
     private boolean isShuttingDown;
     private String stackLog = "";
 

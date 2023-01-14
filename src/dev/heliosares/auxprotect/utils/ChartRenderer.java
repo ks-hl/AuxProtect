@@ -16,14 +16,14 @@ public class ChartRenderer extends MapRenderer {
     public static final int yShift = 12;
     public static final int xSize = 100;
     public static final int ySize = 100;
-    private final double values[];
+    private final double[] values;
     private final Color bgColor;
     private final String title;
     private final int xDivs;
     @SuppressWarnings("unused")
     private final String[] xLabels;
 
-//	public static final byte BLUE = 0x30;
+    //	public static final byte BLUE = 0x30;
 //	public static final byte BROWN = 0x28;
 //	public static final byte DARK_BROWN = 0x34;
 //	public static final byte DARK_GRAY = 0x2c;
@@ -41,7 +41,7 @@ public class ChartRenderer extends MapRenderer {
     private final AuxProtectSpigot plugin;
     public double xScale = 1;
     public double yScale = 1;
-    private Color[][] map = new Color[128][128];
+    private final Color[][] map = new Color[128][128];
 
     public ChartRenderer(AuxProtectSpigot plugin, String title, Color bgColor, int values) {
         this.plugin = plugin;
@@ -162,8 +162,7 @@ public class ChartRenderer extends MapRenderer {
             view.removeRenderer(renderer);
         view.addRenderer(this);
         ItemStack i = new ItemStack(Material.FILLED_MAP, 1);
-        if (i.getItemMeta() instanceof MapMeta) {
-            MapMeta meta = ((MapMeta) i.getItemMeta());
+        if (i.getItemMeta() instanceof MapMeta meta) {
             meta.setMapView(view);
             i.setItemMeta(meta);
         } else {
