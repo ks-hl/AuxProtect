@@ -160,11 +160,12 @@ public class SQLManager {
         plugin.info("Connected!");
 
         // Auto Purge
+        out:
         if (plugin.getAPConfig().doAutoPurge()) {
             long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE, true);
             if (timeSincePurge < 3600000L) {
                 plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
-                return;
+                break out;
             }
             boolean anypurge = false;
             int count = 0;
@@ -193,7 +194,7 @@ public class SQLManager {
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                     plugin.print(e);
-                    return;
+                    break out;
                 }
                 plugin.info(Language.L.COMMAND__PURGE__COMPLETE_COUNT.translate(count));
                 setLast(LastKeys.AUTO_PURGE, System.currentTimeMillis());
