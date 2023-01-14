@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class MigrationManager {
     public static final int DBVERSION = 9;
@@ -140,7 +139,7 @@ public class MigrationManager {
         }
 
         /*
-         * This should never be reached and is only here as a fail safe
+         * This should never be reached and is only here as a failsafe
          */
         if (sql.getVersion() < DBVERSION) {
             plugin.warning("No handling for upgrade: " + this.getVersion() + "->" + DBVERSION);
@@ -153,7 +152,7 @@ public class MigrationManager {
             sql.execute(connection, "DROP TABLE IF EXISTS " + table + "_temp;");
         }
 
-        if (isMigrating) {
+        if (isMigrating && !sql.isMySQL()) {
             try {
                 sql.vacuum();
             } catch (SQLException e) {
