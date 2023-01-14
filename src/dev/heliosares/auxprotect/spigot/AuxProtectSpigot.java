@@ -468,9 +468,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
             @Override
             public void run() {
-                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
-                    return;
-                }
+                if (!isEnabled() || sqlManager == null) return;
+
+                String migrationStatus = sqlManager.getMigrationStatus();
+                if (migrationStatus != null) info(migrationStatus);
+
+                if (running || !sqlManager.isConnected()) return;
                 running = true;
                 try {
                     List<APPlayer> players;

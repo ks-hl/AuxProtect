@@ -33,7 +33,7 @@ public class SQLManager {
     private final TownyManager townymanager;
     private final SQLUserManager usermanager;
     int rowcount;
-    MigrationManager migrationmanager;
+    private MigrationManager migrationmanager;
     private ConnectionPool conn;
     private boolean isConnected;
     private int nextWid;
@@ -1067,5 +1067,11 @@ public class SQLManager {
             returnConnection(connection);
         }
         return -1;
+    }
+
+    @Nullable
+    public String getMigrationStatus() {
+        if (migrationmanager == null) return null;
+        return migrationmanager.getProgressString();
     }
 }

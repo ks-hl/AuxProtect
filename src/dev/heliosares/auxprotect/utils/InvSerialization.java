@@ -206,7 +206,6 @@ public class InvSerialization {
         return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3], exp);
     }
 
-    @Deprecated
     public static PlayerInventoryRecord toPlayer(String base64) throws IOException, ClassNotFoundException {
         String[] parts = base64.split(",");
         ItemStack[][] contents = new ItemStack[4][];
