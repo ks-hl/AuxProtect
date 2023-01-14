@@ -11,7 +11,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int DBVERSION = 9;
+    public static final int TARGET_DB_VERSION = 10;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -367,11 +367,29 @@ public class MigrationManager {
         migrationActions.put(9, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, () -> {
         }, () -> tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN ablob BLOB")));
 
+        //
+        // 10
+        //
+
+        migrationActions.put(10, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT,
+                () -> {
+                    try {
+                        sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name");
+                    } catch (SQLException ignored) {
+                        // This may error if migrating from a version where the `lasts` table has not yet been created, as this is executed pre-tables
+                    }
+                }, () -> {
+        })); //This was a poor naming choice as it conflicts with the phrase `KEY`
+
+        //
+        // Finalizing
+        //
+
         this.migrationActions = Collections.unmodifiableMap(migrationActions);
 
         int max = migrationActions.keySet().stream().max(Integer::compare).orElse(0);
-        if (max != DBVERSION) {
-            throw new IllegalArgumentException("Improperly defined migration actions. DBVERSION=" + DBVERSION + " with max action=" + max);
+        if (max != TARGET_DB_VERSION) {
+            throw new IllegalArgumentException("Improperly defined migration actions. DBVERSION=" + TARGET_DB_VERSION + " with max action=" + max);
         }
     }
 
@@ -434,11 +452,11 @@ public class MigrationManager {
         }
 
         if (sql.getVersion() < 1) {
-            setVersion(MigrationManager.DBVERSION);
+            setVersion(MigrationManager.TARGET_DB_VERSION);
         }
 
-        if (sql.getVersion() < DBVERSION) {
-            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + DBVERSION
+        if (sql.getVersion() < TARGET_DB_VERSION) {
+            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + TARGET_DB_VERSION
                     + "...");
             plugin.info("This may take a while. Please do not interrupt.");
             isMigrating = true;
@@ -474,9 +492,9 @@ public class MigrationManager {
         /*
          * This should never be reached and is only here as a failsafe
          */
-        if (sql.getVersion() < DBVERSION) {
-            plugin.warning("No handling for upgrade: " + this.getVersion() + "->" + DBVERSION);
-            setVersion(DBVERSION);
+        if (sql.getVersion() < TARGET_DB_VERSION) {
+            plugin.warning("No handling for upgrade: " + this.getVersion() + "->" + TARGET_DB_VERSION);
+            setVersion(TARGET_DB_VERSION);
         }
 
         plugin.debug("Purging temporary tables");

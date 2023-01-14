@@ -280,11 +280,11 @@ public class SQLManager {
             }
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-            stmt += " (`key` SMALLINT PRIMARY KEY, value BIGINT);";
+            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
             execute(connection, stmt);
             for (LastKeys key : LastKeys.values()) {
                 try {
-                    executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (`key`, value) VALUES (?,?)", key.id, 0L);
+                    executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", key.id, 0L);
                 } catch (SQLException ignored) {
                     // Ensures each LastKeys has a value, so we can just UPDATE later
                 }
@@ -1013,12 +1013,12 @@ public class SQLManager {
 
     //TODO implement
     public void setLast(LastKeys key, long value) throws SQLException {
-        executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE `key`=?", value, key.id);
+        executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", value, key.id);
     }
 
     public long getLast(LastKeys key, boolean wait) throws SQLException {
         Connection connection = getConnection(wait);
-        try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE `key`=?")) {
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
             stmt.setShort(1, key.id);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) return rs.getLong(1);
