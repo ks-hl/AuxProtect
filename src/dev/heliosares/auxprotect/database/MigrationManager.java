@@ -42,8 +42,7 @@ public class MigrationManager {
         // 3
         //
 
-        final Table[][] migrateTablesV3 = {new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM,
-                Table.AUXPROTECT_ABANDONED, Table.AUXPROTECT_INVENTORY}};
+        final Table[][] migrateTablesV3 = {new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM, Table.AUXPROTECT_INVENTORY}};
         migrationActions.put(3, new MigrationAction(true, true, () -> {
             if (plugin.getPlatform() == PlatformType.BUNGEE) {
                 migrateTablesV3[0] = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM};
@@ -179,10 +178,8 @@ public class MigrationManager {
         // 5
         //
 
-        migrationActions.put(5, new MigrationAction(true, true, () -> {
-            tryExecute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
-                    + Table.AUXPROTECT_MAIN);
-        }, null));
+        migrationActions.put(5, new MigrationAction(true, true, () -> tryExecute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
+                + Table.AUXPROTECT_MAIN), null));
 
         //
         // 6
@@ -452,7 +449,7 @@ public class MigrationManager {
         }
 
         if (sql.getVersion() < 1) {
-            setVersion(MigrationManager.TARGET_DB_VERSION);
+            setVersion(TARGET_DB_VERSION);
         }
 
         if (sql.getVersion() < TARGET_DB_VERSION) {
@@ -465,28 +462,32 @@ public class MigrationManager {
             }
         }
 
-        for (Map.Entry<Integer, MigrationAction> action : migrationActions.entrySet()) {
-            if (sql.getVersion() >= action.getKey()) continue;
-            if (!action.getValue().necessary) continue;
-            if (action.getValue().preTableAction != null) {
-                migratingToVersion = action.getKey();
+        for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
+            MigrationAction action = migrationActions.get(i);
+            if (!action.necessary) continue;
+            if (action.preTableAction != null) {
+                plugin.info("Migrating to v" + i + ", performing pre-table migration... DO NOT INTERRUPT");
+                migratingToVersion = i;
                 complete = total = 0;
-                action.getValue().preTableAction.run();
+                action.preTableAction.run();
+                plugin.info("Migrating to v" + i + " pre-table migration complete.");
                 migratingToVersion = -1;
             }
         }
     }
 
     void postTables() throws SQLException {
-        for (Map.Entry<Integer, MigrationAction> action : migrationActions.entrySet()) {
-            if (sql.getVersion() >= action.getKey()) continue;
-            if (action.getValue().necessary && action.getValue().postTableAction != null) {
-                migratingToVersion = action.getKey();
+        for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
+            MigrationAction action = migrationActions.get(i);
+            if (action.necessary && action.postTableAction != null) {
+                migratingToVersion = i;
+                plugin.info("Migrating to v" + i + ", performing post-table migration... DO NOT INTERRUPT");
                 complete = total = 0;
-                action.getValue().postTableAction.run();
+                action.postTableAction.run();
+                plugin.info("Migrating to v" + i + " post-table migration complete.");
                 migratingToVersion = -1;
             }
-            setVersion(action.getKey());
+            setVersion(i);
         }
 
         /*
