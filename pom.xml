@@ -149,11 +149,6 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>com.github.MultiChat</groupId>
-			<artifactId>Development</artifactId>
-			<version>1.9.5</version>
-		</dependency>
-		<dependency>
 			<groupId>com.github.brcdev-minecraft</groupId>
 			<artifactId>shopgui-api</artifactId>
 			<version>3.0.0</version>
