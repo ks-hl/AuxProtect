@@ -9,8 +9,6 @@ import java.util.List;
 public abstract class Command {
     protected final IAuxProtect plugin;
     protected final String label;
-
-
     private final boolean async;
     protected final String[] aliases;
     protected final APPermission permission;

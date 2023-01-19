@@ -8,10 +8,6 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.World;
-import org.bukkit.entity.EntityType;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -25,8 +21,7 @@ public class LookupCommand extends Command {
         super(plugin, "lookup", APPermission.LOOKUP, true, "l");
     }
 
-    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label,
-                                                   String[] args) {
+    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label, String[] args) {
         List<String> possible = new ArrayList<>();
         String currentArg = args[args.length - 1];
         boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
@@ -90,14 +85,14 @@ public class LookupCommand extends Command {
                 possible.add(user + username);
             }
             if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                for (EntityType et : EntityType.values()) {
+                for (org.bukkit.entity.EntityType et : org.bukkit.entity.EntityType.values()) {
                     possible.add(user + "#" + et.toString().toLowerCase());
                 }
             }
             possible.add(user + "#env");
         }
-        if (currentArg.startsWith("target:")) {
-            for (Material material : Material.values()) {
+        if (plugin.getPlatform() == PlatformType.SPIGOT && currentArg.startsWith("target:")) {
+            for (org.bukkit.Material material : org.bukkit.Material.values()) {
                 possible.add("target:" + material.toString().toLowerCase());
             }
         }
@@ -118,7 +113,7 @@ public class LookupCommand extends Command {
             possible.add(currentArg + "w");
         }
         if (currentArg.startsWith("world:")) {
-            for (World world : Bukkit.getWorlds()) {
+            for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
                 possible.add("world:" + world.getName());
             }
         }
@@ -309,11 +304,10 @@ public class LookupCommand extends Command {
                         }
                     }
                 }
-                if (totalMoney != 0 && plugin instanceof AuxProtectSpigot) {
+                if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
-                    sender.sendMessageRaw("§fTotal Money: §9" + (negative ? "-" : "")
-                            + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+                    sender.sendMessageRaw("§fTotal Money: §9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
                 }
                 if (totalExp != 0) {
                     sender.sendMessageRaw("§fTotal Experience: §9" + Math.round(totalExp * 100f) / 100f);
@@ -394,7 +388,7 @@ public class LookupCommand extends Command {
                 Collections.reverse(newResults);
                 rs = newResults;
             } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
-                new PlaybackSolver(plugin, sender, rs, params.getAfter()).runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
+                new PlaybackSolver(plugin, sender, rs, params.getAfter());
                 return;
             }
             String uuid = sender.getUniqueId().toString();

@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -36,6 +37,8 @@ public class PlaybackSolver extends BukkitRunnable {
         points = getLocations(plugin, entries, startTime);
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
         this.startTime = Math.max(min - 250, startTime);
+
+        runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
     }
 
     public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, IOException {
