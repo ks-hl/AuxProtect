@@ -144,6 +144,8 @@ public class LookupManager {
                         action_id = rs.getInt("action_id");
                     } else if (table == Table.AUXPROTECT_COMMANDS) {
                         action_id = EntryAction.COMMAND.id;
+                    } else if (table == Table.AUXPROTECT_CHAT) {
+                        action_id = EntryAction.CHAT.id;
                     } else if (table == Table.AUXPROTECT_XRAY) {
                         action_id = EntryAction.VEIN.id;
                     }
