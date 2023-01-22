@@ -140,6 +140,7 @@ actions:
     p: teleported to
     n: teleported from
   command: executed
+  chat: said
   kill: killed
   totem: used totem
   land: projectile landed
