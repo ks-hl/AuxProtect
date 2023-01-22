@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public enum Table {
     AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
-    AUXPROTECT_COMMANDS, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
+    AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
 
     AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS,
     AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
@@ -42,18 +42,17 @@ public enum Table {
 
     public boolean exists(IAuxProtect plugin) {
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
-            switch (this) {
-                case AUXPROTECT_MAIN:
-                case AUXPROTECT_COMMANDS:
-                case AUXPROTECT_LONGTERM:
-                case AUXPROTECT_API:
-                case AUXPROTECT_UIDS:
-                case AUXPROTECT_API_ACTIONS:
-                case AUXPROTECT_VERSION:
-                    return true;
-                default:
-                    return false;
-            }
+            return switch (this) {
+                case AUXPROTECT_MAIN,
+                        AUXPROTECT_COMMANDS,
+                        AUXPROTECT_CHAT,
+                        AUXPROTECT_LONGTERM,
+                        AUXPROTECT_API,
+                        AUXPROTECT_UIDS,
+                        AUXPROTECT_API_ACTIONS,
+                        AUXPROTECT_VERSION -> true;
+                default -> false;
+            };
         }
         return plugin.getAPConfig().isPrivate() || this != AUXPROTECT_ABANDONED;
     }
@@ -67,6 +66,7 @@ public enum Table {
             case AUXPROTECT_XRAY:
             case AUXPROTECT_INVENTORY:
             case AUXPROTECT_COMMANDS:
+            case AUXPROTECT_CHAT:
             case AUXPROTECT_POSITION:
             case AUXPROTECT_API:
             case AUXPROTECT_TOWNY:
@@ -98,6 +98,7 @@ public enum Table {
             case AUXPROTECT_INVENTORY:
             case AUXPROTECT_SPAM:
             case AUXPROTECT_COMMANDS:
+            case AUXPROTECT_CHAT:
             case AUXPROTECT_POSITION:
             case AUXPROTECT_API:
             case AUXPROTECT_TOWNY:
@@ -114,6 +115,7 @@ public enum Table {
     public boolean hasActionId() {
         switch (this) {
             case AUXPROTECT_COMMANDS:
+            case AUXPROTECT_CHAT:
             case AUXPROTECT_XRAY:
                 return false;
             default:
@@ -125,6 +127,7 @@ public enum Table {
         switch (this) {
             case AUXPROTECT_COMMANDS:
             case AUXPROTECT_LONGTERM:
+            case AUXPROTECT_CHAT:
                 return true;
             default:
                 return false;
@@ -141,7 +144,7 @@ public enum Table {
     public String getValuesHeader(PlatformType platform) {
         if (this == Table.AUXPROTECT_LONGTERM) {
             return "(time, uid, action_id, target)";
-        } else if (this == Table.AUXPROTECT_COMMANDS) {
+        } else if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
             if (platform == PlatformType.BUNGEE) {
                 return "(time, uid, target)";
             }
@@ -167,7 +170,7 @@ public enum Table {
         if (this == Table.AUXPROTECT_LONGTERM) {
             return 4;
         }
-        if (this == Table.AUXPROTECT_COMMANDS) {
+        if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
             if (platform == PlatformType.BUNGEE) {
                 return 3;
             }
@@ -212,7 +215,7 @@ public enum Table {
         }
         if (hasStringTarget()) {
             stmt += ",\n    target ";
-            if (this == AUXPROTECT_COMMANDS) {
+            if (this == AUXPROTECT_COMMANDS || this == AUXPROTECT_CHAT) {
                 stmt += "LONGTEXT";
             } else {
                 stmt += "varchar(255)";

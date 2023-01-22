@@ -75,10 +75,11 @@ public class EntryAction {
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
     // END INVENTORY(1279)
 
-    // START COMMANDS (1280)
+    // COMMANDS (1280)
     public static final EntryAction COMMAND = new EntryAction("command", 1280);
-    public static final EntryAction CHAT = new EntryAction("chat", 1281);
-    // END COMMANDS(1289)
+
+    // CHAT (1285)
+    public static final EntryAction CHAT = new EntryAction("chat", 1285);
 
     // START POSITION (1290)
     public static final EntryAction POS = new EntryAction("pos", 1290);
@@ -230,7 +231,8 @@ public class EntryAction {
         if (id < 768) return Table.AUXPROTECT_ABANDONED;
         if (id < 1024) return Table.AUXPROTECT_LONGTERM;
         if (id < 1280) return Table.AUXPROTECT_INVENTORY;
-        if (id < 1290) return Table.AUXPROTECT_COMMANDS;
+        if (equals(COMMAND)) return Table.AUXPROTECT_COMMANDS;
+        if (equals(CHAT)) return Table.AUXPROTECT_CHAT;
         if (id < 1300) return Table.AUXPROTECT_POSITION;
         if (id < 1310) return Table.AUXPROTECT_XRAY;
         if (id < 1500) return Table.AUXPROTECT_TOWNY;

@@ -314,7 +314,7 @@ public class PlayerListener implements Listener {
                 e.getPlayer().getLocation(), e.getMessage(), ""));
     }
 
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    @EventHandler(ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(5);
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage(), ""));
