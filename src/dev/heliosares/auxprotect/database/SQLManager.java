@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import com.google.common.io.Files;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -141,14 +140,12 @@ public class SQLManager {
         return conn.isMySQL();
     }
 
-    public void connect(boolean mysql, @Nullable String user, @Nullable String pass)
-            throws SQLException, IOException, ClassNotFoundException {
+    public void connect(boolean mysql, @Nullable String user, @Nullable String pass) throws SQLException, ClassNotFoundException {
         plugin.info("Connecting to database...");
 
-        conn = new ConnectionPool(plugin, targetString, mysql, user, pass);
         try {
-            init();
-        } catch (Exception e) {
+            conn = new ConnectionPool(plugin, targetString, mysql, user, pass, this::init);
+        } catch (SQLException e) {
             if (migrationmanager.isMigrating()) {
                 plugin.warning(
                         "Error while migrating database. This database will likely not work with the current version. You will need to restore a backup (plugins/AuxProtect/database/backups) and try again. Please contact the plugin developer if you are unable to complete migration.");
@@ -216,122 +213,109 @@ public class SQLManager {
         }
     }
 
-    public String backup() throws IOException, BusyException {
+    public String backup() throws SQLException {
         if (isMySQL()) {
             return null;
         }
 
-        Connection connection = conn.getWriteConnection(30000);
-        try {
-            File backup = new File(sqliteFile.getParentFile(),
-                    "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");
-            if (!backup.getParentFile().exists()) {
-                backup.getParentFile().mkdirs();
-            }
-            Files.copy(sqliteFile, backup);
-            return backup.getAbsolutePath();
-        } finally {
-            conn.returnConnection(connection);
-        }
+        File backup = new File(sqliteFile.getParentFile(), "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");
+        execute(connection -> executeWrite(connection, "VACUUM INTO ?", backup.getAbsolutePath()), 30000L);
+        return backup.getAbsolutePath();
     }
 
-    private void init() throws SQLException, IOException {
-        Connection connection = conn.getWriteConnection(60000);
-        try {
-            this.migrationmanager = new MigrationManager(this, connection, plugin);
-            migrationmanager.preTables();
+    private void init(Connection connection) throws SQLException {
+        this.migrationmanager = new MigrationManager(this, connection, plugin);
+        migrationmanager.preTables();
 
-            if (invdiffmanager != null) {
-                invdiffmanager.createTable(connection);
+        if (invdiffmanager != null) {
+            invdiffmanager.createTable(connection);
+        }
+
+        if (invblobmanager != null) {
+            invblobmanager.createTable(connection);
+        }
+
+        for (Table table : Table.values()) {
+            if (table.hasAPEntries()) {
+                execute(connection, table.getSQLCreateString(plugin));
             }
-
-            if (invblobmanager != null) {
-                invblobmanager.createTable(connection);
-            }
-
-            for (Table table : Table.values()) {
-                if (table.hasAPEntries()) {
-                    execute(connection, table.getSQLCreateString(plugin));
-                }
-            }
-            String stmt;
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
-                stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-                execute(connection, stmt);
-
-                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
-                stmt += " (name varchar(255), wid SMALLINT);";
-                execute(connection, stmt);
-
-                stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
-                plugin.debug(stmt, 3);
-                try (Statement statement = connection.createStatement()) {
-                    try (ResultSet results = statement.executeQuery(stmt)) {
-                        while (results.next()) {
-                            String world = results.getString("name");
-                            int wid = results.getInt("wid");
-                            worlds.put(world, wid);
-                            if (wid >= nextWid) {
-                                nextWid = wid + 1;
-                            }
-                        }
-                    }
-                }
-            }
-
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
-            execute(connection, stmt);
-            for (LastKeys key : LastKeys.values()) {
-                try {
-                    executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", key.id, 0L);
-                } catch (SQLException ignored) {
-                    // Ensures each LastKeys has a value, so we can just UPDATE later
-                }
-            }
-
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
-                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
+        }
+        String stmt;
+        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
+            stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
             execute(connection, stmt);
 
-            stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
+            stmt += " (name varchar(255), wid SMALLINT);";
+            execute(connection, stmt);
+
+            stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
             plugin.debug(stmt, 3);
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet results = statement.executeQuery(stmt)) {
                     while (results.next()) {
-                        String key = results.getString("name");
-                        int nid = results.getInt("nid");
-                        int pid = results.getInt("pid");
-                        String ntext = results.getString("ntext");
-                        String ptext = results.getString("ptext");
-                        if (nid >= nextActionId) {
-                            nextActionId = nid + 1;
+                        String world = results.getString("name");
+                        int wid = results.getInt("wid");
+                        worlds.put(world, wid);
+                        if (wid >= nextWid) {
+                            nextWid = wid + 1;
                         }
-                        if (pid >= nextActionId) {
-                            nextActionId = pid + 1;
-                        }
-                        new EntryAction(key, nid, pid, ntext, ptext);
                     }
                 }
             }
-
-            usermanager.init(connection);
-
-            migrationmanager.postTables();
-
-            if (invdiffmanager != null) {
-                invdiffmanager.init(connection);
-            }
-
-            if (invblobmanager != null) {
-                invblobmanager.init(connection);
-            }
-
-            plugin.debug("init done.");
-        } finally {
-            returnConnection(connection);
         }
+
+        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
+        stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
+        execute(connection, stmt);
+        for (LastKeys key : LastKeys.values()) {
+            try {
+                executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", key.id, 0L);
+            } catch (SQLException ignored) {
+                // Ensures each LastKeys has a value, so we can just UPDATE later
+            }
+        }
+
+        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
+                + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
+        execute(connection, stmt);
+
+        stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
+        plugin.debug(stmt, 3);
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet results = statement.executeQuery(stmt)) {
+                while (results.next()) {
+                    String key = results.getString("name");
+                    int nid = results.getInt("nid");
+                    int pid = results.getInt("pid");
+                    String ntext = results.getString("ntext");
+                    String ptext = results.getString("ptext");
+                    if (nid >= nextActionId) {
+                        nextActionId = nid + 1;
+                    }
+                    if (pid >= nextActionId) {
+                        nextActionId = pid + 1;
+                    }
+                    new EntryAction(key, nid, pid, ntext, ptext);
+                }
+            }
+        }
+
+        usermanager.init(connection);
+
+        migrationmanager.postTables();
+
+        if (invdiffmanager != null) {
+            invdiffmanager.init(connection);
+        }
+
+        if (invblobmanager != null) {
+            invblobmanager.init(connection);
+        }
+
+        plugin.debug("init done.");
+
     }
 
     private Set<Integer> getAllDistinctUIDs(Table table) throws SQLException {
@@ -360,6 +344,7 @@ public class SQLManager {
         return inUseUids;
     }
 
+    //TODO do this entirely with SQL: DELETE FROM auxprotect_uids WHERE uid NOT IN select DISTINCT uid from (select distinct uid from auxprotect_main union select distinct uid from auxprotect_main)
     public int purgeUIDs() throws SQLException {
         Set<Integer> inUseUids = new HashSet<>();
         for (Table table : Table.values()) {
@@ -452,14 +437,8 @@ public class SQLManager {
     /**
      * @see PreparedStatement#execute()
      */
-    public boolean executeWrite(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        Connection connection = conn.getWriteConnection(30000);
-        try {
-            return executeWrite(connection, stmt, args);
-        } finally {
-            returnConnection(connection);
-        }
+    public void executeWrite(String stmt, Object... args) throws SQLException {
+        execute(connection -> executeWrite(connection, stmt, args), 30000L);
     }
 
     /**
@@ -478,30 +457,28 @@ public class SQLManager {
      */
     public int executeWriteReturnRows(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
-        Connection connection = conn.getWriteConnection(30000);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            prepare(connection, pstmt, args);
-            return pstmt.executeUpdate();
-        } finally {
-            returnConnection(connection);
-        }
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+                prepare(connection, pstmt, args);
+                return pstmt.executeUpdate();
+            }
+        }, 30000L, Integer.class);
     }
 
     public int executeWriteReturnGenerated(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
-        Connection connection = conn.getWriteConnection(30000);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-            prepare(connection, pstmt, args);
-            pstmt.executeUpdate();
-            try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
+                prepare(connection, pstmt, args);
+                pstmt.executeUpdate();
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
                 }
             }
-        } finally {
-            returnConnection(connection);
-        }
-        return -1;
+            return -1;
+        }, 30000L, Integer.class);
     }
 
     public List<List<String>> executeGet(String stmt, Object... args) throws SQLException {
@@ -560,6 +537,7 @@ public class SQLManager {
      * @return returns a READ-ONLY connection to the database
      * @throws BusyException if the database is busy for longer than 3 seconds
      */
+    @Deprecated
     public Connection getConnection(boolean wait) throws SQLException {
         return conn.getConnection(wait);
     }
@@ -569,20 +547,9 @@ public class SQLManager {
      *
      * @param connection a Connection obtained from {@link #getConnection(boolean)}
      */
+    @Deprecated
     public void returnConnection(Connection connection) {
         conn.returnConnection(connection);
-    }
-
-    public @Nullable StackTraceElement[] getWhoHasWriteConnection() {
-        return conn.getWhoHasWriteConnection();
-    }
-
-    public long getWriteCheckOutTime() {
-        return conn.getWriteCheckOutTime();
-    }
-
-    public int getConnectionPoolSize() {
-        return conn.getPoolSize();
     }
 
     protected boolean put(Connection connection, Table table) throws SQLException, IOException {
@@ -735,27 +702,25 @@ public class SQLManager {
     public void updateXrayEntry(XrayEntry entry) throws SQLException {
         if (!isConnected)
             return;
-        String stmt = "UPDATE " + entry.getAction().getTable().toString();
-        stmt += "\nSET rating=?, data=?";
-        stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
+        execute(connection -> {
+            String stmt = "UPDATE " + entry.getAction().getTable().toString();
+            stmt += "\nSET rating=?, data=?";
+            stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
 
-        plugin.debug(stmt, 3);
-
-        Connection connection = conn.getWriteConnection(30000);
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            int i = 1;
-            statement.setShort(i++, entry.getRating());
-            statement.setString(i++, sanitize(entry.getData()));
-            statement.setLong(i++, entry.getTime());
-            statement.setInt(i++, entry.getUid());
-            statement.setInt(i++, entry.getTargetId());
-            if (statement.executeUpdate() > 1) {
-                plugin.warning("Updated multiple entries when updating the following entry:");
-                Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
+            plugin.debug(stmt, 3);
+            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+                int i = 1;
+                statement.setShort(i++, entry.getRating());
+                statement.setString(i++, sanitize(entry.getData()));
+                statement.setLong(i++, entry.getTime());
+                statement.setInt(i++, entry.getUid());
+                statement.setInt(i++, entry.getTargetId());
+                if (statement.executeUpdate() > 1) {
+                    plugin.warning("Updated multiple entries when updating the following entry:");
+                    Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
+                }
             }
-        } finally {
-            returnConnection(connection);
-        }
+        }, 30000L);
     }
 
     public int getWID(String world) {
@@ -766,27 +731,21 @@ public class SQLManager {
             return -1;
         }
 
-        Connection connection;
         try {
-            connection = conn.getWriteConnection(30000);
-        } catch (BusyException e1) {
-            return -1;
-        }
-        try {
-            String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid)";
-            stmt += "\nVALUES (?,?)";
-            PreparedStatement pstmt = connection.prepareStatement(stmt);
-            pstmt.setString(1, world);
-            pstmt.setInt(2, nextWid);
-            plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
-            pstmt.execute();
-            worlds.put(world, nextWid);
-            rowcount++;
-            return nextWid++;
+            return executeReturn(connection -> {
+                String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid)";
+                stmt += "\nVALUES (?,?)";
+                PreparedStatement pstmt = connection.prepareStatement(stmt);
+                pstmt.setString(1, world);
+                pstmt.setInt(2, nextWid);
+                plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
+                pstmt.execute();
+                worlds.put(world, nextWid);
+                rowcount++;
+                return nextWid++;
+            }, 30000L, Integer.class);
         } catch (SQLException e) {
             plugin.print(e);
-        } finally {
-            returnConnection(connection);
         }
         return -1;
     }
@@ -839,7 +798,7 @@ public class SQLManager {
         }
         int pid = -1;
         int nid = -1;
-        EntryAction action = null;
+        EntryAction action;
 
         if (ptext == null) {
             nid = nextActionId++;
@@ -849,20 +808,8 @@ public class SQLManager {
             pid = nextActionId++;
             action = new EntryAction(key, nid, pid, ntext, ptext);
         }
-        Connection connection = conn.getWriteConnection(30000);
-        try (PreparedStatement pstmt = connection.prepareStatement("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS
-                + " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)")) {
-            int i = 1;
-            pstmt.setString(i++, key);
-            pstmt.setInt(i++, nid);
-            pstmt.setInt(i++, pid);
-            pstmt.setString(i++, ntext);
-            pstmt.setString(i++, ptext);
 
-            pstmt.executeUpdate();
-        } finally {
-            returnConnection(connection);
-        }
+        executeWrite("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS + " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)", key, nid, pid, ntext, ptext);
         return action;
     }
 
@@ -898,18 +845,14 @@ public class SQLManager {
         String stmtStr = getCountStmt(table);
         plugin.debug(stmtStr, 5);
 
-        Connection connection = getConnection(false);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
-            try (ResultSet rs = pstmt.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt(1);
+                    return -1;
                 }
             }
-        } finally {
-            returnConnection(connection);
-        }
-
-        return -1;
+        }, 30000L, Integer.class);
     }
 
     public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
@@ -989,27 +932,23 @@ public class SQLManager {
     }
 
     public void tick() {
-        Connection connection;
         try {
-            connection = conn.getWriteConnection(0);
-        } catch (BusyException e) {
-            return;
-        }
-        try {
-            Arrays.asList(Table.values()).forEach(t -> {
-                try {
-                    put(connection, t);
-                } catch (SQLException | IOException e) {
-                    plugin.print(e);
+            execute(connection -> {
+                Arrays.asList(Table.values()).forEach(t -> {
+                    try {
+                        put(connection, t);
+                    } catch (SQLException | IOException e) {
+                        plugin.print(e);
+                    }
+                });
+                if (invdiffmanager != null) {
+                    invdiffmanager.put(connection);
                 }
-            });
-            if (invdiffmanager != null) {
-                invdiffmanager.put(connection);
-            }
-            cleanup();
-        } finally {
-            returnConnection(connection);
+            }, 0L);
+        } catch (SQLException e) {
+            plugin.print(e);
         }
+        cleanup();
     }
 
     //TODO implement
@@ -1034,6 +973,20 @@ public class SQLManager {
     public String getMigrationStatus() {
         if (migrationmanager == null) return null;
         return migrationmanager.getProgressString();
+    }
+
+    /**
+     * Executes {@link ConnectionPool#execute(ConnectionPool.SQLConsumer, long)}
+     */
+    public void execute(ConnectionPool.SQLConsumer task, long wait) throws SQLException {
+        conn.execute(task, wait);
+    }
+
+    /**
+     * Executes {@link ConnectionPool#executeReturn(ConnectionPool.SQLFunction, long, Class)}
+     */
+    public <T> T executeReturn(ConnectionPool.SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
+        return conn.executeReturn(task, wait, type);
     }
 
     public enum LastKeys {

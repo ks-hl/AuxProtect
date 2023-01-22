@@ -706,12 +706,15 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public void add(DbEntry entry) {
-        if (entry instanceof XrayEntry) {
-            if (veinManager.add((XrayEntry) entry)) {
-                return;
+        // This is only async because veinManager performs SQL lookups
+        runAsync(() -> {
+            if (entry instanceof XrayEntry) {
+                if (veinManager.add((XrayEntry) entry)) {
+                    return;
+                }
             }
-        }
-        dbRunnable.add(entry);
+            dbRunnable.add(entry);
+        });
     }
 
     public VeinManager getVeinManager() {

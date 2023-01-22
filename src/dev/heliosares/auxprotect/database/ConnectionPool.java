@@ -41,7 +41,7 @@ public class ConnectionPool {
     @Nullable
     private StackTraceElement[] whoHasWriteConnection;
 
-    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd)
+    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd, SQLConsumer initializationTask)
             throws SQLException, ClassNotFoundException {
         this.connString = connString;
         this.plugin = plugin;
@@ -59,6 +59,8 @@ public class ConnectionPool {
             }
         }
 
+        // No need to control lock here, because there is no other way to obtain writeconn yet.
+        initializationTask.accept(writeconn);
     }
 
     public static int getRoaming() {
@@ -170,6 +172,7 @@ public class ConnectionPool {
      * @return a writable connection to the database
      * @throws BusyException if wait is exceeded and the database is busy
      */
+    @Deprecated
     public @Nonnull Connection getWriteConnection(long wait) throws BusyException {
         if (closed || writeconn == null) {
             throw new IllegalStateException("closed");
@@ -191,48 +194,43 @@ public class ConnectionPool {
         return writeconn;
     }
 
-    public @Nullable StackTraceElement[] getWhoHasWriteConnection() {
-        return whoHasWriteConnection;
-    }
-
-    public long getWriteCheckOutTime() {
-        return writeCheckOut;
-    }
-
+    @Deprecated
     public Connection getConnection(boolean wait) throws SQLException, IllegalStateException {
-        if (closed) {
-            throw new IllegalStateException("closed");
-        }
-        checkAsync();
-        if (wait) {
-            lock.lock();
-        } else {
-            try {
-                if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
-                    throw new BusyException(whoHasWriteConnection);
-                }
-            } catch (InterruptedException e) {
-                throw new BusyException(whoHasWriteConnection);
-            }
-        }
-        try {
-            synchronized (pool) {
-                if (pool.isEmpty()) {
-                    pool.add(newConn(true));
-                }
-                Connection out = pool.pop();
-                checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
-                roaming++;
-                if (!isConnectionValid(out)) {
-                    out = newConn(true);
-                }
-                return out;
-            }
-        } finally {
-            lock.unlock();
-        }
+        return getWriteConnection(wait ? 5000L : 0L);
+//        if (closed) {
+//            throw new IllegalStateException("closed");
+//        }
+//        checkAsync();
+//        if (wait) {
+//            lock.lock();
+//        } else {
+//            try {
+//                if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
+//                    throw new BusyException(whoHasWriteConnection);
+//                }
+//            } catch (InterruptedException e) {
+//                throw new BusyException(whoHasWriteConnection);
+//            }
+//        }
+//        try {
+//            synchronized (pool) {
+//                if (pool.isEmpty()) {
+//                    pool.add(newConn(true));
+//                }
+//                Connection out = pool.pop();
+//                checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
+//                roaming++;
+//                if (!isConnectionValid(out)) {
+//                    out = newConn(true);
+//                }
+//                return out;
+//            }
+//        } finally {
+//            lock.unlock();
+//        }
     }
 
+    @Deprecated
     public synchronized void returnConnection(Connection connection) {
         if (connection == null) return;
         if (connection.equals(writeconn)) {
@@ -304,6 +302,45 @@ public class ConnectionPool {
         }
     }
 
+    @FunctionalInterface
+    public interface SQLConsumer {
+        void accept(Connection connection) throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface SQLFunction<T> {
+        T apply(Connection connection) throws SQLException;
+    }
+
+    /**
+     * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but as a void
+     */
+    public void execute(SQLConsumer task, long wait) throws SQLException {
+        executeReturn(connection -> {
+            task.accept(connection);
+            return null;
+        }, wait, Object.class);
+    }
+
+    /**
+     * Executes a given task under a write-lock, providing the writeable Connection, then returns a value
+     *
+     * @param task The task to be executed under the write-lock
+     * @param wait How long to wait for a write
+     * @param type The class which will be returned by the SQLFunction
+     * @return The value returned by the task
+     * @throws BusyException If the wait time is exceeded
+     * @throws SQLException  For SQLException thrown by the task
+     */
+    public <T> T executeReturn(SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
+        Connection connection = getWriteConnection(wait);
+        try {
+            return task.apply(connection);
+        } finally {
+            returnConnection(connection);
+        }
+    }
+
     private boolean isConnectionValid(@Nullable Connection connection) {
         if (!isMySQL()) return true;
         if (connection == null) return false;
@@ -339,7 +376,7 @@ public class ConnectionPool {
     public static class BusyException extends SQLException {
         public final StackTraceElement[] stack;
 
-        BusyException(StackTraceElement[] stack) {
+        private BusyException(StackTraceElement[] stack) {
             this.stack = stack;
         }
     }

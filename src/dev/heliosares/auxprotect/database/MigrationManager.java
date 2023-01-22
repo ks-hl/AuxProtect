@@ -423,7 +423,7 @@ public class MigrationManager {
         return isMigrating;
     }
 
-    void preTables() throws SQLException, IOException {
+    void preTables() throws SQLException {
         sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);");
 
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION;

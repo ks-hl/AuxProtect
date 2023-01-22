@@ -9,8 +9,6 @@ import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 
-import java.io.IOException;
-import java.sql.SQLException;
 import java.util.*;
 
 public class LookupCommand extends Command {
@@ -400,10 +398,11 @@ public class LookupCommand extends Command {
                 sender.sendMessage(XraySolver.solve(rs));
             }
         } catch (ConnectionPool.BusyException e) {
+            e.printStackTrace();
             sender.sendLang(Language.L.DATABASE_BUSY);
         } catch (LookupException | ParseException e) {
             sender.sendLang(e.getLang());
-        } catch (SQLException | IOException e) {
+        } catch (Exception e) {
             sender.sendLang(Language.L.ERROR);
         }
     }

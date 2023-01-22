@@ -133,9 +133,12 @@ public class DbEntry {
     }
 
     public String getUser() throws SQLException {
-        if (user != null) {
-            return user;
-        }
+        return getUser(true);
+    }
+
+    public String getUser(boolean resolve) throws SQLException {
+        if (user != null || !resolve) return user;
+
         if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
             return user = getUserUUID();
         }
@@ -147,9 +150,12 @@ public class DbEntry {
     }
 
     public String getTarget() throws SQLException {
-        if (target != null) {
-            return target;
-        }
+        return getTarget(true);
+    }
+
+    public String getTarget(boolean resolve) throws SQLException {
+        if (target != null || !resolve) return target;
+
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
             return target = getTargetUUID();
         }
