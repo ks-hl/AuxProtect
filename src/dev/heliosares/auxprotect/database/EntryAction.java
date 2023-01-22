@@ -77,6 +77,7 @@ public class EntryAction {
 
     // START COMMANDS (1280)
     public static final EntryAction COMMAND = new EntryAction("command", 1280);
+    public static final EntryAction CHAT = new EntryAction("chat", 1281);
     // END COMMANDS(1289)
 
     // START POSITION (1290)
@@ -204,52 +205,37 @@ public class EntryAction {
 
     public boolean exists() {
         IAuxProtect plugin = AuxProtectAPI.getInstance();
-        assert plugin != null;
         if (!plugin.getAPConfig().isPrivate()) {
             if (equals(IGNOREABANDONED) || equals(VEIN)) {
                 return false;
             }
         }
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
-            return equals(MSG) || equals(COMMAND) || equals(IP) || equals(USERNAME) || equals(SESSION)
-                    || equals(CONNECT);
+            return equals(MSG) ||
+                    equals(COMMAND) ||
+                    equals(CHAT) ||
+                    equals(IP) ||
+                    equals(USERNAME) ||
+                    equals(SESSION) ||
+                    equals(CONNECT);
         } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            return id != MSG.id && !equals(CONNECT);
+            return !equals(MSG) && !equals(CONNECT);
         }
-        return false;
+        throw new UnsupportedOperationException("Unknown platform " + plugin.getPlatform());
     }
 
     public Table getTable() {
-        if (id < 256) {
-            return Table.AUXPROTECT_MAIN;
-        }
-        if (id < 512) {
-            return Table.AUXPROTECT_SPAM;
-        }
-        if (id < 768) {
-            return Table.AUXPROTECT_ABANDONED;
-        }
-        if (id < 1024) {
-            return Table.AUXPROTECT_LONGTERM;
-        }
-        if (id < 1280) {
-            return Table.AUXPROTECT_INVENTORY;
-        }
-        if (id < 1290) {
-            return Table.AUXPROTECT_COMMANDS;
-        }
-        if (id < 1300) {
-            return Table.AUXPROTECT_POSITION;
-        }
-        if (id < 1310) {
-            return Table.AUXPROTECT_XRAY;
-        }
-        if (id < 1500) {
-            return Table.AUXPROTECT_TOWNY;
-        }
-        if (id > 1000000) {
-            return Table.AUXPROTECT_API;
-        }
+        if (id < 256) return Table.AUXPROTECT_MAIN;
+        if (id < 512) return Table.AUXPROTECT_SPAM;
+        if (id < 768) return Table.AUXPROTECT_ABANDONED;
+        if (id < 1024) return Table.AUXPROTECT_LONGTERM;
+        if (id < 1280) return Table.AUXPROTECT_INVENTORY;
+        if (id < 1290) return Table.AUXPROTECT_COMMANDS;
+        if (id < 1300) return Table.AUXPROTECT_POSITION;
+        if (id < 1310) return Table.AUXPROTECT_XRAY;
+        if (id < 1500) return Table.AUXPROTECT_TOWNY;
+        if (id > 1000000) return Table.AUXPROTECT_API;
+
         throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
     }
 

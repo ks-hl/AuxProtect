@@ -24,11 +24,8 @@ public class APBListener implements Listener {
     @EventHandler
     public void chatEvent(ChatEvent e) {
         if (e.getSender() instanceof ProxiedPlayer player) {
-            if (e.isCommand()) {
-                DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), EntryAction.COMMAND, false,
-                        e.getMessage(), "");
-                plugin.dbRunnable.add(entry);
-            }
+            DbEntry entry = new DbEntry(AuxProtectBungee.getLabel(player), e.isCommand() ? EntryAction.COMMAND : EntryAction.CHAT, false, e.getMessage(), "");
+            plugin.dbRunnable.add(entry);
         }
     }
 
