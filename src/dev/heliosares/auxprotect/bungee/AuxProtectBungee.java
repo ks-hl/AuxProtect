@@ -110,18 +110,24 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
             }
             uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
         }
-        sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
+        String user = null;
+        String pass = null;
+        boolean mysql = getAPConfig().isMySQL();
+        if (mysql) {
+            user = getAPConfig().getUser();
+            pass = getAPConfig().getPass();
+        }
+        try {
+            sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
+        } catch (ClassNotFoundException e) {
+            warning("No driver for SQL found. Disabling");
+            onDisable();
+            throw new RuntimeException(e);
+        }
 
         runAsync(() -> {
             try {
-                String user = null;
-                String pass = null;
-                boolean mysql = getAPConfig().isMySQL();
-                if (mysql) {
-                    user = getAPConfig().getUser();
-                    pass = getAPConfig().getPass();
-                }
-                sqlManager.connect(mysql, user, pass);
+                sqlManager.connect();
             } catch (Exception e) {
                 print(e);
                 getLogger().severe("Failed to connect to SQL database. Disabling.");

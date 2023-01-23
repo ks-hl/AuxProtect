@@ -177,7 +177,7 @@ public class MigrationManager {
         // 5
         //
 
-        migrationActions.put(5, new MigrationAction(true, () -> tryExecute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
+        migrationActions.put(5, new MigrationAction(true, () -> tryExecute("ALTER TABLE " + sql.getTablePrefix() + "auxprotect RENAME TO "
                 + Table.AUXPROTECT_MAIN), null));
 
         //

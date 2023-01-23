@@ -11,7 +11,7 @@ public class ResultMap {
     private final List<String> labels;
     private final List<Result> results;
 
-    public ResultMap(SQLManager sql, ResultSet rs) throws SQLException {
+    public ResultMap(ConnectionPool sql, ResultSet rs) throws SQLException {
         final ResultSetMetaData meta = rs.getMetaData();
         final int columnCount = meta.getColumnCount();
         final int[] types = new int[columnCount];
@@ -35,7 +35,7 @@ public class ResultMap {
             for (int column = 1; column <= columnCount; ++column) {
                 Object value;
                 if (types[column - 1] == Types.BLOB) {
-                    value = sql.getBlob(rs, column);
+                    value = ((SQLManager) sql).getBlob(rs, column);
                 } else {
                     value = rs.getObject(column);
                 }

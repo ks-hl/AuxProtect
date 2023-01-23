@@ -12,8 +12,6 @@ import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
 import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,11 +19,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
 
-public class SQLManager { //TODO extends ConnectionPool
+public class SQLManager extends ConnectionPool {
     public static final int MAX_LOOKUP_SIZE = 500000;
     private static SQLManager instance;
-    private static String tablePrefix = "";
-    private final String targetString;
     private final IAuxProtect plugin;
     private final HashMap<String, Integer> worlds = new HashMap<>();
     private final File sqliteFile;
@@ -34,19 +30,19 @@ public class SQLManager { //TODO extends ConnectionPool
     private final BlobManager invblobmanager;
     private final TownyManager townymanager;
     private final SQLUserManager usermanager;
+    private final String tablePrefix;
     int rowcount;
     private MigrationManager migrationmanager;
-    private ConnectionPool conn;
     private boolean isConnected;
     private int nextWid;
     private int nextActionId = 10000;
 
-    public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile) {
+    public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
+        super(plugin, target, mysql, user, pass);
         instance = this;
         this.plugin = plugin;
         this.usermanager = new SQLUserManager(plugin, this);
         this.lookupmanager = new LookupManager(this, plugin);
-        this.targetString = target;
         this.invdiffmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
         this.invblobmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
         if (prefix == null || prefix.length() == 0) {
@@ -73,34 +69,8 @@ public class SQLManager { //TODO extends ConnectionPool
         return instance;
     }
 
-    public static String getTablePrefix() {
+    public String getTablePrefix() {
         return tablePrefix;
-    }
-
-    public static String sanitize(String str) {
-        StringBuilder out = new StringBuilder();
-        for (char c : str.toCharArray()) {
-            if (c > 126) c = '?';
-            out.append(c);
-        }
-        return out.toString();
-    }
-
-    public static String getBlobSize(double bytes) {
-        int oom = 0;
-        while (bytes > 1024) {
-            bytes /= 1024;
-            oom++;
-        }
-        String out = switch (oom) {
-            case 0 -> "B";
-            case 1 -> "KB";
-            case 2 -> "MB";
-            case 3 -> "GB";
-            case 4 -> "TB";
-            default -> "";
-        };
-        return (Math.round(bytes * 100.0) / 100.0) + " " + out;
     }
 
     public SQLUserManager getUserManager() {
@@ -136,16 +106,11 @@ public class SQLManager { //TODO extends ConnectionPool
         return migrationmanager.getOriginalVersion();
     }
 
-    public boolean isMySQL() {
-        return conn.isMySQL();
-    }
-
-    public void connect(boolean mysql, @Nullable String user, @Nullable String pass) throws SQLException, ClassNotFoundException {
+    public void connect() throws SQLException {
         plugin.info("Connecting to database...");
 
         try {
-            conn = new ConnectionPool(plugin, targetString, mysql, user, pass);
-            conn.init(this::init);
+            super.init(this::init);
         } catch (SQLException e) {
             if (migrationmanager.isMigrating()) {
                 plugin.warning(
@@ -205,9 +170,7 @@ public class SQLManager { //TODO extends ConnectionPool
 
     public void close() {
         isConnected = false;
-        if (conn != null) {
-            conn.close();
-        }
+        super.close();
     }
 
     public String backup() throws SQLException {
@@ -343,31 +306,6 @@ public class SQLManager { //TODO extends ConnectionPool
         setLast(LastKeys.VACUUM, System.currentTimeMillis());
     }
 
-    private void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
-        if (args == null) {
-            return;
-        }
-        for (int i = 0; i < args.length; i++) {
-            Object o = args[i];
-            if (o == null) {
-                pstmt.setNull(i + 1, Types.NULL);
-            } else if (o instanceof String c) {
-                pstmt.setString(i + 1, c);
-            } else if (o instanceof Integer c) {
-                pstmt.setInt(i + 1, c);
-            } else if (o instanceof Long c) {
-                pstmt.setLong(i + 1, c);
-            } else if (o instanceof Short s) {
-                pstmt.setShort(i + 1, s);
-            } else if (o instanceof Boolean c) {
-                pstmt.setBoolean(i + 1, c);
-            } else if (o instanceof byte[] c) {
-                setBlob(connection, pstmt, i + 1, c);
-            } else {
-                throw new IllegalArgumentException(o.toString());
-            }
-        }
-    }
 
     protected void put(Connection connection, Table table) throws SQLException {
         long start = System.nanoTime();
@@ -650,38 +588,6 @@ public class SQLManager { //TODO extends ConnectionPool
         return count(table.toString());
     }
 
-    protected String getCountStmt(String table) {
-        if (isMySQL()) {
-            return "SELECT COUNT(*) FROM " + table;
-        } else {
-            return "SELECT COUNT(1) FROM " + table;
-        }
-    }
-
-    int count(String table) throws SQLException {
-        String stmtStr = getCountStmt(table);
-        plugin.debug(stmtStr, 5);
-
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) return rs.getInt(1);
-                    return -1;
-                }
-            }
-        }, 30000L, Integer.class);
-    }
-
-    public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
-        if (isMySQL()) {
-            Blob ablob = connection.createBlob();
-            ablob.setBytes(1, bytes);
-            statement.setBlob(index, ablob);
-        } else {
-            statement.setBytes(index, bytes);
-        }
-    }
-
     public byte[] getBlob(DbEntry entry) throws SQLException {
         if (entry.getAction().getTable().hasBlob())
             return executeGetMap("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", entry.getTime()).getFirstElementOrNull(byte[].class);
@@ -712,30 +618,6 @@ public class SQLManager { //TODO extends ConnectionPool
                 }
             }
         }, 30000L);
-    }
-
-    public byte[] getBlob(ResultSet rs, String key) throws SQLException {
-        if (isMySQL()) {
-            try (InputStream in = rs.getBlob(key).getBinaryStream()) {
-                return in.readAllBytes();
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e.getMessage());
-            }
-        } else {
-            return rs.getBytes(key);
-        }
-    }
-
-    public byte[] getBlob(ResultSet rs, int index) throws SQLException {
-        if (isMySQL()) {
-            try (InputStream in = rs.getBlob(index).getBinaryStream()) {
-                return in.readAllBytes();
-            } catch (IOException e) {
-                throw new IllegalArgumentException(e.getMessage());
-            }
-        } else {
-            return rs.getBytes(index);
-        }
     }
 
     protected void incrementRows() {
@@ -798,113 +680,6 @@ public class SQLManager { //TODO extends ConnectionPool
         return migrationmanager.getProgressString();
     }
 
-    public StackTraceElement[] getWhoHasLock() {
-        return conn.getWhoHasLock();
-    }
-
-    public long getLockedSince() {
-        return conn.getLockedSince();
-    }
-
-    /**
-     * Executes {@link ConnectionPool#execute(ConnectionPool.SQLConsumer, long)}
-     */
-    public void execute(ConnectionPool.SQLConsumer task, long wait) throws SQLException {
-        conn.execute(task, wait);
-    }
-
-    /**
-     * Executes {@link ConnectionPool#executeReturn(ConnectionPool.SQLFunction, long, Class)}
-     */
-    public <T> T executeReturn(ConnectionPool.SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
-        return conn.executeReturn(task, wait, type);
-    }
-
-    /**
-     * Executes {@link ConnectionPool#executeReturnException(ConnectionPool.SQLFunctionWithException, long, Class)}
-     */
-    public <T> T executeReturnException(ConnectionPool.SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
-        return conn.executeReturnException(task, wait, type);
-    }
-
-    /**
-     * @see PreparedStatement#execute()
-     */
-    public void execute(String stmt, long wait, Object... args) throws SQLException {
-        execute(connection -> execute(stmt, connection, args), wait);
-    }
-
-    /**
-     * @see PreparedStatement#execute()
-     */
-    public void execute(String stmt, Connection connection, Object... args) throws SQLException {
-        debugSQLStatement(stmt, args);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            prepare(connection, pstmt, args);
-            pstmt.execute();
-        }
-    }
-
-    /**
-     * @see PreparedStatement#executeUpdate()
-     */
-    public int executeReturnRows(String stmt, Object... args) throws SQLException {
-        debugSQLStatement(stmt, args);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                prepare(connection, pstmt, args);
-                return pstmt.executeUpdate();
-            }
-        }, 30000L, Integer.class);
-    }
-
-    public int executeReturnGenerated(String stmt, Object... args) throws SQLException {
-        debugSQLStatement(stmt, args);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-                prepare(connection, pstmt, args);
-                pstmt.executeUpdate();
-                try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1);
-                    }
-                }
-            }
-            return -1;
-        }, 30000L, Integer.class);
-    }
-
-    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
-        debugSQLStatement(stmt, args);
-        return executeReturn(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-                prepare(connection, statement, args);
-                try (ResultSet rs = statement.executeQuery()) {
-                    return new ResultMap(this, rs);
-                }
-            }
-        }, 30000L, ResultMap.class);
-    }
-
-    private void debugSQLStatement(String stmt, Object... args) {
-        final String originalStmt = stmt;
-        try {
-            for (Object arg : args) {
-                stmt = stmt.replaceFirst("\\?", arg.toString().replace("\\", "\\\\"));
-            }
-        } catch (Exception e) {
-            stmt = originalStmt + ": ";
-            boolean first = true;
-            StringBuilder stmtBuilder = new StringBuilder(stmt);
-            for (Object o : args) {
-                if (first) first = false;
-                else stmtBuilder.append(", ");
-                stmtBuilder.append(o);
-            }
-            stmt = stmtBuilder.toString();
-        }
-        plugin.debug(stmt, 5);
-    }
 
     public enum LastKeys {
         AUTO_PURGE(1), VACUUM(2), TELEMETRY(3);

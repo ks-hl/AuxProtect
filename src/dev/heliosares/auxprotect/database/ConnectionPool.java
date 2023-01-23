@@ -6,10 +6,9 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.sql.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -30,8 +29,7 @@ public class ConnectionPool {
     private long lockedSince;
     private boolean ready;
 
-    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd)
-            throws SQLException, ClassNotFoundException {
+    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd) throws ClassNotFoundException {
         this.plugin = plugin;
         this.mysql = mysql;
         this.newConnectionSupplier = () -> {
@@ -43,13 +41,6 @@ public class ConnectionPool {
             return null;
         };
         checkDriver();
-        connection = newConnectionSupplier.get();
-    }
-
-    public void init(SQLConsumer initializationTask) throws SQLException {
-        if (ready) throw new IllegalStateException("Already initialized");
-        initializationTask.accept(connection);
-        ready = true;
     }
 
     public static int getExpiredConnections() {
@@ -83,6 +74,39 @@ public class ConnectionPool {
             return null;
         }
         return new long[]{last - first, sum, count};
+    }
+
+    public static String sanitize(String str) {
+        StringBuilder out = new StringBuilder();
+        for (char c : str.toCharArray()) {
+            if (c > 126) c = '?';
+            out.append(c);
+        }
+        return out.toString();
+    }
+
+    public static String getBlobSize(double bytes) {
+        int oom = 0;
+        while (bytes > 1024) {
+            bytes /= 1024;
+            oom++;
+        }
+        String out = switch (oom) {
+            case 0 -> "B";
+            case 1 -> "KB";
+            case 2 -> "MB";
+            case 3 -> "GB";
+            case 4 -> "TB";
+            default -> "";
+        };
+        return (Math.round(bytes * 100.0) / 100.0) + " " + out;
+    }
+
+    public void init(SQLConsumer initializationTask) throws SQLException {
+        connection = newConnectionSupplier.get();
+        if (ready) throw new IllegalStateException("Already initialized");
+        initializationTask.accept(connection);
+        ready = true;
     }
 
     public long getLockedSince() {
@@ -228,6 +252,167 @@ public class ConnectionPool {
         return mysql;
     }
 
+    /**
+     * @see PreparedStatement#execute()
+     */
+    public void execute(String stmt, long wait, Object... args) throws SQLException {
+        execute(connection -> execute(stmt, connection, args), wait);
+    }
+
+    /**
+     * @see PreparedStatement#execute()
+     */
+    public void execute(String stmt, Connection connection, Object... args) throws SQLException {
+        debugSQLStatement(stmt, args);
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+            prepare(connection, pstmt, args);
+            pstmt.execute();
+        }
+    }
+
+    /**
+     * @see PreparedStatement#executeUpdate()
+     */
+    public int executeReturnRows(String stmt, Object... args) throws SQLException {
+        debugSQLStatement(stmt, args);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+                prepare(connection, pstmt, args);
+                return pstmt.executeUpdate();
+            }
+        }, 30000L, Integer.class);
+    }
+
+    public int executeReturnGenerated(String stmt, Object... args) throws SQLException {
+        debugSQLStatement(stmt, args);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
+                prepare(connection, pstmt, args);
+                pstmt.executeUpdate();
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+            return -1;
+        }, 30000L, Integer.class);
+    }
+
+    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
+        debugSQLStatement(stmt, args);
+        return executeReturn(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+                prepare(connection, statement, args);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return new ResultMap(this, rs);
+                }
+            }
+        }, 30000L, ResultMap.class);
+    }
+
+    private void debugSQLStatement(String stmt, Object... args) {
+        final String originalStmt = stmt;
+        try {
+            for (Object arg : args) {
+                stmt = stmt.replaceFirst("\\?", arg.toString().replace("\\", "\\\\"));
+            }
+        } catch (Exception e) {
+            stmt = originalStmt + ": ";
+            boolean first = true;
+            StringBuilder stmtBuilder = new StringBuilder(stmt);
+            for (Object o : args) {
+                if (first) first = false;
+                else stmtBuilder.append(", ");
+                stmtBuilder.append(o);
+            }
+            stmt = stmtBuilder.toString();
+        }
+        plugin.debug(stmt, 5);
+    }
+
+    private void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
+        if (args == null) {
+            return;
+        }
+        for (int i = 0; i < args.length; i++) {
+            Object o = args[i];
+            if (o == null) {
+                pstmt.setNull(i + 1, Types.NULL);
+            } else if (o instanceof String c) {
+                pstmt.setString(i + 1, c);
+            } else if (o instanceof Integer c) {
+                pstmt.setInt(i + 1, c);
+            } else if (o instanceof Long c) {
+                pstmt.setLong(i + 1, c);
+            } else if (o instanceof Short s) {
+                pstmt.setShort(i + 1, s);
+            } else if (o instanceof Boolean c) {
+                pstmt.setBoolean(i + 1, c);
+            } else if (o instanceof byte[] c) {
+                setBlob(connection, pstmt, i + 1, c);
+            } else {
+                throw new IllegalArgumentException(o.toString());
+            }
+        }
+    }
+
+    public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
+        if (isMySQL()) {
+            Blob ablob = connection.createBlob();
+            ablob.setBytes(1, bytes);
+            statement.setBlob(index, ablob);
+        } else {
+            statement.setBytes(index, bytes);
+        }
+    }
+
+    public byte[] getBlob(ResultSet rs, String key) throws SQLException {
+        if (isMySQL()) {
+            try (InputStream in = rs.getBlob(key).getBinaryStream()) {
+                return in.readAllBytes();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e.getMessage());
+            }
+        } else {
+            return rs.getBytes(key);
+        }
+    }
+
+    public byte[] getBlob(ResultSet rs, int index) throws SQLException {
+        if (isMySQL()) {
+            try (InputStream in = rs.getBlob(index).getBinaryStream()) {
+                return in.readAllBytes();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e.getMessage());
+            }
+        } else {
+            return rs.getBytes(index);
+        }
+    }
+
+    int count(String table) throws SQLException {
+        String stmtStr = getCountStmt(table);
+        plugin.debug(stmtStr, 5);
+
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) return rs.getInt(1);
+                    return -1;
+                }
+            }
+        }, 30000L, Integer.class);
+    }
+
+    protected String getCountStmt(String table) {
+        if (isMySQL()) {
+            return "SELECT COUNT(*) FROM " + table;
+        } else {
+            return "SELECT COUNT(1) FROM " + table;
+        }
+    }
+
     @FunctionalInterface
     public interface SQLConsumer {
         void accept(Connection connection) throws SQLException;
@@ -272,5 +457,4 @@ public class ConnectionPool {
             return set;
         }
     }
-
 }

@@ -33,7 +33,7 @@ public enum Table {
 
     @Override
     public String toString() {
-        return SQLManager.getTablePrefix() + super.toString().toLowerCase();
+        return SQLManager.getInstance().getTablePrefix() + super.toString().toLowerCase();
     }
 
     public String getName() {
