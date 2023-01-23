@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
-import dev.heliosares.auxprotect.database.ConnectionPool;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
@@ -60,7 +60,7 @@ public class InventoryCommand extends Command {
             try {
                 uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
                 uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false);
-            } catch (ConnectionPool.BusyException e) {
+            } catch (BusyException e) {
                 sender.sendLang(Language.L.DATABASE_BUSY);
                 return;
             } catch (SQLException e) {
@@ -75,7 +75,7 @@ public class InventoryCommand extends Command {
             DiffInventoryRecord inv = null;
             try {
                 inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
-            } catch (ConnectionPool.BusyException e) {
+            } catch (BusyException e) {
                 sender.sendLang(Language.L.DATABASE_BUSY);
                 return;
             } catch (ClassNotFoundException | SQLException | IOException e) {

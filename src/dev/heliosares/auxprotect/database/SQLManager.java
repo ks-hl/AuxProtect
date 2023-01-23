@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.TimeUtil;
@@ -14,10 +15,13 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 
-public class SQLManager {
+public class SQLManager { //TODO extends ConnectionPool
     public static final int MAX_LOOKUP_SIZE = 500000;
     private static SQLManager instance;
     private static String tablePrefix = "";
@@ -119,6 +123,7 @@ public class SQLManager {
         return rowcount;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public boolean isConnected() {
         return isConnected;
     }
@@ -139,7 +144,8 @@ public class SQLManager {
         plugin.info("Connecting to database...");
 
         try {
-            conn = new ConnectionPool(plugin, targetString, mysql, user, pass, this::init);
+            conn = new ConnectionPool(plugin, targetString, mysql, user, pass);
+            conn.init(this::init);
         } catch (SQLException e) {
             if (migrationmanager.isMigrating()) {
                 plugin.warning(
@@ -212,7 +218,7 @@ public class SQLManager {
         }
 
         File backup = new File(sqliteFile.getParentFile(), "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");
-        execute(connection -> executeWrite(connection, "VACUUM INTO ?", backup.getAbsolutePath()), 30000L);
+        execute(connection -> execute("VACUUM INTO ?", connection, backup.getAbsolutePath()), 30000L);
         return backup.getAbsolutePath();
     }
 
@@ -230,18 +236,18 @@ public class SQLManager {
 
         for (Table table : Table.values()) {
             if (table.hasAPEntries()) {
-                execute(connection, table.getSQLCreateString(plugin));
+                execute(table.getSQLCreateString(plugin), connection);
             }
         }
         String stmt;
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
             stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-            execute(connection, stmt);
+            execute(stmt, connection);
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
             stmt += " (name varchar(255), wid SMALLINT);";
-            execute(connection, stmt);
+            execute(stmt, connection);
 
             stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
             plugin.debug(stmt, 3);
@@ -261,10 +267,10 @@ public class SQLManager {
 
         stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
         stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
-        execute(connection, stmt);
+        execute(stmt, connection);
         for (LastKeys key : LastKeys.values()) {
             try {
-                executeWrite("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", key.id, 0L);
+                execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
             } catch (SQLException ignored) {
                 // Ensures each LastKeys has a value, so we can just UPDATE later
             }
@@ -272,7 +278,7 @@ public class SQLManager {
 
         stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
                 + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
-        execute(connection, stmt);
+        execute(stmt, connection);
 
         stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
         plugin.debug(stmt, 3);
@@ -313,13 +319,19 @@ public class SQLManager {
 
     //TODO test this
     public int purgeUIDs() throws SQLException {
-        final String baseStatement = "SELECT DISTINCT uid FROM (";
-        String stmt = "DELETE FROM auxprotect_uids WHERE uid NOT IN (" + baseStatement + Arrays.stream(Table.values())
-                .filter(Table::hasAPEntries)
-                .map(Table::toString)
-                .map(table -> baseStatement + table)
-                .reduce((a, b) -> a + " UNION " + b) + "))";
-        return executeWriteReturnRows(stmt);
+        final String baseStatement = "SELECT DISTINCT uid FROM ";
+        String stmt = "DELETE FROM auxprotect_uids WHERE uid NOT IN (" + baseStatement +
+                "(" +
+                Arrays.stream(Table.values())
+                        .filter(Table::hasAPEntries)
+                        .map(Table::toString)
+                        .map(table -> baseStatement + table)
+                        .reduce((a, b) -> a + " UNION " + b)
+                        .orElse("") +
+                "))";
+        int count = executeReturnRows(stmt);
+        plugin.debug("Purged " + count + " UIDs");
+        return count;
     }
 
     public void vacuum() throws SQLException {
@@ -329,20 +341,8 @@ public class SQLManager {
             return;
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
-        executeWrite("VACUUM;");
+        execute("VACUUM;", 30000L);
         setLast(LastKeys.VACUUM, System.currentTimeMillis());
-    }
-
-    public void execute(Connection connection, String stmt) throws SQLException {
-        plugin.debug(stmt, 5);
-
-        try (Statement statement = connection.createStatement()) {
-            statement.execute(stmt);
-        }
-    }
-
-    public void execute(String stmt, long wait, Object... args) throws SQLException {
-        execute(connection -> executeWrite(connection, stmt, args), wait);
     }
 
     private void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
@@ -369,96 +369,6 @@ public class SQLManager {
                 throw new IllegalArgumentException(o.toString());
             }
         }
-    }
-
-    /**
-     * @see PreparedStatement#execute()
-     */
-    public void executeWrite(String stmt, Object... args) throws SQLException {
-        execute(connection -> executeWrite(connection, stmt, args), 30000L);
-    }
-
-    /**
-     * @see PreparedStatement#execute()
-     */
-    public void executeWrite(Connection connection, String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            prepare(connection, pstmt, args);
-            pstmt.execute();
-        }
-    }
-
-    /**
-     * @see PreparedStatement#executeUpdate()
-     */
-    public int executeWriteReturnRows(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                prepare(connection, pstmt, args);
-                return pstmt.executeUpdate();
-            }
-        }, 30000L, Integer.class);
-    }
-
-    public int executeWriteReturnGenerated(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-                prepare(connection, pstmt, args);
-                pstmt.executeUpdate();
-                try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1);
-                    }
-                }
-            }
-            return -1;
-        }, 30000L, Integer.class);
-    }
-
-    public List<List<String>> executeGet(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        final List<List<String>> rowList = new LinkedList<>();
-        execute(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-                prepare(connection, statement, args);
-                try (ResultSet rs = statement.executeQuery()) {
-                    final ResultSetMetaData meta = rs.getMetaData();
-                    final int columnCount = meta.getColumnCount();
-                    {
-                        final List<String> columnList = new ArrayList<>();
-                        rowList.add(columnList);
-                        for (int i = 0; i < columnCount; i++) {
-                            columnList.add(meta.getColumnName(i + 1));
-                        }
-                    }
-                    while (rs.next()) {
-                        final List<String> columnList = new ArrayList<>();
-                        rowList.add(columnList);
-
-                        for (int column = 1; column <= columnCount; ++column) {
-                            final Object value = rs.getObject(column);
-                            columnList.add(String.valueOf(value));
-                        }
-                    }
-                }
-            }
-        }, 30000L);
-        return rowList;
-    }
-
-    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
-        return executeReturn(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-                prepare(connection, statement, args);
-                try (ResultSet rs = statement.executeQuery()) {
-                    return new ResultMap(this, rs);
-                }
-            }
-        }, 30000L, ResultMap.class);
     }
 
     protected void put(Connection connection, Table table) throws SQLException {
@@ -592,15 +502,15 @@ public class SQLManager {
             return count;
         }
 
-        count += executeWriteReturnRows("DELETE FROM " + table + " WHERE (time < ?);",
+        count += executeReturnRows("DELETE FROM " + table + " WHERE (time < ?);",
                 System.currentTimeMillis() - time);
         if (table == Table.AUXPROTECT_INVENTORY) {
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);",
+            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);",
                     System.currentTimeMillis() - time);
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
+            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
                     + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
                     + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
-            count += executeWriteReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE "
+            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE "
                     + Table.AUXPROTECT_INVBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
                     + Table.AUXPROTECT_INVENTORY + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
         }
@@ -699,6 +609,7 @@ public class SQLManager {
      * @throws SQLException           if there is a problem connecting to the
      *                                database.
      */
+    @SuppressWarnings("unused")
     public EntryAction createAction(String key, String ntext, String ptext)
             throws AlreadyExistsException, SQLException {
         if (EntryAction.getAction(key) != null) {
@@ -717,7 +628,7 @@ public class SQLManager {
             action = new EntryAction(key, nid, pid, ntext, ptext);
         }
 
-        executeWrite("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS + " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)", key, nid, pid, ntext, ptext);
+        execute("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS + " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)", 30000L, key, nid, pid, ntext, ptext);
         return action;
     }
 
@@ -849,6 +760,7 @@ public class SQLManager {
                 Arrays.asList(Table.values()).forEach(t -> {
                     try {
                         put(connection, t);
+                    } catch (BusyException ignored) {
                     } catch (SQLException e) {
                         plugin.print(e);
                     }
@@ -857,6 +769,7 @@ public class SQLManager {
                     invdiffmanager.put(connection);
                 }
             }, 0L);
+        } catch (BusyException ignored) {
         } catch (SQLException e) {
             plugin.print(e);
         }
@@ -865,7 +778,7 @@ public class SQLManager {
 
     //TODO implement
     public void setLast(LastKeys key, long value) throws SQLException {
-        executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", value, key.id);
+        execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", 30000L, value, key.id);
     }
 
     public long getLast(LastKeys key) throws SQLException {
@@ -914,6 +827,65 @@ public class SQLManager {
      */
     public <T> T executeReturnException(ConnectionPool.SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
         return conn.executeReturnException(task, wait, type);
+    }
+
+    /**
+     * @see PreparedStatement#execute()
+     */
+    public void execute(String stmt, long wait, Object... args) throws SQLException {
+        execute(connection -> execute(stmt, connection, args), wait);
+    }
+
+    /**
+     * @see PreparedStatement#execute()
+     */
+    public void execute(String stmt, Connection connection, Object... args) throws SQLException {
+        plugin.debug(stmt, 5);
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+            prepare(connection, pstmt, args);
+            pstmt.execute();
+        }
+    }
+
+    /**
+     * @see PreparedStatement#executeUpdate()
+     */
+    public int executeReturnRows(String stmt, Object... args) throws SQLException {
+        plugin.debug(stmt, 5);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+                prepare(connection, pstmt, args);
+                return pstmt.executeUpdate();
+            }
+        }, 30000L, Integer.class);
+    }
+
+    public int executeReturnGenerated(String stmt, Object... args) throws SQLException {
+        plugin.debug(stmt, 5);
+        return executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
+                prepare(connection, pstmt, args);
+                pstmt.executeUpdate();
+                try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
+                }
+            }
+            return -1;
+        }, 30000L, Integer.class);
+    }
+
+    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
+        plugin.debug(stmt, 5);
+        return executeReturn(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+                prepare(connection, statement, args);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return new ResultMap(this, rs);
+                }
+            }
+        }, 30000L, ResultMap.class);
     }
 
     public enum LastKeys {

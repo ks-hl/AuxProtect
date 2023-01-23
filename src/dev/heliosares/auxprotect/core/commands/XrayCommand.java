@@ -3,10 +3,7 @@ package dev.heliosares.auxprotect.core.commands;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.CommandException;
-import dev.heliosares.auxprotect.exceptions.LookupException;
-import dev.heliosares.auxprotect.exceptions.PlatformException;
-import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.heliosares.auxprotect.exceptions.*;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -165,7 +162,7 @@ public class XrayCommand extends Command {
                     } else {
                         try {
                             XrayResults.sendEntry(spigot, sender, entry, auto);
-                        } catch (ConnectionPool.BusyException e) {
+                        } catch (BusyException e) {
                             sender.sendLang(Language.L.DATABASE_BUSY);
                         } catch (SQLException e) {
                             sender.sendLang(Language.L.ERROR);
@@ -196,7 +193,7 @@ public class XrayCommand extends Command {
                             current.y, current.z, current.world, 45, 0));
                     try {
                         XrayResults.sendEntry(spigot, sender, current, true);
-                    } catch (ConnectionPool.BusyException e) {
+                    } catch (BusyException e) {
                         sender.sendLang(Language.L.DATABASE_BUSY);
                         return;
                     } catch (SQLException e) {
@@ -219,7 +216,7 @@ public class XrayCommand extends Command {
                 en.z, en.world, 45, 0));
         try {
             XrayResults.sendEntry(plugin, player, en, auto);
-        } catch (ConnectionPool.BusyException e) {
+        } catch (BusyException e) {
             player.sendLang(Language.L.DATABASE_BUSY);
         } catch (SQLException e) {
             player.sendLang(Language.L.ERROR);

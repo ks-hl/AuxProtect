@@ -62,6 +62,7 @@ public abstract class Command {
         return tabComplete;
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public abstract boolean exists();
 
     public boolean isAsync() {

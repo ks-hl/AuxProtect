@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
@@ -27,8 +28,9 @@ public class ConnectionPool {
     @Nullable
     private StackTraceElement[] whoHasLock;
     private long lockedSince;
+    private boolean ready;
 
-    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd, SQLConsumer initializationTask)
+    public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd)
             throws SQLException, ClassNotFoundException {
         this.plugin = plugin;
         this.mysql = mysql;
@@ -42,11 +44,15 @@ public class ConnectionPool {
         };
         checkDriver();
         connection = newConnectionSupplier.get();
-
-        execute(initializationTask, Long.MAX_VALUE);
     }
 
-    public static int getExpired() {
+    public void init(SQLConsumer initializationTask) throws SQLException {
+        if (ready) throw new IllegalStateException("Already initialized");
+        initializationTask.accept(connection);
+        ready = true;
+    }
+
+    public static int getExpiredConnections() {
         return expired;
     }
 
@@ -158,9 +164,8 @@ public class ConnectionPool {
      * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but with any Exception
      */
     public <T> T executeReturnException(SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
-        if (closed || connection == null) {
-            throw new IllegalStateException("closed");
-        }
+        if (closed || connection == null) throw new IllegalStateException("closed");
+        if (!ready) throw new IllegalStateException("Not yet initialized");
         checkAsync();
         boolean havelock = false;
         try {
@@ -268,11 +273,4 @@ public class ConnectionPool {
         }
     }
 
-    public static class BusyException extends SQLException {
-        public final StackTraceElement[] stack;
-
-        private BusyException(StackTraceElement[] stack) {
-            this.stack = stack;
-        }
-    }
 }

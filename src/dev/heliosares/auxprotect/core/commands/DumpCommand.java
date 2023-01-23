@@ -50,7 +50,7 @@ public class DumpCommand extends Command {
         }
         trace.append("Queued: ").append(plugin.queueSize()).append("\n");
         if (!stats) {
-            trace.append("Pool Expired: ").append(ConnectionPool.getExpired()).append("\n");
+            trace.append("Pool Expired: ").append(ConnectionPool.getExpiredConnections()).append("\n");
         }
         long[] write = ConnectionPool.calculateWriteTimes();
         if (write != null) {

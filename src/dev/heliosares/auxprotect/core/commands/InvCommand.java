@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
@@ -114,10 +115,10 @@ public class InvCommand extends Command {
                                 plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
                                                 .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
                                         recover);
-                                plugin.getSqlManager().executeWrite(
+                                plugin.getSqlManager().execute(
                                         "UPDATE " + Table.AUXPROTECT_INVENTORY
                                                 + " SET data=data || ? WHERE time=? AND action_id=?",
-                                        LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by "
+                                        30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by "
                                                 + player.getName(),
                                         when, EntryAction.INVENTORY.id);
                             } catch (Exception e) {
@@ -227,7 +228,7 @@ public class InvCommand extends Command {
                 OfflinePlayer target;
                 try {
                     target = Bukkit.getOfflinePlayer(UUID.fromString(entry.getUserUUID().substring(1)));
-                } catch (ConnectionPool.BusyException e) {
+                } catch (BusyException e) {
                     sender.sendLang(L.DATABASE_BUSY);
                     return;
                 } catch (SQLException e) {

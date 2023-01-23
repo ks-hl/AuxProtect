@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -72,7 +73,7 @@ public class LookupManager {
                 }
                 return count;
             }, 3000L, Integer.class);
-        } catch (ConnectionPool.BusyException e) {
+        } catch (BusyException e) {
             throw new LookupException(Language.L.DATABASE_BUSY);
         } catch (Exception e1) {
             plugin.print(e1);
@@ -219,7 +220,7 @@ public class LookupManager {
                 }
                 plugin.debug("Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: " + (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms", 1);
             }, 3000L);
-        } catch (ConnectionPool.BusyException e) {
+        } catch (BusyException e) {
             e.printStackTrace();
             throw new LookupException(Language.L.DATABASE_BUSY);
         } catch (SQLException e) {

@@ -195,7 +195,7 @@ public class SQLUserManager {
 
         if (insert) {
             stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid) VALUES (?)";
-            int uid = sql.executeWriteReturnGenerated(stmt, uuid);
+            int uid = sql.executeReturnGenerated(stmt, uuid);
             uuids.put(uid, uuid);
             plugin.debug("New UUID: " + uuid + ":" + uid, 1);
             sql.incrementRows();
@@ -258,15 +258,15 @@ public class SQLUserManager {
         }
         long time = System.currentTimeMillis();
         if (blob == null) {
-            sql.executeWrite("DELETE FROM " + Table.AUXPROTECT_USERDATA_PENDINV + " WHERE uid=?", uid);
+            sql.execute("DELETE FROM " + Table.AUXPROTECT_USERDATA_PENDINV + " WHERE uid=?", 30000L, uid);
         } else {
             try {
-                sql.executeWrite(
+                sql.execute(
                         "INSERT INTO " + Table.AUXPROTECT_USERDATA_PENDINV + " (time, uid, pending) VALUES (?,?,?)",
-                        time, uid, blob);
+                        30000L, time, uid, blob);
             } catch (SQLException ignored) {
-                sql.executeWrite("UPDATE " + Table.AUXPROTECT_USERDATA_PENDINV + " SET time=?,pending=? WHERE uid=?",
-                        time, blob, uid);
+                sql.execute("UPDATE " + Table.AUXPROTECT_USERDATA_PENDINV + " SET time=?,pending=? WHERE uid=?",
+                        30000L, time, blob, uid);
             }
         }
     }
@@ -284,8 +284,8 @@ public class SQLUserManager {
             stmt += " (uuid varchar(255), uid INTEGER PRIMARY KEY AUTOINCREMENT);";
         }
         plugin.debug(stmt, 3);
-        sql.execute(connection, stmt);
-        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV
-                + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)");
+        sql.execute(stmt, connection);
+        sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV
+                + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)", connection);
     }
 }

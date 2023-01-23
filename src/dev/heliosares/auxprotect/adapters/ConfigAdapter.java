@@ -86,6 +86,7 @@ public abstract class ConfigAdapter {
         }
     }
 
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public abstract boolean isNull();
 
     public abstract List<String> getStringList(String key);

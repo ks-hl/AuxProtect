@@ -5,7 +5,7 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.database.ConnectionPool;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.database.ResultMap;
 
 import java.util.List;
@@ -33,7 +33,7 @@ public class SQLCommand extends Command {
             if (args[0].equalsIgnoreCase("sql")) {
                 plugin.getSqlManager().execute(stmt, 3000L);
             } else if (args[0].equalsIgnoreCase("sqli")) {
-                plugin.getSqlManager().executeWrite(stmt);
+                plugin.getSqlManager().execute(stmt, 30000L);
             } else {
                 ResultMap results = plugin.getSqlManager().executeGetMap(stmt);
                 StringBuilder line = new StringBuilder();
@@ -55,7 +55,7 @@ public class SQLCommand extends Command {
                     sender.sendMessageRaw(line.toString());
                 }
             }
-        } catch (ConnectionPool.BusyException e) {
+        } catch (BusyException e) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
         } catch (Exception e) {

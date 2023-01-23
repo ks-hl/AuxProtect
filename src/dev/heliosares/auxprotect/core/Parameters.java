@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
@@ -380,7 +381,7 @@ public class Parameters {
             try {
                 uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(user, false);
                 altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(user, false);
-            } catch (ConnectionPool.BusyException e) {
+            } catch (BusyException e) {
                 throw new LookupException(L.DATABASE_BUSY);
             } catch (SQLException e) {
                 throw new LookupException(L.ERROR);
@@ -458,7 +459,7 @@ public class Parameters {
                 try {
                     uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
                     altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(target, false);
-                } catch (ConnectionPool.BusyException e) {
+                } catch (BusyException e) {
                     throw new LookupException(L.DATABASE_BUSY);
                 } catch (SQLException e) {
                     throw new LookupException(L.ERROR);
@@ -617,7 +618,7 @@ public class Parameters {
         int uid;
         try {
             uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
-        } catch (ConnectionPool.BusyException e) {
+        } catch (BusyException e) {
             throw new LookupException(L.DATABASE_BUSY);
         } catch (SQLException e) {
             throw new LookupException(L.ERROR);

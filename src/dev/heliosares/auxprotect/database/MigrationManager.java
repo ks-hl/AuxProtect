@@ -169,7 +169,7 @@ public class MigrationManager {
                     putRaw(Table.AUXPROTECT_POSITION, output);
                 }
                 plugin.info("Deleting old entries.");
-                sql.execute(connection, "DELETE FROM " + Table.AUXPROTECT_SPAM + " WHERE action_id = 256;");
+                sql.execute("DELETE FROM " + Table.AUXPROTECT_SPAM + " WHERE action_id = 256;", connection);
             }
         }));
 
@@ -281,11 +281,11 @@ public class MigrationManager {
                         }
                         where = new StringBuilder(where.substring(0, where.length() - 1) + ")");
                     }
-                    sql.execute(connection, "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=1" + where);
+                    sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=1" + where, connection);
                 }
                 plugin.info("Done migrating blobs, purging unneeded data");
-                sql.execute(connection,
-                        "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data = '' where hasblob=true;");
+                sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data = '' where hasblob=true;", connection
+                );
             }
         }));
 
@@ -324,7 +324,7 @@ public class MigrationManager {
                 }
                 hashes.forEach((k, v) -> {
                     try {
-                        sql.executeWrite(connection, "UPDATE " + Table.AUXPROTECT_INVDIFFBLOB + " SET hash=? WHERE blobid=?", v, k);
+                        sql.execute("UPDATE " + Table.AUXPROTECT_INVDIFFBLOB + " SET hash=? WHERE blobid=?", connection, v, k);
                     } catch (SQLException e) {
                         plugin.warning("Error while committing hash for blobid: " + k + ", this is probably fine.");
                         ignore.add(k);
@@ -345,8 +345,8 @@ public class MigrationManager {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN blobid BIGINT");
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN damage INT");
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN qty INT");
-            sql.execute(connection, "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=time WHERE hasblob=1");
-            sql.execute(connection, "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=null");
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=time WHERE hasblob=1", connection);
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=null", connection);
         }));
 
         //
@@ -363,7 +363,7 @@ public class MigrationManager {
         migrationActions.put(10, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT,
                 () -> {
                     try {
-                        sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name");
+                        sql.execute("ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name", connection);
                     } catch (SQLException ignored) {
                         // This may error if migrating from a version where the `lasts` table has not yet been created, as this is executed pre-tables
                     }
@@ -406,8 +406,8 @@ public class MigrationManager {
     }
 
     private void setVersion(int version) throws SQLException {
-        sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-                + System.currentTimeMillis() + "," + (this.version = version) + ")");
+        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
+                + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
         plugin.info("Done migrating to version " + version);
     }
 
@@ -416,7 +416,7 @@ public class MigrationManager {
     }
 
     void preTables() throws SQLException {
-        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);");
+        sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);", connection);
 
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION;
         plugin.debug(stmt, 3);
@@ -492,8 +492,8 @@ public class MigrationManager {
 
         plugin.debug("Purging temporary tables");
         for (Table table : Table.values()) {
-            sql.execute(connection, "DROP TABLE IF EXISTS " + table.toString() + "temp;");
-            sql.execute(connection, "DROP TABLE IF EXISTS " + table + "_temp;");
+            sql.execute("DROP TABLE IF EXISTS " + table.toString() + "temp;", connection);
+            sql.execute("DROP TABLE IF EXISTS " + table + "_temp;", connection);
         }
 
         if (isMigrating && !sql.isMySQL()) {
@@ -589,7 +589,7 @@ public class MigrationManager {
 
     private void tryExecute(String stmt) {
         try {
-            sql.execute(connection, stmt);
+            sql.execute(stmt, connection);
         } catch (SQLException e) {
             plugin.warning("Error, if you are reattempting migration this is expected.");
             plugin.print(e);

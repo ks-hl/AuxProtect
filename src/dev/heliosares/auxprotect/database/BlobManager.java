@@ -28,7 +28,7 @@ public class BlobManager {
     }
 
     protected void createTable(Connection connection) throws SQLException {
-        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT, ablob MEDIUMBLOB, hash INT);");
+        sql.execute("CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT, ablob MEDIUMBLOB, hash INT);", connection);
     }
 
     protected void init(Connection connection) throws SQLException {
@@ -80,7 +80,7 @@ public class BlobManager {
         }
         if (id < 0) {
             stmt = "INSERT INTO " + table + " (blobid, ablob, hash) VALUES (?,?,?)";
-            sql.executeWrite(connection, stmt, id = ++nextBlobID, blob, hash);
+            sql.execute(stmt, connection, id = ++nextBlobID, blob, hash);
             plugin.debug("NEW blobid: " + nextBlobID, 5);
         }
         if (id > 0) {
@@ -122,7 +122,7 @@ public class BlobManager {
             }
             final byte[] blob_ = blob;
             long blobid = sql.executeReturn(connection -> getBlobId(connection, blob_), 3000L, Long.class);
-            sql.executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", blobid, entry.getTime());
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", 30000L, blobid, entry.getTime());
 
         }
         return blob;
