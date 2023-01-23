@@ -188,7 +188,7 @@ public class ConnectionPool {
      * Executes a given task under a write-lock, providing the writeable Connection, then returns a value
      *
      * @param task The task to be executed under the write-lock
-     * @param wait How long to wait for a write
+     * @param wait How long to wait for a lock
      * @param type The class which will be returned by the SQLFunction
      * @return The value returned by the task
      * @throws BusyException If the wait time is exceeded
@@ -206,6 +206,8 @@ public class ConnectionPool {
 
     /**
      * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but with any Exception
+     *
+     * @throws Exception For Exception thrown by the task
      */
     @SuppressWarnings("unused")
     public <T> T executeReturnException(SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
@@ -240,23 +242,6 @@ public class ConnectionPool {
             }
             lockedSince = 0;
             lock.unlock();
-        }
-    }
-
-    private boolean isConnectionValid() {
-        if (connection == null) return false;
-        if (!isMySQL()) return true;
-        if (System.currentTimeMillis() - lastChecked < 30000L) return true;
-        if (testConnection(connection)) {
-            lastChecked = System.currentTimeMillis();
-            return true;
-        } else {
-            expired++;
-            try {
-                connection.close();
-            } catch (SQLException ignored) {
-            }
-            return false;
         }
     }
 
@@ -343,31 +328,6 @@ public class ConnectionPool {
         plugin.debug(stmt, 5);
     }
 
-    private void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
-        if (args == null) {
-            return;
-        }
-        for (int i = 0; i < args.length; i++) {
-            Object o = args[i];
-            if (o == null) {
-                pstmt.setNull(i + 1, Types.NULL);
-            } else if (o instanceof String c) {
-                pstmt.setString(i + 1, c);
-            } else if (o instanceof Integer c) {
-                pstmt.setInt(i + 1, c);
-            } else if (o instanceof Long c) {
-                pstmt.setLong(i + 1, c);
-            } else if (o instanceof Short s) {
-                pstmt.setShort(i + 1, s);
-            } else if (o instanceof Boolean c) {
-                pstmt.setBoolean(i + 1, c);
-            } else if (o instanceof byte[] c) {
-                setBlob(connection, pstmt, i + 1, c);
-            } else {
-                throw new IllegalArgumentException(o.toString());
-            }
-        }
-    }
 
     public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
         if (isMySQL()) {
@@ -403,7 +363,7 @@ public class ConnectionPool {
         }
     }
 
-    int count(String table) throws SQLException {
+    protected int count(String table) throws SQLException {
         String stmtStr = getCountStmt(table);
         plugin.debug(stmtStr, 5);
 
@@ -422,6 +382,49 @@ public class ConnectionPool {
             return "SELECT COUNT(*) FROM " + table;
         } else {
             return "SELECT COUNT(1) FROM " + table;
+        }
+    }
+
+    protected void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
+        if (args == null) {
+            return;
+        }
+        for (int i = 0; i < args.length; i++) {
+            Object o = args[i];
+            if (o == null) {
+                pstmt.setNull(i + 1, Types.NULL);
+            } else if (o instanceof String c) {
+                pstmt.setString(i + 1, c);
+            } else if (o instanceof Integer c) {
+                pstmt.setInt(i + 1, c);
+            } else if (o instanceof Long c) {
+                pstmt.setLong(i + 1, c);
+            } else if (o instanceof Short s) {
+                pstmt.setShort(i + 1, s);
+            } else if (o instanceof Boolean c) {
+                pstmt.setBoolean(i + 1, c);
+            } else if (o instanceof byte[] c) {
+                setBlob(connection, pstmt, i + 1, c);
+            } else {
+                throw new IllegalArgumentException(o.toString());
+            }
+        }
+    }
+
+    private boolean isConnectionValid() {
+        if (connection == null) return false;
+        if (!isMySQL()) return true;
+        if (System.currentTimeMillis() - lastChecked < 30000L) return true;
+        if (testConnection(connection)) {
+            lastChecked = System.currentTimeMillis();
+            return true;
+        } else {
+            expired++;
+            try {
+                connection.close();
+            } catch (SQLException ignored) {
+            }
+            return false;
         }
     }
 
