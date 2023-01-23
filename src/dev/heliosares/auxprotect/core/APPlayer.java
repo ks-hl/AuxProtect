@@ -16,6 +16,7 @@ public class APPlayer {
     public final Player player;
     private final IAuxProtect plugin;
     private final List<Byte> inventoryBlob = new ArrayList<>();
+    public final double[] activity = new double[30];
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
@@ -26,7 +27,6 @@ public class APPlayer {
     public long lastCheckedMovement;
     public double movedAmountThisMinute;
     public boolean hasMovedThisMinute;
-    public final double[] activity = new double[30];
     public int activityIndex;
     public long lastNotifyInactive;
     // hotbar, main, armor, offhand, echest

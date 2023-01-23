@@ -6,7 +6,6 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.sql.SQLException;

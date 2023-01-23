@@ -40,8 +40,8 @@ public class ChartRenderer extends MapRenderer {
 //	public static final byte BLACK = 0x76;
     private final AuxProtectSpigot plugin;
     public final double xScale = 1;
-    public double yScale = 1;
     private final Color[][] map = new Color[128][128];
+    public double yScale = 1;
 
     public ChartRenderer(AuxProtectSpigot plugin, String title, Color bgColor, int values) {
         this.plugin = plugin;

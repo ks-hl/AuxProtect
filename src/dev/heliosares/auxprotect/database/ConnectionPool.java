@@ -20,8 +20,8 @@ public class ConnectionPool {
     private final Supplier<Connection> newConnectionSupplier;
     private final boolean mysql;
     private final IAuxProtect plugin;
-    private Connection connection;
     private final ReentrantLock lock = new ReentrantLock();
+    private Connection connection;
     private long lastChecked = System.currentTimeMillis();
     private boolean closed;
     @Nullable
@@ -44,14 +44,6 @@ public class ConnectionPool {
         connection = newConnectionSupplier.get();
 
         execute(initializationTask, Long.MAX_VALUE);
-    }
-
-    public long getLockedSince() {
-        return lockedSince;
-    }
-
-    public StackTraceElement[] getWhoHasLock() {
-        return whoHasLock;
     }
 
     public static int getExpired() {
@@ -85,6 +77,14 @@ public class ConnectionPool {
             return null;
         }
         return new long[]{last - first, sum, count};
+    }
+
+    public long getLockedSince() {
+        return lockedSince;
+    }
+
+    public StackTraceElement[] getWhoHasLock() {
+        return whoHasLock;
     }
 
     private void checkDriver() throws ClassNotFoundException {
@@ -121,52 +121,6 @@ public class ConnectionPool {
         try {
             connection.close();
         } catch (SQLException ignored) {
-        }
-    }
-
-
-    @FunctionalInterface
-    public interface SQLConsumer {
-        void accept(Connection connection) throws SQLException;
-    }
-
-    @FunctionalInterface
-    public interface SQLFunction<T> {
-        T apply(Connection connection) throws SQLException;
-    }
-
-    @FunctionalInterface
-    public interface SQLFunctionWithException<T> {
-        T apply(Connection connection) throws Exception;
-    }
-
-    public static class Holder<T> {
-        private T value;
-        private boolean set;
-
-        public void set(@Nullable T t) {
-            set = true;
-            value = t;
-        }
-
-        @Nullable
-        public T get() {
-            return value;
-        }
-
-        public Number getNumberOrElse(Number def) {
-            if (value == null) return def;
-            if (!(value instanceof Number number)) throw new IllegalStateException();
-            return number;
-        }
-
-        /**
-         * This is different from a null check because passing 'null' to {@link Holder#set(T)} will still cause this to return true
-         *
-         * @return Whether this Holder has had {@link Holder#set(T)} called at least once, regardless of the value
-         */
-        public boolean isSet() {
-            return set;
         }
     }
 
@@ -267,6 +221,51 @@ public class ConnectionPool {
 
     public boolean isMySQL() {
         return mysql;
+    }
+
+    @FunctionalInterface
+    public interface SQLConsumer {
+        void accept(Connection connection) throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface SQLFunction<T> {
+        T apply(Connection connection) throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface SQLFunctionWithException<T> {
+        T apply(Connection connection) throws Exception;
+    }
+
+    public static class Holder<T> {
+        private T value;
+        private boolean set;
+
+        public void set(@Nullable T t) {
+            set = true;
+            value = t;
+        }
+
+        @Nullable
+        public T get() {
+            return value;
+        }
+
+        public Number getNumberOrElse(Number def) {
+            if (value == null) return def;
+            if (!(value instanceof Number number)) throw new IllegalStateException();
+            return number;
+        }
+
+        /**
+         * This is different from a null check because passing 'null' to {@link Holder#set(T)} will still cause this to return true
+         *
+         * @return Whether this Holder has had {@link Holder#set(T)} called at least once, regardless of the value
+         */
+        public boolean isSet() {
+            return set;
+        }
     }
 
     public static class BusyException extends SQLException {

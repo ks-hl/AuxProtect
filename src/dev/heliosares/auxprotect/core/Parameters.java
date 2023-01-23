@@ -27,6 +27,19 @@ public class Parameters {
     // ----------------------------------------------
     public final long time_created = System.currentTimeMillis();
     private final IAuxProtect plugin;
+    private final List<Long> exactTime = new ArrayList<>();
+    private final List<String> uids = new ArrayList<>();
+    private final List<String> users = new ArrayList<>();
+    // action
+    private final List<Integer> actions = new ArrayList<>();
+    private final List<String> datas = new ArrayList<>();
+    // radius
+    private final HashMap<Integer, Boolean> radius = new HashMap<>();
+    private final List<String> worlds = new ArrayList<>();
+    // flags
+    private final List<Flag> flags = new ArrayList<>();
+    // ratings
+    private final List<Short> ratings = new ArrayList<>();
     // user
     boolean negateUser;
     // target
@@ -38,25 +51,10 @@ public class Parameters {
     // time
     private long after;
     private long before = Long.MAX_VALUE;
-    private final List<Long> exactTime = new ArrayList<>();
-    private final List<String> uids = new ArrayList<>();
-    private final List<String> users = new ArrayList<>();
-    // action
-    private final List<Integer> actions = new ArrayList<>();
     private List<String> targets = new ArrayList<>();
-    private final List<String> datas = new ArrayList<>();
     // table
     private Table table;
-    // radius
-    private final HashMap<Integer, Boolean> radius = new HashMap<>();
     private Location location;
-    private final List<String> worlds = new ArrayList<>();
-
-    // flags
-    private final List<Flag> flags = new ArrayList<>();
-
-    // ratings
-    private final List<Short> ratings = new ArrayList<>();
 
     // ----------------------------------------------------
     // ------------------- CONSTRUCTORS -------------------

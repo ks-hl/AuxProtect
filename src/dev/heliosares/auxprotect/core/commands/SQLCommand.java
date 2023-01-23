@@ -7,7 +7,6 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.ResultMap;
-import dev.heliosares.auxprotect.exceptions.CommandException;
 
 import java.util.List;
 

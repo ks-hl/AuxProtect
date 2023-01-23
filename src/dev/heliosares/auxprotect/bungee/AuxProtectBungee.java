@@ -30,9 +30,9 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
     private final APConfig config = new APConfig();
+    final Set<Integer> stackHashHistory = new HashSet<>();
     protected DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
-    final Set<Integer> stackHashHistory = new HashSet<>();
     private boolean isShuttingDown;
     private String stackLog = "";
     private boolean enabled;

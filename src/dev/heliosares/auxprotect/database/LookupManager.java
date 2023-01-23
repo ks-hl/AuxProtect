@@ -8,7 +8,6 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
-import java.io.IOException;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

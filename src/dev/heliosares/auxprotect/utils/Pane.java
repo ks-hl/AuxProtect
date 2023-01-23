@@ -16,9 +16,9 @@ public class Pane implements InventoryHolder {
     private static final List<Pane> openPanes = new ArrayList<>();
     public final Type type;
     private final Player player;
+    private final List<Consumer<Pane>> onClose = new ArrayList<>();
     private Inventory inventory;
     private ArrayList<Button> buttons;
-    private final List<Consumer<Pane>> onClose = new ArrayList<>();
     private boolean cancelled;
 
     public Pane(Type type, Player player) {

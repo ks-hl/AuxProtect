@@ -6,7 +6,6 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
-import dev.heliosares.auxprotect.exceptions.CommandException;
 
 import java.util.List;
 import java.util.stream.Collectors;

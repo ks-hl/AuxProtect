@@ -49,10 +49,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
     private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+    final Set<Integer> stackHashHistory = new HashSet<>();
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
-    final Set<Integer> stackHashHistory = new HashSet<>();
     private Economy econ;
     private VeinManager veinManager;
     private ClaimInvCommand claiminvcommand;

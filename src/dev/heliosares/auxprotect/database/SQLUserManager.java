@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
-import java.io.IOException;
 import java.sql.*;
 import java.util.Collection;
 import java.util.Collections;

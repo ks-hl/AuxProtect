@@ -2,7 +2,6 @@ package dev.heliosares.auxprotect.bungee;
 
 import dev.heliosares.auxprotect.adapters.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.core.commands.APCommand;
-import dev.heliosares.auxprotect.exceptions.CommandException;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.plugin.Command;
 import net.md_5.bungee.api.plugin.TabExecutor;

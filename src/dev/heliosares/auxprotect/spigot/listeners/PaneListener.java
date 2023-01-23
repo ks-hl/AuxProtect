@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.core.APPermission;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
 import org.bukkit.event.EventHandler;
