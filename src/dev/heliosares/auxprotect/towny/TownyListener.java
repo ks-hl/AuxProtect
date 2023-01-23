@@ -55,8 +55,13 @@ public class TownyListener implements Listener {
     }
 
     private void handledeleted(String name, boolean nation) {
-        int uid = 0;
-        uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+        int uid;
+        try {
+            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+        } catch (SQLException e) {
+            plugin.print(e);
+            return;
+        }
 
         if (uid <= 0) {
             plugin.info("Unknown town/nation " + name);
@@ -99,7 +104,7 @@ public class TownyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(DeleteTownEvent e) {
         plugin.getSqlManager().getTownyManager().updateName(e.getTownUUID(), e.getTownName(), true);
-        plugin.add(new TownyEntry("$" + e.getMayorUUID().toString(), EntryAction.TOWNDELETE, false, toLoc(e.getMayor()),
+        plugin.add(new TownyEntry("$" + e.getMayorUUID(), EntryAction.TOWNDELETE, false, toLoc(e.getMayor()),
                 "$t" + e.getTownUUID(), ""));
     }
 

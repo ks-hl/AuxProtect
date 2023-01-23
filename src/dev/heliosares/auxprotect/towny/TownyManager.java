@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
+import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,21 +24,18 @@ public class TownyManager {
         this.sql = sql;
     }
 
-    public static String getLabel(Government gov) {
+    public static String getLabel(@Nullable Government gov) {
+        if (gov == null) return "#null";
         return "$t" + gov.getUUID().toString();
     }
 
     public void init() {
         plugin.info("Checking for new towns/nations...");
-        TownyUniverse.getInstance().getTowns().forEach((town) -> {
-            sql.getTownyManager().updateName(town, false);
-        });
-        TownyUniverse.getInstance().getNations().forEach((nation) -> {
-            sql.getTownyManager().updateName(nation, false);
-        });
+        TownyUniverse.getInstance().getTowns().forEach((town) -> sql.getTownyManager().updateName(town, false));
+        TownyUniverse.getInstance().getNations().forEach((nation) -> sql.getTownyManager().updateName(nation, false));
     }
 
-    public String getNameFromID(int uid, boolean wait) {
+    public String getNameFromID(int uid, boolean wait) throws SQLException {
         if (uid < 0) {
             return null;
         }
@@ -70,7 +68,7 @@ public class TownyManager {
         }, wait ? 30000L : 1000L, String.class);
     }
 
-    public int getIDFromName(String name, boolean wait) {
+    public int getIDFromName(String name, boolean wait) throws SQLException {
         if (name == null) {
             return -1;
         }
@@ -120,7 +118,12 @@ public class TownyManager {
             plugin.debug("Handling " + name);
 
             String newestusername;
-            newestusername = getNameFromID(uid, true);
+            try {
+                newestusername = getNameFromID(uid, true);
+            } catch (SQLException e) {
+                plugin.print(e);
+                return;
+            }
             if (!name.equalsIgnoreCase(newestusername)) {
                 plugin.debug("New town name: " + name + " for " + newestusername);
                 plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));

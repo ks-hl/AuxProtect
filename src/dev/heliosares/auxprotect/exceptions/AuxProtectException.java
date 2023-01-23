@@ -2,12 +2,9 @@ package dev.heliosares.auxprotect.exceptions;
 
 import dev.heliosares.auxprotect.core.Language.L;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 public class AuxProtectException extends Exception {
-    private static final long serialVersionUID = 8845413629243613163L;
     private final L l;
     private final List<Object> format;
 
@@ -17,7 +14,7 @@ public class AuxProtectException extends Exception {
         if (format == null) {
             this.format = null;
         } else {
-            this.format = Collections.unmodifiableList(Arrays.asList(format));
+            this.format = List.of(format);
         }
     }
 

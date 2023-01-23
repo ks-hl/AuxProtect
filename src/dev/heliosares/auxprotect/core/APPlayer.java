@@ -10,6 +10,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class APPlayer {
@@ -37,9 +38,7 @@ public class APPlayer {
         this.player = player;
         this.plugin = plugin;
 
-        for (int i = 0; i < activity.length; i++) {
-            activity[i] = -1;
-        }
+        Arrays.fill(activity, -1);
     }
 
     public void addActivity(double d) {

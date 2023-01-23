@@ -7,9 +7,6 @@ import java.util.UUID;
 import java.util.function.Supplier;
 
 public class PerPlayerManager<V> extends HashMap<UUID, V> {
-
-    private static final long serialVersionUID = 3368537437891349197L;
-
     private final Supplier<V> supplier;
 
     public PerPlayerManager(Supplier<V> supplier) {
