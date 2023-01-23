@@ -397,7 +397,7 @@ public class LookupCommand extends Command {
                 sender.sendMessage(XraySolver.solve(rs));
             }
         } catch (LookupException | ParseException e) {
-            sender.sendLang(e.getLang());
+            sender.sendMessageRaw(e.getMessage());
         } catch (Exception e) {
             sender.sendLang(Language.L.ERROR);
         }
