@@ -24,7 +24,7 @@ import java.util.Random;
 
 public class Results {
 
-    public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HH:mm:ss.SSS");
+    public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMyy HH:mm:ss.SSS");
     protected final SenderAdapter player;
     final IAuxProtect plugin;
     private final List<DbEntry> entries;
@@ -66,12 +66,11 @@ public class Results {
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
         if (time) {
-            String msg = "";
+            String msg;
             if (System.currentTimeMillis() - entry.getTime() < 55) {
                 msg = "§7Just Now";
             } else {
-                msg = String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()),
-                        entry.getUser());
+                msg = String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
             }
             message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                             new Text(Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault()).format(dateFormatter)
@@ -92,10 +91,10 @@ public class Results {
         message.append(" §9" + entry.getTarget()).event(clickToCopy)
                 .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
 
-        XrayEntry xray = null;
+        XrayEntry xray;
         if (entry instanceof XrayEntry) {
             xray = (XrayEntry) entry;
-            String rating = null;
+            String rating;
             if (xray.getRating() == -2) {
                 rating = "§5Ignored";
             } else if (xray.getRating() == -1) {
@@ -173,11 +172,9 @@ public class Results {
 
     public void sendHeader() {
         String headerColor = "§7";
-        String line = "§m";
-        for (int i = 0; i < 6; i++) {
-            line += (char) 65293;
-        }
-        line += "§7";
+        StringBuilder line = new StringBuilder("§m");
+        line.append(String.valueOf((char) 65293).repeat(6));
+        line.append("§7");
         if (plugin.getAPConfig().isPrivate() && new Random().nextDouble() < 0.001) {
             headerColor = "§f"; // The header had these mismatched colors for over a year of development until
             // v1.1.3. This is a tribute to that screw up

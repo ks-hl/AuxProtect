@@ -184,7 +184,7 @@ public class DumpCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String label, String[] args) {
         sender.sendMessageRaw("§aBuilding trace...");
         boolean simple = false;
         boolean chat = false;

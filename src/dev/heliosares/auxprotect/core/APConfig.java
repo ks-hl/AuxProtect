@@ -123,7 +123,7 @@ public class APConfig {
         String key = null;
         try (Scanner sc = new Scanner(new File(plugin.getRootDirectory(), "donorkey.txt"))) {
             key = sc.nextLine();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
         if (key != null) {
             this.key = new KeyUtil(key);

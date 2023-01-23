@@ -99,7 +99,7 @@ public class BidiMapCache<K, V> {
         synchronized (set) {
             ArrayList<K> cleanup = new ArrayList<>();
             for (Entry<K, Long> entry : timeAdded.entrySet()) {
-                if (entry.getValue().longValue() < cutoff) {
+                if (entry.getValue() < cutoff) {
                     cleanup.add(entry.getKey());
                 }
             }

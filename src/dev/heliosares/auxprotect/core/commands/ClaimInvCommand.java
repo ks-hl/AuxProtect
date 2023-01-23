@@ -111,8 +111,6 @@ public class ClaimInvCommand implements CommandExecutor {
                     // Executed after clearing the pending
                     // inventory to prevent duplication
                 }
-            } catch (ConnectionPool.BusyException e) {
-                sender.sendMessage(Language.translate(L.DATABASE_BUSY));
             } catch (Exception e) {
                 sender.sendMessage(Language.translate(Language.L.ERROR));
                 plugin.print(e);

@@ -37,7 +37,7 @@ public class TownyManager {
         });
     }
 
-    public String getNameFromID(int uid, boolean wait) throws SQLException {
+    public String getNameFromID(int uid, boolean wait) {
         if (uid < 0) {
             return null;
         }
@@ -70,7 +70,7 @@ public class TownyManager {
         }, wait ? 30000L : 1000L, String.class);
     }
 
-    public int getIDFromName(String name, boolean wait) throws SQLException {
+    public int getIDFromName(String name, boolean wait) {
         if (name == null) {
             return -1;
         }
@@ -120,12 +120,7 @@ public class TownyManager {
             plugin.debug("Handling " + name);
 
             String newestusername;
-            try {
-                newestusername = getNameFromID(uid, true);
-            } catch (SQLException e) {
-                plugin.print(e);
-                return;
-            }
+            newestusername = getNameFromID(uid, true);
             if (!name.equalsIgnoreCase(newestusername)) {
                 plugin.debug("New town name: " + name + " for " + newestusername);
                 plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));

@@ -56,11 +56,8 @@ public class TownyListener implements Listener {
 
     private void handledeleted(String name, boolean nation) {
         int uid = 0;
-        try {
-            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
-        } catch (SQLException ignored) {
-            //Unlikely
-        }
+        uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+
         if (uid <= 0) {
             plugin.info("Unknown town/nation " + name);
             return;
@@ -160,15 +157,10 @@ public class TownyListener implements Listener {
             user = AuxProtectSpigot.getLabel(e.getTransaction().getPlayer());
             loc = e.getTransaction().getPlayer().getLocation();
         }
-        boolean state;
-        switch (e.getTransaction().getType()) {
-            case ADD:
-            case DEPOSIT:
-                state = true;
-                break;
-            default:
-                state = false;
-        }
+        boolean state = switch (e.getTransaction().getType()) {
+            case ADD, DEPOSIT -> true;
+            default -> false;
+        };
         String data = plugin.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
                 + plugin.formatMoney(e.getAccount().getHoldingBalance());
         plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));

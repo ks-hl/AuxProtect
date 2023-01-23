@@ -26,7 +26,7 @@ public class APPlayer {
     public long lastCheckedMovement;
     public double movedAmountThisMinute;
     public boolean hasMovedThisMinute;
-    public double[] activity = new double[30];
+    public final double[] activity = new double[30];
     public int activityIndex;
     public long lastNotifyInactive;
     // hotbar, main, armor, offhand, echest

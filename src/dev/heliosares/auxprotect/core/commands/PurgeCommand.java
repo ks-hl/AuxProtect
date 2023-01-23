@@ -20,7 +20,7 @@ public class PurgeCommand extends Command {
         super(plugin, "purge", APPermission.PURGE, true);
     }
 
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String label, String[] args) {
         if (args.length != 3) {
             sender.sendLang(Language.L.INVALID_SYNTAX);
             return;

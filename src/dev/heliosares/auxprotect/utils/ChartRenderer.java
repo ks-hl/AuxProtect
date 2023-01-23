@@ -8,7 +8,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.*;
 
+import javax.annotation.Nonnull;
 import java.awt.*;
+import java.util.Arrays;
 
 public class ChartRenderer extends MapRenderer {
 
@@ -20,8 +22,6 @@ public class ChartRenderer extends MapRenderer {
     private final Color bgColor;
     private final String title;
     private final int xDivs;
-    @SuppressWarnings("unused")
-    private final String[] xLabels;
 
     //	public static final byte BLUE = 0x30;
 //	public static final byte BROWN = 0x28;
@@ -39,7 +39,7 @@ public class ChartRenderer extends MapRenderer {
 //	public static final byte WHITE = 0x20;
 //	public static final byte BLACK = 0x76;
     private final AuxProtectSpigot plugin;
-    public double xScale = 1;
+    public final double xScale = 1;
     public double yScale = 1;
     private final Color[][] map = new Color[128][128];
 
@@ -49,7 +49,6 @@ public class ChartRenderer extends MapRenderer {
         this.bgColor = bgColor;
         this.values = new double[values];
         this.xDivs = 11;
-        this.xLabels = new String[]{"1", "2", "3", "4", "5", "6"};
     }
 
     private static String doubleToString(double d) {
@@ -61,10 +60,8 @@ public class ChartRenderer extends MapRenderer {
     }
 
     public void update() {
-        for (int x = 0; x < map.length; x++) {
-            for (int y = 0; y < map[x].length; y++) {
-                map[x][y] = bgColor;
-            }
+        for (Color[] colors : map) {
+            Arrays.fill(colors, bgColor);
         }
         for (int i = 0; i < values.length; i++) {
             values[i] = getValue(i);
@@ -95,7 +92,7 @@ public class ChartRenderer extends MapRenderer {
     }
 
     @Override
-    public void render(MapView view, MapCanvas canvas, Player player) {
+    public void render(@Nonnull MapView view, @Nonnull MapCanvas canvas, @Nonnull Player player) {
         for (int x = 0; x < map.length; x++) {
             for (int y = 0; y < map[x].length; y++) {
                 setPixelColor(canvas, x, y, map[x][y]);
@@ -113,15 +110,11 @@ public class ChartRenderer extends MapRenderer {
                 number /= 1000;
                 powers++;
             }
-            char suffix = ' ';
-            switch (powers) {
-                case 1:
-                    suffix = 'k';
-                    break;
-                case 2:
-                    suffix = 'M';
-                    break;
-            }
+            char suffix = switch (powers) {
+                case 1 -> 'k';
+                case 2 -> 'M';
+                default -> ' ';
+            };
             canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + "" + suffix);
             setPixelColor(canvas, xShift - 2, yPos, Color.BLACK);
         }

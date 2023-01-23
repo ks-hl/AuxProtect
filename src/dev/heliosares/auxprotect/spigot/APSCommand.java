@@ -22,10 +22,7 @@ public class APSCommand implements CommandExecutor, TabExecutor {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        try {
-            apcommand.onCommand(new SpigotSenderAdapter(plugin, sender), label, args);
-        } catch (CommandException ignored) {
-        }
+        apcommand.onCommand(new SpigotSenderAdapter(plugin, sender), label, args);
         return true;
     }
 

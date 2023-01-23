@@ -235,7 +235,7 @@ public class SQLUserManager {
         return Collections.unmodifiableCollection(usernames.values());
     }
 
-    public byte[] getPendingInventory(int uid) throws SQLException, IOException {
+    public byte[] getPendingInventory(int uid) throws SQLException {
         if (uid <= 0) {
             return null;
         }

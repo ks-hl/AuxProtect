@@ -48,17 +48,11 @@ public class JobsListener implements Listener {
         }
         char typechar = '?';
         switch (type) {
-            case MONEY:
-                typechar = '$';
-                break;
-            case EXP:
-                typechar = 'x';
-                break;
-            case POINTS:
-                typechar = '*';
-                break;
-            default:
-                break;
+            case MONEY -> typechar = '$';
+            case EXP -> typechar = 'x';
+            case POINTS -> typechar = '*';
+            default -> {
+            }
         }
 
         if (location == null) {

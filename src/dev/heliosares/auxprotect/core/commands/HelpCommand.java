@@ -20,7 +20,7 @@ public class HelpCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String label, String[] args) {
         Command helpOn = null;
         if (args.length < 2) {
             helpOn = this;

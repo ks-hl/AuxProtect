@@ -30,15 +30,15 @@ public class UpdateChecker {
             version = version.substring(1);
         }
         ArrayList<Integer> array = new ArrayList<>();
-        for (int i = 0; i < parts.length; i++) {
+        for (String s : parts) {
             try {
                 int part = 0;
-                if (parts[i].startsWith("pre")) {
-                    part = Integer.parseInt(parts[i].substring(3)) - 1000000;
-                } else if (parts[i].startsWith("rc")) {
-                    part = Integer.parseInt(parts[i].substring(3)) - 500000;
+                if (s.startsWith("pre")) {
+                    part = Integer.parseInt(s.substring(3)) - 1000000;
+                } else if (s.startsWith("rc")) {
+                    part = Integer.parseInt(s.substring(3)) - 500000;
                 } else {
-                    part = Integer.parseInt(parts[i]);
+                    part = Integer.parseInt(s);
                 }
                 array.add(part);
             } catch (NumberFormatException ignored) {

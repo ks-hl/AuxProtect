@@ -11,13 +11,6 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 
 public class PaneListener implements Listener {
 
-    @SuppressWarnings("unused")
-    private final AuxProtectSpigot plugin;
-
-    public PaneListener(AuxProtectSpigot plugin) {
-        this.plugin = plugin;
-    }
-
     @EventHandler
     public void onInventoryClickEvent(InventoryClickEvent e) {
         if (e.getInventory().getHolder() != null && e.getInventory().getHolder() instanceof Pane pane) {

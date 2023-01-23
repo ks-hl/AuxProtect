@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import java.util.Arrays;
 
 public class MovingAverage {
-    public double[] data;
+    public final double[] data;
     private int index = -1;
     private long age;
 

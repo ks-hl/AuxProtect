@@ -30,7 +30,7 @@ public class VeinListener implements Listener {
     private static final int NON_ORE_RADIUS = 10;
     private static final int ORE_RADIUS = 5;
     private static final int NON_ORE_THRESHOLD = 2;
-    PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
+    final PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
     private final AuxProtectSpigot plugin;
 
     public VeinListener(AuxProtectSpigot plugin) {
@@ -160,8 +160,8 @@ public class VeinListener implements Listener {
 
     public static class BlockHistory {
         public final long birth = System.currentTimeMillis();
-        public Block[] nonOreBlock = new Block[20];
-        public Block[] oreBlock = new Block[20];
+        public final Block[] nonOreBlock = new Block[20];
+        public final Block[] oreBlock = new Block[20];
         private int nonOreBlockIndex = 0;
         private int oreBlockIndex = 0;
         private long lastused;

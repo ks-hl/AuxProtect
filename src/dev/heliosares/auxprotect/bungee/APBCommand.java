@@ -22,10 +22,7 @@ public class APBCommand extends Command implements TabExecutor {
 
     @Override
     public void execute(CommandSender sender, String[] args) {
-        try {
-            apcommand.onCommand(new BungeeSenderAdapter(plugin, sender), label, args);
-        } catch (CommandException ignored) {
-        }
+        apcommand.onCommand(new BungeeSenderAdapter(plugin, sender), label, args);
     }
 
     @Override

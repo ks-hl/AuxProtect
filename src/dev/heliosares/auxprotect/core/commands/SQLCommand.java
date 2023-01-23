@@ -23,7 +23,7 @@ public class SQLCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String commandLabel, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String commandLabel, String[] args) {
         StringBuilder msg = new StringBuilder();
         for (int i = 1; i < args.length; i++) {
             msg.append(args[i]).append(" ");

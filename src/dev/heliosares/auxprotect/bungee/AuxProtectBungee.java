@@ -32,7 +32,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private final APConfig config = new APConfig();
     protected DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
-    Set<Integer> stackHashHistory = new HashSet<>();
+    final Set<Integer> stackHashHistory = new HashSet<>();
     private boolean isShuttingDown;
     private String stackLog = "";
     private boolean enabled;
@@ -115,36 +115,32 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         }
         sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile);
 
-        runAsync(new Runnable() {
-
-            @Override
-            public void run() {
-                try {
-                    String user = null;
-                    String pass = null;
-                    boolean mysql = getAPConfig().isMySQL();
-                    if (mysql) {
-                        user = getAPConfig().getUser();
-                        pass = getAPConfig().getPass();
-                    }
-                    sqlManager.connect(mysql, user, pass);
-                } catch (Exception e) {
-                    print(e);
-                    getLogger().severe("Failed to connect to SQL database. Disabling.");
-                    onDisable();
+        runAsync(() -> {
+            try {
+                String user = null;
+                String pass = null;
+                boolean mysql = getAPConfig().isMySQL();
+                if (mysql) {
+                    user = getAPConfig().getUser();
+                    pass = getAPConfig().getPass();
                 }
-
-                /*
-                 * for (Object command : config.getList("purge-cmds")) { String cmd = (String)
-                 * command; String[] argsOld = cmd.split(" "); String[] args = new
-                 * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
-                 * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
-                 * PurgeCommand.purge(AuxProtectBungee.this, new
-                 * MySender(getProxy().getConsole()), args); } sqlManager.purgeUIDs();
-                 *
-                 * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
-                 */
+                sqlManager.connect(mysql, user, pass);
+            } catch (Exception e) {
+                print(e);
+                getLogger().severe("Failed to connect to SQL database. Disabling.");
+                onDisable();
             }
+
+            /*
+             * for (Object command : config.getList("purge-cmds")) { String cmd = (String)
+             * command; String[] argsOld = cmd.split(" "); String[] args = new
+             * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
+             * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
+             * PurgeCommand.purge(AuxProtectBungee.this, new
+             * MySender(getProxy().getConsole()), args); } sqlManager.purgeUIDs();
+             *
+             * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
+             */
         });
 
         dbRunnable = new DatabaseRunnable(this, sqlManager);

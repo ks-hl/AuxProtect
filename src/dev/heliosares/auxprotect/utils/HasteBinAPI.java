@@ -40,10 +40,10 @@ public class HasteBinAPI {
         os.write(out);
         InputStream is = http.getInputStream();
 
-        Pattern pattern = Pattern.compile("\\{\\\"key\\\":\\\"(\\w+)\\\"\\}");
+        Pattern pattern = Pattern.compile("\\{\"key\":\"(\\w+)\"}");
         Matcher matcher = pattern.matcher(new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8)).lines()
                 .collect(Collectors.joining("\n")));
-        matcher.find();
+        if (!matcher.find()) return null;
 
         return "https://hastebin.com/raw/" + matcher.group(1);
     }

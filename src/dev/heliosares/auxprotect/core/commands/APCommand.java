@@ -77,7 +77,7 @@ public class APCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String label, String[] args) {
         if (args.length > 0) {
             boolean match = false;
             for (Command c : commands) {
@@ -122,7 +122,7 @@ public class APCommand extends Command {
                 if (args.length == 2) {
                     try {
                         verbosity = Integer.parseInt(args[1]);
-                    } catch (NumberFormatException e) {
+                    } catch (NumberFormatException ignored) {
                     }
                     if (verbosity < 0 || verbosity > 5) {
                         sender.sendMessageRaw("§cInvalid verbosity level. /ap debug [0-5]"); // TODO lang

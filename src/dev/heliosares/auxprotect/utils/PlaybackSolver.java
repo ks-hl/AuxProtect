@@ -41,7 +41,7 @@ public class PlaybackSolver extends BukkitRunnable {
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
     }
 
-    public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, IOException {
+    public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         long min = Long.MAX_VALUE;
         Map<String, DbEntry> lastEntries = new HashMap<>();

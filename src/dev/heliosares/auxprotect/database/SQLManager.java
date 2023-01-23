@@ -381,11 +381,11 @@ public class SQLManager {
     /**
      * @see PreparedStatement#execute()
      */
-    public boolean executeWrite(Connection connection, String stmt, Object... args) throws SQLException {
+    public void executeWrite(Connection connection, String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             prepare(connection, pstmt, args);
-            return pstmt.execute();
+            pstmt.execute();
         }
     }
 
@@ -461,7 +461,7 @@ public class SQLManager {
         }, 30000L, ResultMap.class);
     }
 
-    protected boolean put(Connection connection, Table table) throws SQLException {
+    protected void put(Connection connection, Table table) throws SQLException {
         long start = System.nanoTime();
         int count;
         List<DbEntry> entries = new ArrayList<>();
@@ -472,7 +472,7 @@ public class SQLManager {
         }
         count = entries.size();
         if (count == 0) {
-            return false;
+            return;
         }
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
@@ -567,7 +567,6 @@ public class SQLManager {
         double elapsed = (System.nanoTime() - start) / 1000000.0;
         plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
                 + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
-        return true;
     }
 
     public int purge(Table table, long time) throws SQLException {

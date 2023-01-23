@@ -32,7 +32,7 @@ import java.util.ArrayList;
 
 public class EntityListener implements Listener {
 
-    ArrayList<DamageCause> blacklistedDamageCauses;
+    final ArrayList<DamageCause> blacklistedDamageCauses;
     private final AuxProtectSpigot plugin;
 
     public EntityListener(AuxProtectSpigot plugin) {

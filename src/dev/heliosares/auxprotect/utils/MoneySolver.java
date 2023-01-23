@@ -97,9 +97,7 @@ public class MoneySolver extends ChartRenderer {
         else
             intermediate = Math.round(intermediate);
 
-        double result = intermediate * Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1));
-
-        return (result);
+        return (intermediate * Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1)));
 
     }
 

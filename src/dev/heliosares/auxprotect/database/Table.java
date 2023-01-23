@@ -58,54 +58,27 @@ public enum Table {
     }
 
     public boolean hasAPEntries() {
-        switch (this) {
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_SPAM:
-            case AUXPROTECT_LONGTERM:
-            case AUXPROTECT_ABANDONED:
-            case AUXPROTECT_XRAY:
-            case AUXPROTECT_INVENTORY:
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_CHAT:
-            case AUXPROTECT_POSITION:
-            case AUXPROTECT_API:
-            case AUXPROTECT_TOWNY:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
+                    true;
+            default -> false;
+        };
     }
 
     public boolean hasData() {
-        switch (this) {
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_INVENTORY:
-            case AUXPROTECT_SPAM:
-            case AUXPROTECT_API:
-            case AUXPROTECT_XRAY:
-            case AUXPROTECT_TOWNY:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case AUXPROTECT_MAIN, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY ->
+                    true;
+            default -> false;
+        };
     }
 
     public boolean hasLocation() {
-        switch (this) {
-            case AUXPROTECT_MAIN:
-            case AUXPROTECT_ABANDONED:
-            case AUXPROTECT_XRAY:
-            case AUXPROTECT_INVENTORY:
-            case AUXPROTECT_SPAM:
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_CHAT:
-            case AUXPROTECT_POSITION:
-            case AUXPROTECT_API:
-            case AUXPROTECT_TOWNY:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case AUXPROTECT_MAIN, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
+                    true;
+            default -> false;
+        };
     }
 
     public boolean hasLook() {
@@ -113,25 +86,17 @@ public enum Table {
     }
 
     public boolean hasActionId() {
-        switch (this) {
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_CHAT:
-            case AUXPROTECT_XRAY:
-                return false;
-            default:
-                return true;
-        }
+        return switch (this) {
+            case AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_XRAY -> false;
+            default -> true;
+        };
     }
 
     public boolean hasStringTarget() {
-        switch (this) {
-            case AUXPROTECT_COMMANDS:
-            case AUXPROTECT_LONGTERM:
-            case AUXPROTECT_CHAT:
-                return true;
-            default:
-                return false;
-        }
+        return switch (this) {
+            case AUXPROTECT_COMMANDS, AUXPROTECT_LONGTERM, AUXPROTECT_CHAT -> true;
+            default -> false;
+        };
     }
 
     public boolean canPurge() {

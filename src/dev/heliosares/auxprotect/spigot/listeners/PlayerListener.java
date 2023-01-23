@@ -185,7 +185,7 @@ public class PlayerListener implements Listener {
                                     .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
                         return;
                     }
-                } catch (SQLException | IOException e1) {
+                } catch (SQLException e1) {
                     return;
                 }
                 e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");

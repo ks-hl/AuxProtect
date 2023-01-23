@@ -52,7 +52,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
-    Set<Integer> stackHashHistory = new HashSet<>();
+    final Set<Integer> stackHashHistory = new HashSet<>();
     private Economy econ;
     private VeinManager veinManager;
     private ClaimInvCommand claiminvcommand;
@@ -245,7 +245,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         getServer().getPluginManager().registerEvents(new EntityListener(this), this);
         getServer().getPluginManager().registerEvents(new InventoryListener(this), this);
         getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
-        getServer().getPluginManager().registerEvents(new PaneListener(this), this);
+        getServer().getPluginManager().registerEvents(new PaneListener(), this);
         getServer().getPluginManager().registerEvents(new WorldListener(this), this);
         getServer().getPluginManager().registerEvents(new CommandListener(this), this);
         getServer().getPluginManager().registerEvents(new VeinListener(this), this);

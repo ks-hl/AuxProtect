@@ -397,9 +397,6 @@ public class LookupCommand extends Command {
             if (params.getFlags().contains(Flag.XRAY)) {
                 sender.sendMessage(XraySolver.solve(rs));
             }
-        } catch (ConnectionPool.BusyException e) {
-            e.printStackTrace();
-            sender.sendLang(Language.L.DATABASE_BUSY);
         } catch (LookupException | ParseException e) {
             sender.sendLang(e.getLang());
         } catch (Exception e) {

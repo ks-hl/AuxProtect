@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
+@SuppressWarnings("UnusedReturnValue")
 public class Parameters {
 
     // ----------------------------------------------
