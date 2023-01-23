@@ -36,11 +36,11 @@ public class ActivitySolver {
         int[] counter = new int[minutes];
         Location[] locations = new Location[minutes];
         Arrays.fill(counter, -1);
-        String line = "§7§m";
+        StringBuilder line = new StringBuilder("§7§m");
         for (int i = 0; i < 6; i++) {
-            line += (char) 65293;
+            line.append((char) 65293);
         }
-        line += "§7";
+        line.append("§7");
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
             DbEntry entry = entries.get(i);

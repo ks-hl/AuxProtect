@@ -49,7 +49,7 @@ public class UpdateChecker {
     }
 
     /**
-     * @returns -1 if ver1 is greater, 0 if equal, 1 if ver2 i greater
+     * @return -1 if ver1 is greater, 0 if equal, 1 if ver2 i greater
      */
     public static int compareVersions(String ver1, String ver2) {
         Integer[] ver1int = versionAsIntArray(ver1);

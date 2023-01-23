@@ -45,11 +45,6 @@ public class DbEntry {
     }
 
     /**
-     * @param userLabel
-     * @param action
-     * @param state
-     * @param targetLabel
-     * @param data
      */
     public DbEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
         this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data);
@@ -66,7 +61,6 @@ public class DbEntry {
      * @param targetLabel The label of the target, see userLabel for details.
      * @param data        Extra data about your entry. This is stored as plain text
      *                    so use sparingly.
-     * @throws NullPointerException
      */
     public DbEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel,
                    String data) throws NullPointerException {

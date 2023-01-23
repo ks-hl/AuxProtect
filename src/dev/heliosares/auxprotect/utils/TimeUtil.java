@@ -74,14 +74,14 @@ public class TimeUtil {
     }
 
     public static long stringToMillis(String timeStr) throws NumberFormatException {
-        String builder = "";
+        StringBuilder builder = new StringBuilder();
         long time = 0;
         if (timeStr.endsWith("e")) {
             return Long.parseLong(timeStr.substring(0, timeStr.length() - 1));
         }
         for (char c : timeStr.toCharArray()) {
             if (c >= '0' && c <= '9' || c == '.') {
-                builder += c;
+                builder.append(c);
                 continue;
             }
             int modifier = 1;
@@ -101,11 +101,11 @@ public class TimeUtil {
                 default:
                     throw new NumberFormatException("Invalid specifier: " + c); // TODO lang
             }
-            time += Double.parseDouble(builder) * modifier;
-            builder = "";
+            time += Double.parseDouble(builder.toString()) * modifier;
+            builder = new StringBuilder();
         }
         if (builder.length() > 0) {
-            time += Double.parseDouble(builder);
+            time += Double.parseDouble(builder.toString());
         }
         return time;
     }

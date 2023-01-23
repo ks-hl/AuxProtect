@@ -79,9 +79,6 @@ public class Parameters {
      *
      * @param sender The player sending the command. Used for permission checks. Null to bypass
      * @param args   Arguments of the command.
-     * @return
-     * @throws ParseException
-     * @throws LookupException
      */
     public static Parameters parse(@Nullable SenderAdapter sender, String[] args)
             throws ParseException, LookupException {
@@ -262,7 +259,7 @@ public class Parameters {
     }
 
     private static List<String> split(final String str, final boolean allowEscape) {
-        String build = "";
+        StringBuilder build = new StringBuilder();
         boolean escape = false;
         List<String> values = new ArrayList<>();
         for (char current : str.toCharArray()) {
@@ -271,24 +268,24 @@ public class Parameters {
                 continue;
             }
             if (!escape && current == ',') {
-                values.add(build);
-                build = "";
+                values.add(build.toString());
+                build = new StringBuilder();
                 continue;
             }
             if (escape && current != ',') {
-                build += '\\';
+                build.append('\\');
             }
-            build += current;
+            build.append(current);
 
             if (escape) {
                 escape = false;
             }
         }
         if (escape) {
-            build += '\\';
+            build.append('\\');
         }
         if (build.length() > 0) {
-            values.add(build);
+            values.add(build.toString());
         }
         return values;
     }
@@ -297,7 +294,6 @@ public class Parameters {
      * Sets the time. Equivalent to time:<param>
      *
      * @param param May be a range, a single time, or an exact time
-     * @throws ParseException
      */
     public Parameters time(String param) throws ParseException {
         param = param.replace("ms", "f");
@@ -374,6 +370,7 @@ public class Parameters {
             uids.clear();
             return this;
         }
+        //noinspection AssignmentUsedAsCondition
         if (negateUser = param.startsWith("!")) {
             param = param.substring(1);
         }
@@ -411,7 +408,6 @@ public class Parameters {
      *
      * @param sender Only used for permission checks.
      * @param param  The action
-     * @throws ParseException
      */
     public Parameters action(@Nullable SenderAdapter sender, String param) throws ParseException {
         if (param.startsWith("!")) {
@@ -439,7 +435,6 @@ public class Parameters {
      * <<<<<<< Updated upstream
      *
      * @param param Null will clear
-     * @throws LookupException
      * @throws IllegalStateException if the table is null
      */
     public Parameters target(@Nullable String param) throws LookupException {
@@ -450,13 +445,12 @@ public class Parameters {
         if (table == null) {
             throw new IllegalStateException("action or table must be set before target");
         }
+        //noinspection AssignmentUsedAsCondition
         if (negateTarget = param.startsWith("!")) {
             param = param.substring(1);
         }
         if (table.hasStringTarget()) {
-            for (String target : split(param, true)) {
-                targets.add(target);
-            }
+            targets.addAll(split(param, true));
         } else {
             for (String target : param.split(",")) {
                 int uid;
@@ -489,9 +483,6 @@ public class Parameters {
     /**
      * Sets the data. Equivalent to data:<param>
      *
-     * @param param
-     * @throws ParseException
-     * @throws IllegalStateException
      */
     public void data(String param) throws ParseException {
         if (table == null) {
@@ -500,12 +491,11 @@ public class Parameters {
         if (!table.hasData()) {
             throw new ParseException(Language.L.COMMAND__LOOKUP__NODATA);
         }
+        //noinspection AssignmentUsedAsCondition
         if (negateData = param.startsWith("!")) {
             param = param.substring(1);
         }
-        for (String data : split(param, true)) {
-            datas.add(data);
-        }
+        datas.addAll(split(param, true));
     }
 
     // -------------------------------------------------
@@ -528,6 +518,7 @@ public class Parameters {
     }
 
     public void world(String param) throws ParseException {
+        //noinspection AssignmentUsedAsCondition
         if (negateWorld = param.startsWith("!")) {
             param = param.substring(1);
         }
@@ -589,7 +580,6 @@ public class Parameters {
      *               bypass checks
      * @param action The actions to be added
      * @param state  -1 for negative, 0 for either, 1 for positive
-     * @throws ParseException
      */
     public Parameters addAction(@Nullable SenderAdapter sender, EntryAction action, int state) throws ParseException {
         if (!action.isEnabled()) {
@@ -793,7 +783,7 @@ public class Parameters {
             stmts.add(stmt);
         }
         if (!targets.isEmpty()) {
-            String stmt = "(";
+            StringBuilder stmt = new StringBuilder("(");
 
             boolean first = true;
 
@@ -802,25 +792,25 @@ public class Parameters {
                     if (first) {
                         first = false;
                     } else {
-                        stmt += " OR ";
+                        stmt.append(" OR ");
                     }
-                    stmt += "target LIKE ?";
+                    stmt.append("target LIKE ?");
                     out.add(target.replaceAll("-", "[- ]").replaceAll("\\*", "%"));
                 }
             } else {
-                stmt += "target_id IN ";
-                stmt += toGroup(targets);
+                stmt.append("target_id IN ");
+                stmt.append(toGroup(targets));
             }
 
             stmts.add((negateTarget ? "NOT " : "") + stmt + ")");
         }
         if (!exactTime.isEmpty()) {
-            String stmt = "";
+            StringBuilder stmt = new StringBuilder();
             for (Long exact : exactTime) {
                 if (stmt.length() > 0) {
-                    stmt += " OR ";
+                    stmt.append(" OR ");
                 }
-                stmt += "time = " + exact;
+                stmt.append("time = ").append(exact);
             }
             stmts.add("(" + stmt + ")");
         }
@@ -837,7 +827,7 @@ public class Parameters {
             stmts.add("rating IN " + toGroup(ratings));
         }
         if (!datas.isEmpty() && table.hasData()) {
-            String stmt = "(";
+            StringBuilder stmt = new StringBuilder("(");
 
             boolean first = true;
 
@@ -845,9 +835,9 @@ public class Parameters {
                 if (first) {
                     first = false;
                 } else {
-                    stmt += " OR ";
+                    stmt.append(" OR ");
                 }
-                stmt += "data LIKE ?";
+                stmt.append("data LIKE ?");
                 out.add(data.replaceAll("-", "[- ]").replaceAll("\\*", "%"));
             }
             stmts.add((negateData ? "NOT " : "") + stmt + ")");
@@ -868,32 +858,32 @@ public class Parameters {
                 });
             }
             if (!worlds.isEmpty()) {
-                String stmt = "world_id" + (negateWorld ? " NOT" : "") + " IN (";
+                StringBuilder stmt = new StringBuilder("world_id" + (negateWorld ? " NOT" : "") + " IN (");
                 boolean first = true;
                 for (String w : worlds) {
                     if (first) {
                         first = false;
                     } else {
-                        stmt += ",";
+                        stmt.append(",");
                     }
-                    stmt += sql.getWID(w);
+                    stmt.append(sql.getWID(w));
                 }
                 stmts.add(stmt + ")");
             }
         }
 
-        String outsql = "";
+        StringBuilder outsql = new StringBuilder();
         for (String stmt : stmts) {
             if (stmt == null || stmt.length() == 0) {
                 continue;
             }
             if (outsql.length() > 0) {
-                outsql += " AND ";
+                outsql.append(" AND ");
             }
-            outsql += "(" + stmt + ")";
+            outsql.append("(").append(stmt).append(")");
         }
         String[] output = new String[out.size() + 1];
-        output[0] = outsql;
+        output[0] = outsql.toString();
         for (int i = 0; i < out.size(); i++) {
             output[i + 1] = out.get(i);
         }
@@ -940,14 +930,15 @@ public class Parameters {
         if (datas != null) {
             boolean any = false;
             for (String data : datas) {
-                String node = "";
+                StringBuilder node = new StringBuilder();
                 for (String part : data.split("[\\*\\-]")) {
                     if (node.length() > 0) {
-                        node += ".*";
+                        node.append(".*");
                     }
-                    node += Pattern.quote(part);
+                    node.append(Pattern.quote(part));
                 }
-                if (any = data.matches(node)) {
+                //noinspection AssignmentUsedAsCondition
+                if (any = data.matches(node.toString())) {
                     break;
                 }
             }
@@ -999,15 +990,15 @@ public class Parameters {
     }
 
     private String toGroup(List<?> list) {
-        String stmt = "(";
+        StringBuilder stmt = new StringBuilder("(");
         boolean first = true;
         for (Object id : list) {
             if (first) {
                 first = false;
             } else {
-                stmt += ",";
+                stmt.append(",");
             }
-            stmt += id;
+            stmt.append(id);
         }
         return stmt + ")";
     }

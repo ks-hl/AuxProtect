@@ -129,11 +129,11 @@ public class WatchCommand extends Command {
             sender.sendMessageRaw(e.getMessage());
             return;
         }
-        String command = "/ap";
+        StringBuilder command = new StringBuilder("/ap");
         for (String arg : args) {
-            command += " " + arg;
+            command.append(" ").append(arg);
         }
-        WatchRecord record = new WatchRecord(sender, params, command);
+        WatchRecord record = new WatchRecord(sender, params, command.toString());
         WatchCommand.records.add(record);
         sender.sendLang(Language.L.WATCH_NOW, record.id + ": " + command);
     }

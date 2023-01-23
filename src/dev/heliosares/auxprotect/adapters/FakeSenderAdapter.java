@@ -46,10 +46,11 @@ public class FakeSenderAdapter extends SenderAdapter {
 
     @Override
     public void sendMessage(BaseComponent... message) {
+        StringBuilder line = new StringBuilder();
         for (BaseComponent part : message) {
-            console += part;
+            line.append(part);
         }
-        console += "\n";
+        console += line + "\n";
     }
 
     @Override

@@ -151,9 +151,9 @@ public class Language {
                 message = lang.getString(name);
             }
             if (message == null) {
-                String out = "[lang:" + name;
+                StringBuilder out = new StringBuilder("[lang:" + name);
                 for (Object part : format) {
-                    out += ", " + part;
+                    out.append(", ").append(part);
                 }
                 return out + "]";
             }
