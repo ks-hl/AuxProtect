@@ -96,7 +96,16 @@ public class BlobManager {
         if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
             return null;
         }
-        byte[] blob = sql.executeGetMap("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID()).getFirstElementOrNull(byte[].class);
+        byte[] blob = sql.executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID())) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return sql.getBlob(rs, 1);
+                    }
+                }
+            }
+            return null;
+        }, 30000L, byte[].class);
 
         if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
             boolean hasblob = false;

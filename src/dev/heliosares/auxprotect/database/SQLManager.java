@@ -571,7 +571,18 @@ public class SQLManager extends ConnectionPool {
 
     public byte[] getBlob(DbEntry entry) throws SQLException {
         if (entry.getAction().getTable().hasBlob())
-            return executeGetMap("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", entry.getTime()).getFirstElementOrNull(byte[].class);
+            return executeReturn(connection -> {
+                try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getTime() + " LIMIT 1")) {
+                    try (ResultSet rs = pstmt.executeQuery()) {
+                        if (rs.next()) {
+                            byte[] blob = getBlob(rs, 1);
+                            System.out.println("Resolved blob to " + Arrays.toString(blob));
+                            return blob;
+                        }
+                    }
+                }
+                return null;
+            }, 30000L, byte[].class);
         if (entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY)
             return invblobmanager.getBlob(entry);
         return null;
