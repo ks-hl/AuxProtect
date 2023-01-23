@@ -13,7 +13,6 @@ import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 

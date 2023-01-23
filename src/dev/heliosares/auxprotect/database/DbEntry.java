@@ -45,6 +45,7 @@ public class DbEntry {
     }
 
     /**
+     *
      */
     public DbEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
         this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data);

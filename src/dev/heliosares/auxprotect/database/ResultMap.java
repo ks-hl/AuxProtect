@@ -35,7 +35,7 @@ public class ResultMap {
             for (int column = 1; column <= columnCount; ++column) {
                 Object value;
                 if (types[column - 1] == Types.BLOB) {
-                    value = ((SQLManager) sql).getBlob(rs, column);
+                    value = sql.getBlob(rs, column);
                 } else {
                     value = rs.getObject(column);
                 }
