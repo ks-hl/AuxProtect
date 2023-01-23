@@ -62,7 +62,7 @@ public class SQLManager { //TODO extends ConnectionPool
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             try {
                 tm = new TownyManager((dev.heliosares.auxprotect.spigot.AuxProtectSpigot) plugin, this);
-            } catch (Throwable ignored) {
+            } catch (NoClassDefFoundError ignored) {
             }
         }
         this.townymanager = tm;
@@ -200,9 +200,7 @@ public class SQLManager { //TODO extends ConnectionPool
         count();
 
         plugin.info("There are currently " + rowcount + " rows");
-        if (townymanager != null) {
-            townymanager.init();
-        }
+        if (townymanager != null) townymanager.init();
     }
 
     public void close() {
@@ -840,7 +838,7 @@ public class SQLManager { //TODO extends ConnectionPool
      * @see PreparedStatement#execute()
      */
     public void execute(String stmt, Connection connection, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
+        debugSQLStatement(stmt, args);
         try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
             prepare(connection, pstmt, args);
             pstmt.execute();
@@ -851,7 +849,7 @@ public class SQLManager { //TODO extends ConnectionPool
      * @see PreparedStatement#executeUpdate()
      */
     public int executeReturnRows(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
+        debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
                 prepare(connection, pstmt, args);
@@ -861,7 +859,7 @@ public class SQLManager { //TODO extends ConnectionPool
     }
 
     public int executeReturnGenerated(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
+        debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
                 prepare(connection, pstmt, args);
@@ -877,7 +875,7 @@ public class SQLManager { //TODO extends ConnectionPool
     }
 
     public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
-        plugin.debug(stmt, 5);
+        debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(stmt)) {
                 prepare(connection, statement, args);
@@ -886,6 +884,26 @@ public class SQLManager { //TODO extends ConnectionPool
                 }
             }
         }, 30000L, ResultMap.class);
+    }
+
+    private void debugSQLStatement(String stmt, Object... args) {
+        final String originalStmt = stmt;
+        try {
+            for (Object arg : args) {
+                stmt = stmt.replaceFirst("\\?", arg.toString());
+            }
+        } catch (Exception e) {
+            stmt = originalStmt + ": ";
+            boolean first = true;
+            StringBuilder stmtBuilder = new StringBuilder(stmt);
+            for (Object o : args) {
+                if (first) first = false;
+                else stmtBuilder.append(", ");
+                stmtBuilder.append(o);
+            }
+            stmt = stmtBuilder.toString();
+        }
+        plugin.debug(stmt, 5);
     }
 
     public enum LastKeys {
