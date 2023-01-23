@@ -3,6 +3,9 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.utils.SQLConsumer;
+import dev.heliosares.auxprotect.utils.SQLFunction;
+import dev.heliosares.auxprotect.utils.SQLFunctionWithException;
 import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
@@ -187,6 +190,7 @@ public class ConnectionPool {
     /**
      * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but with any Exception
      */
+    @SuppressWarnings("unused")
     public <T> T executeReturnException(SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
         if (closed || connection == null) throw new IllegalStateException("closed");
         if (!ready) throw new IllegalStateException("Not yet initialized");
@@ -413,48 +417,4 @@ public class ConnectionPool {
         }
     }
 
-    @FunctionalInterface
-    public interface SQLConsumer {
-        void accept(Connection connection) throws SQLException;
-    }
-
-    @FunctionalInterface
-    public interface SQLFunction<T> {
-        T apply(Connection connection) throws SQLException;
-    }
-
-    @FunctionalInterface
-    public interface SQLFunctionWithException<T> {
-        T apply(Connection connection) throws Exception;
-    }
-
-    public static class Holder<T> {
-        private T value;
-        private boolean set;
-
-        public void set(@Nullable T t) {
-            set = true;
-            value = t;
-        }
-
-        @Nullable
-        public T get() {
-            return value;
-        }
-
-        public Number getNumberOrElse(Number def) {
-            if (value == null) return def;
-            if (!(value instanceof Number number)) throw new IllegalStateException();
-            return number;
-        }
-
-        /**
-         * This is different from a null check because passing 'null' to {@link Holder#set(T)} will still cause this to return true
-         *
-         * @return Whether this Holder has had {@link Holder#set(T)} called at least once, regardless of the value
-         */
-        public boolean isSet() {
-            return set;
-        }
-    }
 }

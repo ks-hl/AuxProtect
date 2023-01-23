@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
+import dev.heliosares.auxprotect.utils.Holder;
 
 import java.sql.*;
 import java.util.Collection;
@@ -178,7 +179,7 @@ public class SQLUserManager {
         final String stmt_ = stmt;
         final String uuid_ = uuid;
 
-        ConnectionPool.Holder<Integer> uidHolder = new ConnectionPool.Holder<>();
+        Holder<Integer> uidHolder = new Holder<>();
         sql.execute(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt_)) {
                 pstmt.setString(1, uuid_);
