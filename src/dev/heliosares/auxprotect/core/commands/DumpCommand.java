@@ -15,7 +15,9 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,6 +32,8 @@ public class DumpCommand extends Command {
         StringBuilder trace = new StringBuilder();
         if (!stats) {
             trace.append("Generated: ").append(LocalDateTime.now().format(Results.dateFormatter)).append(" (").append(System.currentTimeMillis()).append(")\n");
+            trace.append("Connected: ").append(LocalDateTime.ofInstant(Instant.ofEpochMilli(plugin.getSqlManager().getTimeConnected()), ZoneId.systemDefault())
+                    .format(Results.dateFormatter)).append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
         }
         trace.append("Plugin version: ").append(plugin.getPluginVersion()).append("\n");
         trace.append("Key: ");

@@ -31,6 +31,7 @@ public class ConnectionPool {
     @Nullable
     private StackTraceElement[] whoHasLock;
     private long lockedSince;
+    private long timeConnected;
     private boolean ready;
 
     public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd) throws ClassNotFoundException {
@@ -120,10 +121,15 @@ public class ConnectionPool {
         if (ready) throw new IllegalStateException("Already initialized");
         initializationTask.accept(connection);
         ready = true;
+        timeConnected = System.currentTimeMillis();
     }
 
     public long getLockedSince() {
         return lockedSince;
+    }
+
+    public long getTimeConnected() {
+        return timeConnected;
     }
 
     public StackTraceElement[] getWhoHasLock() {
