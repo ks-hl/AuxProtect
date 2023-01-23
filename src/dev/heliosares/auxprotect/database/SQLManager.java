@@ -890,7 +890,7 @@ public class SQLManager { //TODO extends ConnectionPool
         final String originalStmt = stmt;
         try {
             for (Object arg : args) {
-                stmt = stmt.replaceFirst("\\?", arg.toString());
+                stmt = stmt.replaceFirst("\\?", arg.toString().replace("\\", "\\\\"));
             }
         } catch (Exception e) {
             stmt = originalStmt + ": ";

@@ -57,7 +57,7 @@ public class DumpCommand extends Command {
             trace.append("Access:\n");
             trace.append("  Average Time: ").append(Math.round((double) write[1] / write[2] * 100.0) / 100.0).append("ms\n");
             trace.append("  Duty: ").append(Math.round((double) write[1] / write[0] * 10000.0) / 100.0).append("%\n");
-            if (!simple) {
+            if (!simple && !stats) {
                 trace.append("  Across: ").append(write[0]).append("ms\n");
                 trace.append("  Count: ").append(write[2]).append("\n");
                 long writeCheckout = plugin.getSqlManager().getLockedSince();
@@ -88,8 +88,8 @@ public class DumpCommand extends Command {
                 }
             }
         }
-        trace.append("Row counts: ").append(plugin.getSqlManager().getCount()).append(" total\n");
-        if (!simple) {
+        trace.append("Row count: ").append(plugin.getSqlManager().getCount()).append(" total\n");
+        if (!simple && !stats) {
             ArrayList<String[]> counts = new ArrayList<>();
             int widest = 0;
             for (Table table : Table.values()) {
@@ -113,7 +113,7 @@ public class DumpCommand extends Command {
             }
         }
         if ((chat && simple) || stats) {
-            return trace.toString();
+            return trace.toString().replaceAll("[\n ]*$", "");
         }
 
         trace.append("\n");
@@ -133,7 +133,7 @@ public class DumpCommand extends Command {
 
         if (!simple) {
             trace.append("Thread Trace:\n");
-            trace.append(StackUtil.dumpThreadStack());
+            trace.append(StackUtil.dumpThreadStack(l -> l.contains("auxprotect")));
             trace.append("\n\n");
         }
 
@@ -176,7 +176,6 @@ public class DumpCommand extends Command {
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) {
-        sender.sendMessageRaw("§aBuilding trace...");
         boolean simple = false;
         boolean chat = false;
         boolean file = false;
@@ -195,6 +194,7 @@ public class DumpCommand extends Command {
                     }
                 }
             }
+            sender.sendMessageRaw("§aBuilding trace...");
         }
         try {
             sender.sendMessageRaw("§a" + dump(plugin, simple, chat, file, config, stats));

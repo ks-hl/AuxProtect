@@ -3,19 +3,25 @@ package dev.heliosares.auxprotect.utils;
 import javax.annotation.Nonnull;
 import java.util.Arrays;
 import java.util.Map.Entry;
+import java.util.function.Predicate;
 
 public class StackUtil {
-    public static String dumpThreadStack() {
+    public static String dumpThreadStack(Predicate<String> check) {
         StringBuilder trace = new StringBuilder();
         for (Entry<Thread, StackTraceElement[]> entry : Thread.getAllStackTraces().entrySet()) {
             if (entry.getValue().length == 0 || !entry.getKey().isAlive()) {
                 continue;
             }
+
+            String thread = "Thread #" + entry.getKey().getId() + ":";
+            thread += format(entry.getValue(), 20);
+
+            if (!check.test(thread)) continue;
+
             if (trace.length() > 0) {
                 trace.append("\n\n");
             }
-            trace.append("Thread #").append(entry.getKey().getId()).append(":");
-            trace.append(format(entry.getValue(), 20));
+            trace.append(thread);
         }
         return trace.toString();
     }
