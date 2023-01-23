@@ -22,6 +22,7 @@ public class TownyManager {
     public TownyManager(AuxProtectSpigot plugin, SQLManager sql) {
         this.plugin = plugin;
         this.sql = sql;
+        TownyUniverse.getInstance();
     }
 
     public static String getLabel(@Nullable Government gov) {
@@ -107,9 +108,9 @@ public class TownyManager {
         Runnable run = () -> {
             int uid = -1;
             try {
-                uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
-            } catch (SQLException ignored) {
-                //Unlikely
+                uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true, true);
+            } catch (SQLException e) {
+                plugin.print(e);
             }
             if (uid <= 0) {
                 plugin.warning("Failed to insert new town/nation name: " + name);
@@ -125,14 +126,7 @@ public class TownyManager {
                 return;
             }
             if (!name.equalsIgnoreCase(newestusername)) {
-                plugin.debug("New town name: " + name + " for " + newestusername);
-                plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));
-            }
-            names.put(uid, name);
-            plugin.debug("Handling " + name);
-
-            if (!name.equalsIgnoreCase(newestusername)) {
-                plugin.debug("New town name: " + name + " for " + newestusername);
+                plugin.debug("New town name: " + name + " for " + newestusername + " (ID " + uid + ")");
                 plugin.add(new TownyEntry("$t" + uuid, EntryAction.TOWNYNAME, false, name, ""));
             }
             names.put(uid, name);
