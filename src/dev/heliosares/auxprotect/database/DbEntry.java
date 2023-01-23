@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.database;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.sql.SQLException;
 
 public class DbEntry {
@@ -211,10 +210,8 @@ public class DbEntry {
         return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
     }
 
-    public byte[] getBlob() throws SQLException, IOException {
-        if (blob == null) {
-            blob = SQLManager.getInstance().getBlob(this);
-        }
+    public byte[] getBlob() throws SQLException {
+        if (blob == null) blob = SQLManager.getInstance().getBlob(this);
         return blob;
     }
 

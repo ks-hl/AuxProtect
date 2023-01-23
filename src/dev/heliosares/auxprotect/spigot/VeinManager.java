@@ -16,40 +16,26 @@ public class VeinManager {
     private final HashMap<UUID, ArrayList<Long>> skipped = new HashMap<>();
 
     public static String getSeverityDescription(int severity) {
-        switch (severity) {// TODO lang
-            case -2:
-                return "ignored";
-            case -1:
-                return "unrated";
-            case 0:
-                return "no concern";
-            case 1:
-                return "slightly suspicious";
-            case 2:
-                return "suspicious, not certain";
-            case 3:
-                return "almost certain or entirely certain";
-            default:
-                return "unknown severity";
-        }
+        return switch (severity) {// TODO lang
+            case -2 -> "ignored";
+            case -1 -> "unrated";
+            case 0 -> "no concern";
+            case 1 -> "slightly suspicious";
+            case 2 -> "suspicious, not certain";
+            case 3 -> "almost certain or entirely certain";
+            default -> "unknown severity";
+        };
     }
 
     public static String getSeverityColor(int severity) {
-        switch (severity) {
-            case -2:
-            case -1:
-                return "§5";
-            case 0:
-                return "§a";
-            case 1:
-                return "§e";
-            case 2:
-                return "§c";
-            case 3:
-                return "§4";
-            default:
-                return "";
-        }
+        return switch (severity) {
+            case -2, -1 -> "§5";
+            case 0 -> "§a";
+            case 1 -> "§e";
+            case 2 -> "§c";
+            case 3 -> "§4";
+            default -> "";
+        };
     }
 
     /**
@@ -74,8 +60,8 @@ public class VeinManager {
             entries.add(entry);
             entries.sort((o1, o2) -> {
                 try {
-                    if (o1.getUser(false) == null) SQLManager.execute(c -> o1.getUser(), 3000L);
-                    if (o2.getUser(false) == null) SQLManager.execute(c -> o2.getUser(), 3000L);
+                    if (o1.getUser(false) == null) SQLManager.getInstance().execute(c -> o1.getUser(), 3000L);
+                    if (o2.getUser(false) == null) SQLManager.getInstance().execute(c -> o2.getUser(), 3000L);
                     return o1.getUser().compareTo(o2.getUser());
                 } catch (SQLException e) {
                     AuxProtectAPI.getInstance().print(e);

@@ -49,7 +49,7 @@ public class SingleItemEntry extends DbEntry {
         this.damage = damage;
     }
 
-    public ItemStack getItem() throws SQLException, IOException {
+    public ItemStack getItem() throws SQLException {
         if (item != null) {
             return item;
         }

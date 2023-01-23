@@ -3,76 +3,55 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import org.bukkit.Bukkit;
-import org.sqlite.SQLiteConfig;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 public class ConnectionPool {
-    public static final int CAPACITY = 10;
-    private static final HashMap<Integer, Long> checkOutTimes = new HashMap<>();
-    private static final long[][] readTimes = new long[500][];
-    private static final long[][] writeTimes = new long[200][];
-    private static int alive = 0;
-    private static int born = 0;
-    private static int roaming = 0;
+    private static final long[][] accessTimes = new long[500][];
     private static int expired = 0;
-    private static int readTimeIndex;
-    private static long writeCheckOut;
     private static int writeTimeIndex;
-    private final LinkedList<Connection> pool = new LinkedList<>();
-    private final String connString;
-    private final String user;
-    private final String pwd;
+    private final Supplier<Connection> newConnectionSupplier;
     private final boolean mysql;
     private final IAuxProtect plugin;
-    private final Connection writeconn;
+    private Connection connection;
     private final ReentrantLock lock = new ReentrantLock();
-    private final HashMap<Connection, Long> lastChecked = new HashMap<>();
+    private long lastChecked = System.currentTimeMillis();
     private boolean closed;
     @Nullable
-    private StackTraceElement[] whoHasWriteConnection;
+    private StackTraceElement[] whoHasLock;
+    private long lockedSince;
 
     public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd, SQLConsumer initializationTask)
             throws SQLException, ClassNotFoundException {
-        this.connString = connString;
         this.plugin = plugin;
-        this.user = user;
-        this.pwd = pwd;
         this.mysql = mysql;
-
-        checkDriver();
-
-        writeconn = newConn(false);
-
-        synchronized (pool) {
-            for (int i = 0; i < CAPACITY; i++) {
-                pool.add(newConn(true));
+        this.newConnectionSupplier = () -> {
+            try {
+                if (mysql) return DriverManager.getConnection(connString, user, pwd);
+                else return DriverManager.getConnection(connString);
+            } catch (SQLException ignored) {
             }
-        }
+            return null;
+        };
+        checkDriver();
+        connection = newConnectionSupplier.get();
 
-        // No need to control lock here, because there is no other way to obtain writeconn yet.
-        initializationTask.accept(writeconn);
+        execute(initializationTask, Long.MAX_VALUE);
     }
 
-    public static int getRoaming() {
-        return roaming;
+    public long getLockedSince() {
+        return lockedSince;
     }
 
-    public static int getNumAlive() {
-        return alive;
-    }
-
-    public static int getNumBorn() {
-        return born;
+    public StackTraceElement[] getWhoHasLock() {
+        return whoHasLock;
     }
 
     public static int getExpired() {
@@ -80,19 +59,11 @@ public class ConnectionPool {
     }
 
     public static long[] calculateWriteTimes() {
-        return calculateTimes(writeTimes);
-    }
-
-    public static long[] calculateReadTimes() {
-        return calculateTimes(readTimes);
-    }
-
-    private static long[] calculateTimes(long[][] array) {
         long first = Long.MAX_VALUE;
         long last = Long.MIN_VALUE;
         long sum = 0;
         int count = 0;
-        for (long[] longs : array) {
+        for (long[] longs : ConnectionPool.accessTimes) {
             if (longs == null) {
                 continue;
             }
@@ -114,26 +85,6 @@ public class ConnectionPool {
             return null;
         }
         return new long[]{last - first, sum, count};
-    }
-
-    public int getPoolSize() {
-        return pool.size();
-    }
-
-    private synchronized Connection newConn(boolean readonly) throws SQLException {
-        Connection connection;
-        if (mysql) { //TODO MySQL readonly
-            connection = DriverManager.getConnection(connString, user, pwd);
-        } else if (readonly) {
-            SQLiteConfig config = new SQLiteConfig();
-            config.setReadOnly(true);
-            connection = DriverManager.getConnection(connString, config.toProperties());
-        } else {
-            connection = DriverManager.getConnection(connString);
-        }
-        alive++;
-        born++;
-        return connection;
     }
 
     private void checkDriver() throws ClassNotFoundException {
@@ -162,145 +113,17 @@ public class ConnectionPool {
         }
     }
 
-    /**
-     * Use this ONLY for modifying the database.
-     * <p>
-     * You MUST call {@link ConnectionPool#returnConnection(Connection)} when you
-     * are done with this Connection
-     *
-     * @param wait how many milliseconds to wait for a lock
-     * @return a writable connection to the database
-     * @throws BusyException if wait is exceeded and the database is busy
-     */
-    @Deprecated
-    public @Nonnull Connection getWriteConnection(long wait) throws BusyException {
-        if (closed || writeconn == null) {
-            throw new IllegalStateException("closed");
-        }
-        checkAsync();
-        boolean havelock = false;
-        try {
-            havelock = lock.tryLock(wait, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ignored) {
-        }
-        if (!havelock) {
-            throw new BusyException(whoHasWriteConnection);
-        }
-        if (lock.getHoldCount() == 1) {
-            writeCheckOut = System.currentTimeMillis();
-            whoHasWriteConnection = Thread.currentThread().getStackTrace().clone();
-        }
-        roaming++;
-        return writeconn;
-    }
-
-    @Deprecated
-    public Connection getConnection(boolean wait) throws SQLException, IllegalStateException {
-        return getWriteConnection(wait ? 5000L : 0L);
-//        if (closed) {
-//            throw new IllegalStateException("closed");
-//        }
-//        checkAsync();
-//        if (wait) {
-//            lock.lock();
-//        } else {
-//            try {
-//                if (!lock.tryLock(5000, TimeUnit.MILLISECONDS)) {
-//                    throw new BusyException(whoHasWriteConnection);
-//                }
-//            } catch (InterruptedException e) {
-//                throw new BusyException(whoHasWriteConnection);
-//            }
-//        }
-//        try {
-//            synchronized (pool) {
-//                if (pool.isEmpty()) {
-//                    pool.add(newConn(true));
-//                }
-//                Connection out = pool.pop();
-//                checkOutTimes.put(out.hashCode(), System.currentTimeMillis());
-//                roaming++;
-//                if (!isConnectionValid(out)) {
-//                    out = newConn(true);
-//                }
-//                return out;
-//            }
-//        } finally {
-//            lock.unlock();
-//        }
-    }
-
-    @Deprecated
-    public synchronized void returnConnection(Connection connection) {
-        if (connection == null) return;
-        if (connection.equals(writeconn)) {
-            if (!lock.isHeldByCurrentThread()) {
-                throw new IllegalArgumentException("Returned a write connection not currently held by the thread.");
-            }
-            if (lock.getHoldCount() == 1) {
-                writeTimeIndex++;
-                if (writeTimeIndex >= writeTimes.length) {
-                    writeTimeIndex = 0;
-                }
-                writeTimes[writeTimeIndex] = new long[]{writeCheckOut, System.currentTimeMillis()};
-                writeCheckOut = 0;
-                whoHasWriteConnection = null;
-            }
-            lock.unlock();
-            roaming--;
-            return;
-        }
-        synchronized (pool) {
-            Long checkedOutAt = checkOutTimes.remove(connection.hashCode());
-            if (checkedOutAt != null) {
-                readTimeIndex++;
-                if (readTimeIndex >= readTimes.length) {
-                    readTimeIndex = 0;
-                }
-                readTimes[readTimeIndex] = new long[]{checkedOutAt, System.currentTimeMillis()};
-            }
-            if (closed || pool.size() >= CAPACITY) {
-                try {
-                    connection.close();
-                    lastChecked.remove(connection);
-                    alive--;
-                } catch (Exception ignored) {
-                }
-                return;
-            }
-            roaming--;
-            pool.push(connection);
-        }
-    }
-
     public void close() {
         if (closed) {
             return;
         }
         closed = true;
         try {
-            writeconn.close();
+            connection.close();
         } catch (SQLException ignored) {
         }
-        synchronized (pool) {
-            while (!pool.isEmpty()) {
-                try {
-                    alive--;
-                    Connection conn = pool.pop();
-                    conn.close();
-                    lastChecked.remove(conn);
-                } catch (SQLException ignored) {
-                }
-            }
-            //Ensures any roaming connections are closed, because they won't be in the pool.
-            for (Connection connection : lastChecked.keySet()) {
-                try {
-                    connection.close();
-                } catch (SQLException ignored) {
-                }
-            }
-        }
     }
+
 
     @FunctionalInterface
     public interface SQLConsumer {
@@ -310,6 +133,41 @@ public class ConnectionPool {
     @FunctionalInterface
     public interface SQLFunction<T> {
         T apply(Connection connection) throws SQLException;
+    }
+
+    @FunctionalInterface
+    public interface SQLFunctionWithException<T> {
+        T apply(Connection connection) throws Exception;
+    }
+
+    public static class Holder<T> {
+        private T value;
+        private boolean set;
+
+        public void set(@Nullable T t) {
+            set = true;
+            value = t;
+        }
+
+        @Nullable
+        public T get() {
+            return value;
+        }
+
+        public Number getNumberOrElse(Number def) {
+            if (value == null) return def;
+            if (!(value instanceof Number number)) throw new IllegalStateException();
+            return number;
+        }
+
+        /**
+         * This is different from a null check because passing 'null' to {@link Holder#set(T)} will still cause this to return true
+         *
+         * @return Whether this Holder has had {@link Holder#set(T)} called at least once, regardless of the value
+         */
+        public boolean isSet() {
+            return set;
+        }
     }
 
     /**
@@ -333,21 +191,60 @@ public class ConnectionPool {
      * @throws SQLException  For SQLException thrown by the task
      */
     public <T> T executeReturn(SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
-        Connection connection = getWriteConnection(wait);
         try {
-            return task.apply(connection);
-        } finally {
-            returnConnection(connection);
+            return executeReturnException(task::apply, wait, type);
+        } catch (SQLException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
-    private boolean isConnectionValid(@Nullable Connection connection) {
-        if (!isMySQL()) return true;
+    /**
+     * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but with any Exception
+     */
+    public <T> T executeReturnException(SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
+        if (closed || connection == null) {
+            throw new IllegalStateException("closed");
+        }
+        checkAsync();
+        boolean havelock = false;
+        try {
+            havelock = lock.tryLock(wait, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException ignored) {
+        }
+        if (!havelock) {
+            throw new BusyException(whoHasLock);
+        }
+        if (lock.getHoldCount() == 1) {
+            lockedSince = System.currentTimeMillis();
+            whoHasLock = Thread.currentThread().getStackTrace().clone();
+        }
+        if (!isConnectionValid()) {
+            connection = newConnectionSupplier.get();
+        }
+        try {
+            return task.apply(connection);
+        } finally {
+            if (lock.getHoldCount() == 1) {
+                writeTimeIndex++;
+                if (writeTimeIndex >= accessTimes.length) {
+                    writeTimeIndex = 0;
+                }
+                accessTimes[writeTimeIndex] = new long[]{lockedSince, System.currentTimeMillis()};
+                whoHasLock = null;
+            }
+            lockedSince = 0;
+            lock.unlock();
+        }
+    }
+
+    private boolean isConnectionValid() {
         if (connection == null) return false;
-        Long lastCheck = lastChecked.get(connection);
-        if (lastCheck != null && System.currentTimeMillis() - lastCheck < 30000L) return true;
-        if (testConnection(connection)) {
-            lastChecked.put(connection, System.currentTimeMillis());
+        if (!isMySQL()) return true;
+        if (System.currentTimeMillis() - lastChecked < 30000L) return true;
+        if (testConnection()) {
+            lastChecked = System.currentTimeMillis();
             return true;
         } else {
             expired++;
@@ -355,12 +252,11 @@ public class ConnectionPool {
                 connection.close();
             } catch (SQLException ignored) {
             }
-            lastChecked.remove(connection);
             return false;
         }
     }
 
-    private boolean testConnection(Connection connection) {
+    private boolean testConnection() {
         try (PreparedStatement stmt = connection.prepareStatement("SELECT 1")) {
             stmt.execute();
         } catch (SQLException ignored) {

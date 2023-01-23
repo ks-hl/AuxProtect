@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import java.io.IOException;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -8,21 +7,26 @@ import java.sql.Types;
 import java.util.*;
 
 public class ResultMap {
-    private final Map<String, Integer> labels;
+    private final Map<String, Integer> labelMap;
+    private final List<String> labels;
     private final List<Result> results;
 
-    public ResultMap(SQLManager sql, ResultSet rs) throws SQLException, IOException {
+    public ResultMap(SQLManager sql, ResultSet rs) throws SQLException {
         final ResultSetMetaData meta = rs.getMetaData();
         final int columnCount = meta.getColumnCount();
         final int[] types = new int[columnCount];
 
         {
-            final HashMap<String, Integer> labels = new HashMap<>();
+            final HashMap<String, Integer> labelsMap = new HashMap<>();
+            final List<String> labels = new ArrayList<>();
             for (int i = 0; i < columnCount; i++) {
-                labels.put(meta.getColumnName(i + 1), i + 1);
+                String name = meta.getColumnName(i + 1);
+                labelsMap.put(name, i + 1);
                 types[i] = meta.getColumnType(i + 1);
+                labels.add(name);
             }
-            this.labels = Collections.unmodifiableMap(labels);
+            this.labelMap = Collections.unmodifiableMap(labelsMap);
+            this.labels = Collections.unmodifiableList(labels);
         }
 
         List<Result> results_ = new ArrayList<>();
@@ -57,7 +61,11 @@ public class ResultMap {
     }
 
 
-    public Map<String, Integer> getLabels() {
+    public Map<String, Integer> getLabelMap() {
+        return labelMap;
+    }
+
+    public List<String> getLabels() {
         return labels;
     }
 
@@ -90,9 +98,13 @@ public class ResultMap {
         }
 
         public Object getValue(String columnName) throws NoSuchElementException {
-            Integer index = parent.labels.get(columnName);
+            Integer index = parent.labelMap.get(columnName);
             if (index == null) throw new NoSuchElementException("Unknown column: " + columnName);
             return getValue(index);
+        }
+
+        public List<Object> getValues() {
+            return values;
         }
     }
 }

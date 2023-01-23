@@ -26,7 +26,7 @@ public class DumpCommand extends Command {
         super(plugin, "dump", APPermission.ADMIN, true, "stats");
     }
 
-    public static String dump(IAuxProtect plugin, boolean verbose, boolean chat, boolean file, boolean config,
+    public static String dump(IAuxProtect plugin, boolean simple, boolean chat, boolean file, boolean config,
                               boolean stats) throws Exception {
         StringBuilder trace = new StringBuilder();
         if (!stats) {
@@ -51,38 +51,23 @@ public class DumpCommand extends Command {
         }
         trace.append("Queued: ").append(plugin.queueSize()).append("\n");
         if (!stats) {
-            trace.append("Pool:\n");
-            trace.append("  Size: ").append(plugin.getSqlManager().getConnectionPoolSize()).append("\n");
-            trace.append("  Alive: ").append(ConnectionPool.getNumAlive()).append("\n");
-            trace.append("  Born: ").append(ConnectionPool.getNumBorn()).append("\n");
-            trace.append("  Roaming: ").append(ConnectionPool.getRoaming()).append("\n");
-            trace.append("  Expired: ").append(ConnectionPool.getExpired()).append("\n");
-        }
-        long[] read = ConnectionPool.calculateReadTimes();
-        if (read != null) {
-            trace.append("Read:\n");
-            trace.append("  Average Time: ").append(Math.round((double) read[1] / read[2] * 100.0) / 100.0).append("ms\n");
-            trace.append("  Duty: ").append(Math.round((double) read[1] / read[0] * 10000.0) / 100.0).append("%\n");
-            if (verbose) {
-                trace.append("  Across: ").append(read[0]).append("ms\n");
-                trace.append("  Count: ").append(read[2]).append("\n");
-            }
+            trace.append("Pool Expired: ").append(ConnectionPool.getExpired()).append("\n");
         }
         long[] write = ConnectionPool.calculateWriteTimes();
         if (write != null) {
-            trace.append("Write:\n");
+            trace.append("Access:\n");
             trace.append("  Average Time: ").append(Math.round((double) write[1] / write[2] * 100.0) / 100.0).append("ms\n");
             trace.append("  Duty: ").append(Math.round((double) write[1] / write[0] * 10000.0) / 100.0).append("%\n");
-            if (verbose) {
+            if (!simple) {
                 trace.append("  Across: ").append(write[0]).append("ms\n");
                 trace.append("  Count: ").append(write[2]).append("\n");
-                long writeCheckout = plugin.getSqlManager().getWriteCheckOutTime();
-                StackTraceElement[] heldBy = plugin.getSqlManager().getWhoHasWriteConnection();
+                long writeCheckout = plugin.getSqlManager().getLockedSince();
+                StackTraceElement[] heldBy = plugin.getSqlManager().getWhoHasLock();
                 if (writeCheckout > 0 && heldBy != null) {
-                    trace.append("  Write Held: ").append(System.currentTimeMillis() - writeCheckout).append("ms\n");
-                    trace.append("  Held by: ").append(StackUtil.format(heldBy, 0));
+                    trace.append("  Locked For: ").append(System.currentTimeMillis() - writeCheckout).append("ms\n");
+                    trace.append("  Locked by: ").append(StackUtil.format(heldBy, 0));
                 } else {
-                    trace.append("  Not Held");
+                    trace.append("  Unlocked");
                 }
                 trace.append("\n");
             }
@@ -105,7 +90,7 @@ public class DumpCommand extends Command {
             }
         }
         trace.append("Row counts: ").append(plugin.getSqlManager().getCount()).append(" total\n");
-        if (verbose) {
+        if (!simple) {
             ArrayList<String[]> counts = new ArrayList<>();
             int widest = 0;
             for (Table table : Table.values()) {
@@ -128,7 +113,7 @@ public class DumpCommand extends Command {
                 trace.append("  ").append(arr[0]).append(pad).append(arr[1]).append("\n");
             }
         }
-        if ((chat && !verbose) || stats) {
+        if ((chat && simple) || stats) {
             return trace.toString();
         }
 
@@ -147,7 +132,7 @@ public class DumpCommand extends Command {
 
         trace.append("Error Log:\n").append(plugin.getStackLog()).append("\n\n");
 
-        if (verbose) {
+        if (!simple) {
             trace.append("Thread Trace:\n");
             trace.append(StackUtil.dumpThreadStack());
             trace.append("\n\n");
@@ -163,7 +148,7 @@ public class DumpCommand extends Command {
 //        }
         File dumpdir = new File(plugin.getDataFolder(), "dump");
         File dump = new File(dumpdir, "dump-" + System.currentTimeMillis() + ".txt");
-        dumpdir.mkdirs();
+        boolean ignored = dumpdir.mkdirs();
         BufferedWriter writer = new BufferedWriter(new FileWriter(dump));
         writer.write(trace.toString());
         writer.close();
@@ -201,7 +186,7 @@ public class DumpCommand extends Command {
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         sender.sendMessageRaw("§aBuilding trace...");
-        boolean verbose = false;
+        boolean simple = false;
         boolean chat = false;
         boolean file = false;
         boolean config = false;
@@ -210,7 +195,7 @@ public class DumpCommand extends Command {
             for (int i = 1; i < args.length; i++) {
                 switch (args[i].toLowerCase()) {
                     case "chat" -> chat = true;
-                    case "verbose" -> verbose = true;
+                    case "simple" -> simple = true;
 //                        case "file" -> file = true;
                     case "config" -> config = true;
                     default -> {
@@ -221,14 +206,13 @@ public class DumpCommand extends Command {
             }
         }
         try {
-            sender.sendMessageRaw("§a" + dump(plugin, verbose, chat, file, config, stats));
+            sender.sendMessageRaw("§a" + dump(plugin, simple, chat, file, config, stats));
         } catch (Exception e) {
             plugin.print(e);
             sender.sendLang(Language.L.ERROR);
         }
         if (config) {
-            sender.sendMessageRaw(
-                    "§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
+            sender.sendMessageRaw("§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
         }
     }
 
@@ -240,7 +224,7 @@ public class DumpCommand extends Command {
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         List<String> out = new ArrayList<>();
-        out.add("verbose");
+        out.add("simple");
         out.add("chat");
 //        out.add("file");
         out.add("config");

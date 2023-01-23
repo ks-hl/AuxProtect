@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.ConnectionPool;
+import dev.heliosares.auxprotect.database.ResultMap;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 
 import java.util.List;
@@ -22,7 +23,7 @@ public class SQLCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SenderAdapter sender, String commandLabel, String[] args) throws CommandException {
         StringBuilder msg = new StringBuilder();
         for (int i = 1; i < args.length; i++) {
             msg.append(args[i]).append(" ");
@@ -31,22 +32,28 @@ public class SQLCommand extends Command {
         sender.sendMessageRaw("§aRunning...");
         try {
             if (args[0].equalsIgnoreCase("sql")) {
-                plugin.getSqlManager().execute(stmt, false);
+                plugin.getSqlManager().execute(stmt, 3000L);
             } else if (args[0].equalsIgnoreCase("sqli")) {
                 plugin.getSqlManager().executeWrite(stmt);
             } else {
-                List<List<String>> results = plugin.getSqlManager().executeGet(stmt);
-                if (results != null) {
-                    for (List<String> result : results) {
-                        StringBuilder line = new StringBuilder();
-                        for (String part : result) {
-                            if (line.length() > 0) {
-                                line.append(", ");
-                            }
-                            line.append(part);
-                        }
-                        sender.sendMessageRaw(line.toString());
+                ResultMap results = plugin.getSqlManager().executeGetMap(stmt);
+                StringBuilder line = new StringBuilder();
+                for (String label : results.getLabels()) {
+                    if (line.length() > 0) {
+                        line.append(" | ");
                     }
+                    line.append(label);
+                }
+                sender.sendMessageRaw(line.toString());
+                for (ResultMap.Result result : results.getResults()) {
+                    line = new StringBuilder();
+                    for (Object part : result.getValues()) {
+                        if (line.length() > 0) {
+                            line.append(", ");
+                        }
+                        line.append(part);
+                    }
+                    sender.sendMessageRaw(line.toString());
                 }
             }
         } catch (ConnectionPool.BusyException e) {

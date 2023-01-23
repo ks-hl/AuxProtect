@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
-import dev.heliosares.auxprotect.database.ConnectionPool.BusyException;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyManager;
@@ -112,10 +111,6 @@ public class SQLManager {
         return invdiffmanager;
     }
 
-    public BlobManager getInvBlobManager() {
-        return invblobmanager;
-    }
-
     public TownyManager getTownyManager() {
         return townymanager;
     }
@@ -159,7 +154,7 @@ public class SQLManager {
         // Auto Purge
         out:
         if (plugin.getAPConfig().doAutoPurge()) {
-            long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE, true);
+            long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE);
             if (timeSincePurge < 3600000L) {
                 plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
                 break out;
@@ -183,11 +178,9 @@ public class SQLManager {
             if (anypurge) {
                 try {
                     plugin.info(Language.L.COMMAND__PURGE__UIDS.translate());
-                    purgeUIDs();
+                    count += purgeUIDs();
 
-                    if (!isMySQL()) {
-                        vacuum();
-                    }
+                    if (!isMySQL()) vacuum();
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                     plugin.print(e);
@@ -318,70 +311,19 @@ public class SQLManager {
 
     }
 
-    private Set<Integer> getAllDistinctUIDs(Table table) throws SQLException {
-        boolean hasTargetId = !table.hasStringTarget() && table != Table.AUXPROTECT_UIDS;
-        String[] columns = new String[hasTargetId ? 2 : 1];
-        columns[0] = "uid";
-        if (hasTargetId) {
-            columns[1] = "target_id";
-        }
-        Set<Integer> inUseUids = new HashSet<>();
-        for (String column : columns) {
-            Connection connection = conn.getConnection(true);
-            String stmt = "SELECT DISTINCT " + column + " FROM " + table;
-            plugin.debug(stmt, 3);
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                pstmt.setFetchSize(500);
-                try (ResultSet results = pstmt.executeQuery()) {
-                    while (results.next()) {
-                        int uid = results.getInt(column);
-                        inUseUids.add(uid);
-                    }
-                }
-            }
-            returnConnection(connection);
-        }
-        return inUseUids;
-    }
-
-    //TODO do this entirely with SQL: DELETE FROM auxprotect_uids WHERE uid NOT IN select DISTINCT uid from (select distinct uid from auxprotect_main union select distinct uid from auxprotect_main)
+    //TODO test this
     public int purgeUIDs() throws SQLException {
-        Set<Integer> inUseUids = new HashSet<>();
-        for (Table table : Table.values()) {
-            if (!table.hasAPEntries() || !table.exists(plugin)) {
-                continue;
-            }
-
-            inUseUids.addAll(getAllDistinctUIDs(table));
-        }
-        Set<Integer> savedUids = getAllDistinctUIDs(Table.AUXPROTECT_UIDS);
-        plugin.debug(savedUids.size() + " total UIDs");
-        plugin.debug(inUseUids.size() + " currently in use UIDs");
-        savedUids.removeAll(inUseUids);
-        plugin.debug("Purging " + savedUids.size() + " UIDs");
-        int i = 0;
-        int count = 0;
-        final String hdr = "DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE uid IN ";
-        StringBuilder stmt = new StringBuilder();
-        for (int uid : savedUids) {
-            if (stmt.length() > 0) {
-                stmt.append(",");
-            }
-            plugin.debug("Purging UID " + uid, 5);
-            stmt.append(uid);
-            if (++i >= 1000) {
-                count += executeWriteReturnRows(hdr + "(" + stmt + ")");
-                stmt = new StringBuilder();
-                i = 0;
-            }
-        }
-        if (stmt.length() > 0)
-            count += executeWriteReturnRows(hdr + "(" + stmt + ")");
-        return count;
+        final String baseStatement = "SELECT DISTINCT uid FROM (";
+        String stmt = "DELETE FROM auxprotect_uids WHERE uid NOT IN (" + baseStatement + Arrays.stream(Table.values())
+                .filter(Table::hasAPEntries)
+                .map(Table::toString)
+                .map(table -> baseStatement + table)
+                .reduce((a, b) -> a + " UNION " + b) + "))";
+        return executeWriteReturnRows(stmt);
     }
 
     public void vacuum() throws SQLException {
-        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM, true);
+        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM);
         if (sinceLastVac < 24L * 3600000L * 6L) {
             plugin.info(Language.L.COMMAND__PURGE__NOTVACUUM.translate(TimeUtil.millisToString(sinceLastVac)));
             return;
@@ -399,13 +341,8 @@ public class SQLManager {
         }
     }
 
-    public void execute(String stmt, boolean wait) throws SQLException {
-        Connection connection = conn.getConnection(wait);
-        try {
-            execute(connection, stmt);
-        } finally {
-            returnConnection(connection);
-        }
+    public void execute(String stmt, long wait, Object... args) throws SQLException {
+        execute(connection -> executeWrite(connection, stmt, args), wait);
     }
 
     private void prepare(Connection connection, PreparedStatement pstmt, Object... args) throws SQLException {
@@ -483,76 +420,48 @@ public class SQLManager {
 
     public List<List<String>> executeGet(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
-        final List<List<String>> rowList = new LinkedList<List<String>>();
-
-        Connection connection = getConnection(false);
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            prepare(connection, statement, args);
-            try (ResultSet rs = statement.executeQuery()) {
-                final ResultSetMetaData meta = rs.getMetaData();
-                final int columnCount = meta.getColumnCount();
-                {
-                    final List<String> columnList = new ArrayList<String>();
-                    rowList.add(columnList);
-                    for (int i = 0; i < columnCount; i++) {
-                        columnList.add(meta.getColumnName(i + 1));
+        final List<List<String>> rowList = new LinkedList<>();
+        execute(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+                prepare(connection, statement, args);
+                try (ResultSet rs = statement.executeQuery()) {
+                    final ResultSetMetaData meta = rs.getMetaData();
+                    final int columnCount = meta.getColumnCount();
+                    {
+                        final List<String> columnList = new ArrayList<>();
+                        rowList.add(columnList);
+                        for (int i = 0; i < columnCount; i++) {
+                            columnList.add(meta.getColumnName(i + 1));
+                        }
                     }
-                }
-                while (rs.next()) {
-                    final List<String> columnList = new ArrayList<String>();
-                    rowList.add(columnList);
+                    while (rs.next()) {
+                        final List<String> columnList = new ArrayList<>();
+                        rowList.add(columnList);
 
-                    for (int column = 1; column <= columnCount; ++column) {
-                        final Object value = rs.getObject(column);
-                        columnList.add(String.valueOf(value));
+                        for (int column = 1; column <= columnCount; ++column) {
+                            final Object value = rs.getObject(column);
+                            columnList.add(String.valueOf(value));
+                        }
                     }
                 }
             }
-        } finally {
-            returnConnection(connection);
-        }
+        }, 30000L);
         return rowList;
     }
 
-    public ResultMap executeGet2(String stmt, Object... args) throws SQLException, IOException {
+    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
         plugin.debug(stmt, 5);
-        Connection connection = getConnection(false);
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            prepare(connection, statement, args);
-            try (ResultSet rs = statement.executeQuery()) {
-                return new ResultMap(this, rs);
+        return executeReturn(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
+                prepare(connection, statement, args);
+                try (ResultSet rs = statement.executeQuery()) {
+                    return new ResultMap(this, rs);
+                }
             }
-        } finally {
-            returnConnection(connection);
-        }
+        }, 30000L, ResultMap.class);
     }
 
-    /**
-     * Do not use this Connection to modify the database, use
-     * {@link SQLManager#executeWrite}
-     * <p>
-     * You MUST call {@link SQLManager#returnConnection(Connection)} when you are
-     * done with this Connection
-     *
-     * @return returns a READ-ONLY connection to the database
-     * @throws BusyException if the database is busy for longer than 3 seconds
-     */
-    @Deprecated
-    public Connection getConnection(boolean wait) throws SQLException {
-        return conn.getConnection(wait);
-    }
-
-    /**
-     * Called to return a connection to the pool
-     *
-     * @param connection a Connection obtained from {@link #getConnection(boolean)}
-     */
-    @Deprecated
-    public void returnConnection(Connection connection) {
-        conn.returnConnection(connection);
-    }
-
-    protected boolean put(Connection connection, Table table) throws SQLException, IOException {
+    protected boolean put(Connection connection, Table table) throws SQLException {
         long start = System.nanoTime();
         int count;
         List<DbEntry> entries = new ArrayList<>();
@@ -865,52 +774,56 @@ public class SQLManager {
         }
     }
 
-    public byte[] getBlob(DbEntry entry) throws SQLException, IOException {
+    public byte[] getBlob(DbEntry entry) throws SQLException {
         if (entry.getAction().getTable().hasBlob())
-            return executeGet2("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", entry.getTime()).getFirstElementOrNull(byte[].class);
+            return executeGetMap("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", entry.getTime()).getFirstElementOrNull(byte[].class);
         if (entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY)
             return invblobmanager.getBlob(entry);
         return null;
     }
 
-    public void getMultipleBlobs(DbEntry... entries) throws SQLException, IOException {
-        Table table = null;
-        StringBuilder stmt = new StringBuilder("SELECT time,ablob FROM %s WHERE time IN (");
-        HashMap<Long, DbEntry> entryHash = new HashMap<>();
-        for (DbEntry entry : entries) {
-            if (table == null) table = entry.getAction().getTable();
-            else if (table != entry.getAction().getTable()) throw new IllegalArgumentException("Incompatible actions");
-            stmt.append(entry.getTime()).append(",");
-            entryHash.put(entry.getTime(), entry);
-        }
-        if (table == null) return;
-        stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table) + ")");
-        Connection connection = getConnection(false);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt.toString())) {
-            try (ResultSet rs = pstmt.executeQuery()) {
-                while (rs.next()) {
-                    entryHash.get(rs.getLong("time")).setBlob(getBlob(rs, "ablob"));
+    public void getMultipleBlobs(DbEntry... entries) throws SQLException {
+        execute(connection -> {
+            Table table = null;
+            StringBuilder stmt = new StringBuilder("SELECT time,ablob FROM %s WHERE time IN (");
+            HashMap<Long, DbEntry> entryHash = new HashMap<>();
+            for (DbEntry entry : entries) {
+                if (table == null) table = entry.getAction().getTable();
+                else if (table != entry.getAction().getTable())
+                    throw new IllegalArgumentException("Incompatible actions");
+                stmt.append(entry.getTime()).append(",");
+                entryHash.put(entry.getTime(), entry);
+            }
+            if (table == null) return;
+            stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table) + ")");
+            try (PreparedStatement pstmt = connection.prepareStatement(stmt.toString())) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    while (rs.next()) {
+                        entryHash.get(rs.getLong("time")).setBlob(getBlob(rs, "ablob"));
+                    }
                 }
             }
-        } finally {
-            returnConnection(connection);
-        }
+        }, 30000L);
     }
 
-    public byte[] getBlob(ResultSet rs, String key) throws SQLException, IOException {
+    public byte[] getBlob(ResultSet rs, String key) throws SQLException {
         if (isMySQL()) {
             try (InputStream in = rs.getBlob(key).getBinaryStream()) {
                 return in.readAllBytes();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e.getMessage());
             }
         } else {
             return rs.getBytes(key);
         }
     }
 
-    public byte[] getBlob(ResultSet rs, int index) throws SQLException, IOException {
+    public byte[] getBlob(ResultSet rs, int index) throws SQLException {
         if (isMySQL()) {
             try (InputStream in = rs.getBlob(index).getBinaryStream()) {
                 return in.readAllBytes();
+            } catch (IOException e) {
+                throw new IllegalArgumentException(e.getMessage());
             }
         } else {
             return rs.getBytes(index);
@@ -937,7 +850,7 @@ public class SQLManager {
                 Arrays.asList(Table.values()).forEach(t -> {
                     try {
                         put(connection, t);
-                    } catch (SQLException | IOException e) {
+                    } catch (SQLException e) {
                         plugin.print(e);
                     }
                 });
@@ -956,23 +869,31 @@ public class SQLManager {
         executeWrite("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", value, key.id);
     }
 
-    public long getLast(LastKeys key, boolean wait) throws SQLException {
-        Connection connection = getConnection(wait);
-        try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
-            stmt.setShort(1, key.id);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) return rs.getLong(1);
+    public long getLast(LastKeys key) throws SQLException {
+        return executeReturn(connection -> {
+            try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
+                stmt.setShort(1, key.id);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) return rs.getLong(1);
+                }
+                return -1L;
+
             }
-        } finally {
-            returnConnection(connection);
-        }
-        return -1;
+        }, 30000L, Long.class);
     }
 
     @Nullable
     public String getMigrationStatus() {
         if (migrationmanager == null) return null;
         return migrationmanager.getProgressString();
+    }
+
+    public StackTraceElement[] getWhoHasLock() {
+        return conn.getWhoHasLock();
+    }
+
+    public long getLockedSince() {
+        return conn.getLockedSince();
     }
 
     /**
@@ -987,6 +908,13 @@ public class SQLManager {
      */
     public <T> T executeReturn(ConnectionPool.SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
         return conn.executeReturn(task, wait, type);
+    }
+
+    /**
+     * Executes {@link ConnectionPool#executeReturnException(ConnectionPool.SQLFunctionWithException, long, Class)}
+     */
+    public <T> T executeReturnException(ConnectionPool.SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
+        return conn.executeReturnException(task, wait, type);
     }
 
     public enum LastKeys {

@@ -6,7 +6,6 @@ import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 
@@ -319,14 +318,7 @@ public class MigrationManager {
                             if (ignore.contains(blobid)) continue;
                             any = true;
                             complete++;
-                            byte[] blob = null;
-                            try {
-                                blob = sql.getBlob(results, "ablob");
-                            } catch (IOException e) {
-                                plugin.warning("Failed to get blob for blobid: " + blobid + ". This is probably fine.");
-                                ignore.add(blobid);
-                            }
-                            hashes.put(blobid, Arrays.hashCode(blob));
+                            hashes.put(blobid, Arrays.hashCode(sql.getBlob(results, "ablob")));
                         }
                     }
                 }

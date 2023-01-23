@@ -92,7 +92,7 @@ public class InvDiffManager extends BlobManager {
                 String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
                 sql.executeWrite(connection, stmt, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
-            } catch (SQLException | IOException e) {
+            } catch (SQLException e) {
                 plugin.print(e);
             }
         }
@@ -102,67 +102,69 @@ public class InvDiffManager extends BlobManager {
 
         long after = 0;
 
-        // synchronized (sql.connection) {
-        Connection connection = sql.getConnection(false);
         try {
-            ResultMap map = sql.executeGet2("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
-                    " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);", uid, EntryAction.INVENTORY.id, time);
+            return sql.executeReturnException(connection -> {
+                ResultMap map = sql.executeGetMap("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
+                        " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);", uid, EntryAction.INVENTORY.id, time);
 
-            if (map.getResults().isEmpty()) return null;
-            final long basetime = map.getResults().get(0).getValue(Long.class, 1);
-            final long blobid = map.getResults().get(0).getValue(Long.class, 2);
+                if (map.getResults().isEmpty()) return null;
+                final long basetime = map.getResults().get(0).getValue(Long.class, 1);
+                final long blobid = map.getResults().get(0).getValue(Long.class, 2);
 
-            PlayerInventoryRecord inv = null;
-            {
-                byte[] blob = sql.executeGet2("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?", blobid).getFirstElementOrNull(byte[].class);
-                if (blob != null) inv = InvSerialization.toPlayerInventory(blob);
-            }
-            if (inv == null) return null;
-            List<ItemStack> output = playerInvToList(inv, true);
+                PlayerInventoryRecord inv = null;
+                {
+                    byte[] blob = sql.executeGetMap("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?", blobid).getFirstElementOrNull(byte[].class);
+                    if (blob != null) inv = InvSerialization.toPlayerInventory(blob);
+                }
+                if (inv == null) return null;
+                List<ItemStack> output = playerInvToList(inv, true);
 
-            int numdiff = 0;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
-                    " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
-                    ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
-                statement.setInt(1, uid);
-                statement.setLong(2, after);
-                statement.setLong(3, time);
-                try (ResultSet rs = statement.executeQuery()) {
-                    while (rs.next()) {
-                        int slot = rs.getInt("slot");
-                        byte[] blob = sql.getBlob(rs, "ablob");
-                        int qty = rs.getInt("qty");
-                        ItemStack item;
-                        if (qty == 0 && !rs.wasNull()) {
-                            item = null;
-                        } else {
-                            if (blob == null) {
-                                item = output.get(slot);
+                int numdiff = 0;
+                try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
+                        " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
+                        ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
+                    statement.setInt(1, uid);
+                    statement.setLong(2, after);
+                    statement.setLong(3, time);
+                    try (ResultSet rs = statement.executeQuery()) {
+                        while (rs.next()) {
+                            int slot = rs.getInt("slot");
+                            byte[] blob = sql.getBlob(rs, "ablob");
+                            int qty = rs.getInt("qty");
+                            ItemStack item;
+                            if (qty == 0 && !rs.wasNull()) {
+                                item = null;
                             } else {
-                                item = InvSerialization.toItemStack(blob);
-                            }
-                            if (item != null) {
-                                if (qty > 0) {
-                                    item.setAmount(qty);
-                                    plugin.debug("setting slot " + slot + " to " + qty);
+                                if (blob == null) {
+                                    item = output.get(slot);
+                                } else {
+                                    item = InvSerialization.toItemStack(blob);
                                 }
-                                if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
-                                    int damage = rs.getInt("damage");
-                                    if (!rs.wasNull()) {
-                                        meta.setDamage(damage);
-                                        item.setItemMeta(meta);
+                                if (item != null) {
+                                    if (qty > 0) {
+                                        item.setAmount(qty);
+                                        plugin.debug("setting slot " + slot + " to " + qty);
+                                    }
+                                    if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+                                        int damage = rs.getInt("damage");
+                                        if (!rs.wasNull()) {
+                                            meta.setDamage(damage);
+                                            item.setItemMeta(meta);
+                                        }
                                     }
                                 }
                             }
+                            output.set(slot, item);
+                            numdiff++;
                         }
-                        output.set(slot, item);
-                        numdiff++;
                     }
                 }
-            }
-            return new DiffInventoryRecord(basetime, numdiff, listToPlayerInv(output, inv.exp()));
-        } finally {
-            sql.returnConnection(connection);
+                return new DiffInventoryRecord(basetime, numdiff, listToPlayerInv(output, inv.exp()));
+            }, 3000L, DiffInventoryRecord.class);
+        } catch (SQLException | IOException | ClassNotFoundException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

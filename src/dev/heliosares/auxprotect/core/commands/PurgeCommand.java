@@ -66,7 +66,7 @@ public class PurgeCommand extends Command {
         try {
             count += plugin.getSqlManager().purge(table, time);
             sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
-            plugin.getSqlManager().purgeUIDs();
+            count += plugin.getSqlManager().purgeUIDs();
 
             if (!plugin.getSqlManager().isMySQL()) {
                 plugin.getSqlManager().vacuum();

@@ -4,7 +4,6 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
-import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,7 +41,7 @@ public class BlobManager {
         }
     }
 
-    protected long getBlobId(Connection connection, final byte[] blob) throws SQLException, IOException {
+    protected long getBlobId(Connection connection, final byte[] blob) throws SQLException {
         if (blob == null) {
             return -1;
         }
@@ -93,27 +92,11 @@ public class BlobManager {
     }
 
     @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException, IOException {
+    public byte[] getBlob(DbEntry entry) throws SQLException {
         if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
             return null;
         }
-        byte[] blob = null;
-
-        String stmt = "SELECT * FROM " + table + " WHERE blobid=?;";
-        plugin.debug(stmt, 3);
-
-        Connection connection = sql.getConnection(false);
-        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-            pstmt.setLong(1, entry.getBlobID());
-            try (ResultSet results = pstmt.executeQuery()) {
-                if (results.next()) {
-                    // TODO ablob vs `blob`
-                    blob = sql.getBlob(results, "ablob");
-                }
-            }
-        } finally {
-            sql.returnConnection(connection);
-        }
+        byte[] blob = sql.executeGetMap("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID()).getFirstElementOrNull(byte[].class);
 
         if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
             boolean hasblob = false;
@@ -137,7 +120,8 @@ public class BlobManager {
                 plugin.info("Attempted to migrate invalid log");
                 return null;
             }
-            long blobid = getBlobId(connection, blob);
+            final byte[] blob_ = blob;
+            long blobid = sql.executeReturn(connection -> getBlobId(connection, blob_), 3000L, Long.class);
             sql.executeWrite("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", blobid, entry.getTime());
 
         }

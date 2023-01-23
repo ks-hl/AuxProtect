@@ -60,8 +60,8 @@ public class Results {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
 
-        if (entry.getUser(false) == null) SQLManager.execute(c -> entry.getUser(), 3000L);
-        if (entry.getTarget(false) == null) SQLManager.execute(c -> entry.getTarget(), 3000L);
+        if (entry.getUser(false) == null) SQLManager.getInstance().execute(c -> entry.getUser(), 3000L);
+        if (entry.getTarget(false) == null) SQLManager.getInstance().execute(c -> entry.getTarget(), 3000L);
 
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
