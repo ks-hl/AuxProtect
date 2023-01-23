@@ -211,7 +211,7 @@ public class SQLManager extends ConnectionPool {
             execute(stmt, connection);
 
             stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
-            plugin.debug(stmt, 3);
+            debugSQLStatement(stmt);
             try (Statement statement = connection.createStatement()) {
                 try (ResultSet results = statement.executeQuery(stmt)) {
                     while (results.next()) {
@@ -242,7 +242,7 @@ public class SQLManager extends ConnectionPool {
         execute(stmt, connection);
 
         stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
-        plugin.debug(stmt, 3);
+        debugSQLStatement(stmt);
         try (Statement statement = connection.createStatement()) {
             try (ResultSet results = statement.executeQuery(stmt)) {
                 while (results.next()) {
@@ -456,28 +456,17 @@ public class SQLManager extends ConnectionPool {
     public void updateXrayEntry(XrayEntry entry) throws SQLException {
         if (!isConnected)
             return;
-        execute(connection -> {
-            String stmt = "UPDATE " + entry.getAction().getTable().toString();
-            stmt += "\nSET rating=?, data=?";
-            stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
+        String stmt = "UPDATE " + entry.getAction().getTable().toString();
+        stmt += "\nSET rating=?, data=?";
+        stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
 
-            plugin.debug(stmt, 3);
-            try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-                int i = 1;
-                statement.setShort(i++, entry.getRating());
-                statement.setString(i++, sanitize(entry.getData()));
-                statement.setLong(i++, entry.getTime());
-                statement.setInt(i++, entry.getUid());
-                statement.setInt(i++, entry.getTargetId());
-                if (statement.executeUpdate() > 1) {
-                    plugin.warning("Updated multiple entries when updating the following entry:");
-                    Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
-                }
-            }
-        }, 30000L);
+        if (executeReturnRows(stmt, entry.getRating(), sanitize(entry.getData()), entry.getTime(), entry.getUid(), entry.getTargetId()) > 1) {
+            plugin.warning("Updated multiple entries when updating the following entry:");
+            Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
+        }
     }
 
-    public int getWID(String world) {
+    public synchronized int getWID(String world) {
         if (worlds.containsKey(world)) {
             return worlds.get(world);
         }
@@ -486,18 +475,10 @@ public class SQLManager extends ConnectionPool {
         }
 
         try {
-            return executeReturn(connection -> {
-                String stmt = "INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid)";
-                stmt += "\nVALUES (?,?)";
-                PreparedStatement pstmt = connection.prepareStatement(stmt);
-                pstmt.setString(1, world);
-                pstmt.setInt(2, nextWid);
-                plugin.debug(stmt + "\n" + world + ":" + nextWid, 3);
-                pstmt.execute();
-                worlds.put(world, nextWid);
-                rowcount++;
-                return nextWid++;
-            }, 30000L, Integer.class);
+            execute("INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid) VALUES (?,?)", 30000L, world, nextWid);
+            worlds.put(world, nextWid);
+            rowcount++;
+            return nextWid++;
         } catch (SQLException e) {
             plugin.print(e);
         }
