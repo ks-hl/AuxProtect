@@ -27,19 +27,19 @@ public class ActivityResults extends Results {
     }
 
     @Override
-    public void showPage(int page, int perpage_) {
-        int lastpage = getNumPages(perpage_);
+    public void showPage(int page, int perPage_) {
+        int lastpage = getNumPages(perPage_);
         if (page > lastpage || page < 1) {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
             return;
         }
-        perpage = perpage_;
-        prevpage = page;
+        perPage = perPage_;
+        prevPage = page;
         super.sendHeader();
 
-        long millisperpage = perpage * 3600000L;
+        long millisperpage = perPage * 3600000L;
         // long thisRangeStart = rangeStart + (page - 1) * millisperpage;
-        long thisRangeEnd = rangeEnd - (getNumPages(perpage_) - page) * millisperpage;
+        long thisRangeEnd = rangeEnd - (getNumPages(perPage_) - page) * millisperpage;
 
         player.sendMessage(ActivitySolver.solveActivity(getEntries(),
                 Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd));

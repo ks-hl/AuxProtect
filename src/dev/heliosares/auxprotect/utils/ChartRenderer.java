@@ -23,21 +23,6 @@ public class ChartRenderer extends MapRenderer {
     private final String title;
     private final int xDivs;
 
-    //	public static final byte BLUE = 0x30;
-//	public static final byte BROWN = 0x28;
-//	public static final byte DARK_BROWN = 0x34;
-//	public static final byte DARK_GRAY = 0x2c;
-//	public static final byte DARK_GREEN = 0x1c;
-//	public static final byte GRAY_1 = 0xc;
-//	public static final byte GRAY_2 = 0x18;
-//	public static final byte LIGHT_BROWN = 0x8;
-//	public static final byte LIGHT_GRAY = 0x24;
-//	public static final byte LIGHT_GREEN = 0x4;
-//	public static final byte PALE_BLUE = 0x14;
-//	public static final byte RED = 0x10;
-//	public static final byte TRANSPARENT = 0x0;
-//	public static final byte WHITE = 0x20;
-//	public static final byte BLACK = 0x76;
     private final AuxProtectSpigot plugin;
     public final double xScale = 1;
     private final Color[][] map = new Color[128][128];

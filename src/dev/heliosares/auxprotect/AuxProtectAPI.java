@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 import javax.annotation.Nonnull;
 
+@SuppressWarnings("unused")
 public class AuxProtectAPI {
 
     private static IAuxProtect instance;

@@ -26,7 +26,7 @@ public class PlaybackSolver extends BukkitRunnable {
     private final Map<String, LivingEntity> actors = new HashMap<>();
     private boolean closed;
 
-    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, IOException {
+    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         PlaybackSolver instance = instances.get(sender.getUniqueId());
         if (instance != null) {

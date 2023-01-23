@@ -128,9 +128,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         // TODO readd
-//		lastloaded = data.getData().getLong("lastloaded");
-//		data.getData().set("lastloaded", System.currentTimeMillis());
-//		data.save();
 
         debug("Parsing: " + Bukkit.getBukkitVersion());
         try {
@@ -604,9 +601,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         isShuttingDown = true;
         if (sqlManager != null) {
             // TODO restore
-//			if (dbRunnable != null && sqlManager.isConnected()) {
-//				dbRunnable.run();
-//			}
             sqlManager.close();
         }
         dbRunnable = null;

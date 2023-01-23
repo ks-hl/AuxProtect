@@ -48,8 +48,7 @@ public class APCommand extends Command {
         super(plugin, label, APPermission.NONE, false, aliases);
     }
 
-    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String label,
-                                                        String[] args) {
+    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String[] args) {
         if (args.length == 2) {
             return allPlayers(plugin, true);
         } else if (args.length == 3) {
@@ -151,8 +150,6 @@ public class APCommand extends Command {
                     sender.sendLang(Language.L.NO_PERMISSION);
                     return;
                 }
-                // plugin.config.save();
-                // plugin.saveConfig();
                 try {
                     plugin.getAPConfig().reload();
                 } catch (IOException e) {
@@ -221,7 +218,7 @@ public class APCommand extends Command {
         List<String> out = new ArrayList<>();
         String currentArg = args[args.length - 1];
 
-        if (args.length <= 1) {
+        if (args.length == 1) {
             out.add("info");
             if (APPermission.ADMIN.hasPermission(sender)) {
                 out.add("debug");
@@ -234,19 +231,17 @@ public class APCommand extends Command {
             }
         }
 
-        if (args.length > 0) {
-            for (Command c : commands) {
-                if (!c.exists() || (!c.matches(args[0]) && args.length > 1) || !c.doTabComplete()) {
-                    continue;
-                }
-                if (c.hasPermission(sender)) {
-                    if (args.length == 1) {
-                        out.add(c.getLabel());
-                    } else {
-                        Collection<String> add = (c.onTabComplete(sender, label, args));
-                        if (add != null) {
-                            out.addAll(add);
-                        }
+        for (Command c : commands) {
+            if (!c.exists() || (!c.matches(args[0]) && args.length > 1) || !c.doTabComplete()) {
+                continue;
+            }
+            if (c.hasPermission(sender)) {
+                if (args.length == 1) {
+                    out.add(c.getLabel());
+                } else {
+                    Collection<String> add = (c.onTabComplete(sender, label, args));
+                    if (add != null) {
+                        out.addAll(add);
                     }
                 }
             }

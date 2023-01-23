@@ -36,12 +36,6 @@ public class Telemetry {
             metrics.addCustomChart(new Metrics.SimplePie("hook-" + entry.getKey(), () -> entry.getValue() ? "Enabled" : "Disabled"));
         }
 
-//		metrics.addCustomChart(new Metrics.SimplePie("entriespersecond", new Callable<String>() {
-//			@Override
-//			public String call() throws Exception {
-//				return entry.getValue() ? "Enabled" : "Disabled";
-//			}
-//		}));
     }
 
     public static void reportHook(AuxProtectSpigot plugin, String name, boolean state) {

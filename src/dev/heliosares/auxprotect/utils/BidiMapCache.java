@@ -26,6 +26,7 @@ public class BidiMapCache<K, V> {
         this.updateWhenAccessed = updateWhenAccessed;
     }
 
+    @SuppressWarnings("unused")
     public void clear() {
         set.clear();
         reverse.clear();
@@ -79,6 +80,7 @@ public class BidiMapCache<K, V> {
         }
     }
 
+    @SuppressWarnings("unused")
     public Set<Entry<K, V>> entrySet() {
         return set.entrySet();
     }

@@ -131,8 +131,7 @@ public class XrayCommand extends Command {
                                 thiscmd.append(" ").append(arg);
                             }
                             message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, thiscmd + " -i"));
-                            message.event(
-                                    new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
+                            message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
                             player.spigot().sendMessage(message.create());
                             sender.sendMessageRaw("");
 

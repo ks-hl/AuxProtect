@@ -23,10 +23,6 @@ import java.util.List;
 public class ActivitySolver {
     public static BaseComponent[] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
-//		if (minutes > 60 * 12) {
-//			message.append("Time period too long. Max 12 hours.");
-//			return message.create();
-//		}
         LocalDateTime startTime = Instant.ofEpochMilli(rangeStart).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withSecond(0).withNano(0);
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh:mm a");

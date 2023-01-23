@@ -29,8 +29,8 @@ public class Results {
     final IAuxProtect plugin;
     private final List<DbEntry> entries;
     private final Parameters params;
-    public int perpage = 4;
-    public int prevpage = 0;
+    public int perPage = 4;
+    public int prevPage = 0;
 
     public Results(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
         this.entries = entries;
@@ -49,7 +49,7 @@ public class Results {
             }
         }
         if (allNullWorld) {
-            perpage = 10;
+            perPage = 10;
         }
         this.params = params;
     }
@@ -183,19 +183,19 @@ public class Results {
     }
 
     public void showPage(int page) throws SQLException {
-        showPage(page, perpage);
+        showPage(page, perPage);
     }
 
-    public void showPage(int page, int perpage_) throws SQLException {
-        int lastpage = getNumPages(perpage_);
+    public void showPage(int page, int perPage_) throws SQLException {
+        int lastpage = getNumPages(perPage_);
         if (page > lastpage || page < 1) {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
             return;
         }
-        perpage = perpage_;
-        prevpage = page;
+        perPage = perPage_;
+        prevPage = page;
         sendHeader();
-        for (int i = (page - 1) * perpage; i < (page) * perpage && i < getEntries().size(); i++) {
+        for (int i = (page - 1) * perPage; i < (page) * perPage && i < getEntries().size(); i++) {
             DbEntry en = getEntries().get(i);
 
             sendEntry(en, i);
@@ -210,16 +210,16 @@ public class Results {
     public void sendArrowKeys(int page) {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
-        int lastpage = getNumPages(perpage);
+        int lastpage = getNumPages(perPage);
         message.append("§7(");
         if (page > 1) {
             message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW)
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + perpage))
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + perPage))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§9Jump to First Page")));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + (page - 1) + ":" + perpage))
+                            commandPrefix + " l " + (page - 1) + ":" + perPage))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Last Page")));
         } else {
             message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ""));
@@ -232,12 +232,12 @@ public class Results {
         if (page < lastpage) {
             message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + (page + 1) + ":" + perpage))
+                            commandPrefix + " l " + (page + 1) + ":" + perPage))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Next Page")));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + lastpage + ":" + perpage))
+                            commandPrefix + " l " + lastpage + ":" + perPage))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Jump to Last Page")));
         } else {
             message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW).event((ClickEvent) null).event((HoverEvent) null);
@@ -245,7 +245,7 @@ public class Results {
             message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
         }
         message.append("§7)  ").event((ClickEvent) null).event((HoverEvent) null);
-        message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(perpage), getEntries().size()));
+        message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(perPage), getEntries().size()));
         player.sendMessage(message.create());
     }
 

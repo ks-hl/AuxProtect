@@ -190,27 +190,26 @@ public class LookupCommand extends Command {
                         return;
                     }
                     if (perpage == -1) {
-                        perpage = result.perpage;
+                        perpage = result.perPage;
                     }
                     if (first) {
                         page = 1;
                     } else if (last) {
-                        page = result.getNumPages(result.perpage);
+                        page = result.getNumPages(result.perPage);
                     } else if (next) {
-                        page = result.prevpage + 1;
+                        page = result.prevPage + 1;
                     } else if (prev) {
-                        page = result.prevpage - 1;
+                        page = result.prevPage - 1;
                     }
                     if (perpage > 0) {
                         if (perpage > 100) {
                             perpage = 100;
                         }
                         result.showPage(page, perpage);
-                        return;
                     } else {
                         result.showPage(page);
-                        return;
                     }
+                    return;
                 }
             }
 

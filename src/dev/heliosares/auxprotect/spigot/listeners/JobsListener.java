@@ -39,12 +39,6 @@ public class JobsListener implements Listener {
 //		double boost = 1;
         if (oplayer instanceof Player player) {
             location = player.getLocation();
-//			try {
-//				boost += Jobs.getPlayerManager().getBoost(Jobs.getPlayerManager().getJobsPlayer(player), job, type);
-//			} catch (Exception e1) {
-//				plugin.warning("Error while getting Jobs boost");
-//				plugin.print(e1);
-//			}
         }
         char typechar = '?';
         switch (type) {

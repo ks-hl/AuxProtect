@@ -37,10 +37,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private String stackLog = "";
     private boolean enabled;
 
-    public AuxProtectBungee() {
-        instance = this;
-    }
-
     public static IAuxProtect getInstance() {
         return instance;
     }
@@ -60,6 +56,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public void onEnable() {
+        instance = this;
         enabled = true;
         try {
             config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,

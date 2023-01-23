@@ -137,14 +137,6 @@ public class DumpCommand extends Command {
             trace.append("\n\n");
         }
 
-//        if (!file) {
-//            try {
-//                return HasteBinAPI.post(trace);
-//            } catch (Exception e) {
-//                plugin.warning("Failed to upload trace, writing to file...");
-//                plugin.print(e);
-//            }
-//        }
         File dumpdir = new File(plugin.getDataFolder(), "dump");
         File dump = new File(dumpdir, "dump-" + System.currentTimeMillis() + ".txt");
         boolean ignored = dumpdir.mkdirs();

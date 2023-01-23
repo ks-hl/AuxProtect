@@ -15,7 +15,6 @@ public class APPermission {
     public static final APPermission LOOKUP = ROOT.dot("lookup");
     public static final APPermission LOOKUP_ACTION = LOOKUP.dot("action");
     public static final APPermission LOOKUP_XRAY = LOOKUP.dot("xray");
-    public static final APPermission LOOKUP_XRAY_OVERWRITE = LOOKUP_XRAY.dot("overwrite");
     public static final APPermission LOOKUP_PLAYTIME = LOOKUP.dot("playtime");
     public static final APPermission LOOKUP_ACTIVITY = LOOKUP.dot("activity");
     public static final APPermission LOOKUP_PLAYBACK = LOOKUP.dot("playback");

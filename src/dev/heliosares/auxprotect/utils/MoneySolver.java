@@ -87,8 +87,10 @@ public class MoneySolver extends ChartRenderer {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("SameParameterValue")
     private static double sigDigRounder(double value, int nSigDig, int dir) {
-        double intermediate = value / Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1));
+        double d1 = Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1));
+        double intermediate = value / d1;
 
         if (dir > 0)
             intermediate = Math.ceil(intermediate);
@@ -97,7 +99,7 @@ public class MoneySolver extends ChartRenderer {
         else
             intermediate = Math.round(intermediate);
 
-        return (intermediate * Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1)));
+        return (intermediate * d1);
 
     }
 

@@ -32,7 +32,7 @@ public class MigrationManager {
         // 2
         //
 
-        migrationActions.put(2, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        migrationActions.put(2, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
             plugin.info("Migrating database to v2");
             tryExecute("ALTER TABLE worlds RENAME TO auxprotect_worlds;");
         }, null));
@@ -42,7 +42,7 @@ public class MigrationManager {
         //
 
         final Table[][] migrateTablesV3 = {new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM, Table.AUXPROTECT_INVENTORY}};
-        migrationActions.put(3, new MigrationAction(true, true, () -> {
+        migrationActions.put(3, new MigrationAction(true, () -> {
             if (plugin.getPlatform() == PlatformType.BUNGEE) {
                 migrateTablesV3[0] = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM};
             }
@@ -127,7 +127,7 @@ public class MigrationManager {
         // 4
         //
 
-        migrationActions.put(4, new MigrationAction(true, true, null, () -> {
+        migrationActions.put(4, new MigrationAction(true, null, () -> {
             plugin.info("Migrating database to v4. DO NOT INTERRUPT");
             if (plugin.getPlatform() == PlatformType.SPIGOT) {
                 ArrayList<Object[]> output = new ArrayList<>();
@@ -177,14 +177,14 @@ public class MigrationManager {
         // 5
         //
 
-        migrationActions.put(5, new MigrationAction(true, true, () -> tryExecute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
+        migrationActions.put(5, new MigrationAction(true, () -> tryExecute("ALTER TABLE " + SQLManager.getTablePrefix() + "auxprotect RENAME TO "
                 + Table.AUXPROTECT_MAIN), null));
 
         //
         // 6
         //
 
-        migrationActions.put(6, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
+        migrationActions.put(6, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN hasblob BOOL");
 
             if (!plugin.getAPConfig().doSkipV6Migration()) {
@@ -293,7 +293,7 @@ public class MigrationManager {
         // 7
         //
 
-        migrationActions.put(7, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
+        migrationActions.put(7, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
 
             total = sql.count(Table.AUXPROTECT_INVDIFFBLOB);
 
@@ -337,7 +337,7 @@ public class MigrationManager {
         // 8
         //
 
-        migrationActions.put(8, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        migrationActions.put(8, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
         }, () -> {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN time TO blobid");
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN `blob` TO ablob"); //This was a poor naming choice as it conflicts with the datatype
@@ -353,14 +353,14 @@ public class MigrationManager {
         // 9
         //
 
-        migrationActions.put(9, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        migrationActions.put(9, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
         }, () -> tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN ablob BLOB")));
 
         //
         // 10
         //
 
-        migrationActions.put(10, new MigrationAction(true, plugin.getPlatform() == PlatformType.SPIGOT,
+        migrationActions.put(10, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT,
                 () -> {
                     try {
                         sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name");
@@ -602,7 +602,7 @@ public class MigrationManager {
         void run() throws SQLException;
     }
 
-    private record MigrationAction(boolean backup, boolean necessary, @Nullable MigrateRunnable preTableAction,
+    private record MigrationAction(boolean necessary, @Nullable MigrateRunnable preTableAction,
                                    @Nullable MigrateRunnable postTableAction) {
     }
 }

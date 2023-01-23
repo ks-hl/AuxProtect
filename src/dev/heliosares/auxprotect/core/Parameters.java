@@ -19,7 +19,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
-@SuppressWarnings("UnusedReturnValue")
+@SuppressWarnings({"UnusedReturnValue", "unused"})
 public class Parameters {
 
     // ----------------------------------------------
@@ -258,12 +258,12 @@ public class Parameters {
         return base;
     }
 
-    private static List<String> split(final String str, final boolean allowEscape) {
+    private static List<String> split(final String str) {
         StringBuilder build = new StringBuilder();
         boolean escape = false;
         List<String> values = new ArrayList<>();
         for (char current : str.toCharArray()) {
-            if (allowEscape && current == '\\') {
+            if (current == '\\') {
                 escape = true;
                 continue;
             }
@@ -450,7 +450,7 @@ public class Parameters {
             param = param.substring(1);
         }
         if (table.hasStringTarget()) {
-            targets.addAll(split(param, true));
+            targets.addAll(split(param));
         } else {
             for (String target : param.split(",")) {
                 int uid;
@@ -482,7 +482,6 @@ public class Parameters {
 
     /**
      * Sets the data. Equivalent to data:<param>
-     *
      */
     public void data(String param) throws ParseException {
         if (table == null) {
@@ -495,7 +494,7 @@ public class Parameters {
         if (negateData = param.startsWith("!")) {
             param = param.substring(1);
         }
-        datas.addAll(split(param, true));
+        datas.addAll(split(param));
     }
 
     // -------------------------------------------------
@@ -615,7 +614,7 @@ public class Parameters {
      */
     public Parameters target(UUID uuid, boolean negate) throws LookupException {
         this.negateTarget = negate;
-        int uid = 0;
+        int uid;
         try {
             uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
         } catch (ConnectionPool.BusyException e) {
@@ -847,6 +846,7 @@ public class Parameters {
             if (!radius.isEmpty() && location != null) {
                 radius.forEach((r, n) -> {
                     String between = " BETWEEN ";
+                    assert location.getWorld() != null;
                     String coordstmt = "x" + between + (location.getBlockX() - r) + " AND " + (location.getBlockX() + r)
                             + " AND y" + between + (location.getBlockY() - r) + " AND " + (location.getBlockY() + r)
                             + " AND z" + between + (location.getBlockZ() - r) + " AND " + (location.getBlockZ() + r)
@@ -927,24 +927,22 @@ public class Parameters {
         if (!ratings.isEmpty() && entry instanceof XrayEntry && !ratings.contains(((XrayEntry) entry).getRating())) {
             return false;
         }
-        if (datas != null) {
-            boolean any = false;
-            for (String data : datas) {
-                StringBuilder node = new StringBuilder();
-                for (String part : data.split("[\\*\\-]")) {
-                    if (node.length() > 0) {
-                        node.append(".*");
-                    }
-                    node.append(Pattern.quote(part));
+        boolean any = false;
+        for (String data : datas) {
+            StringBuilder node = new StringBuilder();
+            for (String part : data.split("[*\\-]")) {
+                if (node.length() > 0) {
+                    node.append(".*");
                 }
-                //noinspection AssignmentUsedAsCondition
-                if (any = data.matches(node.toString())) {
-                    break;
-                }
+                node.append(Pattern.quote(part));
             }
-            if (!any) {
-                return false;
+            //noinspection AssignmentUsedAsCondition
+            if (any = data.matches(node.toString())) {
+                break;
             }
+        }
+        if (!any) {
+            return false;
         }
         if (!radius.isEmpty() && location != null) {
             if (radius.entrySet().stream().anyMatch((e) -> e.getValue() == distance(entry) > e.getKey())) {
@@ -982,6 +980,7 @@ public class Parameters {
         if (location == null) {
             return -1;
         }
+        assert location.getWorld() != null;
         if (!entry.world.equals(location.getWorld().getName())) {
             return Integer.MAX_VALUE;
         }

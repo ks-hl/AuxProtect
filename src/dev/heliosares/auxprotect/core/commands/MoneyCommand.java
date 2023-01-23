@@ -36,6 +36,6 @@ public class MoneyCommand extends Command {
 
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-        return APCommand.tabCompletePlayerAndTime(plugin, sender, label, args);
+        return APCommand.tabCompletePlayerAndTime(plugin, sender, args);
     }
 }

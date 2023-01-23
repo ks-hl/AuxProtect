@@ -110,13 +110,6 @@ public class Pane implements InventoryHolder {
         CLAIM, SHOW
     }
 
-    private static class Button {
-        final Runnable run;
-        final int index;
-
-        public Button(Runnable run, int index) {
-            this.run = run;
-            this.index = index;
-        }
+    private record Button(Runnable run, int index) {
     }
 }
