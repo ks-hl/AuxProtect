@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.utils.SQLFunctionWithException;
 import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.*;
@@ -105,6 +106,15 @@ public class ConnectionPool {
         return (Math.round(bytes * 100.0) / 100.0) + " " + out;
     }
 
+    private static boolean testConnection(Connection connection) {
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT 1")) {
+            stmt.execute();
+        } catch (SQLException ignored) {
+            return false;
+        }
+        return true;
+    }
+
     public void init(SQLConsumer initializationTask) throws SQLException {
         connection = newConnectionSupplier.get();
         if (ready) throw new IllegalStateException("Already initialized");
@@ -146,6 +156,7 @@ public class ConnectionPool {
         }
     }
 
+    @OverridingMethodsMustInvokeSuper
     public void close() {
         if (closed) {
             return;
@@ -230,7 +241,7 @@ public class ConnectionPool {
         if (connection == null) return false;
         if (!isMySQL()) return true;
         if (System.currentTimeMillis() - lastChecked < 30000L) return true;
-        if (testConnection()) {
+        if (testConnection(connection)) {
             lastChecked = System.currentTimeMillis();
             return true;
         } else {
@@ -241,15 +252,6 @@ public class ConnectionPool {
             }
             return false;
         }
-    }
-
-    private boolean testConnection() {
-        try (PreparedStatement stmt = connection.prepareStatement("SELECT 1")) {
-            stmt.execute();
-        } catch (SQLException ignored) {
-            return false;
-        }
-        return true;
     }
 
     public boolean isMySQL() {
@@ -315,7 +317,7 @@ public class ConnectionPool {
         }, 30000L, ResultMap.class);
     }
 
-    private void debugSQLStatement(String stmt, Object... args) {
+    public void debugSQLStatement(String stmt, Object... args) {
         final String originalStmt = stmt;
         try {
             for (Object arg : args) {
