@@ -18,6 +18,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.function.BinaryOperator;
+import java.util.stream.Stream;
 
 public class SQLManager extends ConnectionPool {
     public static final int MAX_LOOKUP_SIZE = 500000;
@@ -280,16 +282,19 @@ public class SQLManager extends ConnectionPool {
 
     //TODO test this
     public int purgeUIDs() throws SQLException {
-        final String baseStatement = "SELECT DISTINCT uid FROM ";
-        String stmt = "DELETE FROM auxprotect_uids WHERE uid NOT IN (" + baseStatement +
-                "(" +
-                Arrays.stream(Table.values())
-                        .filter(Table::hasAPEntries)
-                        .map(Table::toString)
-                        .map(table -> baseStatement + table)
-                        .reduce((a, b) -> a + " UNION " + b)
-                        .orElse("") +
-                "))";
+        BinaryOperator<String> reducer = (a, b) -> a + " AND " + b;
+        String stmt = "DELETE FROM auxprotect_uids WHERE " +
+                Stream.of(
+                        Arrays.stream(Table.values())
+                                .filter(Table::hasAPEntries)
+                                .map(table -> "(uid NOT IN (SELECT uid FROM " + table + " WHERE uid IS NOT NULL))")
+                                .reduce(reducer).orElse(""),
+                        Arrays.stream(Table.values())
+                                .filter(Table::hasAPEntries)
+                                .filter(table -> !table.hasStringTarget())
+                                .map(table -> "(uid NOT IN (SELECT target_id FROM " + table + " WHERE target_id IS NOT NULL))")
+                                .reduce(reducer).orElse("")
+                ).reduce(reducer).orElseThrow();
         int count = executeReturnRows(stmt);
         plugin.debug("Purged " + count + " UIDs");
         return count;
