@@ -98,6 +98,9 @@ database-busy: '&cThe database is currently busy. Try again later or check the c
 
 
 actions:
+  pluginload:
+    p: loaded plugin
+    n: unloaded plugin
   vein: mined vein
   leash:
     p: leashed

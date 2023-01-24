@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
@@ -151,6 +152,8 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         dbRunnable = new DatabaseRunnable(this, sqlManager);
 
         getProxy().getScheduler().schedule(this, dbRunnable, 250, 250, TimeUnit.MILLISECONDS);
+
+        dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
     @Override
@@ -160,6 +163,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         getProxy().getPluginManager().unregisterListeners(this);
         getProxy().getPluginManager().unregisterCommands(this);
         if (dbRunnable != null) {
+            dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
                 info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
                 sqlManager.setSkipAsyncCheck(true);

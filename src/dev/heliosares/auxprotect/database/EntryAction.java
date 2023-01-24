@@ -20,6 +20,7 @@ public class EntryAction {
     public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
     public static final EntryAction BUCKET = new EntryAction("bucket", 10, 11);
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
+    public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
 
     public static final EntryAction ALERT = new EntryAction("alert", 128);
     public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
@@ -218,7 +219,8 @@ public class EntryAction {
                     equals(IP) ||
                     equals(USERNAME) ||
                     equals(SESSION) ||
-                    equals(CONNECT);
+                    equals(CONNECT) ||
+                    equals(PLUGINLOAD);
         } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
             return !equals(MSG) && !equals(CONNECT);
         }

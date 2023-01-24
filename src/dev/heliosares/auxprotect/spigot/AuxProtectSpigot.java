@@ -542,6 +542,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
             }
         }.runTaskTimerAsynchronously(this, 20, 10 * 20);
+
+        dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
     private boolean hook(Supplier<Listener> listener, String... names) {
@@ -607,6 +609,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public void onDisable() {
         isShuttingDown = true;
         if (dbRunnable != null) {
+            dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
                 info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
                 sqlManager.setSkipAsyncCheck(true);
