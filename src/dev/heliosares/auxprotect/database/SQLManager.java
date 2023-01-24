@@ -297,6 +297,7 @@ public class SQLManager extends ConnectionPool {
                 ).reduce(reducer).orElseThrow();
         int count = executeReturnRows(stmt);
         plugin.debug("Purged " + count + " UIDs");
+        this.usermanager.clearCache();
         return count;
     }
 

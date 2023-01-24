@@ -289,4 +289,9 @@ public class SQLUserManager {
         sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV
                 + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)", connection);
     }
+
+    public void clearCache() {
+        usernames.clear();
+        uuids.clear();
+    }
 }
