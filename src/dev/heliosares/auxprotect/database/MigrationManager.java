@@ -450,7 +450,8 @@ public class MigrationManager {
             plugin.info("This may take a while. Please do not interrupt.");
             isMigrating = true;
             if (!sql.isMySQL()) {
-                plugin.info("Pre-migration database backup created: " + sql.backup());
+                String path = sql.backup(connection);
+                if (path != null) plugin.info("Pre-migration database backup created: " + path);
             }
         }
 

@@ -22,6 +22,7 @@ public class APConfig {
     private boolean overrideCommands;
     private boolean skipV6Migration;
     private boolean logIncrementalPosition;
+    private boolean disableVacuum;
     private KeyUtil key;
     private ConfigAdapter config;
     private int debug;
@@ -53,6 +54,8 @@ public class APConfig {
             port = config.getString("MySQL.port", "3306");
             database = config.getString("MySQL.database", "database");
             tablePrefix = config.getString("MySQL.table-prefix");
+        } else {
+            disableVacuum = config.getBoolean("disablevacuum", false);
         }
         if (config.getPlatform() == PlatformType.SPIGOT) {
             skipV6Migration = config.getBoolean("skipv6migration");
@@ -245,6 +248,10 @@ public class APConfig {
 
     public boolean doLogIncrementalPosition() {
         return logIncrementalPosition;
+    }
+
+    public boolean doDisableVacuum() {
+        return disableVacuum;
     }
 
 }

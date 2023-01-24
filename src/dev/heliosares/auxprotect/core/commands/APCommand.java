@@ -178,14 +178,14 @@ public class APCommand extends Command {
                     return;
                 }
                 plugin.runAsync(() -> {
-                    String backup = null;
+                    String backup;
                     try {
-                        backup = plugin.getSqlManager().backup();
+                        backup = plugin.getSqlManager().executeReturn(connection -> plugin.getSqlManager().backup(connection), 30000L, String.class);
                     } catch (Exception e) {
                         plugin.print(e);
                         return;
                     }
-                    sender.sendMessageRaw("Backup created: " + backup); // TODO lang
+                    if (backup != null) sender.sendMessageRaw("Backup created: " + backup); // TODO lang
                 });
                 return;
             } else {

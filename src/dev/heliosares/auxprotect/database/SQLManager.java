@@ -12,6 +12,8 @@ import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -175,13 +177,25 @@ public class SQLManager extends ConnectionPool {
         super.close();
     }
 
-    public String backup() throws SQLException {
-        if (isMySQL()) {
-            return null;
-        }
+    @Nullable
+    public String backup(Connection connection) throws SQLException {
+        if (isMySQL()) return null;
 
         File backup = new File(sqliteFile.getParentFile(), "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");
-        execute(connection -> execute("VACUUM INTO ?", connection, backup.getAbsolutePath()), 30000L);
+
+        if (plugin.getAPConfig().doDisableVacuum()) {
+            plugin.info("Vacuum is disabled, creating physical copy instead");
+            if (!backup.getParentFile().exists()) {
+                boolean ignored = backup.getParentFile().mkdirs();
+            }
+            try {
+                Files.copy(sqliteFile.toPath(), backup.toPath());
+            } catch (IOException e) {
+                plugin.warning("Failed to create backup.");
+            }
+        } else {
+            execute("VACUUM INTO ?", connection, backup.getAbsolutePath());
+        }
         return backup.getAbsolutePath();
     }
 
@@ -302,6 +316,10 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void vacuum() throws SQLException {
+        if (plugin.getAPConfig().doDisableVacuum()) {
+            plugin.info("Vacuum is disabled. To force this run `ap sqli vacuum` from the console.");
+            return;
+        }
         long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM);
         if (sinceLastVac < 24L * 3600000L * 6L) {
             plugin.info(Language.L.COMMAND__PURGE__NOTVACUUM.translate(TimeUtil.millisToString(sinceLastVac)));
