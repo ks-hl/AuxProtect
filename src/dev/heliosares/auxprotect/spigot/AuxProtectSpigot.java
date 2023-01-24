@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.listeners.*;
 import dev.heliosares.auxprotect.towny.TownyListener;
 import dev.heliosares.auxprotect.utils.Pane;
@@ -605,13 +606,25 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     @Override
     public void onDisable() {
         isShuttingDown = true;
-        if (sqlManager != null) {
-            // TODO restore
-            sqlManager.close();
+        if (dbRunnable != null) {
+            try {
+                info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
+                sqlManager.setSkipAsyncCheck(true);
+                sqlManager.execute(connection -> dbRunnable.run(true), 3000L);
+            } catch (BusyException e) {
+                warning("Database busy, some entries will be lost.");
+            } catch (SQLException e) {
+                warning("Error while logging final entries, some entries will be lost.");
+                print(e);
+            }
+            dbRunnable = null;
         }
-        dbRunnable = null;
-        sqlManager = null;
+        if (sqlManager != null) {
+            sqlManager.close();
+            sqlManager = null;
+        }
         Pane.shutdown();
+        info("Done disabling.");
     }
 
     @Override

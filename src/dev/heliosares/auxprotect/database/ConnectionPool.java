@@ -33,6 +33,7 @@ public class ConnectionPool {
     private long lockedSince;
     private long timeConnected;
     private boolean ready;
+    private boolean skipAsyncCheck;
 
     public ConnectionPool(IAuxProtect plugin, String connString, boolean mysql, @Nullable String user, @Nullable String pwd) throws ClassNotFoundException {
         this.plugin = plugin;
@@ -156,9 +157,9 @@ public class ConnectionPool {
     }
 
     private void checkAsync() throws IllegalStateException {
+        if (skipAsyncCheck) return;
         if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
-            plugin.warning("Synchronous call to database.");
-            throw new IllegalStateException();
+            throw new IllegalStateException("Synchronous call to database.");
         }
     }
 
@@ -172,6 +173,14 @@ public class ConnectionPool {
             connection.close();
         } catch (SQLException ignored) {
         }
+    }
+
+    /**
+     * Causes the normal check to prevent synchronous calls to the database to be skipped.
+     * This should only be called when shutting down.
+     */
+    public void setSkipAsyncCheck(boolean state) {
+        skipAsyncCheck = state;
     }
 
     /**

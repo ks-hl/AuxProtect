@@ -85,9 +85,13 @@ public class DatabaseRunnable implements Runnable {
                 plugin.warning("Overlapping logging windows by 5 minutes, continuing.");
             }
         }
+        run(false);
+    }
+
+    public synchronized void run(boolean force) {
         lockedSince = System.currentTimeMillis();
         try {
-            checkCache();
+            checkCache(force);
             sqlManager.tick();
         } catch (Throwable e) {
             plugin.print(e);
@@ -96,12 +100,12 @@ public class DatabaseRunnable implements Runnable {
         }
     }
 
-    private void checkCache() {
+    private void checkCache(boolean force) {
         synchronized (pickups) {
             Iterator<PickupEntry> itr = pickups.iterator();
             while (itr.hasNext()) {
                 PickupEntry next = itr.next();
-                if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
+                if (force || next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
                     Table.AUXPROTECT_INVENTORY.queue.add(next);
                     itr.remove();
                 }
@@ -111,7 +115,7 @@ public class DatabaseRunnable implements Runnable {
             Iterator<JobsEntry> itr = jobsentries.iterator();
             while (itr.hasNext()) {
                 JobsEntry next = itr.next();
-                if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
+                if (force || next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
                     EntryAction.JOBS.getTable().queue.add(next);
                     itr.remove();
                 }

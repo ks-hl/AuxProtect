@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
@@ -16,6 +17,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
@@ -158,11 +160,23 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         getProxy().getPluginManager().unregisterListeners(this);
         getProxy().getPluginManager().unregisterCommands(this);
         if (dbRunnable != null) {
-            dbRunnable.run();
+            try {
+                info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
+                sqlManager.setSkipAsyncCheck(true);
+                sqlManager.execute(connection -> dbRunnable.run(true), 3000L);
+            } catch (BusyException e) {
+                warning("Database busy, some entries will be lost.");
+            } catch (SQLException e) {
+                warning("Error while logging final entries, some entries will be lost.");
+                print(e);
+            }
+            dbRunnable = null;
         }
         if (sqlManager != null) {
             sqlManager.close();
+            sqlManager = null;
         }
+        info("Done disabling.");
     }
 
     @Override
