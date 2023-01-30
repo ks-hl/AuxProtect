@@ -231,6 +231,11 @@ public class Parameters {
             parameters.worlds.clear();
             parameters.worlds.add(((org.bukkit.entity.Player) sender.getSender()).getWorld().getName());
         }
+        if (parameters.flags.contains(Flag.MONEY)) {
+            parameters.actions.clear();
+            parameters.actions.add(EntryAction.MONEY.id);
+            parameters.actions.add(EntryAction.MONEY.idPos);
+        }
         if (parameters.ratings.size() > 0) {
             if (!parameters.actions.isEmpty()) {
                 for (int id : parameters.actions) {

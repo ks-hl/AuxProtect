@@ -35,7 +35,7 @@ public class MoneySolver extends ChartRenderer {
         long duration = end - start;
         long inc = duration / 99;
         double currentMoney = 0;
-        int resultsIndex = 0;
+
         LocalDate startDate = Instant.ofEpochMilli(start).atZone(ZoneId.systemDefault()).toLocalDate();
         LocalDate endDate = Instant.ofEpochMilli(end).atZone(ZoneId.systemDefault()).toLocalDate();
         this.xDivs = new ArrayList<>();
@@ -43,8 +43,10 @@ public class MoneySolver extends ChartRenderer {
         this.xDivs.add(endDate);
         double maxMoney = 0;
         for (int i = 0; i < 100; i++) {
-            while (true) {
-                DbEntry result = results.get(results.size() - 1 - resultsIndex);
+            for (int resultsIndex = 0; ; resultsIndex++) {
+                int index = results.size() - 1 - resultsIndex;
+                if (index < 0) break;
+                DbEntry result = results.get(index);
                 if (!result.getAction().equals(EntryAction.MONEY)) {
                     continue;
                 }
@@ -66,7 +68,6 @@ public class MoneySolver extends ChartRenderer {
                     plugin.print(e);
                     currentMoney = 0;
                 }
-                resultsIndex++;
             }
             values[i] = currentMoney;
             if (currentMoney > maxMoney) {
