@@ -68,7 +68,7 @@ public class PurgeCommand extends Command {
             count += plugin.getSqlManager().purgeUIDs();
 
             if (!plugin.getSqlManager().isMySQL()) {
-                plugin.getSqlManager().vacuum();
+                plugin.getSqlManager().execute(plugin.getSqlManager()::vacuum, 30000L);
             }
         } catch (SQLException e) {
             plugin.print(e);

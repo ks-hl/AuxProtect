@@ -499,7 +499,7 @@ public class MigrationManager {
 
         if (isMigrating && !sql.isMySQL()) {
             try {
-                sql.vacuum();
+                sql.vacuum(connection);
             } catch (SQLException e) {
                 plugin.warning("Error while condensing database, you can ignore this");
                 plugin.print(e);

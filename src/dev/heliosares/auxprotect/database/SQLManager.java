@@ -62,7 +62,7 @@ public class SQLManager extends ConnectionPool {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             try {
                 tm = new TownyManager((dev.heliosares.auxprotect.spigot.AuxProtectSpigot) plugin, this);
-            } catch (NoClassDefFoundError ignored) {
+            } catch (NoClassDefFoundError | IllegalStateException ignored) {
             }
         }
         this.townymanager = tm;
@@ -155,7 +155,7 @@ public class SQLManager extends ConnectionPool {
                     plugin.info(Language.L.COMMAND__PURGE__UIDS.translate());
                     count += purgeUIDs();
 
-                    if (!isMySQL()) vacuum();
+                    if (!isMySQL()) plugin.getSqlManager().execute(plugin.getSqlManager()::vacuum, 30000L);
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                     plugin.print(e);
@@ -183,11 +183,11 @@ public class SQLManager extends ConnectionPool {
 
         File backup = new File(sqliteFile.getParentFile(), "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");
 
+        if (!backup.getParentFile().exists()) {
+            boolean ignored = backup.getParentFile().mkdirs();
+        }
         if (plugin.getAPConfig().doDisableVacuum()) {
             plugin.info("Vacuum is disabled, creating physical copy instead");
-            if (!backup.getParentFile().exists()) {
-                boolean ignored = backup.getParentFile().mkdirs();
-            }
             try {
                 Files.copy(sqliteFile.toPath(), backup.toPath());
             } catch (IOException e) {
@@ -315,19 +315,19 @@ public class SQLManager extends ConnectionPool {
         return count;
     }
 
-    public void vacuum() throws SQLException {
+    public void vacuum(Connection connection) throws SQLException {
         if (plugin.getAPConfig().doDisableVacuum()) {
             plugin.info("Vacuum is disabled. To force this run `ap sqli vacuum` from the console.");
             return;
         }
-        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM);
+        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM, connection);
         if (sinceLastVac < 24L * 3600000L * 6L) {
             plugin.info(Language.L.COMMAND__PURGE__NOTVACUUM.translate(TimeUtil.millisToString(sinceLastVac)));
             return;
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
-        execute("VACUUM;", 30000L);
-        setLast(LastKeys.VACUUM, System.currentTimeMillis());
+        execute("VACUUM;", connection);
+        setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
     }
 
 
@@ -674,20 +674,25 @@ public class SQLManager extends ConnectionPool {
 
     //TODO implement
     public void setLast(LastKeys key, long value) throws SQLException {
-        execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", 30000L, value, key.id);
+        execute(connection -> setLast(key, value, connection), 30000L);
+    }
+
+    public void setLast(LastKeys key, long value, Connection connection) throws SQLException {
+        execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", connection, value, key.id);
     }
 
     public long getLast(LastKeys key) throws SQLException {
-        return executeReturn(connection -> {
-            try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
-                stmt.setShort(1, key.id);
-                try (ResultSet rs = stmt.executeQuery()) {
-                    if (rs.next()) return rs.getLong(1);
-                }
-                return -1L;
+        return executeReturn(connection -> getLast(key, connection), 30000L, Long.class);
+    }
 
+    public long getLast(LastKeys key, Connection connection) throws SQLException {
+        try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
+            stmt.setShort(1, key.id);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) return rs.getLong(1);
             }
-        }, 30000L, Long.class);
+            return -1;
+        }
     }
 
     @Nullable
