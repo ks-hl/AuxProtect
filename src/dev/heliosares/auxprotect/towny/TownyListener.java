@@ -41,6 +41,7 @@ public class TownyListener implements Listener {
     // Towns
 
     public static String getLabel(Government gov) {
+        if (gov == null || gov.getUUID() == null) return "#null";
         return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
     }
 
