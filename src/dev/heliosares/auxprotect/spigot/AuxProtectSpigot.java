@@ -485,8 +485,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             continue;
                         }
                         if (config.getInventoryDiffInterval() > 0) {
-                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config
-                                    .getInventoryDiffInterval()) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventoryDiff >= config.getInventoryDiffInterval()) {
                                 apPlayer.tickDiffInventory();
                             }
                         }
