@@ -132,8 +132,6 @@ public class APPlayer {
             }
             try {
                 plugin.getSqlManager().getInvDiffManager().logInvDiff(player.getUniqueId(), i, qty, item);
-                plugin.debug("Found diff for " + player.getName() + ": slot=" + i + " qty=" + qty + " item="
-                        + (item == null ? null : item.getType().toString().toLowerCase()), 5);
             } catch (Exception e) {
                 plugin.print(e);
                 return;
