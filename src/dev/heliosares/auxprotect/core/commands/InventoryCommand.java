@@ -72,7 +72,7 @@ public class InventoryCommand extends Command {
                 sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, target);
                 return;
             }
-            DiffInventoryRecord inv = null;
+            DiffInventoryRecord inv;
             try {
                 inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
             } catch (BusyException e) {

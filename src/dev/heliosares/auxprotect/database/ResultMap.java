@@ -47,24 +47,6 @@ public class ResultMap {
         results = Collections.unmodifiableList(results_);
     }
 
-    public <T> T getFirstElement(Class<T> clazz) throws NoSuchElementException {
-        if (results.isEmpty()) throw new NoSuchElementException();
-        return results.get(0).getValue(clazz, 1);
-    }
-
-    public <T> T getFirstElementOrNull(Class<T> clazz) {
-        try {
-            return getFirstElement(clazz);
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-
-    public Map<String, Integer> getLabelMap() {
-        return labelMap;
-    }
-
     public List<String> getLabels() {
         return labels;
     }
@@ -87,10 +69,9 @@ public class ResultMap {
         }
 
         public Object getValue(int index) throws IndexOutOfBoundsException {
-            index--;
-            if (index >= values.size())
+            if (index >= values.size() || index < 0)
                 throw new IndexOutOfBoundsException("Specified index " + index + " for size " + values.size());
-            return values.get(index - 1);
+            return values.get(index);
         }
 
         public <T> T getValue(Class<T> clazz, String columnName) throws ClassCastException, NoSuchElementException {

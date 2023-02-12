@@ -104,19 +104,36 @@ public class InvDiffManager extends BlobManager {
 
         try {
             return sql.executeReturnException(connection -> {
-                ResultMap map = sql.executeGetMap("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
-                        " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1);", uid, EntryAction.INVENTORY.id, time);
+                long basetime_;
+                long blobid_;
+                try (PreparedStatement statement = connection.prepareStatement("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
+                        " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
+                    statement.setInt(1, uid);
+                    statement.setLong(2, EntryAction.INVENTORY.id);
+                    statement.setLong(3, time);
+                    try (ResultSet rs = statement.executeQuery()) {
+                        if (!rs.next()) {
+                            plugin.debug("Did not find base inventory");
+                            return null;
+                        }
+                        basetime_ = rs.getLong(1);
+                        blobid_ = rs.getLong(2);
+                    }
+                }
 
-                if (map.getResults().isEmpty()) return null;
-                final long basetime = map.getResults().get(0).getValue(Long.class, 1);
-                final long blobid = map.getResults().get(0).getValue(Long.class, 2);
+                final long basetime = basetime_;
+                final long blobid = blobid_;
 
                 PlayerInventoryRecord inv = null;
-                {
-                    byte[] blob = sql.executeGetMap("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?", blobid).getFirstElementOrNull(byte[].class);
-                    if (blob != null) inv = InvSerialization.toPlayerInventory(blob);
+                try (PreparedStatement statement = connection.prepareStatement("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=" + blobid)) {
+                    try (ResultSet rs = statement.executeQuery()) {
+                        if (rs.next()) inv = InvSerialization.toPlayerInventory(sql.getBlob(rs, 1));
+                    }
                 }
-                if (inv == null) return null;
+                if (inv == null) {
+                    plugin.debug("Did not find inventory from blob");
+                    return null;
+                }
                 List<ItemStack> output = playerInvToList(inv, true);
 
                 int numdiff = 0;
@@ -164,7 +181,8 @@ public class InvDiffManager extends BlobManager {
         } catch (SQLException | IOException | ClassNotFoundException e) {
             throw e;
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            plugin.print(e);
+            return null;
         }
     }
 
