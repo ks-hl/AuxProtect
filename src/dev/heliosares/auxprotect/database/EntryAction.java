@@ -12,6 +12,7 @@ import java.util.*;
 public class EntryAction {
     private static final HashMap<String, EntryAction> values = new HashMap<>();
     private static final Set<Integer> usedids = new HashSet<>();
+    private static final Set<String> usednames = new HashSet<>();
 
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
@@ -74,6 +75,14 @@ public class EntryAction {
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
 
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
+
+    public static final EntryAction CRAFT = new EntryAction("craft", 1154);
+
+    public static final EntryAction ANVIL = new EntryAction("anvil", 1155);
+
+    public static final EntryAction ENCHANT = new EntryAction("enchant", 1156);
+
+    public static final EntryAction SMITH = new EntryAction("smith", 1157);
     // END INVENTORY(1279)
 
     // COMMANDS (1280)
@@ -124,8 +133,7 @@ public class EntryAction {
         this.idPos = idPos;
         this.name = name;
 
-        validateID(name, id);
-        validateID(name, idPos);
+        validateID(name, id, idPos);
 
         enabled = true;
         values.put(name, this);
@@ -137,7 +145,7 @@ public class EntryAction {
         this.idPos = id;
         this.name = name;
 
-        validateID(name, id);
+        validateID(name, id, -1);
 
         enabled = true;
         values.put(name, this);
@@ -173,9 +181,15 @@ public class EntryAction {
         return null;
     }
 
-    private void validateID(String name, int id) throws IllegalArgumentException {
+    private void validateID(String name, int id, int idPos) throws IllegalArgumentException {
         if (!usedids.add(id)) {
             throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+        }
+        if (idPos > 0 && !usedids.add(idPos)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + idPos + " from action: " + name);
+        }
+        if (!usednames.add(name)) {
+            throw new IllegalArgumentException("Duplicate action name: " + name);
         }
     }
 

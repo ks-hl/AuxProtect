@@ -189,3 +189,7 @@ actions:
     p: deposited
     n: withdrew
   connect: connected to
+  craft: crafted
+  anvil: anvilled
+  enchant: enchanted
+  smith: upgraded to netherite
