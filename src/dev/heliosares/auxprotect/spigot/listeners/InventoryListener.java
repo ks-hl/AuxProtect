@@ -133,9 +133,6 @@ public class InventoryListener implements Listener {
 
             int actuallyCrafted = Math.min(spaceFor, possibleCreations);
             actuallyCrafted = (int) Math.ceil(actuallyCrafted / (double) recipeResultSize) * recipeResultSize;
-            if (e.getWhoClicked().getName().equalsIgnoreCase("Heliosares")) {
-                e.getWhoClicked().sendMessage("c:" + actuallyCrafted);
-            }
 
             ItemStack result = e.getCurrentItem().clone();
             if (InvSerialization.isCustom(result)) {
