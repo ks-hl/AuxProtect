@@ -126,9 +126,11 @@ public class EntityListener implements Listener {
                 itemname = "shot with ";
         }
         String targetName = AuxProtectSpigot.getLabel(e.getEntity());
-        String sourceName = source == null ? targetName : AuxProtectSpigot.getLabel(source);
+        String sourceName = AuxProtectSpigot.getLabel(source);
 
-        if (source instanceof Player sourcePl) {
+        if (e.getCause() == DamageCause.THORNS) {
+            itemname += "THORNS";
+        } else if (source instanceof Player sourcePl) {
             plugin.getAPPlayer(sourcePl).addActivity(0.25);
             itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
         }
@@ -146,9 +148,9 @@ public class EntityListener implements Listener {
             if (equip != null) {
                 ItemStack hand = equip.getItem(EquipmentSlot.HAND);
                 ItemStack offhand = equip.getItem(EquipmentSlot.OFF_HAND);
-                if (hand != null && hand.getType() == Material.TOTEM_OF_UNDYING) {
+                if (hand.getType() == Material.TOTEM_OF_UNDYING) {
                     totem = true;
-                } else if (offhand != null && offhand.getType() == Material.TOTEM_OF_UNDYING) {
+                } else if (offhand.getType() == Material.TOTEM_OF_UNDYING) {
                     totem = true;
                 }
             }
@@ -158,7 +160,7 @@ public class EntityListener implements Listener {
         }
         if (e.getEntity() instanceof Item) {
             ItemStack item = ((Item) e.getEntity()).getItemStack();
-            if (item != null && item.getType() != Material.AIR) {
+            if (item.getType() != Material.AIR) {
                 itemBreak(plugin, sourceName, item, e.getEntity().getLocation());
                 // Going to log both for now. Repetitive, but it seems more intuitive.
             }
