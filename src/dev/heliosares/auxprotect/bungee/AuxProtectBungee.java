@@ -14,6 +14,7 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -22,7 +23,6 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -274,6 +274,14 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         return new BungeeSenderAdapter(this, this.getProxy().getConsole());
     }
 
+    @Nullable
+    @Override
+    public SenderAdapter getSenderAdapter(String name) {
+        ProxiedPlayer target = getProxy().getPlayer(name);
+        if (target == null) return null;
+        return new BungeeSenderAdapter(this, target);
+    }
+
     @Override
     public boolean isHooked(String name) {
         // TODO zz Future implementation
@@ -306,8 +314,8 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public List<String> listPlayers() {
-        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toList());
+    public Set<String> listPlayers() {
+        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

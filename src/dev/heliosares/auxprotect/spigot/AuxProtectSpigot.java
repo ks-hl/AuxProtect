@@ -29,6 +29,7 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -760,6 +761,14 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
     }
 
+    @Nullable
+    @Override
+    public SenderAdapter getSenderAdapter(String name) {
+        Player target = getServer().getPlayer(name);
+        if (target == null) return null;
+        return new SpigotSenderAdapter(this, target);
+    }
+
     @Override
     public File getRootDirectory() {
         return getDataFolder();
@@ -781,8 +790,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
-    public List<String> listPlayers() {
-        return getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
+    public Set<String> listPlayers() {
+        return getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override

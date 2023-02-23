@@ -4,7 +4,6 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
@@ -32,8 +31,7 @@ public class PlaytimeCommand extends Command {
 
     @Override
     public boolean exists() {
-        // TODO zz bungee?
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return true;
     }
 
     @Override

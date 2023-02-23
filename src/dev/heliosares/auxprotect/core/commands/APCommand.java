@@ -8,10 +8,7 @@ import dev.heliosares.auxprotect.exceptions.PlatformException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class APCommand extends Command {
@@ -26,11 +23,11 @@ public class APCommand extends Command {
         commands.add(new SQLCommand(plugin));
         commands.add(new TimeCommand(plugin));
         commands.add(new DumpCommand(plugin));
+        commands.add(new PlaytimeCommand(plugin));
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             commands.add(new TpCommand(plugin).setTabComplete(false));
             commands.add(new InvCommand(plugin).setTabComplete(false));
             commands.add(new InventoryCommand(plugin));
-            commands.add(new PlaytimeCommand(plugin));
             commands.add(new ActivityCommand(plugin));
             commands.add(new MoneyCommand(plugin));
             commands.add(new SaveInvCommand(plugin));
@@ -50,7 +47,7 @@ public class APCommand extends Command {
 
     public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String[] args) {
         if (args.length == 2) {
-            return allPlayers(plugin, true);
+            return new ArrayList<>(allPlayers(plugin, true));
         } else if (args.length == 3) {
             String currentArg = args[args.length - 1];
             if (APPermission.INV.hasPermission(sender) && currentArg.matches("\\d+")) {
@@ -67,8 +64,8 @@ public class APCommand extends Command {
         return null;
     }
 
-    public static List<String> allPlayers(IAuxProtect plugin, boolean cache) {
-        List<String> out = plugin.listPlayers();
+    public static Set<String> allPlayers(IAuxProtect plugin, boolean cache) {
+        Set<String> out = new HashSet<>(plugin.listPlayers());
         if (cache) {
             out.addAll(plugin.getSqlManager().getUserManager().getCachedUsernames());
         }

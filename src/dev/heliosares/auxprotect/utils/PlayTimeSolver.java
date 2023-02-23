@@ -9,7 +9,6 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
-import org.bukkit.Bukkit;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -18,13 +17,17 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class PlayTimeSolver {
-    public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours,
-                                                String player) {
+    public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours, String player, final boolean currentlyOnline) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         if (hours > 840) {
             message.append("§cTime period too long. Max 5 weeks.");
             return message.create();
         }
+        StringBuilder line = new StringBuilder("§7§m");
+        line.append(String.valueOf((char) 65293).repeat(6)).append("§r");
+        player += "'" + (player.toLowerCase().endsWith("s") ? "" : "s");
+        message.append(line + "  §9" + player + " Playtime  " + line);
+        message.append("\n");
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withMinute(0).withSecond(0).withNano(0);
         long firstTime = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -51,7 +54,7 @@ public class PlayTimeSolver {
                 newLogout = true;
             }
             if (i == 0 && newLogin && !newLogout) {
-                if (Bukkit.getPlayer(player) != null) {
+                if (currentlyOnline) {
                     newLogout = true;
                     logout = start;
                 }

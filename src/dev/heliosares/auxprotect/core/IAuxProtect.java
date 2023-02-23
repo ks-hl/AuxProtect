@@ -4,9 +4,11 @@ import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 
+import javax.annotation.Nullable;
 import java.io.File;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Set;
 
 public interface IAuxProtect {
 
@@ -42,6 +44,9 @@ public interface IAuxProtect {
 
     SenderAdapter getConsoleSender();
 
+    @Nullable
+    SenderAdapter getSenderAdapter(String name);
+
     boolean isShuttingDown();
 
     boolean isHooked(String name);
@@ -58,7 +63,7 @@ public interface IAuxProtect {
 
     String getStackLog();
 
-    List<String> listPlayers();
+    Set<String> listPlayers();
 
     boolean isEnabled();
 }
