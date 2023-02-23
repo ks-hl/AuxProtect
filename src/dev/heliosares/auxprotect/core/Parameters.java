@@ -853,10 +853,12 @@ public class Parameters {
                 radius.forEach((r, n) -> {
                     String between = " BETWEEN ";
                     assert location.getWorld() != null;
-                    String coordstmt = "x" + between + (location.getBlockX() - r) + " AND " + (location.getBlockX() + r)
-                            + " AND y" + between + (location.getBlockY() - r) + " AND " + (location.getBlockY() + r)
-                            + " AND z" + between + (location.getBlockZ() - r) + " AND " + (location.getBlockZ() + r)
-                            + " AND world_id=" + sql.getWID(location.getWorld().getName());
+                    String coordstmt = "x" + between + (location.getBlockX() - r) + " AND " + (location.getBlockX() + r);
+                    if (!hasFlag(Flag.RADIUS_HORIZONTAL_ONLY)) {
+                        coordstmt += " AND y" + between + (location.getBlockY() - r) + " AND " + (location.getBlockY() + r);
+                    }
+                    coordstmt += " AND z" + between + (location.getBlockZ() - r) + " AND " + (location.getBlockZ() + r);
+                    coordstmt += " AND world_id=" + sql.getWID(location.getWorld().getName());
                     if (n) {
                         coordstmt = "NOT (" + coordstmt + ")";
                     }
@@ -1011,7 +1013,7 @@ public class Parameters {
     public enum Flag {
         COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
-        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null);
+        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null), RADIUS_HORIZONTAL_ONLY(null);
 
         private final APPermission perm;
 
