@@ -10,6 +10,8 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class LookupCommand extends Command {
 
@@ -54,16 +56,32 @@ public class LookupCommand extends Command {
         possible.add("before:");
         possible.add("after:");
 
+        action_check:
         if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
-            String action = currentArg.split(":")[0] + ":";
+            Pattern pattern = Pattern.compile("([+-]?\\w+)[,:]");
+            Matcher matcher = pattern.matcher(currentArg);
+
+            if (!matcher.find()) break action_check;
+            StringBuilder actionPrefix = new StringBuilder(matcher.group(1) + ":");
+
+            Table table = null;
+            while (matcher.find()) {
+                final String name = matcher.group(1);
+                EntryAction entryAction = EntryAction.getAction((name.startsWith("+") || name.startsWith("-")) ? name.substring(1) : name);
+                if (entryAction == null) break action_check;
+                if (table == null) table = entryAction.getTable();
+                else if (entryAction.getTable() != table) break action_check;
+                actionPrefix.append(name).append(",");
+            }
+
             for (EntryAction eaction : EntryAction.values()) {
-                if (eaction.exists() && eaction.isEnabled() && eaction.hasPermission(sender)) {
+                if (eaction.exists() && eaction.isEnabled() && eaction.hasPermission(sender) && (table == null || eaction.getTable() == table)) {
                     String actString = eaction.toString().toLowerCase();
                     if (eaction.hasDual) {
-                        possible.add(action + "+" + actString);
-                        possible.add(action + "-" + actString);
+                        possible.add(actionPrefix + "+" + actString);
+                        possible.add(actionPrefix + "-" + actString);
                     }
-                    possible.add(action + actString);
+                    possible.add(actionPrefix + actString);
                 }
             }
         }
@@ -76,23 +94,20 @@ public class LookupCommand extends Command {
 
             }
             String user = currentArg.substring(0, cutIndex + 1);
-            for (String player : plugin.listPlayers()) {
-                possible.add(user + player);
-            }
-            for (String username : plugin.getSqlManager().getUserManager().getCachedUsernames()) {
-                possible.add(user + username);
-            }
+
+            possible.addAll(APCommand.allPlayers(plugin, true).stream().map(name -> user + name).toList());
+
             if (plugin.getPlatform() == PlatformType.SPIGOT) {
                 for (org.bukkit.entity.EntityType et : org.bukkit.entity.EntityType.values()) {
                     possible.add(user + "#" + et.toString().toLowerCase());
                 }
+                if (currentArg.startsWith("target:")) {
+                    for (org.bukkit.Material material : org.bukkit.Material.values()) {
+                        possible.add("target:" + material.toString().toLowerCase());
+                    }
+                }
             }
             possible.add(user + "#env");
-        }
-        if (plugin.getPlatform() == PlatformType.SPIGOT && currentArg.startsWith("target:")) {
-            for (org.bukkit.Material material : org.bukkit.Material.values()) {
-                possible.add("target:" + material.toString().toLowerCase());
-            }
         }
         if (APPermission.ADMIN.hasPermission(sender)) {
             possible.add("db:");
@@ -333,8 +348,8 @@ public class LookupCommand extends Command {
                     sender.sendLang(Language.L.PLAYTIME_TOOMANYUSERS);
                     return;
                 }
-                sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(),
-                        (int) Math.round((double) (params.time_created - params.getAfter()) / (1000 * 3600)), users.get(0)));
+                String name = users.get(0);
+                sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(), (int) Math.round((double) (params.time_created - params.getAfter()) / (1000 * 3600)), name, plugin.getSenderAdapter(name) != null));
                 return;
             } else if (params.getFlags().contains(Flag.ACTIVITY)) {
                 String uuid = sender.getUniqueId().toString();
