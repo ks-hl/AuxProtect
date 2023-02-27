@@ -385,6 +385,12 @@ public class LookupCommand extends Command {
                 Collections.reverse(newResults);
                 rs = newResults;
             } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
+                try {
+                    Class.forName("com.comphenix.protocol.ProtocolLibrary");
+                } catch (ClassNotFoundException e) {
+                    sender.sendLang(Language.L.PROTOCOLLIB_NOT_LOADED);
+                    return;
+                }
                 new PlaybackSolver(plugin, sender, rs, params.getAfter());
                 return;
             }

@@ -95,6 +95,7 @@ no: 'No'
 inv-manual-success: '&p%s''%s &tinventory has been manually saved. &otime:%s'
 inv-toosoon: '&cThat user''s inventory has been saved too recently.'
 database-busy: '&cThe database is currently busy. Try again later or check the console for more information.'
+protocollib-not-loaded: "&cProtocolLib is required for this action and it is not installed."
 
 
 actions:

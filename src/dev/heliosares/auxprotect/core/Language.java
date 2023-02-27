@@ -123,7 +123,8 @@ public class Language {
         COMMAND__CLAIMINV__CANCELLED_OTHER, //
         COMMAND__CLAIMINV__YOUHAVENONE, //
         COMMAND__CLAIMINV__OTHERHASNONE, //
-        COMMAND__CLAIMINV__HEADER,//
+        COMMAND__CLAIMINV__HEADER, //
+        PROTOCOLLIB_NOT_LOADED, //
         ;
 
         public final String name;
