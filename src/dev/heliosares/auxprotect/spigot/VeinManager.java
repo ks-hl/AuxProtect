@@ -1,14 +1,13 @@
 package dev.heliosares.auxprotect.spigot;
 
 import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.XrayEntry;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.function.Consumer;
 
 public class VeinManager {
     private final ArrayList<XrayEntry> entries = new ArrayList<>();
@@ -58,6 +57,7 @@ public class VeinManager {
                 return false;
             }
             entries.add(entry);
+            entries.sort(Comparator.comparing(DbEntry::getTime));
             entries.sort((o1, o2) -> {
                 try {
                     if (o1.getUser(false) == null) SQLManager.getInstance().execute(c -> o1.getUser(), 3000L);
@@ -68,7 +68,6 @@ public class VeinManager {
                     return 0;
                 }
             });
-            entries.sort(Comparator.comparing(o -> o.world));
         }
         return false;
     }
@@ -144,5 +143,12 @@ public class VeinManager {
 
     public int size() {
         return entries.size();
+    }
+
+    public void iterator(Consumer<Iterator<XrayEntry>> consumer) {
+        synchronized (entries) {
+            Iterator<XrayEntry> it = entries.iterator();
+            consumer.accept(it);
+        }
     }
 }

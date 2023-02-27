@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -33,15 +34,22 @@ public class XrayResults {
             String desc = VeinManager.getSeverityDescription(sev);
             message.append(String.format("%s§l[%s]", color, sev == -1 ? "Clear" : ("" + sev)))
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, String.format(xraycmd, en.getTime(), sev)))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text(color + String.format(descFormat, sev, desc))));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(color + String.format(descFormat, sev, desc))));
             message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
         }
 
         message.append("§7§l[Skip]")
-                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                        "/ap xray skip " + en.getTime() + "e" + (auto ? " -auto" : "")))
+                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ap xray skip " + en.getTime() + "e" + (auto ? " -auto" : "")))
                 .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Click to skip this entry.")));
+
+        if (APPermission.LOOKUP_XRAY_BULK.hasPermission(sender)) {
+            message.append("    ").event((ClickEvent) null).event((HoverEvent) null);
+
+            message.append("§7§l[0-All]")
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ap xray zero " + en.getUserUUID().substring(1)))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7Rate all entries from " + en.getUser() + " as 0.")));
+        }
+
         sender.sendMessage(message.create());
 
         sendArrowKeys(sender, plugin.getVeinManager().size());

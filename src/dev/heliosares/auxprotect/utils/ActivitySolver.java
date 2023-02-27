@@ -68,7 +68,7 @@ public class ActivitySolver {
 
             int activity = Integer.parseInt(entry.getData());
             counter[minute] += activity;
-            locations[minute] = new Location(Bukkit.getWorld(entry.world), entry.x, entry.y, entry.z);
+            locations[minute] = new Location(Bukkit.getWorld(entry.getWorld()), entry.getX(), entry.getY(), entry.getZ());
 
             lastTime = entry.getTime();
             minute++;

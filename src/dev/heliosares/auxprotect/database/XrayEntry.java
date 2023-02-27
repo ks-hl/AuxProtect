@@ -1,7 +1,10 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.core.commands.XrayCommand;
 import org.bukkit.Location;
 
+import javax.annotation.Nullable;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
@@ -31,9 +34,9 @@ public class XrayEntry extends DbEntry {
             return false;
         }
 
-        if (Math.abs(other.getTime() - this.getTime()) < 3600000L && Math.abs(other.x - this.x) <= 2
-                && Math.abs(other.y - this.y) <= 2 && Math.abs(other.z - this.z) <= 2
-                && other.world.equals(this.world)) {
+        if (Math.abs(other.getTime() - this.getTime()) < 3600000L && Math.abs(other.getX() - this.getX()) <= 2
+                && Math.abs(other.getY() - this.getY()) <= 2 && Math.abs(other.getZ() - this.getZ()) <= 2
+                && other.getWorld().equals(this.getWorld())) {
             children.add(other);
             return true;
         }
@@ -49,7 +52,16 @@ public class XrayEntry extends DbEntry {
         return rating;
     }
 
-    public void setRating(short rating) {
+    public void setRating(short rating, @Nullable String rater) {
+        if (rater != null) {
+            String data = getData();
+            if (data.length() > 0) {
+                data += "; ";
+            }
+            String ratedBy = LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": " + rater + " rated " + rating;
+            data += ratedBy;
+            setData(data);
+        }
         this.rating = rating;
     }
 }

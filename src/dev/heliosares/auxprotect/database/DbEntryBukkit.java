@@ -22,6 +22,16 @@ public class DbEntryBukkit extends DbEntry {
     //TODO implement as adapter
 
     public static Location getLocation(DbEntry entry) {
-        return new Location(Bukkit.getWorld(entry.world), entry.x, entry.y, entry.z, entry.yaw, entry.pitch);
+        double x, y, z;
+        if (entry instanceof PosEntry posEntry) {
+            x = posEntry.getDoubleX();
+            y = posEntry.getDoubleY();
+            z = posEntry.getDoubleZ();
+        } else {
+            x = entry.getX();
+            y = entry.getY();
+            z = entry.getZ();
+        }
+        return new Location(Bukkit.getWorld(entry.getWorld()), x, y, z, entry.getYaw(), entry.getPitch());
     }
 }

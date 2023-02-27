@@ -40,7 +40,7 @@ public class Results {
         boolean allNullWorld = true;
         int count = 0;
         for (DbEntry entry : entries) {
-            if (entry.world != null && !entry.world.equals("#null")) {
+            if (entry.getWorld() != null && !entry.getWorld().equals("#null")) {
                 allNullWorld = false;
                 break;
             }
@@ -146,17 +146,23 @@ public class Results {
             message.append(" §8[§7" + data + "§8]").event(clickToCopy)
                     .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
         }
-        if (entry.world != null && !entry.world.equals("$null") && coords) {
-            String tpCommand = String.format(commandPrefix + " tp %d %d %d %s", entry.x, entry.y, entry.z, entry.world);
+        if (entry.getWorld() != null && !entry.getWorld().equals("$null") && coords) {
+            String tpCommand = commandPrefix + " tp ";
+            if (entry instanceof PosEntry posEntry) {
+                tpCommand += String.format("%f %f %f ", posEntry.getDoubleX(), posEntry.getDoubleY(), posEntry.getDoubleZ());
+            } else {
+                tpCommand += String.format("%d.5 %d %d.5 ", entry.getX(), entry.getY(), entry.getZ());
+            }
+            tpCommand += entry.getWorld();
             if (entry.getAction().getTable().hasLook()) {
-                tpCommand += String.format(" %d %d", entry.pitch, entry.yaw);
+                tpCommand += String.format(" %d %d", entry.getPitch(), entry.getYaw());
             }
             message.append("\n                 ").event((HoverEvent) null).event((ClickEvent) null);
-            message.append(String.format("§7(x%d/y%d/z%d/%s)", entry.x, entry.y, entry.z, entry.world))
+            message.append(String.format("§7(x%d/y%d/z%d/%s)", entry.getX(), entry.getY(), entry.getZ(), entry.getWorld()))
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§7" + tpCommand)));
             if (entry.getAction().getTable().hasLook()) {
-                message.append(String.format("§7 (p%s/y%d)", entry.pitch, entry.yaw));
+                message.append(String.format("§7 (p%s/y%d)", entry.getPitch(), entry.getYaw()));
             }
         }
         player.sendMessage(message.create());

@@ -958,7 +958,7 @@ public class Parameters {
             }
         }
         if (!worlds.isEmpty()) {
-            return worlds.contains(entry.world) != negateWorld;
+            return worlds.contains(entry.getWorld()) != negateWorld;
         }
 
         return true;
@@ -989,11 +989,11 @@ public class Parameters {
             return -1;
         }
         assert location.getWorld() != null;
-        if (!entry.world.equals(location.getWorld().getName())) {
+        if (!entry.getWorld().equals(location.getWorld().getName())) {
             return Integer.MAX_VALUE;
         }
-        return Math.max(Math.max(Math.abs(entry.x - location.getBlockX()), Math.abs(entry.y - location.getBlockY())),
-                Math.abs(entry.z - location.getBlockZ()));
+        return Math.max(Math.max(Math.abs(entry.getX() - location.getBlockX()), Math.abs(entry.getY() - location.getBlockY())),
+                Math.abs(entry.getZ() - location.getBlockZ()));
     }
 
     private String toGroup(List<?> list) {

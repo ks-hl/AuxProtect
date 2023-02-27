@@ -78,7 +78,7 @@ public class FakeSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public void teleport(String world, int x, int y, int z, int pitch, int yaw)
+    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
             throws NullPointerException, UnsupportedOperationException {
     }
 

@@ -124,7 +124,7 @@ public enum Table {
         } else if (this == Table.AUXPROTECT_ABANDONED) {
             return "(time, uid, action_id, world_id, x, y, z, target_id)";
         } else if (this == Table.AUXPROTECT_POSITION) {
-            return "(time, uid, action_id, world_id, x, y, z, pitch, yaw, target_id, ablob)";
+            return "(time, uid, action_id, world_id, x, y, z, increment, pitch, yaw, target_id, ablob)";
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         }
@@ -148,8 +148,7 @@ public enum Table {
         return switch (this) {
             case AUXPROTECT_ABANDONED -> 8;
             case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
-            case AUXPROTECT_POSITION -> 11;
-            case AUXPROTECT_INVENTORY -> 12;
+            case AUXPROTECT_POSITION, AUXPROTECT_INVENTORY -> 12;
             default -> -1;
         };
     }
@@ -173,6 +172,9 @@ public enum Table {
             stmt += ",\n    x INTEGER";
             stmt += ",\n    y SMALLINT";
             stmt += ",\n    z INTEGER";
+        }
+        if (this == AUXPROTECT_POSITION) {
+            stmt += ",\n    increment BYTE";
         }
         if (hasLook()) {
             stmt += ",\n    pitch SMALLINT";

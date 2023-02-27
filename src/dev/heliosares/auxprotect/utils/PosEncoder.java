@@ -117,4 +117,20 @@ public class PosEncoder {
             return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
         }
     }
+
+    public static byte getFractionalByte(double dx, double dy, double dz) {
+        int x = (int) Math.min(Math.round((dx % 1) * 8), 7) << 5;
+        int y = (int) Math.min(Math.round((dy % 1) * 4), 3) << 3;
+        int z = (int) Math.min(Math.round((dz % 1) * 8), 7);
+
+        return (byte) (x | y | z);
+    }
+
+    public static double[] byteToFractions(byte b) {
+        int x = (b >> 5) & 0b111;
+        int y = (b >> 3) & 0b11;
+        int z = b & 0b111;
+
+        return new double[]{x / 8D, y / 4D, z / 8D};
+    }
 }

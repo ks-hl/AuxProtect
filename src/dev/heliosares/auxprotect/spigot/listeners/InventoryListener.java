@@ -137,6 +137,7 @@ public class InventoryListener implements Listener {
             ItemStack result = e.getCurrentItem().clone();
             if (InvSerialization.isCustom(result)) {
                 int numStacks = (int) Math.ceil(actuallyCrafted / (double) maxStackSize);
+                if (numStacks == 0) return;
                 entryItems = new ItemStack[numStacks];
                 for (int i = 0; i < numStacks - 1; i++) {
                     entryItems[i] = e.getCurrentItem().clone();

@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PosEncoder;
@@ -160,13 +161,13 @@ public class APPlayer {
     }
 
     public void logPostTeleportPos(Location location) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.TP, true, location, "", ""));
+        plugin.add(new PosEntry(AuxProtectSpigot.getLabel(player), EntryAction.TP, true, location, ""));
         lastLocationDiff = null; // Set to null to force a one-tick pause before checking again
     }
 
     private void logPos(Location location, boolean tp) {
         lastLoggedPos = System.currentTimeMillis();
-        DbEntry entry = new DbEntry("$" + player.getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "", "");
+        DbEntry entry = new PosEntry("$" + player.getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
 
         synchronized (inventoryBlob) {
             byte[] blob = new byte[inventoryBlob.size()];

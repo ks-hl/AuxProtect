@@ -186,16 +186,17 @@ public class SQLManager extends ConnectionPool {
         if (!backup.getParentFile().exists()) {
             boolean ignored = backup.getParentFile().mkdirs();
         }
-        if (plugin.getAPConfig().doDisableVacuum()) {
-            plugin.info("Vacuum is disabled, creating physical copy instead");
-            try {
-                Files.copy(sqliteFile.toPath(), backup.toPath());
-            } catch (IOException e) {
-                plugin.warning("Failed to create backup.");
-            }
-        } else {
-            execute("VACUUM INTO ?", connection, backup.getAbsolutePath());
+
+//        if (plugin.getAPConfig().doDisableVacuum()) {
+//            plugin.info("Vacuum is disabled, creating physical copy instead");
+        try {
+            Files.copy(sqliteFile.toPath(), backup.toPath());
+        } catch (IOException e) {
+            plugin.warning("Failed to create backup.");
         }
+//        } else {
+//            execute("VACUUM INTO ?", connection, backup.getAbsolutePath());
+//        }
         return backup.getAbsolutePath();
     }
 
@@ -374,21 +375,17 @@ public class SQLManager extends ConnectionPool {
                     statement.setInt(i++, action);
                 }
                 if (hasLocation) {
-                    statement.setInt(i++, getWID(dbEntry.world));
-                    statement.setInt(i++, dbEntry.x);
-                    int y = dbEntry.y;
-                    if (y > 32767) {
-                        y = 32767;
-                    }
-                    if (y < -32768) {
-                        y = -32768;
-                    }
-                    statement.setInt(i++, y);
-                    statement.setInt(i++, dbEntry.z);
+                    statement.setInt(i++, getWID(dbEntry.getWorld()));
+                    statement.setInt(i++, dbEntry.getX());
+                    statement.setInt(i++, Math.max(Math.min(dbEntry.getY(), Short.MAX_VALUE), Short.MIN_VALUE));
+                    statement.setInt(i++, dbEntry.getZ());
+
+                    if (dbEntry instanceof PosEntry posEntry) statement.setByte(i++, posEntry.getIncrement());
+                    else if (table == Table.AUXPROTECT_POSITION) statement.setByte(i++, (byte) 0);
                 }
                 if (hasLook) {
-                    statement.setInt(i++, dbEntry.pitch);
-                    statement.setInt(i++, dbEntry.yaw);
+                    statement.setInt(i++, dbEntry.getPitch());
+                    statement.setInt(i++, dbEntry.getYaw());
                 }
                 if (table.hasStringTarget()) {
                     statement.setString(i++, dbEntry.getTargetUUID());

@@ -129,7 +129,7 @@ public class VeinListener implements Listener {
         final XrayEntry entry = new XrayEntry(AuxProtectSpigot.getLabel(e.getPlayer()), e.getBlock().getLocation(),
                 AuxProtectSpigot.getLabel(e.getBlock().getType()));
         if (nearbyNonOres < NON_ORE_THRESHOLD) {
-            entry.setRating((short) -2);
+            entry.setRating((short) -2, null);
         }
         new BukkitRunnable() {
             @Override

@@ -68,8 +68,8 @@ public class PlaybackSolver extends BukkitRunnable {
                 }
             }
             Location entryLoc = DbEntryBukkit.getLocation(entry);
-            entryLoc.setYaw(entry.yaw);
-            entryLoc.setPitch(entry.pitch);
+            entryLoc.setYaw(entry.getYaw());
+            entryLoc.setPitch(entry.getPitch());
             PosPoint point = new PosPoint(entry.getTime(), entry.getUser(), entry.getUid(), entryLoc, false);
             plugin.debug("Adding point " + point, 3);
             points.add(point);

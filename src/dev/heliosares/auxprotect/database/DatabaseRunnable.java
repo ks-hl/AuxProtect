@@ -135,7 +135,7 @@ public class DatabaseRunnable implements Runnable {
                     //Unlikely / N/A
                     continue;
                 }
-                if (!next.world.equals(entry.world)) continue;
+                if (!next.getWorld().equals(entry.getWorld())) continue;
                 if (next.getDistance(entry) > 3) continue;
                 next.add(entry);
                 return;

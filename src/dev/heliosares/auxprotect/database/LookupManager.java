@@ -161,7 +161,7 @@ public class LookupManager {
                                 continue;
                             }
                             boolean state = entryAction.hasDual && entryAction.id != action_id;
-                            DbEntry entry = null;
+                            DbEntry entry;
                             String target = null;
                             int target_id = -1;
                             if (table.hasStringTarget()) {
@@ -183,22 +183,14 @@ public class LookupManager {
                             } else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
                                 entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
                                         target_id, data);
+                            } else if (table == Table.AUXPROTECT_POSITION) {
+                                entry = new PosEntry(time, uid, entryAction, state, world, x, y, z, rs.getByte("increment"), pitch, yaw, target, target_id, data);
                             } else if (table.hasBlobID() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
-                                entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
-                                        target_id, data, qty, damage);
+                                entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, qty, damage);
                             } else {
-                                entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
-                                        target_id, data);
+                                entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
                             }
-                            // More efficient to load on lookup, or only when using?
-//                    if (table.hasBlob()) {
-//                        try {
-//                            entry.setBlob(sql.getBlob(rs, "ablob"));
-//                        } catch (IOException e) {
-//                            plugin.warning("Error while getting blob for " + time + "e");
-//                            plugin.print(e);
-//                        }
-//                    } else
+
                             if (table.hasBlobID()) {
                                 if (plugin.getAPConfig().doSkipV6Migration()
                                         && (action_id == 1024 || data != null && data.contains(InvSerialization.ITEM_SEPARATOR))) {

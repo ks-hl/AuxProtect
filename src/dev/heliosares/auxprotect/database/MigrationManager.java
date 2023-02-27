@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 10;
+    public static final int TARGET_DB_VERSION = 11;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -369,6 +369,17 @@ public class MigrationManager {
                     }
                 }, () -> {
         })); //This was a poor naming choice as it conflicts with the phrase `KEY`
+
+
+        //
+        // 11
+        //
+
+        migrationActions.put(11, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        }, () -> {
+            tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment BYTE");
+            tryExecute("UPDATE " + Table.AUXPROTECT_POSITION + " set increment=0 where increment is null");
+        }));
 
         //
         // Finalizing

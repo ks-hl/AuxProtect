@@ -12,11 +12,11 @@ import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 public class XrayCommand extends Command {
 
@@ -138,15 +138,8 @@ public class XrayCommand extends Command {
                             sender.sendLang(Language.L.XRAY_RATE_NOCHANGE);
                             return;
                         }
-                        entry.setRating(rating);
-                        String data = entry.getData();
-                        if (data.length() > 0) {
-                            data += "; ";
-                        }
-                        String ratedBy = LocalDateTime.now().format(ratedByDateFormatter) + ": " + sender.getName()
-                                + " rated " + rating;
-                        data += ratedBy;
-                        entry.setData(data);
+
+                        entry.setRating(rating, player.getName());
 
                         try {
                             plugin.getSqlManager().updateXrayEntry(entry);
@@ -178,6 +171,61 @@ public class XrayCommand extends Command {
                         cmd += " t:1w";
                     }
                     sender.executeCommand(cmd);
+                } else if (args[1].equalsIgnoreCase("zero")) {
+                    if (!APPermission.LOOKUP_XRAY_BULK.hasPermission(sender)) {
+                        sender.sendLang(Language.L.NO_PERMISSION);
+                        return;
+                    }
+                    UUID target;
+                    try {
+                        if (args.length != 3 && args.length != 4) throw new IllegalArgumentException();
+                        target = UUID.fromString(args[2]);
+                    } catch (IllegalArgumentException e) {
+                        sender.sendLang(Language.L.INVALID_SYNTAX);
+                        return;
+                    }
+                    boolean confirmed = args.length == 4 && args[3].equalsIgnoreCase("-i");
+                    plugin.runAsync(() -> {
+                        try {
+                            plugin.getSqlManager().execute(connection -> {
+                                int uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + target, false);
+                                String name = plugin.getSqlManager().getUserManager().getUsernameFromUID(uid, false);
+                                if (confirmed) {
+                                    ((AuxProtectSpigot) plugin).getVeinManager().iterator(it -> {
+                                        while (it.hasNext()) {
+                                            XrayEntry entry = it.next();
+                                            try {
+                                                if (!entry.getUserUUID().equals("$" + target)) return;
+                                                if (entry.getRating() != -1) return;
+                                                entry.setRating((short) 0, player.getName() + " BULK");
+                                                plugin.getSqlManager().updateXrayEntry(entry);
+                                                it.remove();
+                                            } catch (SQLException e) {
+                                                sender.sendLang(Language.L.ERROR);
+                                                return;
+                                            }
+                                        }
+                                    });
+                                    sender.sendMessageRaw("§aDone!");
+                                } else {
+                                    ComponentBuilder message = new ComponentBuilder("§cAre you sure you want to rate all entries from " + name + " as 0?\n\n");
+                                    message.append("§c§l[Yes]");
+                                    StringBuilder thiscmd = new StringBuilder("/" + label);
+                                    for (String arg : args) {
+                                        thiscmd.append(" ").append(arg);
+                                    }
+                                    message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, thiscmd + " -i"));
+                                    message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
+                                    player.spigot().sendMessage(message.create());
+                                    sender.sendMessageRaw("");
+                                }
+                            }, 3000L);
+                        } catch (BusyException e) {
+                            sender.sendLang(Language.L.DATABASE_BUSY);
+                        } catch (SQLException e) {
+                            sender.sendLang(Language.L.ERROR);
+                        }
+                    });
                 } else {
                     String cmd = plugin.getCommandPrefix() + " l a:vein u:" + args[1];
                     if (args.length > 2) {
@@ -189,8 +237,8 @@ public class XrayCommand extends Command {
             } else {
                 XrayEntry current = spigot.getVeinManager().current(sender.getUniqueId());
                 if (current != null) {
-                    sender.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", current.x,
-                            current.y, current.z, current.world, 45, 0));
+                    sender.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", current.getX(),
+                            current.getY(), current.getZ(), current.getWorld(), 45, 0));
                     try {
                         XrayResults.sendEntry(spigot, sender, current, true);
                     } catch (BusyException e) {
@@ -212,8 +260,8 @@ public class XrayCommand extends Command {
             player.sendLang(Language.L.XRAY_DONE);
             return;
         }
-        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", en.x, en.y,
-                en.z, en.world, 45, 0));
+        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", en.getX(), en.getY(),
+                en.getZ(), en.getWorld(), 45, 0));
         try {
             XrayResults.sendEntry(plugin, player, en, auto);
         } catch (BusyException e) {

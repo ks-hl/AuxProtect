@@ -7,12 +7,12 @@ import java.sql.SQLException;
 
 public class DbEntry {
 
-    public final String world;
-    public final int x;
-    public final int y;
-    public final int z;
-    public final int pitch;
-    public final int yaw;
+    protected final String world;
+    protected final int x;
+    protected final int y;
+    protected final int z;
+    protected final int pitch;
+    protected final int yaw;
     protected final EntryAction action;
     protected final boolean state;
     private final long time;
@@ -191,10 +191,10 @@ public class DbEntry {
     }
 
     public double getBoxDistance(DbEntry entry) {
-        if (!entry.world.equals(world)) {
+        if (!entry.getWorld().equals(getWorld())) {
             return -1;
         }
-        return Math.max(Math.max(Math.abs(entry.x - x), Math.abs(entry.y - y)), Math.abs(entry.z - z));
+        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
     }
 
     public double getDistance(DbEntry entry) {
@@ -202,7 +202,7 @@ public class DbEntry {
     }
 
     public double getDistanceSq(DbEntry entry) {
-        return Math.pow(x - entry.x, 2) + Math.pow(y - entry.y, 2) + Math.pow(z - entry.z, 2);
+        return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
     }
 
     public byte[] getBlob() throws SQLException {
@@ -244,5 +244,29 @@ public class DbEntry {
 
         }
         return out;
+    }
+
+    public String getWorld() {
+        return world;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getZ() {
+        return z;
+    }
+
+    public int getPitch() {
+        return pitch;
+    }
+
+    public int getYaw() {
+        return yaw;
     }
 }

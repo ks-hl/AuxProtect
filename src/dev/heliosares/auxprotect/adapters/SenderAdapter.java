@@ -29,6 +29,6 @@ public abstract class SenderAdapter {
 
     public abstract boolean isConsole();
 
-    public abstract void teleport(String world, int x, int y, int z, int pitch, int yaw)
+    public abstract void teleport(String world, double x, double y, double z, int pitch, int yaw)
             throws NullPointerException, UnsupportedOperationException;
 }

@@ -68,11 +68,11 @@ public class SpigotSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public void teleport(String worldname, int x, int y, int z, int pitch, int yaw)
+    public void teleport(String worldname, double x, double y, double z, int pitch, int yaw)
             throws NullPointerException, UnsupportedOperationException {
         if (sender instanceof Player player) {
             World world = plugin.getServer().getWorld(worldname);
-            final Location target = new Location(world, x + 0.5, y, z + 0.5, yaw, pitch);
+            final Location target = new Location(world, x, y, z, yaw, pitch);
             player.teleport(target);
             if (player.getGameMode() == GameMode.SPECTATOR) {
                 new BukkitRunnable() {
