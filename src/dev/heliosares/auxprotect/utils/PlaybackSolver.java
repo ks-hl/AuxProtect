@@ -13,7 +13,9 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.json.simple.parser.ParseException;
 
+import java.io.IOException;
 import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -29,6 +31,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
     private final ProtocolManager protocol;
     private final Player audience;
+    private final Map<UUID, FakePlayer.Skin> skins = new HashMap<>();
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, LookupException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
@@ -53,8 +56,21 @@ public class PlaybackSolver extends BukkitRunnable {
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
         long max = points.stream().map(PosPoint::time).max(Long::compare).orElse(System.currentTimeMillis());
 
+
         if (max - min > 5L * 60L * 1000L) {
             throw new LookupException(Language.L.COMMAND__LOOKUP__PLAYBACK__TOOLONG, "5 minutes");
+        }
+
+        for (PosPoint point : points) {
+            if (skins.containsKey(point.uuid)) continue;
+            // Limit of 5 skins to cautiously avoid API rate limiting
+            if (skins.size() >= 5) break;
+            try {
+                skins.put(point.uuid, FakePlayer.getSkin(point.uuid));
+            } catch (ParseException | IOException | InterruptedException e) {
+                plugin.warning("Failed to get skin for " + point.name());
+                plugin.print(e);
+            }
         }
 
         this.startTime = Math.max(min - 250, startTime);
@@ -125,7 +141,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
                 if (actor == null) {
                     actor = new FakePlayer(point.name(), protocol, audience);
-                    actor.spawn(point.location());
+                    actor.spawn(point.location(), skins.get(point.uuid));
                 }
                 actors.put(point.name(), actor);
                 actor.setLocation(loc);
