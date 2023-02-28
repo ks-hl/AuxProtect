@@ -3,6 +3,8 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.utils.PosEncoder;
 import org.bukkit.Location;
 
+import java.util.Objects;
+
 public class PosEntry extends DbEntry {
     private final double x;
     private final double y;
@@ -10,9 +12,11 @@ public class PosEntry extends DbEntry {
 
     public PosEntry(String userUuid, EntryAction action, boolean state, Location location, String target) {
         super(userUuid, action, state, location, target, "");
-        this.x = location.getX();
-        this.y = location.getY();
-        this.z = location.getZ();
+        // This rounding is done to account for a player being at 7.5/8 of a block in the x/z axis or 3.5/4 in the Y axis.
+        // Without this rounding, in the example above, the x/y/z values in the database would be 1 value too low
+        this.x = Math.round(location.getX() * 8) / 8D;
+        this.y = Math.round(location.getY() * 4) / 4D;
+        this.z = Math.round(location.getZ() * 8) / 8D;
     }
 
     protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
@@ -42,6 +46,21 @@ public class PosEntry extends DbEntry {
 
     public double getDoubleZ() {
         return z;
+    }
+
+    @Override
+    public int getX() {
+        return (int) x;
+    }
+
+    @Override
+    public int getY() {
+        return (int) y;
+    }
+
+    @Override
+    public int getZ() {
+        return (int) z;
     }
 
     public byte getIncrement() {
