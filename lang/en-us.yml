@@ -52,6 +52,10 @@ command:
     action-none: '&cYou must specify an action.'
     rating-wrong: '&cYou can only specify ''rating'' for a:vein.'
     nodata: '&cThat table does not have data logs.'
+    playback:
+      starting: '&pPlayback starting...'
+      stopped: '&pPlayback stopped.'
+      toolong: '&cCan not playback a range greater than %s.'
   help:
     nohelp: '&cThis command does not have a help page.'
     header: '&s----- &pAuxProtect Help &s-----'

@@ -4,10 +4,11 @@ import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
-import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -15,6 +16,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class PlaybackSolver extends BukkitRunnable {
     private static final Map<UUID, PlaybackSolver> instances = new HashMap<>();
@@ -28,7 +30,7 @@ public class PlaybackSolver extends BukkitRunnable {
     private final ProtocolManager protocol;
     private final Player audience;
 
-    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException {
+    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, LookupException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         PlaybackSolver instance = instances.get(sender.getUniqueId());
         if (instance != null) {
@@ -37,11 +39,28 @@ public class PlaybackSolver extends BukkitRunnable {
         this.audience = (Player) sender.getSender();
         instances.put(sender.getUniqueId(), this);
         realReferenceTime = System.currentTimeMillis();
-        points = getLocations(plugin, entries, startTime);
+        points = getLocations(plugin, entries, startTime).stream()
+                // Ensures the entries are in the same world
+                .filter(point -> audience.getWorld().equals(point.location.getWorld()))
+                // Ensures the entries are close enough to the player
+                .filter(point -> audience.getLocation().distance(point.location) < 250)
+                .collect(Collectors.toList());
+
+        if (points.size() == 0) {
+            throw new LookupException(Language.L.COMMAND__LOOKUP__NORESULTS);
+        }
+
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
+        long max = points.stream().map(PosPoint::time).max(Long::compare).orElse(System.currentTimeMillis());
+
+        if (max - min > 5L * 60L * 1000L) {
+            throw new LookupException(Language.L.COMMAND__LOOKUP__PLAYBACK__TOOLONG, "5 minutes");
+        }
+
         this.startTime = Math.max(min - 250, startTime);
         this.protocol = ProtocolLibrary.getProtocolManager();
 
+        sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYBACK__STARTING);
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
     }
 
@@ -88,6 +107,7 @@ public class PlaybackSolver extends BukkitRunnable {
     @Override
     public void run() {
         if (closed || isCancelled()) {
+            audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));
             actors.values().forEach(FakePlayer::remove);
             actors.clear();
             cancel();

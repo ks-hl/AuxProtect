@@ -81,6 +81,9 @@ public class Language {
         COMMAND__LOOKUP__ACTION_NONE, //
         COMMAND__LOOKUP__RATING_WRONG, //
         COMMAND__LOOKUP__NODATA, //
+        COMMAND__LOOKUP__PLAYBACK__STARTING, //
+        COMMAND__LOOKUP__PLAYBACK__STOPPED, //
+        COMMAND__LOOKUP__PLAYBACK__TOOLONG, //
         WATCH_NONE, //
         WATCH_ING, //
         WATCH_REMOVED, //
