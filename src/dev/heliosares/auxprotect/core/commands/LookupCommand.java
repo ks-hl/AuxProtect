@@ -395,7 +395,7 @@ public class LookupCommand extends Command {
                 List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
                 List<DbEntry> newResults = new ArrayList<>();
                 for (PlaybackSolver.PosPoint point : points) {
-                    newResults.add(new PlaybackSolver.PosEntry(point.time(), point.uid(), point.location()));
+                    newResults.add(new PosEntry(point.time(), point.uid(), point.location()));
                 }
                 Collections.reverse(newResults);
                 rs = newResults;

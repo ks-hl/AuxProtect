@@ -23,6 +23,15 @@ public class PosEntry extends DbEntry {
         this.z = z + dInc[2];
     }
 
+    public PosEntry(long time, int uid, Location location) {
+        super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
+                (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
+                Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "");
+        this.x = location.getX();
+        this.y = location.getY();
+        this.z = location.getZ();
+    }
+
     public double getDoubleX() {
         return x;
     }

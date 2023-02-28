@@ -152,12 +152,4 @@ public class PlaybackSolver extends BukkitRunnable {
 
     public record PosPoint(long time, UUID uuid, String name, int uid, Location location, boolean inc) {
     }
-
-    public static class PosEntry extends DbEntry {
-        public PosEntry(long time, int uid, Location location) {
-            super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
-                    (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
-                    Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "");
-        }
-    }
 }
