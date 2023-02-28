@@ -144,7 +144,7 @@ public class APPlayer {
     public void tickDiffPos() {
         if (lastLocationDiff != null) {
             synchronized (inventoryBlob) {
-                for (byte b : PosEncoder.encode(player, lastLocationDiff)) {
+                for (byte b : PosEncoder.encode(lastLocationDiff, player.getLocation())) {
                     inventoryBlob.add(b);
                 }
             }
