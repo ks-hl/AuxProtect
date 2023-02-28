@@ -1,14 +1,7 @@
 package dev.heliosares.auxprotect.utils;
 
-import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.EnumWrappers;
-import com.comphenix.protocol.wrappers.PlayerInfoData;
-import com.comphenix.protocol.wrappers.WrappedChatComponent;
-import com.comphenix.protocol.wrappers.WrappedGameProfile;
-import dev.heliosares.auxprotect.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -16,16 +9,10 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.packetwrapper.WrapperPlayServerNamedEntitySpawn;
-import dev.heliosares.auxprotect.utils.packetwrapper.WrapperPlayServerPlayerInfo;
 import org.bukkit.Location;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
 import java.util.*;
 
@@ -35,7 +22,7 @@ public class PlaybackSolver extends BukkitRunnable {
     private final long startTime;
     private final long realReferenceTime;
 
-    private final Map<String, LivingEntity> actors = new HashMap<>();
+    private final Map<String, FakePlayer> actors = new HashMap<>();
     private boolean closed;
 
     private final ProtocolManager protocol;
@@ -79,7 +66,7 @@ public class PlaybackSolver extends BukkitRunnable {
                     if (inc.hasPitch()) incLoc.setPitch(inc.pitch());
                     if (inc.hasYaw()) incLoc.setYaw(inc.yaw());
                     lastLoc = incLoc;
-                    PosPoint point = new PosPoint(time, entry.getUser(), entry.getUid(), incLoc, true);
+                    PosPoint point = new PosPoint(time, UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), incLoc, true);
                     plugin.debug("Adding point " + point, 3);
                     points.add(point);
                     if (time < min) min = time;
@@ -88,7 +75,7 @@ public class PlaybackSolver extends BukkitRunnable {
             Location entryLoc = DbEntryBukkit.getLocation(entry);
             entryLoc.setYaw(entry.getYaw());
             entryLoc.setPitch(entry.getPitch());
-            PosPoint point = new PosPoint(entry.getTime(), entry.getUser(), entry.getUid(), entryLoc, false);
+            PosPoint point = new PosPoint(entry.getTime(), UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), entryLoc, false);
             plugin.debug("Adding point " + point, 3);
             points.add(point);
             if (entry.getTime() < min) min = entry.getTime();
@@ -101,65 +88,49 @@ public class PlaybackSolver extends BukkitRunnable {
     @Override
     public void run() {
         if (closed || isCancelled()) {
-            actors.values().forEach(Entity::remove);
+            actors.values().forEach(FakePlayer::remove);
             actors.clear();
             cancel();
             return;
         }
         final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
 
+
         for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
             PosPoint point = it.next();
             if (timeNow > point.time()) {
-                LivingEntity actor = actors.get(point.name());
-                Location loc = point.location.clone().add(0.5, 0, 0.5);
+                FakePlayer actor = actors.get(point.name());
+                Location loc = point.location.clone();
                 assert loc.getWorld() != null;
-                if (actor == null || actor.isDead()) {
-                    actor = (LivingEntity) loc.getWorld().spawnEntity(loc, EntityType.VILLAGER);
-                    actor.setAI(false);
-                    actor.setInvulnerable(true);
-                    actor.setCustomName(point.name());
-                    actor.setCustomNameVisible(true);
+
+                if (actor == null) {
+                    actor = new FakePlayer(point.name(), protocol, audience);
+                    actor.spawn(point.location());
                 }
                 actors.put(point.name(), actor);
-                actor.teleport(loc);
-                actor.setHealth(20);
+                actor.setLocation(loc);
+
                 it.remove();
             } else break;
+        }
+        Iterator<FakePlayer> it = actors.values().iterator();
+        while (it.hasNext()) {
+            FakePlayer pl = it.next();
+            if (System.currentTimeMillis() - pl.getLastMoved() > 1000) {
+                pl.remove();
+                it.remove();
+            }
         }
         if (points.isEmpty()) close();
     }
 
-    private UUID spawnNewPlayer(String name, Location location) {
-        WrapperPlayServerNamedEntitySpawn body = new WrapperPlayServerNamedEntitySpawn();
-        UUID uuid = UUID.randomUUID();
-        setLocation(body, location);
-        WrappedGameProfile profile;
-
-        PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
-
-        try {
-            protocol.sendServerPacket(audience, info.getHandle());
-            protocol.sendServerPacket(audience, body.getHandle());
-            audience.sendMessage("spawned");
-        } catch (InvocationTargetException e) {
-            AuxProtectAPI.getInstance().print(e);
-        }
-        return uuid;
-    }
-
-    private void setLocation(WrapperPlayServerNamedEntitySpawn player, Location loc) {
-        player.setPosition(loc.toVector());
-        player.setPitch(loc.getPitch());
-        player.setYaw(loc.getYaw());
-    }
 
     public void close() {
         if (closed) return;
         closed = true;
     }
 
-    public record PosPoint(long time, String name, int uid, Location location, boolean inc) {
+    public record PosPoint(long time, UUID uuid, String name, int uid, Location location, boolean inc) {
     }
 
     public static class PosEntry extends DbEntry {

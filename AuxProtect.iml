@@ -61,5 +61,7 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.checkerframework:checker-qual:3.14.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.palmergames.bukkit.towny:towny:0.98.2.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.Heliosares:AuctionHouseAPI:756e099dff" level="project" />
+    <orderEntry type="library" name="Maven: com.comphenix.protocol:ProtocolLib:5.0.0-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: net.bytebuddy:byte-buddy:1.12.12" level="project" />
   </component>
 </module>

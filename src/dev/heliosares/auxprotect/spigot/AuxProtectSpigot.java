@@ -129,8 +129,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             print(e1);
         }
 
-        // TODO readd
-
         debug("Parsing: " + Bukkit.getBukkitVersion());
         try {
             SERVER_VERSION = Integer.parseInt(Bukkit.getBukkitVersion().split("[.-]")[1]);
