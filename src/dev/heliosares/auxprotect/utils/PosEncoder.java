@@ -96,7 +96,14 @@ public class PosEncoder {
         if (pitch) out[3] = bytes[offset + 1 + xLen + yLen + zLen];
         if (yaw) out[4] = (double) bytes[offset + 1 + xLen + yLen + zLen + (pitch ? 1 : 0)] / 127.0 * 180;
 
-        return new DecodedPositionIncrement(xLen > 0, out[0], yLen > 0, out[1], zLen > 0, out[2], pitch, (float) out[3], yaw, (float) out[4], 1 + xLen + yLen + zLen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
+        return new DecodedPositionIncrement(
+                xLen > 0, out[0],
+                yLen > 0, out[1],
+                zLen > 0, out[2],
+                pitch, (float) out[3],
+                yaw, (float) out[4],
+                1 + xLen + yLen + zLen + (yaw ? 1 : 0) + (pitch ? 1 : 0)
+        );
     }
 
     /**
