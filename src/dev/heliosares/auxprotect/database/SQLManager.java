@@ -130,7 +130,7 @@ public class SQLManager extends ConnectionPool {
         out:
         if (plugin.getAPConfig().doAutoPurge()) {
             long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE);
-            if (timeSincePurge < 3600000L) {
+            if (timeSincePurge < 12L * 3600000L) {
                 plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
                 break out;
             }
@@ -295,7 +295,6 @@ public class SQLManager extends ConnectionPool {
 
     }
 
-    //TODO test this
     public int purgeUIDs() throws SQLException {
         BinaryOperator<String> reducer = (a, b) -> a + " AND " + b;
         String stmt = "DELETE FROM auxprotect_uids WHERE " +
