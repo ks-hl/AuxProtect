@@ -177,9 +177,15 @@ public class PosEncoder {
      * X and Z are stored in 8ths, Y is stored in 4ths.
      */
     public static byte getFractionalByte(double dx, double dy, double dz) {
-        int x = (int) Math.min(Math.round((Math.abs(dx % 1)) * 8), 7) << 5;
-        int y = (int) Math.min(Math.round((Math.abs(dy % 1)) * 4), 3) << 3;
-        int z = (int) Math.min(Math.round((Math.abs(dz % 1)) * 8), 7);
+        dx %= 1;
+        dy %= 1;
+        dz %= 1;
+        if (dx < 0) dx++;
+        if (dy < 0) dy++;
+        if (dz < 0) dz++;
+        int x = (int) Math.min(Math.round(dx * 8), 7) << 5;
+        int y = (int) Math.min(Math.round(dy * 4), 3) << 3;
+        int z = (int) Math.min(Math.round(dz * 8), 7);
 
         return (byte) (x | y | z);
     }

@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -33,6 +34,7 @@ import org.bukkit.scheduler.BukkitRunnable;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
 
 public class PlayerListener implements Listener {
 
@@ -219,13 +221,16 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent e) {
+        if (e.getTo() == null) return;
         APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
         apPlayer.logPreTeleportPos(e.getFrom());
         apPlayer.logPostTeleportPos(e.getTo());
         apPlayer.lastLoggedPos = System.currentTimeMillis();
-        if (!plugin.getAPConfig().isInventoryOnWorldChange() || e.getFrom().getWorld().equals(e.getTo().getWorld())) {
-            return;
-        }
+        boolean sameWorld = Objects.equals(e.getFrom().getWorld(), e.getTo().getWorld());
+        if (!sameWorld || e.getFrom().distance(e.getTo()) > 64) PlaybackSolver.close(e.getPlayer().getUniqueId());
+
+        if (!plugin.getAPConfig().isInventoryOnWorldChange() || sameWorld) return;
+
         byte[] inventory_ = null;
         try {
             inventory_ = InvSerialization.playerToByteArray(e.getPlayer());

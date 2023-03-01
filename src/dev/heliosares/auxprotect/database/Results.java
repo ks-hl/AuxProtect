@@ -16,15 +16,11 @@ import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.sql.SQLException;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Random;
 
 public class Results {
 
-    public static final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("ddMMMyy HH:mm:ss.SSS");
     protected final SenderAdapter player;
     final IAuxProtect plugin;
     private final List<DbEntry> entries;
@@ -73,7 +69,7 @@ public class Results {
                 msg = String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
             }
             message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text(Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault()).format(dateFormatter)
+                            new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
                                     + "\n§7Click to copy epoch time. (" + entry.getTime() + "ms)")))
                     .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
         }

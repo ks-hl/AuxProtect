@@ -1,6 +1,12 @@
 package dev.heliosares.auxprotect.utils;
 
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+
 public class TimeUtil {
+
+    public static final DateTimeFormatter entryTimeFormat = DateTimeFormatter.ofPattern("ddMMMyy HH:mm:ss.SSS");
 
     private static String padDouble(double d) {
         String[] split = (d + "").split("\\.");
@@ -108,5 +114,9 @@ public class TimeUtil {
             time += Double.parseDouble(builder.toString());
         }
         return time;
+    }
+
+    public static String format(long millis, DateTimeFormatter formatter) {
+        return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(formatter);
     }
 }

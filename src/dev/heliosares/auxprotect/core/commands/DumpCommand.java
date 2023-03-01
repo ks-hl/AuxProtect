@@ -6,9 +6,9 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.ConnectionPool;
-import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.StackUtil;
+import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -31,9 +31,9 @@ public class DumpCommand extends Command {
                               boolean stats) throws Exception {
         StringBuilder trace = new StringBuilder();
         if (!stats) {
-            trace.append("Generated: ").append(LocalDateTime.now().format(Results.dateFormatter)).append(" (").append(System.currentTimeMillis()).append(")\n");
+            trace.append("Generated: ").append(LocalDateTime.now().format(TimeUtil.entryTimeFormat)).append(" (").append(System.currentTimeMillis()).append(")\n");
             trace.append("Connected: ").append(LocalDateTime.ofInstant(Instant.ofEpochMilli(plugin.getSqlManager().getTimeConnected()), ZoneId.systemDefault())
-                    .format(Results.dateFormatter)).append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
+                    .format(TimeUtil.entryTimeFormat)).append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
         }
         trace.append("Plugin version: ").append(plugin.getPluginVersion()).append("\n");
         trace.append("Key: ");

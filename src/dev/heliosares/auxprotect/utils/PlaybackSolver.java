@@ -10,6 +10,8 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import net.md_5.bungee.api.ChatMessageType;
+import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -27,20 +29,20 @@ public class PlaybackSolver extends BukkitRunnable {
     private final long realReferenceTime;
 
     private final Map<String, FakePlayer> actors = new HashMap<>();
-    private boolean closed;
-
     private final ProtocolManager protocol;
     private final Player audience;
     private final Map<UUID, FakePlayer.Skin> skins = new HashMap<>();
+    private boolean closed;
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, LookupException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
-        PlaybackSolver instance = instances.get(sender.getUniqueId());
-        if (instance != null) {
-            instance.close();
-        }
+
+        close(sender.getUniqueId());
+
         this.audience = (Player) sender.getSender();
-        instances.put(sender.getUniqueId(), this);
+        synchronized (instances) {
+            instances.put(sender.getUniqueId(), this);
+        }
         realReferenceTime = System.currentTimeMillis();
         points = getLocations(plugin, entries, startTime).stream()
                 // Ensures the entries are in the same world
@@ -101,7 +103,6 @@ public class PlaybackSolver extends BukkitRunnable {
                     if (inc.hasYaw()) incLoc.setYaw(inc.yaw());
                     lastLoc = incLoc.clone();
                     PosPoint point = new PosPoint(time, UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), incLoc.clone(), true);
-                    plugin.debug("Adding point " + point, 3);
                     points.add(point);
                 }
             }
@@ -109,7 +110,6 @@ public class PlaybackSolver extends BukkitRunnable {
             entryLoc.setYaw(entry.getYaw());
             entryLoc.setPitch(entry.getPitch());
             PosPoint point = new PosPoint(entry.getTime(), UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), entryLoc, false);
-            plugin.debug("Adding point " + point, 3);
             points.add(point);
             lastEntries.put(entry.getUser(), entry);
         }
@@ -117,16 +117,35 @@ public class PlaybackSolver extends BukkitRunnable {
         return points;
     }
 
+    public static void close(UUID uuid) {
+        synchronized (instances) {
+            PlaybackSolver instance = instances.get(uuid);
+            if (instance != null) instance.close();
+        }
+    }
+
+    public static void cleanup() {
+        synchronized (instances) {
+            instances.values().removeIf(PlaybackSolver::isClosed);
+        }
+    }
+
     @Override
     public void run() {
-        if (closed || isCancelled()) {
-            audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));
-            actors.values().forEach(FakePlayer::remove);
+        if (closed || isCancelled() || !audience.isOnline()) {
+            close();
+            if (audience.isOnline()) {
+                audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));
+                audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED)));
+                actors.values().forEach(FakePlayer::remove);
+            }
             actors.clear();
             cancel();
             return;
         }
         final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
+
+        audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  §7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
 
 
         for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
@@ -137,7 +156,9 @@ public class PlaybackSolver extends BukkitRunnable {
                 assert loc.getWorld() != null;
 
                 if (actor == null) {
-                    actor = new FakePlayer(point.name(), protocol, audience);
+                    String name = "~" + point.name;
+                    if (name.length() > 16) name = name.substring(0, 16);
+                    actor = new FakePlayer(name, protocol, audience);
                     actor.spawn(point.location(), skins.get(point.uuid));
                 }
                 actors.put(point.name(), actor);
@@ -157,10 +178,14 @@ public class PlaybackSolver extends BukkitRunnable {
         if (points.isEmpty()) close();
     }
 
-
     public void close() {
         if (closed) return;
         closed = true;
+        cleanup();
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 
     public record PosPoint(long time, UUID uuid, String name, int uid, Location location, boolean inc) {

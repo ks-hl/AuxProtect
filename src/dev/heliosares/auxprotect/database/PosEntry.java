@@ -22,9 +22,9 @@ public class PosEntry extends DbEntry {
     protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
         double[] dInc = PosEncoder.byteToFractions(increment);
-        this.x = x + dInc[0] * (x < 0 ? -1 : 1);
-        this.y = y + dInc[1] * (y < 0 ? -1 : 1);
-        this.z = z + dInc[2] * (z < 0 ? -1 : 1);
+        this.x = x + dInc[0];
+        this.y = y + dInc[1];
+        this.z = z + dInc[2];
     }
 
     public PosEntry(long time, int uid, Location location) {
@@ -50,17 +50,17 @@ public class PosEntry extends DbEntry {
 
     @Override
     public int getX() {
-        return (int) x;
+        return (int) Math.floor(x);
     }
 
     @Override
     public int getY() {
-        return (int) y;
+        return (int) Math.floor(y);
     }
 
     @Override
     public int getZ() {
-        return (int) z;
+        return (int) Math.floor(z);
     }
 
     public byte getIncrement() {
