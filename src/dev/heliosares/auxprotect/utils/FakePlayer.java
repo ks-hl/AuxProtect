@@ -18,8 +18,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 public class FakePlayer {
@@ -44,6 +42,22 @@ public class FakePlayer {
     public static UUID generateNPCUUID() {
         UUID uuid = UUID.randomUUID();
         return UUID.fromString(uuid.toString().substring(0, 15) + '2' + uuid.toString().substring(16));
+    }
+
+    public static Skin getSkin(UUID uuid) throws ParseException, IOException, InterruptedException {
+        HttpClient client = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid + "?unsigned=false"))
+                .build();
+        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            throw new IOException("Response Code: " + response.statusCode() + ", " + response.body());
+        }
+
+        JSONObject json2 = (JSONObject) new JSONParser().parse(response.body());
+        Object props = ((JSONArray) json2.get("properties")).get(0);
+        JSONObject propsObj = (JSONObject) props;
+        return new Skin(uuid, (String) propsObj.get("value"), (String) propsObj.get("signature"));
     }
 
     public void spawn(Location loc_, @Nullable Skin skin) {
@@ -77,28 +91,6 @@ public class FakePlayer {
         protocol.sendServerPacket(audience, packet);
     }
 
-    public record Skin(UUID uuid, String skin, String signature) {
-        public WrappedSignedProperty wrap() {
-            return new WrappedSignedProperty("textures", skin, signature);
-        }
-    }
-
-    public static Skin getSkin(UUID uuid) throws ParseException, IOException, InterruptedException {
-        HttpClient client = HttpClient.newHttpClient();
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create("https://sessionserver.mojang.com/session/minecraft/profile/" + uuid + "?unsigned=false"))
-                .build();
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-        if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IOException("Response Code: " + response.statusCode() + ", " + response.body());
-        }
-
-        JSONObject json2 = (JSONObject) new JSONParser().parse(response.body());
-        Object props = ((JSONArray) json2.get("properties")).get(0);
-        JSONObject propsObj = (JSONObject) props;
-        return new Skin(uuid, (String) propsObj.get("value"), (String) propsObj.get("signature"));
-    }
-
     public void setLocation(Location loc) {
 
         // Move entity
@@ -123,7 +115,6 @@ public class FakePlayer {
         this.loc = loc;
     }
 
-
     public void remove() {
 
         // Removes player info
@@ -147,5 +138,11 @@ public class FakePlayer {
 
     public long getLastMoved() {
         return lastMoved;
+    }
+
+    public record Skin(UUID uuid, String skin, String signature) {
+        public WrappedSignedProperty wrap() {
+            return new WrappedSignedProperty("textures", skin, signature);
+        }
     }
 }

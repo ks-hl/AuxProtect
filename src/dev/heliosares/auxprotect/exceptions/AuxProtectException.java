@@ -2,8 +2,6 @@ package dev.heliosares.auxprotect.exceptions;
 
 import dev.heliosares.auxprotect.core.Language.L;
 
-import java.util.List;
-
 public class AuxProtectException extends Exception {
     private final L l;
 

@@ -154,24 +154,6 @@ public class PosEncoder {
     }
 
     /**
-     * @param array The data
-     * @param fine  Whether the value is stored in hundredths or tenths. true indicates hundredths.
-     */
-    record IncrementalByte(byte[] array, boolean fine) {
-        public int getBytesNeeded() {
-            return fine ? 3 : array.length;
-        }
-    }
-
-    public record DecodedPositionIncrement(boolean hasX, double x, boolean hasY, double y, boolean hasZ, double z,
-                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
-        @Override
-        public String toString() {
-            return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
-        }
-    }
-
-    /**
      * Stores the fraction of the x/y/z values into a single byte. The structure is as follows
      * 0b X X X Y Y Z Z Z
      * X and Z are stored in 8ths, Y is stored in 4ths.
@@ -201,5 +183,23 @@ public class PosEncoder {
         int z = b & 0b111;
 
         return new double[]{x / 8D, y / 4D, z / 8D};
+    }
+
+    /**
+     * @param array The data
+     * @param fine  Whether the value is stored in hundredths or tenths. true indicates hundredths.
+     */
+    record IncrementalByte(byte[] array, boolean fine) {
+        public int getBytesNeeded() {
+            return fine ? 3 : array.length;
+        }
+    }
+
+    public record DecodedPositionIncrement(boolean hasX, double x, boolean hasY, double y, boolean hasZ, double z,
+                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
+        @Override
+        public String toString() {
+            return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
+        }
     }
 }

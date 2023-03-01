@@ -7,7 +7,6 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.InputStream;
-import java.util.List;
 import java.util.Set;
 
 public interface IAuxProtect {
