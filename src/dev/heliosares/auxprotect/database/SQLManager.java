@@ -596,9 +596,7 @@ public class SQLManager extends ConnectionPool {
                 try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getTime() + " LIMIT 1")) {
                     try (ResultSet rs = pstmt.executeQuery()) {
                         if (rs.next()) {
-                            byte[] blob = getBlob(rs, 1);
-                            System.out.println("Resolved blob to " + Arrays.toString(blob));
-                            return blob;
+                            return getBlob(rs, 1);
                         }
                     }
                 }

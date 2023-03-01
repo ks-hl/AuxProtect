@@ -82,7 +82,6 @@ public class PlaybackSolver extends BukkitRunnable {
 
     public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
-        long min = Long.MAX_VALUE;
         Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
         List<PosPoint> points = new ArrayList<>();
@@ -100,11 +99,10 @@ public class PlaybackSolver extends BukkitRunnable {
                     Location incLoc = lastLoc.clone().add(add);
                     if (inc.hasPitch()) incLoc.setPitch(inc.pitch());
                     if (inc.hasYaw()) incLoc.setYaw(inc.yaw());
-                    lastLoc = incLoc;
-                    PosPoint point = new PosPoint(time, UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), incLoc, true);
+                    lastLoc = incLoc.clone();
+                    PosPoint point = new PosPoint(time, UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), incLoc.clone(), true);
                     plugin.debug("Adding point " + point, 3);
                     points.add(point);
-                    if (time < min) min = time;
                 }
             }
             Location entryLoc = DbEntryBukkit.getLocation(entry);
@@ -113,7 +111,6 @@ public class PlaybackSolver extends BukkitRunnable {
             PosPoint point = new PosPoint(entry.getTime(), UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), entryLoc, false);
             plugin.debug("Adding point " + point, 3);
             points.add(point);
-            if (entry.getTime() < min) min = entry.getTime();
             lastEntries.put(entry.getUser(), entry);
         }
         points.sort(Comparator.comparingLong(a -> a.time));
