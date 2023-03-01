@@ -14,17 +14,17 @@ public class PosEntry extends DbEntry {
         super(userUuid, action, state, location, target, "");
         // This rounding is done to account for a player being at 7.5/8 of a block in the x/z axis or 3.5/4 in the Y axis.
         // Without this rounding, in the example above, the x/y/z values in the database would be 1 value too low
-        this.x = Math.round(location.getX() * 8) / 8D;
-        this.y = Math.round(location.getY() * 4) / 4D;
-        this.z = Math.round(location.getZ() * 8) / 8D;
+        this.x = Math.round(location.getX() * 8D) / 8D;
+        this.y = Math.round(location.getY() * 4D) / 4D;
+        this.z = Math.round(location.getZ() * 8D) / 8D;
     }
 
     protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
         double[] dInc = PosEncoder.byteToFractions(increment);
-        this.x = x + dInc[0];
-        this.y = y + dInc[1];
-        this.z = z + dInc[2];
+        this.x = x + dInc[0] * (x < 0 ? -1 : 1);
+        this.y = y + dInc[1] * (y < 0 ? -1 : 1);
+        this.z = z + dInc[2] * (z < 0 ? -1 : 1);
     }
 
     public PosEntry(long time, int uid, Location location) {

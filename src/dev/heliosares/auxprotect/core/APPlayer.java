@@ -17,7 +17,7 @@ import java.util.List;
 public class APPlayer {
     public final Player player;
     private final IAuxProtect plugin;
-    private final List<Byte> inventoryBlob = new ArrayList<>();
+    private final List<Byte> posBlob = new ArrayList<>();
     public final double[] activity = new double[30];
     public long lastLoggedMoney;
     public long lastLoggedInventory;
@@ -143,9 +143,9 @@ public class APPlayer {
 
     public void tickDiffPos() {
         if (lastLocationDiff != null) {
-            synchronized (inventoryBlob) {
+            synchronized (posBlob) {
                 for (byte b : PosEncoder.encode(lastLocationDiff, player.getLocation())) {
-                    inventoryBlob.add(b);
+                    posBlob.add(b);
                 }
             }
         }
@@ -169,11 +169,13 @@ public class APPlayer {
         lastLoggedPos = System.currentTimeMillis();
         DbEntry entry = new PosEntry("$" + player.getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
 
-        synchronized (inventoryBlob) {
-            byte[] blob = new byte[inventoryBlob.size()];
-            for (int i = 0; i < blob.length; i++) blob[i] = inventoryBlob.get(i);
+        if (!tp) lastLocationDiff = player.getLocation().clone();
+
+        synchronized (posBlob) {
+            byte[] blob = new byte[posBlob.size()];
+            for (int i = 0; i < blob.length; i++) blob[i] = posBlob.get(i);
             entry.setBlob(blob);
-            inventoryBlob.clear();
+            posBlob.clear();
         }
 
         plugin.add(entry);
