@@ -7,6 +7,7 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -34,6 +35,7 @@ public class Pane implements InventoryHolder {
         });
     }
 
+    @Nonnull
     @Override
     public Inventory getInventory() {
         return inventory;
@@ -50,6 +52,7 @@ public class Pane implements InventoryHolder {
         }
         ItemStack item = new ItemStack(type);
         ItemMeta meta = item.getItemMeta();
+        if (meta == null) throw new IllegalArgumentException("Null meta on specified item");
         if (name != null) {
             meta.setDisplayName(name);
         }

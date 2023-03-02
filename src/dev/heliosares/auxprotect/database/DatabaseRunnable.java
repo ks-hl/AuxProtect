@@ -6,11 +6,9 @@ import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.function.Consumer;
 
 public class DatabaseRunnable implements Runnable {
     private static final HashMap<Table, Long> lastTimes = new HashMap<>();
@@ -58,13 +56,14 @@ public class DatabaseRunnable implements Runnable {
             return;
         }
         table.queue.add(entry);
+        synchronized (listeners) {
+            listeners.forEach(c -> c.accept(entry));
+        }
     }
 
     public int queueSize() {
         Optional<Integer> opt = Arrays.stream(Table.values()).map(t -> t.queue.size()).reduce(Integer::sum);
-        if (opt.isEmpty())
-            return 0;
-        return opt.get();
+        return opt.orElse(0);
     }
 
     @Override
@@ -153,4 +152,14 @@ public class DatabaseRunnable implements Runnable {
             jobsentries.add(entry);
         }
     }
+
+    private final Set<Consumer<DbEntry>> listeners = new HashSet<>();
+
+    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
+        synchronized (listeners) {
+            if (add) listeners.add(consumer);
+            else listeners.remove(consumer);
+        }
+    }
+
 }

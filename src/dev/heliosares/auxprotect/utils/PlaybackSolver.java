@@ -36,20 +36,22 @@ public class PlaybackSolver extends BukkitRunnable {
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, LookupException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
-
-        close(sender.getUniqueId());
-
         this.audience = (Player) sender.getSender();
-        synchronized (instances) {
-            instances.put(sender.getUniqueId(), this);
-        }
-        realReferenceTime = System.currentTimeMillis();
-        points = getLocations(plugin, entries, startTime).stream()
+        this.realReferenceTime = System.currentTimeMillis();
+        this.points = getLocations(plugin, entries, startTime).stream()
                 // Ensures the entries are in the same world
                 .filter(point -> audience.getWorld().equals(point.location.getWorld()))
                 // Ensures the entries are close enough to the player
                 .filter(point -> audience.getLocation().distance(point.location) < 250)
                 .collect(Collectors.toList());
+
+        try {
+            Class.forName("com.comphenix.protocol.ProtocolLibrary");
+        } catch (ClassNotFoundException e) {
+            throw new LookupException(Language.L.PROTOCOLLIB_NOT_LOADED);
+        }
+
+        this.protocol = ProtocolLibrary.getProtocolManager();
 
         if (points.size() == 0) {
             throw new LookupException(Language.L.COMMAND__LOOKUP__NORESULTS);
@@ -76,7 +78,11 @@ public class PlaybackSolver extends BukkitRunnable {
         }
 
         this.startTime = Math.max(min - 250, startTime);
-        this.protocol = ProtocolLibrary.getProtocolManager();
+
+        close(sender.getUniqueId());
+        synchronized (instances) {
+            instances.put(sender.getUniqueId(), this);
+        }
 
         sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYBACK__STARTING);
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);

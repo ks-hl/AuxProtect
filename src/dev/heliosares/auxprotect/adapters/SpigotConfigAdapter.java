@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.adapters;
 
-import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;

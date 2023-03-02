@@ -11,6 +11,7 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import net.md_5.bungee.api.CommandSender;
+import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -26,6 +27,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -326,5 +328,15 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public String getCommandAlias() {
         return "apb";
+    }
+
+    @Override
+    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
+        dbRunnable.addRemoveEntryListener(consumer, add);
+    }
+
+    @Override
+    public void broadcast(String msg, APPermission node) {
+        getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
     }
 }

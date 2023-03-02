@@ -15,7 +15,7 @@ package dev.heliosares.auxprotect.spigot;
  * Violations will result in a ban of your plugin and account from bStats.
  */
 
-import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.SQLManager;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;

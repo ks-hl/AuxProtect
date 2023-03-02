@@ -37,6 +37,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -790,6 +791,16 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     @Override
     public Set<String> listPlayers() {
         return getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
+    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
+        dbRunnable.addRemoveEntryListener(consumer, add);
+    }
+
+    @Override
+    public void broadcast(String msg, APPermission node) {
+        Bukkit.broadcast(msg, node.node);
     }
 
     @Override

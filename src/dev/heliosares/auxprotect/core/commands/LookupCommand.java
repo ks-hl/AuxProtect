@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 
+import java.sql.SQLException;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -247,6 +248,15 @@ public class LookupCommand extends Command {
             }
 
             List<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params);
+            if (plugin.getAPConfig().isDemoMode() && !sender.isConsole()) {
+                rs.removeIf(entry -> {
+                    try {
+                        return entry.getUserUUID().startsWith("$") && !entry.getUserUUID().equals("$" + sender.getUniqueId());
+                    } catch (SQLException ignored) {
+                        return true;
+                    }
+                });
+            }
             if (rs == null || rs.size() == 0) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                 return;
@@ -400,12 +410,6 @@ public class LookupCommand extends Command {
                 Collections.reverse(newResults);
                 rs = newResults;
             } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
-                try {
-                    Class.forName("com.comphenix.protocol.ProtocolLibrary");
-                } catch (ClassNotFoundException e) {
-                    sender.sendLang(Language.L.PROTOCOLLIB_NOT_LOADED);
-                    return;
-                }
                 new PlaybackSolver(plugin, sender, rs, params.getAfter());
                 return;
             }

@@ -9,12 +9,9 @@ import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.Experience;
-import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.*;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
-import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
-import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -46,29 +43,41 @@ public class InvCommand extends Command {
                                           PlayerInventoryRecord inv, long when) {
         if (plugin_ instanceof AuxProtectSpigot plugin) {
             final Player targetO = target.getPlayer();
+            final String targetName = target.getName() == null ? "unknown" : target.getName();
+            final String targetName_possessive = targetName + "'" + (targetName.toLowerCase().endsWith("s") ? "" : "s");
             Pane enderpane = new Pane(Type.SHOW, player);
 
-            Inventory enderinv = Bukkit.getServer().createInventory(enderpane, 27, target.getName() + " Ender Chest - "
+            Inventory enderinv = Bukkit.getServer().createInventory(enderpane, 27, targetName + " Ender Chest - "
                     + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
             enderinv.setContents(inv.ender());
 
             Pane pane = new Pane(Type.SHOW, player);
+            String ago = TimeUtil.millisToString(System.currentTimeMillis() - when);
             Inventory mainInv = Bukkit.getServer().createInventory(pane, 54,
-                    target.getName() + " " + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
+                    targetName + " " + ago + " ago.");
             pane.setInventory(mainInv);
+            Container<Boolean> closed = new Container<>(false);
 
             if (APPermission.INV_RECOVER.hasPermission(player)) {
                 if (targetO != null) {
-                    pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, new Runnable() {
-                                private long lastClick = 0;
-
-                                @Override
-                                public void run() {
-                                    if (System.currentTimeMillis() - lastClick > 500) {
-                                        lastClick = System.currentTimeMillis();
-                                        return;
-                                    }
-
+                    Container<Long> lastClick = new Container<>(0L);
+                    pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
+                                if (System.currentTimeMillis() - lastClick.get() > 500) {
+                                    lastClick.set(System.currentTimeMillis());
+                                    return;
+                                }
+                                if (closed.get()) return;
+                                closed.set(true);
+                                plugin.runSync(player::closeInventory);
+                                player.sendMessage(L.COMMAND__LOOKUP__LOOKING.translate());
+                                try {
+                                    update(plugin, player, when);
+                                } catch (Exception e) {
+                                    plugin.print(e);
+                                    player.sendMessage(L.ERROR.translate());
+                                    return;
+                                }
+                                plugin.runSync(() -> {
                                     PlayerInventoryRecord inv_;
                                     inv_ = InvDiffManager.listToPlayerInv(Arrays.asList(mainInv.getContents()), inv.exp());
 
@@ -81,16 +90,15 @@ public class InvCommand extends Command {
                                         player.sendMessage("§cUnable to recover experience.");
                                     }
                                     player.closeInventory();
-                                    assert target.getName() != null;
-                                    player.sendMessage("§aYou recovered " + target.getName() + "'"
-                                            + (target.getName().endsWith("s") ? "" : "s") + " inventory.");
+                                    plugin.broadcast(L.COMMAND__CLAIMINV__FORCE_RECOVERED.translate(player.getName(), targetName_possessive, ago), APPermission.INV_NOTIFY);
+                                    player.sendMessage("§aYou recovered " + targetName_possessive + " inventory.");
                                     targetO.sendMessage("§a" + player.getName() + " recovered your inventory from "
                                             + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
                                     targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
-                                            player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
-                                }
-                            }, "§2§lForce Recover Inventory", "", "§a§lDouble click", "",
+                                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
+                                });
+
+                            }), "§2§lForce Recover Inventory", "", "§a§lDouble click", "",
                             "§7This will §c§loverwrite §7the player's", "§7current inventory and exp with",
                             "§7what is in the view above.");
                 } else {
@@ -99,6 +107,9 @@ public class InvCommand extends Command {
                             "§cforce recover their inventory.");
                 }
                 pane.addButton(50, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
+                            if (closed.get()) return;
+                            closed.set(true);
+                            plugin.runSync(player::closeInventory);
                             ItemStack[] output = new ItemStack[45];
                             for (int i = 0; i < output.length; i++) {
                                 output[i] = mainInv.getItem(i);
@@ -115,18 +126,14 @@ public class InvCommand extends Command {
                                 plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
                                                 .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
                                         recover);
-                                plugin.getSqlManager().execute(
-                                        "UPDATE " + Table.AUXPROTECT_INVENTORY
-                                                + " SET data=data || ? WHERE time=? AND action_id=?",
-                                        30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by "
-                                                + player.getName(),
-                                        when, EntryAction.INVENTORY.id);
+                                update(plugin, player, when);
                             } catch (Exception e) {
                                 plugin.print(e);
                                 player.sendMessage(L.ERROR.translate());
                                 return;
                             }
                             assert target.getName() != null;
+                            plugin.broadcast(L.COMMAND__CLAIMINV__RECOVERED.translate(player.getName(), targetName_possessive, ago), APPermission.INV_NOTIFY);
                             player.sendMessage("§aYou recovered " + target.getName() + "'"
                                     + (target.getName().endsWith("s") ? "" : "s") + " inventory.");
                             if (targetO != null) {
@@ -143,14 +150,13 @@ public class InvCommand extends Command {
                                 targetO.spigot().sendMessage(message.create());
                                 targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                             }
-                            plugin.runSync(player::closeInventory);
 
                             plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
                                     player.getLocation(), AuxProtectSpigot.getLabel(target), "regular"));
                         }), "§a§lRecover Inventory", "", "§7This will give the player a", "§7prompt to claim this inventory as",
                         "§7if they were opening a chest with", "§7the above contents. They will also get",
                         "§7the exp stated here.", "", "§cThis will not overwrite anything and may",
-                        "§cduplicate items");
+                        "§cduplicate items §7if they weren't", "§7actually lost originally.");
             }
             int space = 53;
             pane.addButton(space--, Material.RED_STAINED_GLASS_PANE, player::closeInventory, "§c§lClose");
@@ -185,6 +191,13 @@ public class InvCommand extends Command {
             return mainInv;
         }
         return null;
+    }
+
+    private static void update(IAuxProtect plugin, Player staff, long time) throws SQLException {
+        plugin.getSqlManager().execute(
+                "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data=ifnull(data,'')||? WHERE time=? AND action_id=?",
+                30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by " + staff.getName() + "; ",
+                time, EntryAction.INVENTORY.id);
     }
 
     @Override

@@ -322,5 +322,9 @@ public class PlayerListener implements Listener {
     public void onChat(AsyncPlayerChatEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(5);
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
+        if (plugin.getAPConfig().isDemoMode()) {
+            e.getPlayer().sendMessage("§cChat is disabled.");
+            e.setCancelled(true);
+        }
     }
 }

@@ -8,6 +8,7 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Set;
+import java.util.function.Consumer;
 
 public interface IAuxProtect {
 
@@ -65,4 +66,8 @@ public interface IAuxProtect {
     Set<String> listPlayers();
 
     boolean isEnabled();
+
+    void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add);
+
+    void broadcast(String msg, APPermission node);
 }

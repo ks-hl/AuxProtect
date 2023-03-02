@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;

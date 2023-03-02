@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.adapters;
 
-import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 import net.md_5.bungee.config.Configuration;
 import net.md_5.bungee.config.ConfigurationProvider;

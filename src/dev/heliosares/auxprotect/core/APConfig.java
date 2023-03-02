@@ -34,6 +34,7 @@ public class APConfig {
     private String database;
     private String tablePrefix;
     private boolean autopurge;
+    private boolean demoMode;
 
     public void load(IAuxProtect plugin, ConfigAdapter config) throws IOException {
         this.plugin = plugin;
@@ -96,6 +97,7 @@ public class APConfig {
                 }
             }
         }
+        demoMode = config.getBoolean("demomode", false);
         config.save();
     }
 
@@ -252,6 +254,10 @@ public class APConfig {
 
     public boolean doDisableVacuum() {
         return disableVacuum;
+    }
+
+    public boolean isDemoMode() {
+        return demoMode;
     }
 
 }

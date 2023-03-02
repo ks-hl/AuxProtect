@@ -10,6 +10,7 @@ import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import org.bukkit.Bukkit;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
@@ -39,7 +40,7 @@ public class SQLManager extends ConnectionPool {
     private MigrationManager migrationmanager;
     private boolean isConnected;
     private int nextWid;
-    private int nextActionId = 10000;
+    private int nextActionId = 1000001;
 
     public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
         super(plugin, target, mysql, user, pass);
@@ -268,12 +269,7 @@ public class SQLManager extends ConnectionPool {
                     int pid = results.getInt("pid");
                     String ntext = results.getString("ntext");
                     String ptext = results.getString("ptext");
-                    if (nid >= nextActionId) {
-                        nextActionId = nid + 1;
-                    }
-                    if (pid >= nextActionId) {
-                        nextActionId = pid + 1;
-                    }
+                    nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
                     new EntryAction(key, nid, pid, ntext, ptext);
                 }
             }
@@ -529,35 +525,22 @@ public class SQLManager extends ConnectionPool {
     }
 
     /**
-     * Creates a new action and stores it in the database for future use. Use
-     * EntryAction.getAction(String) to determine if an action already exists, or to
-     * recall it later. Actions only need to be created once, after which they are
-     * automatically loaded on startup. You cannot delete actions. Be careful what
-     * you create.
-     *
-     * @param key   The key which will be used to refer to this action in lookups.
-     * @param ntext The text which will be displayed for this action in looks for
-     *              negative actions.
-     * @param ptext The text which will be displayed for this action in looks for
-     *              positive actions, or null for singular actions.
-     * @return The created EntryAction.
-     * @throws AlreadyExistsException if the action you are attempting to create
-     *                                already exists or the name is taken.
-     * @throws SQLException           if there is a problem connecting to the
-     *                                database.
+     * @see dev.heliosares.auxprotect.api.AuxProtectAPI#createAction(String, String, String, String)
      */
     @SuppressWarnings("unused")
-    public EntryAction createAction(String key, String ntext, String ptext)
-            throws AlreadyExistsException, SQLException {
-        if (EntryAction.getAction(key) != null) {
-            throw new AlreadyExistsException();
+    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException {
+        if (plugin.length() == 0 || key.isEmpty() || ntext.isEmpty()) {
+            throw new IllegalArgumentException("Arguments cannot be empty.");
         }
-        int pid = -1;
-        int nid = -1;
+        EntryAction preexisting = EntryAction.getAction(key);
+        if (preexisting != null) throw new AlreadyExistsException(preexisting);
+
+        int pid, nid;
         EntryAction action;
 
         if (ptext == null) {
             nid = nextActionId++;
+            pid = -1;
             action = new EntryAction(key, nid, ntext);
         } else {
             nid = nextActionId++;
@@ -565,7 +548,8 @@ public class SQLManager extends ConnectionPool {
             action = new EntryAction(key, nid, pid, ntext, ptext);
         }
 
-        execute("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS + " (name, nid, pid, ntext, ptext) VALUES (?, ?, ?, ?, ?)", 30000L, key, nid, pid, ntext, ptext);
+
+        execute("INSERT INTO " + Table.AUXPROTECT_API_ACTIONS + " (name, nid, pid, ntext, ptext, owner, created) VALUES (?, ?, ?, ?, ?, ?, ?)", 30000L, key, nid, pid, ntext, ptext, plugin, System.currentTimeMillis());
         return action;
     }
 

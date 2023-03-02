@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.AuxProtectAPI;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
@@ -221,6 +221,11 @@ public class EntryAction {
 
     public boolean exists() {
         IAuxProtect plugin = AuxProtectAPI.getInstance();
+        if (plugin.getAPConfig().isDemoMode()) {
+            if (equals(IP) || equals(SESSION)) {
+                return false;
+            }
+        }
         if (!plugin.getAPConfig().isPrivate()) {
             if (equals(IGNOREABANDONED) || equals(VEIN)) {
                 return false;

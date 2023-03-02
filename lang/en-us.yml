@@ -26,6 +26,8 @@ command:
     youhavenone: '&cYou have no inventory to claim.'
     otherhasnone: '&cThat player has no claimable inventory to cancel.'
     header: 'Inventory Claim'
+    recovered: '&p%s &srecovered &p%s &sinventory from &p%s &sago.'
+    force-recovered: '&p%s &sforce recovered &p%s &sinventory from &p%s &sago.'
   purge:
     purging: '&pPurging ''%s''...'
     uids: '&pPurging unused UIDs...'
