@@ -1,7 +1,9 @@
 package dev.heliosares.auxprotect.utils;
 
 import org.bukkit.Location;
+import org.bukkit.entity.Player;
 
+import javax.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
@@ -14,39 +16,57 @@ public class PosEncoder {
      *
      * @return The incremental byte array representing:<br>Bit mask indicating the presence/length of values below<br>0-2 bytes representing dX<br>0-2 bytes representing dY<br>0-2 bytes representing dZ<br>1 byte representing pitch<br>1 byte representing yaw
      */
-    public static byte[] encode(Location from, Location to) {
-        IncrementalByte diffX = simplify(to.getX() - from.getX());
-        IncrementalByte diffY = simplify(to.getY() - from.getY());
-        IncrementalByte diffZ = simplify(to.getZ() - from.getZ());
-        byte pitch = (byte) to.getPitch();
-        boolean doPitch = to.getPitch() != from.getPitch();
-        byte yaw = (byte) ((to.getYaw() / 180.0) * 127);
-        boolean doYaw = to.getYaw() != from.getYaw();
+    public static byte[] encode(Location from, Location to, Posture posture, @Nullable Posture lastPosture) {
+        return encode(
+                to.getX() - from.getX(),
+                to.getY() - from.getY(),
+                to.getZ() - from.getZ(),
+                to.getPitch() != from.getPitch() || to.getYaw() != from.getYaw(), to.getPitch(), to.getYaw(),
+                posture.equals(lastPosture) ? null : posture);
+    }
+
+    private static byte[] encode(double diffX_, double diffY_, double diffZ_, boolean doLook, float pitch_, float yaw_, @Nullable Posture posture) {
+        IncrementalByte diffX = simplify(diffX_);
+        IncrementalByte diffY = simplify(diffY_);
+        IncrementalByte diffZ = simplify(diffZ_);
+        byte pitch = (byte) pitch_;
+        byte yaw = (byte) ((yaw_ / 180.0) * 127);
 
         // bitMask indicates the presence of various values
         // 0-1 represent number of bytes (0-2) representing X. Value of 0b11 indicates fine
         // 2-3 represent number of bytes (0-2) representing Y. Value of 0b11 indicates fine
         // 4-5 represent number of bytes (0-2) representing Z. Value of 0b11 indicates fine
-        // 6 represents whether there is pitch
-        // 7 represents whether there is yaw
+        // 6 represents whether there is look (pitch/yaw)
+        // 7 represents whether there is posture data (sneak, gliding, etc.)
         byte bitMask = 0;
+        int len = 1 + diffX.array.length + diffY.array.length + diffZ.array.length;
         bitMask |= diffX.getBytesNeeded();
         bitMask |= diffY.getBytesNeeded() << 2;
         bitMask |= diffZ.getBytesNeeded() << 4;
-        if (doPitch) bitMask |= 1 << 6;
-        if (doYaw) bitMask -= 128;
 
-        int len = 1 + diffX.array.length + diffY.array.length + diffZ.array.length;
-        if (doPitch) len++;
-        if (doYaw) len++;
+        if (doLook) {
+            bitMask = setBit(bitMask, 6, true);
+            len += 2;
+        }
+        if (posture != null) {
+            bitMask = setBit(bitMask, 7, true);
+            len++;
+        }
+
+
         ByteBuffer bb = ByteBuffer.allocate(len);
         bb.order(ByteOrder.LITTLE_ENDIAN);
         bb.put(bitMask);
         bb.put(diffX.array);
         bb.put(diffY.array);
         bb.put(diffZ.array);
-        if (doPitch) bb.put(pitch);
-        if (doYaw) bb.put(yaw);
+        if (doLook) {
+            bb.put(pitch);
+            bb.put(yaw);
+        }
+        if (posture != null) {
+            bb.put(posture.getID());
+        }
 
         return bb.array();
     }
@@ -57,10 +77,10 @@ public class PosEncoder {
      * @param bytes The incremental byte array
      * @return A list of records representing the presence and value of each component of position.
      */
-    public static List<DecodedPositionIncrement> decode(byte[] bytes) {
-        List<DecodedPositionIncrement> out = new ArrayList<>();
+    public static List<PositionIncrement> decode(byte[] bytes) {
+        List<PositionIncrement> out = new ArrayList<>();
         for (int i = 0, safety = 0; i < bytes.length && safety < bytes.length; safety++) {
-            DecodedPositionIncrement decoded = decodeSingle(bytes, i);
+            PositionIncrement decoded = decodeSingle(bytes, i);
             i += decoded.bytes;
             out.add(decoded);
         }
@@ -74,35 +94,48 @@ public class PosEncoder {
      * @param offset Where to start looking in the data
      * @return A record representing the presence and value of each component of position
      */
-    public static DecodedPositionIncrement decodeSingle(byte[] bytes, int offset) {
+    private static PositionIncrement decodeSingle(byte[] bytes, int offset) {
         double[] out = new double[5];
         byte bitMask = bytes[offset];
 
-        boolean yaw = bitMask < 0;
-        if (yaw) bitMask += 128;
-
+        int index = 1;
         int xLen = bitMask & 0b11;
-        int yLen = (bitMask >> 2) & 0b11;
-        int zLen = (bitMask >> 4) & 0b11;
-
-        if (xLen > 0) out[0] = toDouble(bytes, offset + 1, xLen);
+        if (xLen > 0) out[0] = toDouble(bytes, offset + index, xLen);
         if (xLen == 3) xLen = 1;
-        if (yLen > 0) out[1] = toDouble(bytes, offset + 1 + xLen, yLen);
+        index += xLen;
+
+        int yLen = (bitMask >> 2) & 0b11;
+        if (yLen > 0) out[1] = toDouble(bytes, offset + index, yLen);
         if (yLen == 3) yLen = 1;
-        if (zLen > 0) out[2] = toDouble(bytes, offset + 1 + xLen + yLen, zLen);
+        index += yLen;
+
+        int zLen = (bitMask >> 4) & 0b11;
+        if (zLen > 0) out[2] = toDouble(bytes, offset + index, zLen);
         if (zLen == 3) zLen = 1;
+        index += zLen;
 
-        boolean pitch = (bitMask >> 6 & 1) == 1;
-        if (pitch) out[3] = bytes[offset + 1 + xLen + yLen + zLen];
-        if (yaw) out[4] = (double) bytes[offset + 1 + xLen + yLen + zLen + (pitch ? 1 : 0)] / 127.0 * 180;
 
-        return new DecodedPositionIncrement(
+        boolean look = getBit(bitMask, 6);
+        boolean hasPosture = getBit(bitMask, 7);
+
+        if (look) {
+            out[3] = bytes[offset + index++];
+            out[4] = (double) bytes[offset + index++] / 127.0 * 180;
+        }
+
+        Posture posture = null;
+        if (hasPosture) {
+            posture = Posture.fromID(bytes[offset + index++]);
+        }
+
+
+        return new PositionIncrement(
                 xLen > 0, out[0],
                 yLen > 0, out[1],
                 zLen > 0, out[2],
-                pitch, (float) out[3],
-                yaw, (float) out[4],
-                1 + xLen + yLen + zLen + (yaw ? 1 : 0) + (pitch ? 1 : 0)
+                look, (float) out[3], (float) out[4],
+                hasPosture, posture,
+                index
         );
     }
 
@@ -115,6 +148,7 @@ public class PosEncoder {
      * @return The double retrieved from the byte array
      */
     private static double toDouble(byte[] bytes, int index, int bitMask) {
+        if (bytes.length == 0) return 0;
         double sig;
         if (bitMask == 3) {
             bitMask = 1;
@@ -154,38 +188,6 @@ public class PosEncoder {
     }
 
     /**
-     * Stores the fraction of the x/y/z values into a single byte. The structure is as follows
-     * 0b X X X Y Y Z Z Z
-     * X and Z are stored in 8ths, Y is stored in 4ths.
-     */
-    public static byte getFractionalByte(double dx, double dy, double dz) {
-        dx %= 1;
-        dy %= 1;
-        dz %= 1;
-        if (dx < 0) dx++;
-        if (dy < 0) dy++;
-        if (dz < 0) dz++;
-        int x = (int) Math.min(Math.round(dx * 8), 7) << 5;
-        int y = (int) Math.min(Math.round(dy * 4), 3) << 3;
-        int z = (int) Math.min(Math.round(dz * 8), 7);
-
-        return (byte) (x | y | z);
-    }
-
-    /**
-     * Retrieves the fractional values from the increment byte generated in {@link PosEncoder#getFractionalByte(double, double, double)}
-     *
-     * @return An array of doubles of length 3, containing the x, y, and z fractions respectively.
-     */
-    public static double[] byteToFractions(byte b) {
-        int x = (b >> 5) & 0b111;
-        int y = (b >> 3) & 0b11;
-        int z = b & 0b111;
-
-        return new double[]{x / 8D, y / 4D, z / 8D};
-    }
-
-    /**
      * @param array The data
      * @param fine  Whether the value is stored in hundredths or tenths. true indicates hundredths.
      */
@@ -195,11 +197,88 @@ public class PosEncoder {
         }
     }
 
-    public record DecodedPositionIncrement(boolean hasX, double x, boolean hasY, double y, boolean hasZ, double z,
-                                           boolean hasPitch, float pitch, boolean hasYaw, float yaw, int bytes) {
+    public enum Posture {
+        STANDING(0), SNEAKING(1), SWIMMING(2), GLIDING(3), SITTING(4), CRAWLING(5), SLEEPING(6);
+        private final byte id;
+
+        Posture(int id) {
+            this.id = (byte) id;
+        }
+
+        public byte getID() {
+            return id;
+        }
+
+        public static Posture fromPlayer(Player player) {
+            if (player.isSwimming()) return SWIMMING;
+            if (player.isGliding()) return GLIDING;
+            if (player.isInsideVehicle()) return SITTING;
+            if (player.isSleeping()) return SLEEPING;
+            if (player.isSneaking()) return SNEAKING;
+            if (player.getBoundingBox().getHeight() < 1) return CRAWLING;
+            return STANDING;
+        }
+
+        public static Posture fromID(byte id) {
+            for (Posture posture : values()) if (posture.id == id) return posture;
+            throw new IllegalArgumentException("Unknown posture: " + id);
+        }
+    }
+
+    public record PositionIncrement(boolean hasX, double x, boolean hasY, double y, boolean hasZ, double z,
+                                    boolean hasLook, float pitch, float yaw, boolean hasPosture, Posture posture,
+                                    int bytes) {
         @Override
         public String toString() {
-            return "X=" + x + " Y=" + y + " Z=" + z + " Pitch=" + pitch + " Yaw=" + yaw;
+            return "X=" + (hasX ? x : "none") + " Y=" + (hasY ? y : "none") + " Z=" + (hasZ ? z : "none") + " Pitch=" + pitch + " Yaw=" + yaw + " Posture=" + posture;
         }
+    }
+
+    public static byte setBit(byte b, int index, boolean value) {
+        if (index > 7 || index < 0) throw new IndexOutOfBoundsException(index + " is not a valid byte index.");
+        byte val = (byte) (1 << index);
+        if (value) b |= val;
+        else b &= ~val;
+        return b;
+    }
+
+    public static boolean getBit(byte b, int index) {
+        return ((b >> index) & 1) == 1;
+    }
+
+    public static List<PosEncoder.PositionIncrement> decodeLegacy(byte[] bytes) {
+        List<PosEncoder.PositionIncrement> out = new ArrayList<>();
+        for (int offset = 0, safety = 0; offset < bytes.length && safety < bytes.length; safety++) {
+            double[] doubles = new double[5];
+            byte hdr = bytes[offset];
+
+            boolean yaw = hdr < 0;
+            if (yaw) hdr += 128;
+
+            int xlen = hdr & 0b11;
+            int ylen = (hdr >> 2) & 0b11;
+            int zlen = (hdr >> 4) & 0b11;
+
+            if (xlen > 0) doubles[0] = toDouble(bytes, offset + 1, xlen);
+            if (xlen == 3) xlen = 1;
+            if (ylen > 0) doubles[1] = toDouble(bytes, offset + 1 + xlen, ylen);
+            if (ylen == 3) ylen = 1;
+            if (zlen > 0) doubles[2] = toDouble(bytes, offset + 1 + xlen + ylen, zlen);
+            if (zlen == 3) zlen = 1;
+
+            boolean pitch = (hdr >> 6 & 1) == 1;
+            if (pitch) doubles[3] = bytes[offset + 1 + xlen + ylen + zlen];
+            if (yaw) doubles[4] = (double) bytes[offset + 1 + xlen + ylen + zlen + (pitch ? 1 : 0)] / 127.0 * 180;
+
+            PosEncoder.PositionIncrement decod = new PosEncoder.PositionIncrement(
+                    xlen > 0, doubles[0],
+                    ylen > 0, doubles[1],
+                    zlen > 0, doubles[2], pitch || yaw, (float) doubles[3], (float) doubles[4],
+                    false, null,
+                    1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
+            offset += decod.bytes();
+            out.add(decod);
+        }
+        return out;
     }
 }

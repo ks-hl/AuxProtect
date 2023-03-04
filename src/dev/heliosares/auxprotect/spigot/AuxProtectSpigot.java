@@ -10,10 +10,7 @@ import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.listeners.*;
 import dev.heliosares.auxprotect.towny.TownyListener;
-import dev.heliosares.auxprotect.utils.Pane;
-import dev.heliosares.auxprotect.utils.StackUtil;
-import dev.heliosares.auxprotect.utils.Telemetry;
-import dev.heliosares.auxprotect.utils.UpdateChecker;
+import dev.heliosares.auxprotect.utils.*;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -224,6 +221,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             3);
                     delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
                 }
+
                 getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
 
                 /*
@@ -626,6 +624,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             sqlManager = null;
         }
         Pane.shutdown();
+        PlaybackSolver.shutdown();
         info("Done disabling.");
     }
 

@@ -4,8 +4,11 @@ import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
+import com.google.common.collect.Lists;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -18,6 +21,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.Collections;
+import java.util.List;
 import java.util.UUID;
 
 public class FakePlayer {
@@ -26,10 +30,9 @@ public class FakePlayer {
     private final String name;
     private final ProtocolManager protocol;
     private final Player audience;
-
     private Location loc;
-
     private long lastMoved;
+    private PosEncoder.Posture currentPosture = PosEncoder.Posture.STANDING;
 
     public FakePlayer(String name, ProtocolManager protocol, Player audience) {
         this.uuid = generateNPCUUID();
@@ -62,7 +65,6 @@ public class FakePlayer {
 
     public void spawn(Location loc_, @Nullable Skin skin) {
         this.loc = loc_;
-
         // Sends player info, creates the player
 
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
@@ -81,7 +83,7 @@ public class FakePlayer {
         // Set initial location
 
         packet = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
-        packet.getIntegers().write(0, id);
+        setIdInPacket(packet);
         packet.getUUIDs().write(0, uuid);
         packet.getDoubles().write(0, loc.getX());
         packet.getDoubles().write(1, loc.getY());
@@ -91,23 +93,23 @@ public class FakePlayer {
         protocol.sendServerPacket(audience, packet);
     }
 
-    public void setLocation(Location loc) {
-
+    public void setLocation(Location loc, boolean onGround) {
         // Move entity
 
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.REL_ENTITY_MOVE_LOOK);
-        packet.getIntegers().write(0, id);
+        setIdInPacket(packet);
         packet.getShorts().write(0, (short) ((loc.getX() - this.loc.getX()) * 4096));
         packet.getShorts().write(1, (short) ((loc.getY() - this.loc.getY()) * 4096));
         packet.getShorts().write(2, (short) ((loc.getZ() - this.loc.getZ()) * 4096));
         packet.getBytes().write(0, (byte) (loc.getYaw() * 256f / 360f));
         packet.getBytes().write(1, (byte) (loc.getPitch() * 256f / 360f));
+        packet.getBooleans().write(0, onGround);
         protocol.sendServerPacket(audience, packet);
 
         // Update head
 
         packet = new PacketContainer(PacketType.Play.Server.ENTITY_HEAD_ROTATION);
-        packet.getIntegers().write(0, id);
+        setIdInPacket(packet);
         packet.getBytes().write(0, (byte) (loc.getYaw() * 256f / 360f));
         protocol.sendServerPacket(audience, packet);
 
@@ -115,8 +117,51 @@ public class FakePlayer {
         this.loc = loc;
     }
 
-    public void remove() {
+    public void setPosture(PosEncoder.Posture posture) {
+        if (currentPosture == posture) return;
+        PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_METADATA);
 
+        setIdInPacket(packet);
+
+        final List<WrappedDataValue> wrappedDataValueList = Lists.newArrayList();
+        wrappedDataValueList.add(new WrappedDataValue(0, WrappedDataWatcher.Registry.get(Byte.class), (byte) switch (posture) {
+            case STANDING, SITTING, SLEEPING -> 0;
+            case SNEAKING -> 0x02;
+            case SWIMMING, CRAWLING -> 0x10;
+            case GLIDING -> 0x80;
+        }));
+        wrappedDataValueList.add(new WrappedDataValue(6, WrappedDataWatcher.Registry.get(EnumWrappers.getEntityPoseClass()), switch (posture) {
+            case STANDING -> EnumWrappers.EntityPose.STANDING;
+            case SNEAKING -> EnumWrappers.EntityPose.CROUCHING;
+            case SWIMMING, CRAWLING -> EnumWrappers.EntityPose.SWIMMING;
+            case GLIDING -> EnumWrappers.EntityPose.FALL_FLYING;
+            case SITTING -> EnumWrappers.EntityPose.SITTING;
+            case SLEEPING -> EnumWrappers.EntityPose.SLEEPING;
+        }));
+        packet.getDataValueCollectionModifier().write(0, wrappedDataValueList);
+
+        protocol.sendServerPacket(audience, packet);
+
+        if (posture == PosEncoder.Posture.GLIDING) {
+            setEquipment(EnumWrappers.ItemSlot.CHEST, new ItemStack(Material.ELYTRA));
+        } else if (currentPosture == PosEncoder.Posture.GLIDING) {
+            setEquipment(EnumWrappers.ItemSlot.CHEST, new ItemStack(Material.AIR));
+        }
+
+        currentPosture = posture;
+    }
+
+    public void setEquipment(EnumWrappers.ItemSlot slot, ItemStack item) {
+        PacketContainer packet = new PacketContainer(PacketType.Play.Server.ENTITY_EQUIPMENT);
+
+        setIdInPacket(packet);
+
+        packet.getSlotStackPairLists().write(0, List.of(new Pair<>(slot,item)));
+
+        protocol.sendServerPacket(audience, packet);
+    }
+
+    public void remove() {
         // Removes player info
 
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO_REMOVE);
@@ -134,6 +179,10 @@ public class FakePlayer {
             return list;
         });
         protocol.sendServerPacket(audience, packet);
+    }
+
+    private void setIdInPacket(PacketContainer packet) {
+        packet.getIntegers().write(0, id);
     }
 
     public long getLastMoved() {

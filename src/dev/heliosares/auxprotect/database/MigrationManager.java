@@ -54,7 +54,7 @@ public class MigrationManager {
             plugin.info("Tables renamed");
         }, () -> {
             for (Table table : migrateTablesV3[0]) {
-                total += sql.count(table + "_temp");
+                total += sql.count(connection, table + "_temp");
             }
             if (plugin.getPlatform() == PlatformType.BUNGEE) {
                 migrateTablesV3[0] = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM};

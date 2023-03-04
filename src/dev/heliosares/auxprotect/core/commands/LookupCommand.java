@@ -425,6 +425,8 @@ public class LookupCommand extends Command {
             sender.sendMessageRaw(e.getMessage());
         } catch (Exception e) {
             sender.sendLang(Language.L.ERROR);
+            plugin.warning("Error during lookup:");
+            plugin.print(e);
         }
     }
 

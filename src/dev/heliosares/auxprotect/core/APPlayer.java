@@ -34,6 +34,7 @@ public class APPlayer {
     // hotbar, main, armor, offhand, echest
     private List<ItemStack> invDiffItems;
     private Location lastLocationDiff;
+    private PosEncoder.Posture lastPosture;
 
     public APPlayer(IAuxProtect plugin, Player player) {
         this.player = player;
@@ -144,9 +145,11 @@ public class APPlayer {
     public void tickDiffPos() {
         if (lastLocationDiff != null) {
             synchronized (posBlob) {
-                for (byte b : PosEncoder.encode(lastLocationDiff, player.getLocation())) {
+                PosEncoder.Posture posture = PosEncoder.Posture.fromPlayer(player);
+                for (byte b : PosEncoder.encode(lastLocationDiff, player.getLocation(), posture, lastPosture)) {
                     posBlob.add(b);
                 }
+                lastPosture = posture;
             }
         }
         lastLocationDiff = player.getLocation().clone();

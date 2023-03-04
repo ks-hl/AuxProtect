@@ -287,6 +287,9 @@ public class SQLManager extends ConnectionPool {
             invblobmanager.init(connection);
         }
 
+        if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
+            setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
+
         plugin.debug("init done.");
 
     }
@@ -570,7 +573,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     public int count(Table table) throws SQLException {
-        return count(table.toString());
+        return executeReturn(connection -> count(connection, table.toString()), 30000L, Integer.class);
     }
 
     public byte[] getBlob(DbEntry entry) throws SQLException {
@@ -629,6 +632,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void tick() {
+        if (!isConnected()) return;
         try {
             execute(connection -> {
                 Arrays.asList(Table.values()).forEach(t -> {
@@ -652,18 +656,22 @@ public class SQLManager extends ConnectionPool {
 
     //TODO implement
     public void setLast(LastKeys key, long value) throws SQLException {
+        key.value = value;
         execute(connection -> setLast(key, value, connection), 30000L);
     }
 
     public void setLast(LastKeys key, long value, Connection connection) throws SQLException {
+        key.value = value;
         execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", connection, value, key.id);
     }
 
     public long getLast(LastKeys key) throws SQLException {
+        if (key.value != null) return key.value;
         return executeReturn(connection -> getLast(key, connection), 30000L, Long.class);
     }
 
     public long getLast(LastKeys key, Connection connection) throws SQLException {
+        if (key.value != null) return key.value;
         try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
             stmt.setShort(1, key.id);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -681,9 +689,10 @@ public class SQLManager extends ConnectionPool {
 
 
     public enum LastKeys {
-        AUTO_PURGE(1), VACUUM(2), TELEMETRY(3);
+        AUTO_PURGE(1), VACUUM(2), TELEMETRY(3), LEGACY_POSITIONS(4);
 
         public final short id;
+        private Long value;
 
         LastKeys(int id) {
             this.id = (short) id;

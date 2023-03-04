@@ -21,7 +21,7 @@ public class PosEntry extends DbEntry {
 
     protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
-        double[] dInc = PosEncoder.byteToFractions(increment);
+        double[] dInc = byteToFractions(increment);
         this.x = x + dInc[0];
         this.y = y + dInc[1];
         this.z = z + dInc[2];
@@ -34,6 +34,38 @@ public class PosEntry extends DbEntry {
         this.x = location.getX();
         this.y = location.getY();
         this.z = location.getZ();
+    }
+
+    /**
+     * Stores the fraction of the x/y/z values into a single byte. The structure is as follows
+     * 0b X X X Y Y Z Z Z
+     * X and Z are stored in 8ths, Y is stored in 4ths.
+     */
+    public static byte getFractionalByte(double dx, double dy, double dz) {
+        dx %= 1;
+        dy %= 1;
+        dz %= 1;
+        if (dx < 0) dx++;
+        if (dy < 0) dy++;
+        if (dz < 0) dz++;
+        int x = (int) Math.min(Math.round(dx * 8), 7) << 5;
+        int y = (int) Math.min(Math.round(dy * 4), 3) << 3;
+        int z = (int) Math.min(Math.round(dz * 8), 7);
+
+        return (byte) (x | y | z);
+    }
+
+    /**
+     * Retrieves the fractional values from the increment byte generated in {@link PosEncoder#getFractionalByte(double, double, double)}
+     *
+     * @return An array of doubles of length 3, containing the x, y, and z fractions respectively.
+     */
+    public static double[] byteToFractions(byte b) {
+        int x = (b >> 5) & 0b111;
+        int y = (b >> 3) & 0b11;
+        int z = b & 0b111;
+
+        return new double[]{x / 8D, y / 4D, z / 8D};
     }
 
     public double getDoubleX() {
@@ -64,6 +96,6 @@ public class PosEntry extends DbEntry {
     }
 
     public byte getIncrement() {
-        return PosEncoder.getFractionalByte(x, y, z);
+        return getFractionalByte(x, y, z);
     }
 }

@@ -372,18 +372,16 @@ public class ConnectionPool {
         }
     }
 
-    protected int count(String table) throws SQLException {
+    protected int count(Connection connection, String table) throws SQLException {
         String stmtStr = getCountStmt(table);
         plugin.debug(stmtStr, 5);
 
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) return rs.getInt(1);
-                    return -1;
-                }
+        try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {
+            try (ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) return rs.getInt(1);
+                return -1;
             }
-        }, 30000L, Integer.class);
+        }
     }
 
     protected String getCountStmt(String table) {
