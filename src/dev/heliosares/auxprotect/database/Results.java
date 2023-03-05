@@ -145,7 +145,7 @@ public class Results {
         if (entry.getWorld() != null && !entry.getWorld().equals("$null") && coords) {
             String tpCommand = commandPrefix + " tp ";
             if (entry instanceof PosEntry posEntry) {
-                tpCommand += String.format("%f %f %f ", posEntry.getDoubleX(), posEntry.getDoubleY(), posEntry.getDoubleZ());
+                tpCommand += String.format("%s %s %s ", posEntry.getDoubleX(), posEntry.getDoubleY(), posEntry.getDoubleZ());
             } else {
                 tpCommand += String.format("%d.5 %d %d.5 ", entry.getX(), entry.getY(), entry.getZ());
             }
