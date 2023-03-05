@@ -16,14 +16,25 @@ notplayererror: 'That command can only be used ingame'
 backup-sqliteonly: 'Backups only work on SQLite'
 unknown-subcommand: 'Unknown subcommand. Do ''/ap help'' for more info.'
 command:
+  saveinv:
+    success: '&p<target>''<optional_s> &tinventory has been manually saved. &otime:<time>'
+    toosoon: '&cThat user''s inventory has been saved too recently.'
+  inv:
+    recovered: '&p<admin> &srecovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
+    force-recovered: '&p<admin> &sforce recovered &p<target> &sinventory from &p<time> &sago.'
+    success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
+    notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
+    notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
+    item-viewer: 'Item Viewer'
   claiminv:
-    cancelled-other: '&aYou cancelled <target> claimable inventory.'
+    cancelled-other: '&aYou cancelled <target>''<optional_s> claimable inventory.'
     cancelled: '&cYour claimable inventory was cancelled.'
     youhavenone: '&cYou have no inventory to claim.'
     otherhasnone: '&cThat player has no claimable inventory to cancel.'
     header: 'Inventory Claim'
-    recovered: '&p<admin> &srecovered &p<target> &sinventory from &p<time> &sago.'
-    force-recovered: '&p<admin> &sforce recovered &p<target> &sinventory from &p<time> &sago.'
+    claim-button:
+      label: 'Claim'
+      hover: '&sClick to claim your recovered inventory'
   purge:
     purging: '&pPurging ''<table>''...'
     uids: '&pPurging unused UIDs...'
@@ -54,7 +65,12 @@ command:
       starting: '&pPlayback starting...'
       stopped: '&pPlayback stopped.'
       toolong: '&cCan not playback a range greater than <limit>.'
+    playtime:
+      nouser: '&cNo user specified'
+      toomanyusers: '&cToo many users specified'
+    invalid-time-parameter: 'Invalid time specifier: <specifier>'
   help:
+    # Note, the <> brackets in the help language are literals and do not refer to translations.
     nohelp: '&cThis command does not have a help page.'
     header: '&s----- &pAuxProtect Help &s-----'
     help:
@@ -77,13 +93,9 @@ command:
       - '&s/$prefix &ppurge &s<table | all> <time>'
       - '&sSee tab completion for list of valid tables.'
       - '&sMinimum time is 2 weeks.'
-lookup-playtime-nouser: '&cNo user specified'
-lookup-playtime-toomanyusers: '&cToo many users specified'
 playernotfound: '&cPlayer not found.'
 lookup-playernotfound: '&cPlayer <target> not found.'
 lookup-unknownaction: '&cUnknown action: <action>.'
-playtime-toomanyusers: '&cYou can''t specify more than one user for a playtime lookup.'
-playtime-nouser: '&cYou must specify a user for a playtime lookup.'
 xray-rate-nochange: '&cThat is already the rating for that entry.'
 xray-rate-written: '&aRating successfully written.'
 xray-done: '&aThere are no more xray checks!'
@@ -94,11 +106,46 @@ xray-click-to-change: '&aClick to rate'
 inactive-alert: '&8[&4Server&8] &e<user> &tmay be inactive. &e<inactive_minutes> &tout of &e<total_minutes> &tminutes inactive.'
 yes: 'Yes'
 no: 'No'
-inv-manual-success: '&p<target> &tinventory has been manually saved. &otime:<time>'
-inv-toosoon: '&cThat user''s inventory has been saved too recently.'
 database-busy: '&cThe database is currently busy. Try again later or check the console for more information.'
 protocollib-not-loaded: "&cProtocolLib is required for this action and it is not installed."
 
+inv-recover-menu:
+  main-header: '<target>''<optional_s> Ender Chest - <time> ago'
+  ender-header: '<target>''<optional_s> Ender Chest - <time> ago'
+  xp-error: '&cUnable to recover experience.'
+  button:
+    force:
+      label: '&2&lForce Recover Inventory'
+      hover:
+        - ''
+        - '&a&lDouble Click'
+        - ''
+        - '&tThis will &c&loverwrite &7the player''s'
+        - '&7current inventory and exp with'
+        - '&7what is in the view above.'
+    force-unavailable:
+      label: '&8&lForce Recover Inventory Unavailable'
+      hover:
+        - '&cPlayer must be online to'
+        - '&cforce recover their inventory'
+    recover:
+      label: '&a&lRecover Inventory'
+      hover:
+        - ''
+        - '&tThis will give the player a'
+        - '&tprompt to claim this inventory as'
+        - '&t if they were opening a chest with'
+        - '&t the above contents. They will also get'
+        - '&tthe exp stated here.'
+        - ''
+        - '&cThis will not overwrite anything and may'
+        - '&cduplicate items &tif they weren''t'
+        - '&tactually lost originally.'
+    close: '&c&lClose'
+    ender-chest: '&8&lView Enderchest'
+    xp:
+      had: '&2Player had <xp> xp'
+      error: '&8No XP data'
 
 actions:
   pluginload:
