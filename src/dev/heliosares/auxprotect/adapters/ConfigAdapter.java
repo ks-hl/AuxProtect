@@ -12,23 +12,24 @@ import java.nio.file.Files;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 public abstract class ConfigAdapter {
-    protected final File file;
+    protected final Supplier<File> file;
     protected final String path;
     protected final Function<String, InputStream> defaults;
     protected final boolean createBlank;
 
     public ConfigAdapter(File parent, String path, @Nullable Function<String, InputStream> defaults,
                          boolean createBlank) {
-        this.file = new File(parent, path);
+        this.file = () -> new File(parent, path);
         this.path = path;
         this.defaults = defaults;
         this.createBlank = createBlank;
     }
 
     public File getFile() {
-        return file;
+        return file.get();
     }
 
     public abstract String getString(String key);
@@ -64,6 +65,7 @@ public abstract class ConfigAdapter {
     public abstract void save() throws IOException;
 
     public void load() throws IOException {
+        File file = this.file.get();
         if (!file.getParentFile().exists())
             file.getParentFile().mkdirs();
 
@@ -82,6 +84,20 @@ public abstract class ConfigAdapter {
                 AuxProtectAPI.getInstance().info("Created " + path);
             } else {
                 throw new FileNotFoundException(file.getAbsolutePath());
+            }
+        }
+    }
+
+    public void reset() throws IOException {
+        File file = this.file.get();
+        boolean ignored = file.delete();
+        if (defaults != null) {
+            try (InputStream in = defaults.apply(path)) {
+                if (in != null) {
+                    Files.copy(in, file.toPath());
+                    AuxProtectAPI.getInstance().info("Generated default " + path);
+                    return;
+                }
             }
         }
     }

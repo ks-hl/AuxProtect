@@ -102,7 +102,7 @@ public class BungeeConfigAdapter extends ConfigAdapter {
     @Override
     public void save() throws IOException {
         if (config != null) {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file);
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file.get());
         }
     }
 
@@ -118,7 +118,7 @@ public class BungeeConfigAdapter extends ConfigAdapter {
             }
         }
         try {
-            config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file, def);
+            config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file.get(), def);
         } catch (Exception e) {
             AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
             throw e;

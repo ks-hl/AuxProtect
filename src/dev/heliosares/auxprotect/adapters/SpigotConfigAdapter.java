@@ -102,7 +102,7 @@ public class SpigotConfigAdapter extends ConfigAdapter {
     @Override
     public void save() throws IOException {
         if (config != null) {
-            config.save(file);
+            config.save(file.get());
         }
     }
 
@@ -110,7 +110,7 @@ public class SpigotConfigAdapter extends ConfigAdapter {
     public void load() throws IOException {
         super.load();
         try {
-            config = YamlConfiguration.loadConfiguration(file);
+            config = YamlConfiguration.loadConfiguration(file.get());
         } catch (Exception e) {
             AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
             throw e;
