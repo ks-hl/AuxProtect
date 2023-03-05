@@ -17,6 +17,8 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.UUID;
@@ -30,11 +32,11 @@ public class ClaimInvCommand implements CommandExecutor {
     }
 
     @Override
-    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+    public boolean onCommand(@Nonnull CommandSender sender, @Nullable Command command, @Nonnull String label, @Nonnull String[] args) {
         plugin.runAsync(() -> {
             int uid;
             boolean other;
-            OfflinePlayer target = null;
+            OfflinePlayer target;
             try {
                 other = (args.length == 1) && APPermission.INV_RECOVER.hasPermission(sender);
                 if (other) {
@@ -63,7 +65,7 @@ public class ClaimInvCommand implements CommandExecutor {
                         if (target instanceof Player play
                                 && play.getOpenInventory().getTopInventory().getHolder() instanceof Pane pane) {
                             pane.cancel();
-                            plugin.runSync(() -> play.getPlayer().closeInventory());
+                            plugin.runSync(play::closeInventory);
                             break out;
                         }
                         sender.sendMessage(L.COMMAND__CLAIMINV__OTHERHASNONE.translate());
@@ -77,10 +79,9 @@ public class ClaimInvCommand implements CommandExecutor {
                     if (target.getPlayer() != null) { // Player is online
                         target.getPlayer().sendMessage(L.COMMAND__CLAIMINV__CANCELLED.translate());
                     }
-                    sender.sendMessage(L.COMMAND__CLAIMINV__CANCELLED_OTHER
-                            .translate(target.getName() + "'" + (target.getName().endsWith("s") ? "" : "s")));
+                    sender.sendMessage(L.COMMAND__CLAIMINV__CANCELLED_OTHER.translate(target.getName(), Language.getOptionalS(target.getName())));
                 } else if (target.getPlayer() != null) {
-                    Inventory inv = null;
+                    Inventory inv;
                     Pane pane = new Pane(Type.CLAIM, target.getPlayer());
                     pane.onClose(p -> {
                         ArrayList<ItemStack> leftover = new ArrayList<>();
@@ -90,9 +91,7 @@ public class ClaimInvCommand implements CommandExecutor {
                                 continue;
                             HashMap<Integer, ItemStack> left = p.getPlayer().getInventory().addItem(item);
                             p.getInventory().setItem(i, new ItemStack(Material.AIR));
-                            if (left != null) {
-                                leftover.addAll(left.values());
-                            }
+                            leftover.addAll(left.values());
                         }
                         for (ItemStack i : leftover) {
                             p.getPlayer().getWorld().dropItem(p.getPlayer().getLocation(), i);

@@ -33,11 +33,11 @@ public class SaveInvCommand extends Command {
         }
         if (!APPermission.ADMIN.hasPermission(sender)
                 && System.currentTimeMillis() - apTarget.lastLoggedInventory < 10000L) {
-            sender.sendLang(Language.L.INV_TOOSOON);
+            sender.sendLang(Language.L.COMMAND__SAVEINV__TOOSOON);
             return;
         }
         long time = apTarget.logInventory("manual");
-        sender.sendLang(Language.L.INV_MANUAL_SUCCESS, target.getName(), target.getName().endsWith("s") ? "" : "s",
+        sender.sendLang(Language.L.COMMAND__SAVEINV__SUCCESS, target.getName(), target.getName().endsWith("s") ? "" : "s",
                 time + "e");
     }
 

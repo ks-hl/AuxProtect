@@ -351,11 +351,11 @@ public class LookupCommand extends Command {
             } else if (params.getFlags().contains(Flag.PT)) {
                 List<String> users = params.getUsers();
                 if (users.size() == 0) {
-                    sender.sendLang(Language.L.PLAYTIME_NOUSER);
+                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
                 }
                 if (users.size() > 1) {
-                    sender.sendLang(Language.L.PLAYTIME_TOOMANYUSERS);
+                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
                     return;
                 }
                 String name = users.get(0);
@@ -386,11 +386,11 @@ public class LookupCommand extends Command {
             } else if (params.getFlags().contains(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
                 List<String> users = params.getUsers();
                 if (users.size() == 0) {
-                    sender.sendLang(Language.L.PLAYTIME_NOUSER);
+                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
                 }
                 if (users.size() > 1) {
-                    sender.sendLang(Language.L.PLAYTIME_TOOMANYUSERS);
+                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
                     return;
                 }
                 if (sender.getSender() instanceof org.bukkit.entity.Player player) {

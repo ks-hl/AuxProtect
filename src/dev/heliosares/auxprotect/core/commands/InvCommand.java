@@ -44,17 +44,16 @@ public class InvCommand extends Command {
         if (plugin_ instanceof AuxProtectSpigot plugin) {
             final Player targetO = target.getPlayer();
             final String targetName = target.getName() == null ? "unknown" : target.getName();
-            final String targetName_possessive = targetName + "'" + (targetName.toLowerCase().endsWith("s") ? "" : "s");
             Pane enderpane = new Pane(Type.SHOW, player);
 
-            Inventory enderinv = Bukkit.getServer().createInventory(enderpane, 27, targetName + " Ender Chest - "
-                    + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
+            Inventory enderinv = Bukkit.getServer().createInventory(enderpane, 27,
+                    L.INV_RECOVER_MENU__ENDER_HEADER.translate(targetName, Language.getOptionalS(targetName), TimeUtil.millisToString(System.currentTimeMillis() - when)));
             enderinv.setContents(inv.ender());
 
             Pane pane = new Pane(Type.SHOW, player);
             String ago = TimeUtil.millisToString(System.currentTimeMillis() - when);
             Inventory mainInv = Bukkit.getServer().createInventory(pane, 54,
-                    targetName + " " + ago + " ago.");
+                    L.INV_RECOVER_MENU__ENDER_HEADER.translate(targetName, Language.getOptionalS(targetName), TimeUtil.millisToString(System.currentTimeMillis() - when)));
             pane.setInventory(mainInv);
             Container<Boolean> closed = new Container<>(false);
 
@@ -62,108 +61,99 @@ public class InvCommand extends Command {
                 if (targetO != null) {
                     Container<Long> lastClick = new Container<>(0L);
                     pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
-                                if (System.currentTimeMillis() - lastClick.get() > 500) {
-                                    lastClick.set(System.currentTimeMillis());
-                                    return;
-                                }
-                                if (closed.get()) return;
-                                closed.set(true);
-                                plugin.runSync(player::closeInventory);
-                                player.sendMessage(L.COMMAND__LOOKUP__LOOKING.translate());
-                                try {
-                                    update(plugin, player, when);
-                                } catch (Exception e) {
-                                    plugin.print(e);
-                                    player.sendMessage(L.ERROR.translate());
-                                    return;
-                                }
-                                plugin.runSync(() -> {
-                                    PlayerInventoryRecord inv_;
-                                    inv_ = InvDiffManager.listToPlayerInv(Arrays.asList(mainInv.getContents()), inv.exp());
+                        if (System.currentTimeMillis() - lastClick.get() > 500) {
+                            lastClick.set(System.currentTimeMillis());
+                            return;
+                        }
+                        if (closed.get()) return;
+                        closed.set(true);
+                        plugin.runSync(player::closeInventory);
+                        player.sendMessage(L.COMMAND__LOOKUP__LOOKING.translate());
+                        try {
+                            update(plugin, player, when);
+                        } catch (Exception e) {
+                            plugin.print(e);
+                            player.sendMessage(L.ERROR.translate());
+                            return;
+                        }
+                        plugin.runSync(() -> {
+                            PlayerInventoryRecord inv_;
+                            inv_ = InvDiffManager.listToPlayerInv(Arrays.asList(mainInv.getContents()), inv.exp());
 
-                                    targetO.getInventory().setStorageContents(inv_.storage());
-                                    targetO.getInventory().setArmorContents(inv_.armor());
-                                    targetO.getInventory().setExtraContents(inv_.extra());
-                                    try {
-                                        Experience.setExp(targetO, inv_.exp());
-                                    } catch (Exception e) {
-                                        player.sendMessage("§cUnable to recover experience.");
-                                    }
-                                    player.closeInventory();
-                                    plugin.broadcast(L.COMMAND__CLAIMINV__FORCE_RECOVERED.translate(player.getName(), targetName_possessive, ago), APPermission.INV_NOTIFY);
-                                    player.sendMessage("§aYou recovered " + targetName_possessive + " inventory.");
-                                    targetO.sendMessage("§a" + player.getName() + " recovered your inventory from "
-                                            + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
-                                    targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
-                                });
+                            targetO.getInventory().setStorageContents(inv_.storage());
+                            targetO.getInventory().setArmorContents(inv_.armor());
+                            targetO.getInventory().setExtraContents(inv_.extra());
+                            try {
+                                Experience.setExp(targetO, inv_.exp());
+                            } catch (Exception e) {
+                                player.sendMessage(L.INV_RECOVER_MENU__XP_ERROR.translate());
+                            }
+                            player.closeInventory();
+                            plugin.broadcast(L.COMMAND__INV__FORCE_RECOVERED.translate(player.getName(), targetName, Language.getOptionalS(targetName), ago), APPermission.INV_NOTIFY);
+                            player.sendMessage(L.COMMAND__INV__SUCCESS.translate(targetName, Language.getOptionalS(targetName)));
+                            targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
+                            targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+                            plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
+                        });
 
-                            }), "§2§lForce Recover Inventory", "", "§a§lDouble click", "",
-                            "§7This will §c§loverwrite §7the player's", "§7current inventory and exp with",
-                            "§7what is in the view above.");
+                    }), L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
                 } else {
                     pane.addButton(49, Material.GRAY_STAINED_GLASS_PANE, null,
-                            "§8§lForce Recover Inventory Unavailable", "§cPlayer must be online to",
-                            "§cforce recover their inventory.");
+                            L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
                 }
                 pane.addButton(50, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
-                            if (closed.get()) return;
-                            closed.set(true);
-                            plugin.runSync(player::closeInventory);
-                            ItemStack[] output = new ItemStack[45];
-                            for (int i = 0; i < output.length; i++) {
-                                output[i] = mainInv.getItem(i);
-                            }
-                            byte[] recover = null;
-                            try {
-                                recover = InvSerialization.toByteArray(output);
-                            } catch (Exception e1) {
-                                plugin.warning("Error serializing inventory recovery");
-                                plugin.print(e1);
-                                player.sendMessage(Language.translate(L.ERROR));
-                            }
-                            try {
-                                plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
-                                                .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
-                                        recover);
-                                update(plugin, player, when);
-                            } catch (Exception e) {
-                                plugin.print(e);
-                                player.sendMessage(L.ERROR.translate());
-                                return;
-                            }
-                            assert target.getName() != null;
-                            plugin.broadcast(L.COMMAND__CLAIMINV__RECOVERED.translate(player.getName(), targetName_possessive, ago), APPermission.INV_NOTIFY);
-                            player.sendMessage("§aYou recovered " + target.getName() + "'"
-                                    + (target.getName().endsWith("s") ? "" : "s") + " inventory.");
-                            if (targetO != null) {
-                                targetO.sendMessage("§a" + player.getName() + " recovered your inventory from "
-                                        + TimeUtil.millisToString(System.currentTimeMillis() - when) + " ago.");
-                                targetO.sendMessage("§7Ensure you have room in your inventory before claiming!");
-                                ComponentBuilder message = new ComponentBuilder();
-                                message.append("§f\n         ");
-                                message.append("§a[Claim]")
-                                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                                new Text("§aClick to claim your recovered inventory")));
-                                message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
-                                targetO.spigot().sendMessage(message.create());
-                                targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                            }
+                    if (closed.get()) return;
+                    closed.set(true);
+                    plugin.runSync(player::closeInventory);
+                    ItemStack[] output = new ItemStack[45];
+                    for (int i = 0; i < output.length; i++) {
+                        output[i] = mainInv.getItem(i);
+                    }
+                    byte[] recover = null;
+                    try {
+                        recover = InvSerialization.toByteArray(output);
+                    } catch (Exception e1) {
+                        plugin.warning("Error serializing inventory recovery");
+                        plugin.print(e1);
+                        player.sendMessage(Language.translate(L.ERROR));
+                    }
+                    try {
+                        plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
+                                        .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
+                                recover);
+                        update(plugin, player, when);
+                    } catch (Exception e) {
+                        plugin.print(e);
+                        player.sendMessage(L.ERROR.translate());
+                        return;
+                    }
+                    assert target.getName() != null;
+                    plugin.broadcast(L.COMMAND__INV__RECOVERED.translate(player.getName(), targetName, Language.getOptionalS(targetName), ago), APPermission.INV_NOTIFY);
+                    player.sendMessage(L.COMMAND__INV__SUCCESS.translate(targetName, Language.getOptionalS(targetName)));
+                    if (targetO != null) {
+                        targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
+                        targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM.translate());
+                        ComponentBuilder message = new ComponentBuilder();
+                        message.append("§f\n         ");
+                        message.append("§a[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")
+                                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                        new Text(L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
+                        message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                        targetO.spigot().sendMessage(message.create());
+                        targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+                    }
 
-                            plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
-                                    player.getLocation(), AuxProtectSpigot.getLabel(target), "regular"));
-                        }), "§a§lRecover Inventory", "", "§7This will give the player a", "§7prompt to claim this inventory as",
-                        "§7if they were opening a chest with", "§7the above contents. They will also get",
-                        "§7the exp stated here.", "", "§cThis will not overwrite anything and may",
-                        "§cduplicate items §7if they weren't", "§7actually lost originally.");
+                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
+                            player.getLocation(), AuxProtectSpigot.getLabel(target), "regular"));
+                }), L.INV_RECOVER_MENU__BUTTON__RECOVER__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__RECOVER__HOVER.translateList());
             }
             int space = 53;
-            pane.addButton(space--, Material.RED_STAINED_GLASS_PANE, player::closeInventory, "§c§lClose");
-            pane.addButton(space--, Material.BLACK_STAINED_GLASS_PANE, () -> player.openInventory(enderinv), "§8§lView Enderchest");
+            pane.addButton(space--, Material.RED_STAINED_GLASS_PANE, player::closeInventory, L.INV_RECOVER_MENU__BUTTON__CLOSE.translate());
+            pane.addButton(space--, Material.BLACK_STAINED_GLASS_PANE, () -> player.openInventory(enderinv), L.INV_RECOVER_MENU__BUTTON__ENDER_CHEST.translate());
             // TODO zz backpack goes here
             pane.addButton(space, Material.GREEN_STAINED_GLASS_PANE, null,
-                    inv.exp() >= 0 ? ("§2§lPlayer had " + inv.exp() + "xp") : "§8§lNo XP data");
+                    inv.exp() >= 0 ? (L.INV_RECOVER_MENU__BUTTON__XP__HAD.translate(inv.exp())) : L.INV_RECOVER_MENU__BUTTON__XP__ERROR.translate());
 
             int i1 = 0;
             for (int i = 9; i < inv.storage().length; i++) {
@@ -254,9 +244,9 @@ public class InvCommand extends Command {
                 try {
                     Inventory inv;
                     if (entry instanceof SingleItemEntry sientry) {
-                        inv = InvSerialization.toInventory(pane, "Item Viewer", sientry.getItem());
+                        inv = InvSerialization.toInventory(pane, L.COMMAND__INV__ITEM_VIEWER.translate(), sientry.getItem());
                     } else {
-                        inv = InvSerialization.toInventory(entry.getBlob(), pane, "Item Viewer");
+                        inv = InvSerialization.toInventory(entry.getBlob(), pane, L.COMMAND__INV__ITEM_VIEWER.translate());
                     }
                     pane.setInventory(inv);
                     openSync(plugin, player, inv);

@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.utils;
 
+import dev.heliosares.auxprotect.core.Language;
+
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -105,7 +107,7 @@ public class TimeUtil {
                 case 'f':
                     break;
                 default:
-                    throw new NumberFormatException("Invalid specifier: " + c); // TODO lang
+                    throw new NumberFormatException(Language.L.COMMAND__LOOKUP__INVALID_TIME_PARAMETER.translate(c));
             }
             time += Double.parseDouble(builder.toString()) * modifier;
             builder = new StringBuilder();

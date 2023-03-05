@@ -94,6 +94,9 @@ public class Language {
         COMMAND__LOOKUP__PLAYBACK__STARTING, //
         COMMAND__LOOKUP__PLAYBACK__STOPPED, //
         COMMAND__LOOKUP__PLAYBACK__TOOLONG("limit"), //
+        COMMAND__LOOKUP__PLAYTIME__NOUSER, //
+        COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS, //
+        COMMAND__LOOKUP__INVALID_TIME_PARAMETER("specifier"), //
         WATCH_NONE, //
         WATCH_ING, //
         WATCH_REMOVED, //
@@ -111,13 +114,9 @@ public class Language {
         BACKUP_SQLITEONLY, //
         UNKNOWN_SUBCOMMAND, //
         COMMAND__HELP, //
-        LOOKUP_PLAYTIME_NOUSER, //
-        LOOKUP_PLAYTIME_TOOMANYUSERS, //
         PLAYERNOTFOUND, //
         LOOKUP_PLAYERNOTFOUND("target"), //
         LOOKUP_UNKNOWNACTION("action"), //
-        PLAYTIME_TOOMANYUSERS, //
-        PLAYTIME_NOUSER, //
         XRAY_RATE_NOCHANGE, //
         XRAY_RATE_WRITTEN, //
         XRAY_DONE, //
@@ -126,18 +125,36 @@ public class Language {
         XRAY_ALREADY_RATED, //
         XRAY_CLICK_TO_CHANGE, //
         INACTIVE_ALERT("user", "inactive_minutes", "total_minutes"), //
-        INV_MANUAL_SUCCESS("target", "time"), //
-        INV_TOOSOON, //
         DATABASE_BUSY, //
         ACTIONS, //
+        COMMAND__SAVEINV__SUCCESS("target", "optional_s", "time"), //
+        COMMAND__SAVEINV__TOOSOON, //
+        COMMAND__INV__RECOVERED("admin", "target", "optional_s", "time"), //
+        COMMAND__INV__FORCE_RECOVERED("admin", "target", "time"), //
+        COMMAND__INV__SUCCESS("target", "optional_s"),
+        COMMAND__INV__NOTIFY_PLAYER("admin", "time"),
+        COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM,
+        COMMAND__INV__ITEM_VIEWER,
         COMMAND__CLAIMINV__CANCELLED, //
-        COMMAND__CLAIMINV__CANCELLED_OTHER("target"), //
+        COMMAND__CLAIMINV__CANCELLED_OTHER("target", "optional_s"), //
         COMMAND__CLAIMINV__YOUHAVENONE, //
         COMMAND__CLAIMINV__OTHERHASNONE, //
         COMMAND__CLAIMINV__HEADER, //
-        COMMAND__CLAIMINV__RECOVERED("admin", "target", "time"), //
-        COMMAND__CLAIMINV__FORCE_RECOVERED("admin", "target", "time"), //
+        COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL, //
+        COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER, //
         PROTOCOLLIB_NOT_LOADED, //
+
+        INV_RECOVER_MENU__MAIN_HEADER("target", "optional_s", "time"),
+        INV_RECOVER_MENU__ENDER_HEADER("target", "optional_s", "time"),
+        INV_RECOVER_MENU__XP_ERROR,
+        INV_RECOVER_MENU__BUTTON__FORCE__LABEL,
+        INV_RECOVER_MENU__BUTTON__FORCE__HOVER,
+        INV_RECOVER_MENU__BUTTON__RECOVER__LABEL,
+        INV_RECOVER_MENU__BUTTON__RECOVER__HOVER,
+        INV_RECOVER_MENU__BUTTON__CLOSE,
+        INV_RECOVER_MENU__BUTTON__ENDER_CHEST,
+        INV_RECOVER_MENU__BUTTON__XP__HAD("xp"),
+        INV_RECOVER_MENU__BUTTON__XP__ERROR,
         ;
 
         public final String name;
@@ -214,5 +231,11 @@ public class Language {
             }
             return message.stream().map(Language::convert).collect(Collectors.toList());
         }
+    }
+
+    public static String getOptionalS(String name) {
+        if (name == null) return "";
+        if (name.toLowerCase().endsWith("s")) return "";
+        return "s";
     }
 }

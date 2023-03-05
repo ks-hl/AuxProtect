@@ -8,8 +8,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -46,7 +46,11 @@ public class Pane implements InventoryHolder {
         buttons = new ArrayList<>();
     }
 
-    public void addButton(int slot, Material type, Runnable action, String name, String... lore) {
+    public void addButton(int slot, Material type, Runnable action, String name) {
+        addButton(slot, type, action, name, null);
+    }
+
+    public void addButton(int slot, Material type, Runnable action, String name, @Nullable List<String> lore) {
         if (inventory == null) {
             return;
         }
@@ -57,9 +61,7 @@ public class Pane implements InventoryHolder {
             meta.setDisplayName(name);
         }
         if (lore != null) {
-            ArrayList<String> loreA = new ArrayList<>();
-            Collections.addAll(loreA, lore);
-            meta.setLore(loreA);
+            meta.setLore(lore);
         }
         item.setItemMeta(meta);
         inventory.setItem(slot, item);

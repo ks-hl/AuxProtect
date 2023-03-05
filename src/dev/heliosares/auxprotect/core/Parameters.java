@@ -206,9 +206,9 @@ public class Parameters {
         }
         if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PT)) {
             if (parameters.users.size() > 1) {
-                throw new ParseException(Language.L.LOOKUP_PLAYTIME_TOOMANYUSERS);
+                throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
             } else if (parameters.uids.size() == 0) {
-                throw new ParseException(Language.L.LOOKUP_PLAYTIME_NOUSER);
+                throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
             }
         }
         if (parameters.flags.contains(Flag.PT)) {
