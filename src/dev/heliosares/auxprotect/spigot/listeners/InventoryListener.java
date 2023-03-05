@@ -69,7 +69,7 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEnchantItemEvent(EnchantItemEvent e) {
         ItemStack item = e.getItem().clone();
-        item.addEnchantments(e.getEnchantsToAdd());
+        item.addUnsafeEnchantments(e.getEnchantsToAdd());
         plugin.add(new SingleItemEntry(AuxProtectSpigot.getLabel(e.getEnchanter()), EntryAction.ENCHANT, false, e.getEnchanter().getLocation(), item.getType().toString(), "", item));
     }
 
