@@ -214,7 +214,7 @@ public class PosEncoder {
             if (player.isGliding()) return GLIDING;
             if (player.isInsideVehicle()) return SITTING;
             if (player.isSleeping()) return SLEEPING;
-            if (player.isSneaking()) return SNEAKING;
+            if (player.isSneaking() && !player.isFlying()) return SNEAKING;
             if (player.getBoundingBox().getHeight() < 1) return CRAWLING;
             return STANDING;
         }
@@ -273,7 +273,7 @@ public class PosEncoder {
             PosEncoder.PositionIncrement decod = new PosEncoder.PositionIncrement(
                     xlen > 0, doubles[0],
                     ylen > 0, doubles[1],
-                    zlen > 0, doubles[2], pitch || yaw, (float) doubles[3], (float) doubles[4],
+                    zlen > 0, doubles[2], pitch && yaw, (float) doubles[3], (float) doubles[4],
                     false, null,
                     1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
             offset += decod.bytes();

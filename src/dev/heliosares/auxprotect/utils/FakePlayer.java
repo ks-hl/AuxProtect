@@ -5,6 +5,7 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
 import com.google.common.collect.Lists;
+import net.md_5.bungee.api.chat.ClickEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -20,7 +21,6 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -70,12 +70,14 @@ public class FakePlayer {
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
         packet.getPlayerInfoActions().modify(0, set -> {
             set.add(EnumWrappers.PlayerInfoAction.ADD_PLAYER);
+            set.add(EnumWrappers.PlayerInfoAction.UPDATE_LISTED);
             return set;
         });
         WrappedGameProfile profile = new WrappedGameProfile(uuid, name);
         if (skin != null) profile.getProperties().put("textures", skin.wrap());
-        packet.getPlayerInfoDataLists().write(1, Collections.singletonList(
-                new PlayerInfoData(profile, 0, EnumWrappers.NativeGameMode.SURVIVAL, WrappedChatComponent.fromLegacyText(name))
+        // TODO fake player still being added to list
+        packet.getPlayerInfoDataLists().write(1, List.of(
+                new PlayerInfoData(uuid, 0, false, EnumWrappers.NativeGameMode.SURVIVAL, profile, WrappedChatComponent.fromLegacyText(name), null)
         ));
         protocol.sendServerPacket(audience, packet);
 
@@ -104,6 +106,7 @@ public class FakePlayer {
         packet.getBytes().write(0, (byte) (loc.getYaw() * 256f / 360f));
         packet.getBytes().write(1, (byte) (loc.getPitch() * 256f / 360f));
         packet.getBooleans().write(0, onGround);
+
         protocol.sendServerPacket(audience, packet);
 
         // Update head
@@ -156,7 +159,7 @@ public class FakePlayer {
 
         setIdInPacket(packet);
 
-        packet.getSlotStackPairLists().write(0, List.of(new Pair<>(slot,item)));
+        packet.getSlotStackPairLists().write(0, List.of(new Pair<>(slot, item)));
 
         protocol.sendServerPacket(audience, packet);
     }
