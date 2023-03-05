@@ -27,9 +27,9 @@ public class TpCommand extends Command {
             throw new PlatformException();
         }
         try {
-            double x = Double.parseDouble(args[1]);
-            double y = Double.parseDouble(args[2]);
-            double z = Double.parseDouble(args[3]);
+            double x = Double.parseDouble(args[1].replace(',', '.'));
+            double y = Double.parseDouble(args[2].replace(',', '.'));
+            double z = Double.parseDouble(args[3].replace(',', '.'));
             int pitch = 0, yaw = 180;
             if (args.length == 7) {
                 pitch = Integer.parseInt(args[5]);
