@@ -1,7 +1,8 @@
-package dev.heliosares.auxprotect.adapters;
+package dev.heliosares.auxprotect.adapters.config;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -10,6 +11,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Function;
@@ -22,6 +24,10 @@ public class SpigotConfigAdapter extends ConfigAdapter {
                                @Nullable Function<String, InputStream> defaults, boolean createBlank) {
         super(parent, path, defaults, createBlank);
         this.config = config;
+    }
+
+    public SpigotConfigAdapter(InputStream in) {
+        super(in);
     }
 
     @Override
@@ -81,7 +87,9 @@ public class SpigotConfigAdapter extends ConfigAdapter {
 
     @Override
     public Set<String> getKeys(String key, boolean recur) {
-        return config.getConfigurationSection(key).getKeys(recur).stream().collect(Collectors.toUnmodifiableSet());
+        ConfigurationSection section = config.getConfigurationSection(key);
+        if (section == null) return new HashSet<>();
+        return section.getKeys(recur).stream().collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -101,16 +109,21 @@ public class SpigotConfigAdapter extends ConfigAdapter {
 
     @Override
     public void save() throws IOException {
-        if (config != null) {
-            config.save(file.get());
-        }
+        if (file == null) return;
+        save(file.get());
+    }
+
+    @Override
+    public void save(File file) throws IOException {
+        if (config != null) config.save(file);
     }
 
     @Override
     public void load() throws IOException {
         super.load();
         try {
-            config = YamlConfiguration.loadConfiguration(file.get());
+            if (file != null) config = YamlConfiguration.loadConfiguration(file.get());
+            else if (in != null) config = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
         } catch (Exception e) {
             AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
             throw e;
@@ -132,5 +145,10 @@ public class SpigotConfigAdapter extends ConfigAdapter {
     @Override
     public List<String> getStringList(String key) {
         return config.getStringList(key);
+    }
+
+    @Override
+    protected ConfigAdapter fromInputStream(InputStream stream) {
+        return new SpigotConfigAdapter(stream);
     }
 }

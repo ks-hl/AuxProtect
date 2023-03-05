@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.core.commands;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
@@ -35,9 +35,6 @@ public class APCommand extends Command {
                 commands.add(new RetentionCommand(plugin));
                 commands.add(new XrayCommand(plugin));
             }
-        }
-        if (plugin.getAPConfig().isPrivate()) {
-            commands.add(new WatchCommand(plugin));
         }
     }
 
@@ -153,13 +150,16 @@ public class APCommand extends Command {
                     plugin.print(e);
                     sender.sendLang(Language.L.ERROR);
                 }
-                sender.sendMessageRaw("§aConfig reloaded.");// TODO lang
+                sender.sendLang(Language.L.COMMAND__AP__CONFIG_RELOADED);
                 try {
                     Language.reload();
-                    sender.sendMessageRaw("§aLanguage reloaded: " + Language.getLocale());// TODO lang
+                    String msg = Language.L.COMMAND__AP__LANG_RELOADED.translate(Language.getLocale());
+                    if (!sender.isConsole()) sender.sendMessageRaw(msg);
+                    plugin.info(msg);
                 } catch (FileNotFoundException e) {
-                    sender.sendMessageRaw("Language file not found.");
-                    plugin.print(e);
+                    String msg = Language.L.COMMAND__AP__LANG_NOT_FOUND.translate("lang/" + Language.getLocale() + ".yml");
+                    if (!sender.isConsole()) sender.sendMessageRaw(msg);
+                    plugin.info(msg);
                 } catch (IOException e) {
                     sender.sendLang(Language.L.ERROR);
                     plugin.print(e);
@@ -182,7 +182,7 @@ public class APCommand extends Command {
                         plugin.print(e);
                         return;
                     }
-                    if (backup != null) sender.sendMessageRaw("Backup created: " + backup); // TODO lang
+                    if (backup != null) sender.sendLang(Language.L.COMMAND__AP__BACKUP_CREATED, backup);
                 });
                 return;
             } else {
@@ -192,14 +192,14 @@ public class APCommand extends Command {
         }
         sendInfo(sender);
         if (APPermission.HELP.hasPermission(sender)) {
-            sender.sendMessageRaw("§7Do §9/ap help§7 for more info.");// TODO lang
+            sender.sendLang(Language.L.COMMAND__AP__HELP);
         }
     }
 
     private void sendInfo(SenderAdapter sender) {
         sender.sendMessageRaw("§9AuxProtect"
                 + (APPermission.ADMIN.hasPermission(sender) ? (" §7v" + plugin.getPluginVersion()) : ""));
-        sender.sendMessageRaw("§7Developed by §9Heliosares");
+        sender.sendMessageRaw("§7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " §9Heliosares");
         if (APPermission.ADMIN.hasPermission(sender)) {
             sender.sendMessageRaw("§7§ohttps://www.spigotmc.org/resources/auxprotect.99147/");
         }

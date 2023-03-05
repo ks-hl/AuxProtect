@@ -1,10 +1,11 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.adapters.ConfigAdapter;
+import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.utils.ColorTranslate;
 
 import javax.annotation.Nullable;
+import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
@@ -18,8 +19,6 @@ public class Language {
     private static String c2;
     private static String c3;
 
-    public static final int VERSION = 4;
-
     public static void load(IAuxProtect plugin, Supplier<ConfigAdapter> langSupplier) throws IOException {
         Language.plugin = plugin;
         Language.langSupplier = langSupplier;
@@ -30,8 +29,18 @@ public class Language {
         lang = langSupplier.get();
         lang.load();
 
-        if (lang.getInt("version") != VERSION) {
-            AuxProtectAPI.getInstance().info("Resetting language file to version " + VERSION);
+        int resourceVersion = lang.getDefaults().getInt("version", -1);
+        int fileVersion = lang.getInt("version");
+
+        if (resourceVersion > 0 && resourceVersion > fileVersion) {
+            AuxProtectAPI.getInstance().info("Resetting language file from v" + fileVersion + " to v" + resourceVersion);
+            File newFile;
+            int i = 0;
+            do {
+                newFile = new File(lang.getFile().getParentFile(),
+                        "old/" + lang.getFile().getName().replace(".yml", "." + fileVersion + (i++ > 0 ? "." + i : "") + ".yml"));
+            } while (newFile.exists());
+            lang.save(newFile);
             lang.reset();
             lang.load();
         }
@@ -40,7 +49,14 @@ public class Language {
             c1 = "&" + lang.getString("color.p");
             c2 = "&" + lang.getString("color.s");
             c3 = "&" + lang.getString("color.t");
+
+            for (L l : L.values()) {
+                if (lang.getString(l.name) == null) {
+                    plugin.warning("Lang file does not contain " + l.name);
+                }
+            }
         }
+
     }
 
     public static String getLocale() {
@@ -67,94 +83,107 @@ public class Language {
     }
 
     public enum L {
-        UPDATE("current_version", "new_version"), //
-        NO_PERMISSION, //
-        NO_PERMISSION_NODE("node"), //
-        NO_PERMISSION_FLAG, //
-        INVALID_PARAMETER("invalid_parameter"), //
-        INVALID_SYNTAX, //
-        INVALID_NOTENOUGH, //
-        ERROR, //
-        ACTION_DISABLED, //
-        NOTPLAYERERROR, //
-        COMMAND__LOOKUP__UNKNOWN_WORLD("world"), //
-        COMMAND__LOOKUP__LOOKING, //
-        COMMAND__LOOKUP__NORESULTS, //
-        COMMAND__LOOKUP__COUNT("results"), //
-        COMMAND__LOOKUP__PAGE_FOOTER("page_number", "page_count", "entry_count"), //
-        COMMAND__LOOKUP__NO_RESULTS_SELECTED, //
-        COMMAND__LOOKUP__NOPAGE, //
-        COMMAND__LOOKUP__TOOMANY("count", "max"), //
-        COMMAND__LOOKUP__INCOMPATIBLE_TABLES, //
-        COMMAND__LOOKUP__ACTION_NEGATE, //
-        COMMAND__LOOKUP__ACTION_PERM, //
-        COMMAND__LOOKUP__ACTION_NONE, //
-        COMMAND__LOOKUP__RATING_WRONG, //
-        COMMAND__LOOKUP__NODATA, //
-        COMMAND__LOOKUP__PLAYBACK__STARTING, //
-        COMMAND__LOOKUP__PLAYBACK__STOPPED, //
-        COMMAND__LOOKUP__PLAYBACK__TOOLONG("limit"), //
-        COMMAND__LOOKUP__PLAYTIME__NOUSER, //
-        COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS, //
-        COMMAND__LOOKUP__INVALID_TIME_PARAMETER("specifier"), //
-        WATCH_NONE, //
-        WATCH_ING, //
-        WATCH_REMOVED, //
-        WATCH_NOW, //
-        COMMAND__PURGE__PURGING("table"), //
-        COMMAND__PURGE__UIDS, //
-        COMMAND__PURGE__VACUUM, //
-        COMMAND__PURGE__NOTVACUUM("time"), //
-        COMMAND__PURGE__COMPLETE_COUNT("rows"), //
-        COMMAND__PURGE__ERROR, //
-        COMMAND__PURGE__TIME, //
-        COMMAND__PURGE__TABLE, //
-        COMMAND__PURGE__NOPURGE, //
-        COMMAND__PURGE__SKIPAUTO("time"), //
-        BACKUP_SQLITEONLY, //
-        UNKNOWN_SUBCOMMAND, //
-        COMMAND__HELP, //
-        PLAYERNOTFOUND, //
-        LOOKUP_PLAYERNOTFOUND("target"), //
-        LOOKUP_UNKNOWNACTION("action"), //
-        XRAY_RATE_NOCHANGE, //
-        XRAY_RATE_WRITTEN, //
-        XRAY_DONE, //
-        XRAY_NOTFOUND, //
-        XRAY_TOOMANY, //
-        XRAY_ALREADY_RATED, //
-        XRAY_CLICK_TO_CHANGE, //
-        INACTIVE_ALERT("user", "inactive_minutes", "total_minutes"), //
-        DATABASE_BUSY, //
-        ACTIONS, //
-        COMMAND__SAVEINV__SUCCESS("target", "optional_s", "time"), //
-        COMMAND__SAVEINV__TOOSOON, //
-        COMMAND__INV__RECOVERED("admin", "target", "optional_s", "time"), //
-        COMMAND__INV__FORCE_RECOVERED("admin", "target", "time"), //
-        COMMAND__INV__SUCCESS("target", "optional_s"),
+        ACTIONS,
+        ACTION_DISABLED,
+        BACKUP_SQLITEONLY,
+        COMMAND__AP__BACKUP_CREATED("file"),
+        COMMAND__AP__DEVELOPED_BY,
+        COMMAND__AP__HELP,
+        COMMAND__AP__CONFIG_RELOADED,
+        COMMAND__AP__LANG_RELOADED("locale"),
+        COMMAND__AP__LANG_NOT_FOUND("file"),
+        COMMAND__CLAIMINV__CANCELLED,
+        COMMAND__CLAIMINV__CANCELLED_OTHER("target", "optional_s"),
+        COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER,
+        COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL,
+        COMMAND__CLAIMINV__HEADER,
+        COMMAND__CLAIMINV__OTHERHASNONE,
+        COMMAND__CLAIMINV__YOUHAVENONE,
+        COMMAND__HELP,
+        COMMAND__INV__FORCE_RECOVERED("admin", "target", "time"),
+        COMMAND__INV__ITEM_VIEWER,
         COMMAND__INV__NOTIFY_PLAYER("admin", "time"),
         COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM,
-        COMMAND__INV__ITEM_VIEWER,
-        COMMAND__CLAIMINV__CANCELLED, //
-        COMMAND__CLAIMINV__CANCELLED_OTHER("target", "optional_s"), //
-        COMMAND__CLAIMINV__YOUHAVENONE, //
-        COMMAND__CLAIMINV__OTHERHASNONE, //
-        COMMAND__CLAIMINV__HEADER, //
-        COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL, //
-        COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER, //
-        PROTOCOLLIB_NOT_LOADED, //
-
-        INV_RECOVER_MENU__MAIN_HEADER("target", "optional_s", "time"),
-        INV_RECOVER_MENU__ENDER_HEADER("target", "optional_s", "time"),
-        INV_RECOVER_MENU__XP_ERROR,
-        INV_RECOVER_MENU__BUTTON__FORCE__LABEL,
-        INV_RECOVER_MENU__BUTTON__FORCE__HOVER,
-        INV_RECOVER_MENU__BUTTON__RECOVER__LABEL,
-        INV_RECOVER_MENU__BUTTON__RECOVER__HOVER,
+        COMMAND__INV__RECOVERED("admin", "target", "optional_s", "time"),
+        COMMAND__INV__SUCCESS("target", "optional_s"),
+        COMMAND__LOOKUP__ACTION_NEGATE,
+        COMMAND__LOOKUP__ACTION_NONE,
+        COMMAND__LOOKUP__ACTION_PERM,
+        COMMAND__LOOKUP__COUNT("results"),
+        COMMAND__LOOKUP__INCOMPATIBLE_TABLES,
+        COMMAND__LOOKUP__INVALID_TIME_PARAMETER("specifier"),
+        COMMAND__LOOKUP__LOOKING,
+        COMMAND__LOOKUP__NODATA,
+        COMMAND__LOOKUP__NOPAGE,
+        COMMAND__LOOKUP__NORESULTS,
+        COMMAND__LOOKUP__NO_RESULTS_SELECTED,
+        COMMAND__LOOKUP__PAGE_FOOTER("page_number", "page_count", "entry_count"),
+        COMMAND__LOOKUP__PLAYBACK__STARTING,
+        COMMAND__LOOKUP__PLAYBACK__STOPPED,
+        COMMAND__LOOKUP__PLAYBACK__TOOLONG("limit"),
+        COMMAND__LOOKUP__PLAYTIME__NOUSER,
+        COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS,
+        COMMAND__LOOKUP__RATING_WRONG,
+        COMMAND__LOOKUP__TOOMANY("count", "max"),
+        COMMAND__LOOKUP__UNKNOWN_WORLD("world"),
+        COMMAND__PURGE__COMPLETE_COUNT("rows"),
+        COMMAND__PURGE__ERROR,
+        COMMAND__PURGE__NOPURGE,
+        COMMAND__PURGE__NOTVACUUM("time"),
+        COMMAND__PURGE__PURGING("table"),
+        COMMAND__PURGE__SKIPAUTO("time"),
+        COMMAND__PURGE__TABLE,
+        COMMAND__PURGE__TIME,
+        COMMAND__PURGE__UIDS,
+        COMMAND__PURGE__VACUUM,
+        COMMAND__SAVEINV__SUCCESS("target", "optional_s", "time"),
+        COMMAND__SAVEINV__TOOSOON,
+        DATABASE_BUSY,
+        ERROR,
+        INACTIVE_ALERT("user", "inactive_minutes", "total_minutes"),
+        INVALID_NOTENOUGH,
+        INVALID_PARAMETER("invalid_parameter"),
+        INVALID_SYNTAX,
         INV_RECOVER_MENU__BUTTON__CLOSE,
         INV_RECOVER_MENU__BUTTON__ENDER_CHEST,
-        INV_RECOVER_MENU__BUTTON__XP__HAD("xp"),
+        INV_RECOVER_MENU__BUTTON__FORCE__HOVER,
+        INV_RECOVER_MENU__BUTTON__FORCE__LABEL,
+        INV_RECOVER_MENU__BUTTON__RECOVER__HOVER,
+        INV_RECOVER_MENU__BUTTON__RECOVER__LABEL,
         INV_RECOVER_MENU__BUTTON__XP__ERROR,
+        INV_RECOVER_MENU__BUTTON__XP__HAD("xp"),
+        INV_RECOVER_MENU__ENDER_HEADER("target", "optional_s", "time"),
+        INV_RECOVER_MENU__MAIN_HEADER("target", "optional_s", "time"),
+        INV_RECOVER_MENU__XP_ERROR,
+        LOOKUP_PLAYERNOTFOUND("target"),
+        LOOKUP_UNKNOWNACTION("action"),
+        NOTPLAYERERROR,
+        NO_PERMISSION,
+        NO_PERMISSION_FLAG,
+        NO_PERMISSION_NODE("node"),
+        PLAYERNOTFOUND,
+        PROTOCOLLIB_NOT_LOADED,
+        RESULTS__CLICK_TO_COPY,
+        RESULTS__CLICK_TO_COPY_TIME("time"),
+        RESULTS__CLICK_TO_VIEW,
+        RESULTS__HEADER,
+        RESULTS__PAGE__FIRST,
+        RESULTS__PAGE__PREVIOUS,
+        RESULTS__PAGE__NEXT,
+        RESULTS__PAGE__LAST,
+        RESULTS__TIME("time"),
+        RESULTS__TIME_NOW,
+        RESULTS__VIEW,
+        RESULTS__VIEW_INV,
+        UNKNOWN_SUBCOMMAND,
+        UPDATE("current_version", "new_version"),
+        XRAY_ALREADY_RATED,
+        XRAY_CLICK_TO_CHANGE,
+        XRAY_DONE,
+        XRAY_NOTFOUND,
+        XRAY_RATE_NOCHANGE,
+        XRAY_RATE_WRITTEN,
+        XRAY_TOOMANY,
         ;
 
         public final String name;
@@ -172,7 +201,7 @@ public class Language {
 
         @Override
         public String toString() {
-            return name;
+            return translate();
         }
 
         public String translate(Object... format) {
@@ -182,17 +211,21 @@ public class Language {
         public String translateSubcategory(String subcategory, @Nullable Object... format) {
             String message = null;
             try {
-                String name = toString();
+                String name = this.name;
                 if (subcategory != null && subcategory.length() > 0) {
                     name += "." + subcategory.toLowerCase();
                 }
                 if (lang != null && !lang.isNull()) {
                     message = lang.getString(name);
                 }
-                if (message == null) throw new IllegalArgumentException();
+                if (message == null) throw new IllegalArgumentException("Message not found");
                 message = convert(message);
 
+
                 if (format != null) {
+                    if (this.format.length != format.length) {
+                        throw new IllegalArgumentException("Mismatched format lengths " + this.format.length + "!=" + format.length);
+                    }
                     for (int i = 0; i < format.length; i++) {
                         String key = '<' + this.format[i] + '>';
                         String var = format[i] == null ? "null" : format[i].toString();
@@ -202,6 +235,7 @@ public class Language {
                 }
                 return message.replace("\\n", "\n");
             } catch (IllegalArgumentException e) {
+                plugin.print(e);
                 StringBuilder out = new StringBuilder("[lang:" + name);
                 if (format != null) {
                     for (Object part : format) {
@@ -218,7 +252,7 @@ public class Language {
 
         public List<String> translateSubcategoryList(String subcategory) {
             List<String> message = null;
-            String name = toString();
+            String name = this.name();
             if (subcategory != null && subcategory.length() > 0) {
                 name += "." + subcategory.toLowerCase();
             }

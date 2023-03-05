@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.adapters;
+package dev.heliosares.auxprotect.adapters.config;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -10,25 +10,41 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
 public abstract class ConfigAdapter {
+    @Nullable
     protected final Supplier<File> file;
+    @Nullable
     protected final String path;
+    @Nullable
     protected final Function<String, InputStream> defaults;
     protected final boolean createBlank;
 
-    public ConfigAdapter(File parent, String path, @Nullable Function<String, InputStream> defaults,
-                         boolean createBlank) {
-        this.file = () -> new File(parent, path);
+    @Nullable
+    protected final InputStream in;
+
+    public ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults, boolean createBlank) {
+        this(Objects.requireNonNull(parent), Objects.requireNonNull(path), defaults, createBlank, null);
+    }
+
+    public ConfigAdapter(InputStream in) {
+        this(null, null, null, false, in);
+    }
+
+    private ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults, boolean createBlank, @Nullable InputStream in) {
+        this.file = parent == null || path == null ? null : () -> new File(parent, path);
         this.path = path;
         this.defaults = defaults;
         this.createBlank = createBlank;
+        this.in = in;
     }
 
     public File getFile() {
+        if (file == null) return null;
         return file.get();
     }
 
@@ -64,7 +80,11 @@ public abstract class ConfigAdapter {
 
     public abstract void save() throws IOException;
 
+    public abstract void save(File file) throws IOException;
+
     public void load() throws IOException {
+        if (file == null) return;
+
         File file = this.file.get();
         if (!file.getParentFile().exists())
             file.getParentFile().mkdirs();
@@ -89,6 +109,8 @@ public abstract class ConfigAdapter {
     }
 
     public void reset() throws IOException {
+        if (file == null) return;
+
         File file = this.file.get();
         boolean ignored = file.delete();
         if (defaults != null) {
@@ -96,9 +118,18 @@ public abstract class ConfigAdapter {
                 if (in != null) {
                     Files.copy(in, file.toPath());
                     AuxProtectAPI.getInstance().info("Generated default " + path);
-                    return;
                 }
             }
+        }
+    }
+
+    public ConfigAdapter getDefaults() throws IOException {
+        if (defaults == null) return null;
+        try (InputStream in = defaults.apply(path)) {
+            if (in == null) return new EmptyConfigAdapter();
+            ConfigAdapter out = fromInputStream(defaults.apply(path));
+            out.load();
+            return out;
         }
     }
 
@@ -106,4 +137,6 @@ public abstract class ConfigAdapter {
     public abstract boolean isNull();
 
     public abstract List<String> getStringList(String key);
+
+    protected abstract ConfigAdapter fromInputStream(InputStream stream);
 }

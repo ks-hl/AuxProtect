@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.utils;
 
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -14,6 +14,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.json.simple.parser.ParseException;
@@ -35,8 +36,11 @@ public class PlaybackSolver extends BukkitRunnable {
     private final Player audience;
     private final Map<UUID, FakePlayer.Skin> skins = new HashMap<>();
     private boolean closed;
+    private final List<BlockAction> blockActions;
 
-    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime) throws SQLException, LookupException {
+    private final Set<Location> modified = new HashSet<>();
+
+    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime, @Nullable List<BlockAction> blockActions) throws SQLException, LookupException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         this.audience = (Player) sender.getSender();
         this.realReferenceTime = System.currentTimeMillis();
@@ -62,12 +66,13 @@ public class PlaybackSolver extends BukkitRunnable {
         long min = points.stream().map(PosPoint::time).min(Long::compare).orElse(0L);
         long max = points.stream().map(PosPoint::time).max(Long::compare).orElse(System.currentTimeMillis());
 
-
         if (max - min > 5L * 60L * 1000L) {
             throw new LookupException(Language.L.COMMAND__LOOKUP__PLAYBACK__TOOLONG, "5 minutes");
         }
 
+        Set<String> names = new HashSet<>();
         for (PosPoint point : points) {
+            names.add(point.name());
             if (skins.containsKey(point.uuid)) continue;
             // Limit of 5 skins to cautiously avoid API rate limiting
             if (skins.size() >= 5) break;
@@ -79,6 +84,12 @@ public class PlaybackSolver extends BukkitRunnable {
             }
         }
 
+        if (blockActions == null) {
+            this.blockActions = new ArrayList<>();
+        } else {
+            this.blockActions = new ArrayList<>(blockActions.stream().filter(action -> names.contains(action.name())).filter(action -> action.time() >= min && action.time() <= max).toList());
+            this.blockActions.sort(Comparator.comparingLong(a -> a.time));
+        }
         this.startTime = Math.max(min - 250, startTime);
 
         close(sender.getUniqueId());
@@ -87,6 +98,13 @@ public class PlaybackSolver extends BukkitRunnable {
         }
 
         sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYBACK__STARTING);
+
+        // Basically does a rollback preview
+        for (int i = this.blockActions.size() - 1; i >= 0; i--) {
+            BlockAction action = this.blockActions.get(i);
+            modified.add(action.sendChange(audience, true));
+        }
+
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
     }
 
@@ -186,8 +204,22 @@ public class PlaybackSolver extends BukkitRunnable {
                     it.remove();
                 } else break;
             }
-            Iterator<FakePlayer> it = actors.values().iterator();
-            while (it.hasNext()) {
+
+            Set<FakePlayer> swing = new HashSet<>();
+            for (Iterator<BlockAction> it = blockActions.iterator(); it.hasNext(); ) {
+                BlockAction action = it.next();
+                if (timeNow > action.time()) {
+                    it.remove();
+                    FakePlayer actor = actors.get(action.name());
+                    if (actor != null) {
+                        swing.add(actor);
+                        action.sendChange(audience, false);
+                    }
+                }
+            }
+            swing.forEach(FakePlayer::swingArm);
+
+            for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
                 FakePlayer pl = it.next();
                 if (System.currentTimeMillis() - pl.getLastMoved() > 1000) {
                     pl.remove();
@@ -207,6 +239,13 @@ public class PlaybackSolver extends BukkitRunnable {
                 audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED)));
                 actors.values().forEach(FakePlayer::remove);
                 actors.clear();
+                int countBlocks = 0;
+                for (Location location : modified) {
+                    if (audience.getWorld().equals(location.getWorld()) && location.distance(audience.getLocation()) < 250) {
+                        audience.sendBlockChange(location, location.getBlock().getBlockData());
+                    }
+                    if (++countBlocks > 10000) break;
+                }
             }
         }
         cleanup();
@@ -218,5 +257,14 @@ public class PlaybackSolver extends BukkitRunnable {
 
     public record PosPoint(long time, UUID uuid, String name, int uid, Location location, boolean inc,
                            @Nullable PosEncoder.Posture posture) {
+    }
+
+    public record BlockAction(long time, String name, int x, int y, int z, Material material, boolean place) {
+        public Location sendChange(Player audience, boolean undo) {
+            Material material = place() == undo ? Material.AIR : material();
+            Location loc = new Location(audience.getWorld(), x(), y(), z());
+            audience.sendBlockChange(loc, material.createBlockData());
+            return loc;
+        }
     }
 }

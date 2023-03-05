@@ -1,8 +1,8 @@
 package dev.heliosares.auxprotect.bungee;
 
-import dev.heliosares.auxprotect.adapters.BungeeConfigAdapter;
-import dev.heliosares.auxprotect.adapters.BungeeSenderAdapter;
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
+import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;

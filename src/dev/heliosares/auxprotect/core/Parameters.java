@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.BusyException;

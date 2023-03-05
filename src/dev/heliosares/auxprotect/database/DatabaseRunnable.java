@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
@@ -39,7 +38,6 @@ public class DatabaseRunnable implements Runnable {
     }
 
     public void add(DbEntry entry) {
-        WatchCommand.notify(entry);
         if (!entry.getAction().isEnabled()) {
             return;
         }

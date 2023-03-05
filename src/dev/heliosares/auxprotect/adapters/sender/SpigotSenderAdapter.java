@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.adapters;
+package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;

@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
@@ -51,8 +51,7 @@ public class Results {
     }
 
     @SuppressWarnings("deprecation")
-    public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time,
-                                 boolean coords) throws SQLException {
+    public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time, boolean coords) throws SQLException {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
 
@@ -64,13 +63,13 @@ public class Results {
         if (time) {
             String msg;
             if (System.currentTimeMillis() - entry.getTime() < 55) {
-                msg = "§7Just Now";
+                msg = Language.L.RESULTS__TIME_NOW.translate();
             } else {
-                msg = String.format("§7%s ago", TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
+                msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
             }
             message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                             new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
-                                    + "\n§7Click to copy epoch time. (" + entry.getTime() + "ms)")))
+                                    + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
                     .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
         }
 
@@ -79,7 +78,7 @@ public class Results {
             actionColor = entry.getState() ? "§a+" : "§c-";
         }
         message.append(" " + actionColor + " ").event((HoverEvent) null);
-        HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to copy to clipboard"));
+        HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()));
         message.append("§9" + entry.getUser()).event(clickToCopy)
                 .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
         message.append(" §f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
@@ -112,19 +111,19 @@ public class Results {
         String data = entry.getData();
         if (entry.hasBlob()) {
             if (APPermission.INV.hasPermission(player)) {
-                message.append(" §a[View]")
+                message.append(" §a[" + Language.L.RESULTS__VIEW + "]")
                         .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                 String.format(commandPrefix + " inv %d", index)))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
             }
         }
         if (entry.getAction().equals(EntryAction.KILL)) {
             if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
-                message.append(" §a[View Inv]")
+                message.append(" §a[" + Language.L.RESULTS__VIEW_INV + "]")
                         .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                 String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
                                         entry.getTarget(), entry.getTime())))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§fClick to view!")));
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
             }
         }
         if (entry instanceof SingleItemEntry sientry) {
@@ -177,11 +176,11 @@ public class Results {
         StringBuilder line = new StringBuilder("§m");
         line.append(String.valueOf((char) 65293).repeat(6));
         line.append("§7");
-        if (plugin.getAPConfig().isPrivate() && new Random().nextDouble() < 0.001) {
+        if (new Random().nextDouble() < 0.001) {
             headerColor = "§f"; // The header had these mismatched colors for over a year of development until
             // v1.1.3. This is a tribute to that screw up
         }
-        player.sendMessageRaw(headerColor + line + "  §9AuxProtect Results§7  " + line);
+        player.sendMessageRaw(headerColor + line + "  " + Language.L.RESULTS__HEADER + "§7  " + line);
     }
 
     public void showPage(int page) throws SQLException {
@@ -217,12 +216,12 @@ public class Results {
         if (page > 1) {
             message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + perPage))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§9Jump to First Page")));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__FIRST.translate())));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append("§9§l" + AuxProtectSpigot.LEFT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                             commandPrefix + " l " + (page - 1) + ":" + perPage))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Last Page")));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__PREVIOUS.translate())));
         } else {
             message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ""));
             message.append("§8§l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW).event((ClickEvent) null)
@@ -235,12 +234,12 @@ public class Results {
             message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                             commandPrefix + " l " + (page + 1) + ":" + perPage))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Next Page")));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__NEXT.translate())));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append("§9§l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                             commandPrefix + " l " + lastpage + ":" + perPage))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Jump to Last Page")));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__LAST.translate())));
         } else {
             message.append("§8§l" + AuxProtectSpigot.RIGHT_ARROW).event((ClickEvent) null).event((HoverEvent) null);
             message.append(" ");

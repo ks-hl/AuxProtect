@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 
 import javax.annotation.Nullable;

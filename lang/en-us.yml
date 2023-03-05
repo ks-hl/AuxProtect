@@ -1,3 +1,7 @@
+# This version number is language-specific.
+# If there is an included language file for this language and the included version is higher,
+# the file in the plugin directory will be replaced with the included file.
+# If you don't want your language file being reset with new versions, set this version number to 99999
 version: 4
 color:
   p: '9'
@@ -16,6 +20,13 @@ notplayererror: 'That command can only be used ingame'
 backup-sqliteonly: 'Backups only work on SQLite'
 unknown-subcommand: 'Unknown subcommand. Do ''/ap help'' for more info.'
 command:
+  ap:
+    help: '&tDo &p/ap help&t for more info.'
+    developed-by: 'Developed by'
+    backup-created: 'Backup created: <file>'
+    config-reloaded: '&pConfig reloaded.'
+    lang-reloaded: '&pLanguage reloaded: <locale>'
+    lang-not-found: '&pLanguage file not found: <file>'
   saveinv:
     success: '&p<target>''<optional_s> &tinventory has been manually saved. &otime:<time>'
     toosoon: '&cThat user''s inventory has been saved too recently.'
@@ -107,7 +118,22 @@ inactive-alert: '&8[&4Server&8] &e<user> &tmay be inactive. &e<inactive_minutes>
 yes: 'Yes'
 no: 'No'
 database-busy: '&cThe database is currently busy. Try again later or check the console for more information.'
-protocollib-not-loaded: "&cProtocolLib is required for this action and it is not installed."
+protocollib-not-loaded: '&cProtocolLib is required for this action and it is not installed.'
+
+results:
+  click-to-copy: 'Click to copy to clipboard'
+  click-to-copy-time: '&tClick to copy epoch time. (<time>ms)'
+  click-to-view: 'Click to view!'
+  header: '&pAuxProtect Results'
+  page:
+    first: '&pJump to First Page'
+    previous: '&pPrevious Page'
+    next: '&pNext Page'
+    last: '&pJump to Last Page'
+  time: '&t<time> ago'
+  time-now: '&tJust Now'
+  view: 'View'
+  view-inv: 'View Inv'
 
 inv-recover-menu:
   main-header: '<target>''<optional_s> Ender Chest - <time> ago'
@@ -148,98 +174,96 @@ inv-recover-menu:
       error: '&8No XP data'
 
 actions:
-  pluginload:
-    p: loaded plugin
-    n: unloaded plugin
-  vein: mined vein
-  leash:
-    p: leashed
-    n: unleashed
-  session:
-    p: logged in
-    n: logged out
-  kick: was kicked
-  shop:
-    p: bought
-    n: sold
+  activity: activity
+  alert: may be hacking
+  anvil: anvilled
+  auctionbuy: bought from ah
+  auctionlist: listed on ah
+  breakitem: broke item
   bucket:
     p: caught fish
     n: released fish
-  mount:
-    p: mounted
-    n: unmounted
-  alert: may be hacking
-  respawn: respawned
-  lightning: struck lightning
-  explode: caused explosion of
-  xraycheck: xray check
   censor: was censored
-  msg: messaged
-  consume: consumed
-  tame: tamed
-  kitpvpkill: kill
-  recover: recovered inv of
-  money: money
-  pay: paid
-  gamemode: switched gamemode to
-  pos: position
-  jobs: earned from job
-  activity: activity
-  hurt: hurt
-  inv:
-    p: opened
-    n: closed
-  tp:
-    p: teleported to
-    n: teleported from
-  command: executed
   chat: said
-  kill: killed
-  totem: used totem
-  land: projectile landed
+  command: executed
+  connect: connected to
+  consume: consumed
+  craft: crafted
+  drop: dropped
   elytra:
     p: started flying
     n: stopped flying
-  ignoreabandoned: ignored abandoned warning
-  ip: Unique IP
-  username: username
-  inventory: inventory
-  breakitem: broke item
-  launch: launched
+  enchant: enchanted
+  explode: caused explosion of
+  gamemode: switched gamemode to
   grab: grabbed
-  drop: dropped
-  pickup: picked up
+  hurt: hurt
+  ignoreabandoned: ignored abandoned warning
+  inv:
+    p: opened
+    n: closed
+  inventory: inventory
+  ip: Unique IP
   itemframe:
     p: add itemframe
     n: remove itemframe
-  auctionlist: listed on ah
-  auctionbuy: bought from ah
-  townyname: named
-  towncreate: created town
-  townrename: renamed town to
-  towndelete: deleted town
-  townjoin:
-    p: joined town
-    n: left town
-  townclaim:
-    p: claimed
-    n: unclaimed
-  townmerge: merged into
-  townmayor: became the mayor of
-  townbank:
+  jobs: earned from job
+  kick: was kicked
+  kill: killed
+  land: projectile landed
+  launch: launched
+  leash:
+    p: leashed
+    n: unleashed
+  lightning: struck lightning
+  money: money
+  mount:
+    p: mounted
+    n: unmounted
+  msg: messaged
+  nationbank:
     p: deposited
     n: withdrew
   nationcreate: created nation
-  nationrename: renamed nation
   nationdelete: deleted nation
   nationjoin:
     p: joined nation
     n: left nation
-  nationbank:
+  nationrename: renamed nation
+  pay: paid
+  pickup: picked up
+  pluginload:
+    p: loaded plugin
+    n: unloaded plugin
+  pos: position
+  recover: recovered inv of
+  respawn: respawned
+  session:
+    p: logged in
+    n: logged out
+  shop:
+    p: bought
+    n: sold
+  smith: upgraded to netherite
+  tame: tamed
+  totem: used totem
+  townbank:
     p: deposited
     n: withdrew
-  connect: connected to
-  craft: crafted
-  anvil: anvilled
-  enchant: enchanted
-  smith: upgraded to netherite
+  townclaim:
+    p: claimed
+    n: unclaimed
+  towncreate: created town
+  towndelete: deleted town
+  townjoin:
+    p: joined town
+    n: left town
+  townmayor: became the mayor of
+  townmerge: merged into
+  townrename: renamed town to
+  townyname: named
+  tp:
+    p: teleported to
+    n: teleported from
+  username: username
+  vein: mined vein

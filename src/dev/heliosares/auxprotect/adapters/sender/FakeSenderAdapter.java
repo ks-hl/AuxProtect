@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.adapters;
+package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.core.PlatformType;
 import net.md_5.bungee.api.chat.BaseComponent;

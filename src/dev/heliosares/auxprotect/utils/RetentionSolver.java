@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import org.bukkit.Bukkit;

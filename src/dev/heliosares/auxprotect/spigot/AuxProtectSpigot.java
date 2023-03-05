@@ -1,11 +1,10 @@
 package dev.heliosares.auxprotect.spigot;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
-import dev.heliosares.auxprotect.adapters.SpigotConfigAdapter;
-import dev.heliosares.auxprotect.adapters.SpigotSenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.config.SpigotConfigAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
-import dev.heliosares.auxprotect.core.commands.WatchCommand;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.listeners.*;
@@ -493,13 +492,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
             }
         }.runTaskTimerAsynchronously(this, 40, 20);
-        new BukkitRunnable() {
-
-            @Override
-            public void run() {
-                WatchCommand.tick(AuxProtectSpigot.this);
-            }
-        }.runTaskTimerAsynchronously(this, 1, 1);
 
         new BukkitRunnable() {
 

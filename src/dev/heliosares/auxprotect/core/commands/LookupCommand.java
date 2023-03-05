@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.core.commands;
 
-import dev.heliosares.auxprotect.adapters.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.*;
@@ -8,6 +8,8 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
+import net.coreprotect.CoreProtect;
+import net.coreprotect.CoreProtectAPI;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -410,7 +412,28 @@ public class LookupCommand extends Command {
                 Collections.reverse(newResults);
                 rs = newResults;
             } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
-                new PlaybackSolver(plugin, sender, rs, params.getAfter());
+                List<PlaybackSolver.BlockAction> actions = null;
+                try {
+                    Class.forName("net.coreprotect.CoreProtectAPI");
+                    CoreProtectAPI api = CoreProtect.getInstance().getAPI();
+                    List<CoreProtectAPI.ParseResult> results = api.performLookup(
+                                    (int) ((System.currentTimeMillis() - params.getAfter()) / 1000L),
+                                    new ArrayList<>(params.getUsers()),
+                                    null,
+                                    null,
+                                    null,
+                                    new ArrayList<>(List.of(0, 1)),
+                                    params.getRadius().entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).max(Integer::compare).orElse(0),
+                                    params.getLocation())
+                            .stream()
+                            .map(api::parseResult)
+                            .toList();
+                    actions = results.stream().filter(r -> r.getTimestamp() < params.getBefore())
+                            .map(result -> new PlaybackSolver.BlockAction(result.getTimestamp(), result.getPlayer(), result.getX(), result.getY(), result.getZ(), result.getType(), result.getActionId() == 1))
+                            .toList();
+                } catch (ClassNotFoundException ignored) {
+                }
+                new PlaybackSolver(plugin, sender, rs, params.getAfter(), actions);
                 return;
             }
             String uuid = sender.getUniqueId().toString();

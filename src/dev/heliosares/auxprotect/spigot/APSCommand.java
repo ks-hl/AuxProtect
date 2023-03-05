@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.spigot;
 
-import dev.heliosares.auxprotect.adapters.SpigotSenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.commands.APCommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;

@@ -49,17 +49,12 @@ public class InventoryListener implements Listener {
         if (label.equals("#null")) {
             if (inv.getLocation() != null) {
                 Block block = inv.getLocation().getBlock();
-                if (block != null) {
-                    label = "#" + block.getType().toString().toLowerCase();
-                }
+                label = "#" + block.getType().toString().toLowerCase();
             }
         }
         Location location = inv.getLocation();
         if (location == null) {
             location = player.getLocation();
-        }
-        if (location == null) {
-            return;
         }
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
                 count + " items in inventory.");

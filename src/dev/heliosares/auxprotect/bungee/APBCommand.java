@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.bungee;
 
-import dev.heliosares.auxprotect.adapters.BungeeSenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.core.commands.APCommand;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.plugin.Command;

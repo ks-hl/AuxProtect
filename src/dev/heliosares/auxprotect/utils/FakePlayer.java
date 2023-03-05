@@ -5,7 +5,6 @@ import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
 import com.comphenix.protocol.wrappers.*;
 import com.google.common.collect.Lists;
-import net.md_5.bungee.api.chat.ClickEvent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -160,6 +159,15 @@ public class FakePlayer {
         setIdInPacket(packet);
 
         packet.getSlotStackPairLists().write(0, List.of(new Pair<>(slot, item)));
+
+        protocol.sendServerPacket(audience, packet);
+    }
+
+    public void swingArm() {
+        PacketContainer packet = new PacketContainer(PacketType.Play.Server.ANIMATION);
+
+        setIdInPacket(packet);
+        packet.getIntegers().write(1, 0);
 
         protocol.sendServerPacket(audience, packet);
     }

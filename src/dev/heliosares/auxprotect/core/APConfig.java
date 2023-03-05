@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.adapters.ConfigAdapter;
+import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.KeyUtil;

@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.adapters;
+package dev.heliosares.auxprotect.adapters.config;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -22,6 +22,10 @@ public class BungeeConfigAdapter extends ConfigAdapter {
                                @Nullable Function<String, InputStream> defaults, boolean createBlank) {
         super(parent, path, defaults, createBlank);
         this.config = config;
+    }
+
+    public BungeeConfigAdapter(InputStream in) {
+        super(in);
     }
 
     @Override
@@ -101,14 +105,26 @@ public class BungeeConfigAdapter extends ConfigAdapter {
 
     @Override
     public void save() throws IOException {
+        if (file == null) return;
+
+        save(file.get());
+    }
+
+    @Override
+    public void save(File file) throws IOException {
         if (config != null) {
-            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file.get());
+            ConfigurationProvider.getProvider(YamlConfiguration.class).save(config, file);
         }
     }
 
     @Override
     public void load() throws IOException {
         super.load();
+        if (in != null) {
+            config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(in);
+            return;
+        }
+        assert file != null;
         Configuration def = null;
         if (defaults != null) {
             try (InputStream in = defaults.apply(path)) {
@@ -133,5 +149,10 @@ public class BungeeConfigAdapter extends ConfigAdapter {
     @Override
     public List<String> getStringList(String key) {
         return config.getStringList(key);
+    }
+
+    @Override
+    protected ConfigAdapter fromInputStream(InputStream stream) {
+        return new BungeeConfigAdapter(stream);
     }
 }
