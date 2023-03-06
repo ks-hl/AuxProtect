@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -189,14 +190,14 @@ public class PlayerListener implements Listener {
                 } catch (SQLException e1) {
                     return;
                 }
-                e.getPlayer().sendMessage("§aYou have an inventory waiting to be claimed!");
-                e.getPlayer().sendMessage("§7Ensure you have room in your inventory before claiming!");
+                e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "aYou have an inventory waiting to be claimed!");
+                e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "7Ensure you have room in your inventory before claiming!");
                 ComponentBuilder message = new ComponentBuilder();
-                message.append("§f\n         ");
-                message.append("§a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                message.append(ChatColor.COLOR_CHAR + "f\n         ");
+                message.append(ChatColor.COLOR_CHAR + "a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new Text("§aClick to claim your recovered inventory")));
-                message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                                new Text(ChatColor.COLOR_CHAR + "aClick to claim your recovered inventory")));
+                message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
                 e.getPlayer().spigot().sendMessage(message.create());
                 e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
             }
@@ -323,7 +324,7 @@ public class PlayerListener implements Listener {
         plugin.getAPPlayer(e.getPlayer()).addActivity(5);
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
         if (plugin.getAPConfig().isDemoMode()) {
-            e.getPlayer().sendMessage("§cChat is disabled.");
+            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "cChat is disabled.");
             e.setCancelled(true);
         }
     }

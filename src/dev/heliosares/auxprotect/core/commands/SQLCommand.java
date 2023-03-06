@@ -28,7 +28,7 @@ public class SQLCommand extends Command {
             msg.append(args[i]).append(" ");
         }
         final String stmt = msg.toString().trim();
-        sender.sendMessageRaw("§aRunning...");
+        sender.sendMessageRaw("&aRunning...");
         try {
             if (args[0].equalsIgnoreCase("sql")) {
                 plugin.getSqlManager().execute(stmt, 3000L);
@@ -64,7 +64,7 @@ public class SQLCommand extends Command {
             plugin.print(e);
             return;
         }
-        sender.sendMessageRaw("§aSQL statement executed successfully.");
+        sender.sendMessageRaw("&aSQL statement executed successfully.");
     }
 
     @Override

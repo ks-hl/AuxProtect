@@ -118,7 +118,7 @@ public class APCommand extends Command {
                     } catch (NumberFormatException ignored) {
                     }
                     if (verbosity < 0 || verbosity > 5) {
-                        sender.sendMessageRaw("§cInvalid verbosity level. /ap debug [0-5]"); // TODO lang
+                        sender.sendMessageRaw("&cInvalid verbosity level. /ap debug [0-5]"); // TODO lang
                         return;
                     }
                 } else {
@@ -134,7 +134,7 @@ public class APCommand extends Command {
                     sender.sendLang(Language.L.ERROR);
                     plugin.print(e);
                 }
-                sender.sendMessageRaw("Debug " + (verbosity > 0 ? "§aenabled. §7Level: " + verbosity : "§cdisabled."));
+                sender.sendMessageRaw("Debug " + (verbosity > 0 ? "&aenabled. &7Level: " + verbosity : "&cdisabled."));
                 return;
             } else if (args[0].equalsIgnoreCase("info")) {
                 sendInfo(sender);
@@ -197,11 +197,11 @@ public class APCommand extends Command {
     }
 
     private void sendInfo(SenderAdapter sender) {
-        sender.sendMessageRaw("§9AuxProtect"
-                + (APPermission.ADMIN.hasPermission(sender) ? (" §7v" + plugin.getPluginVersion()) : ""));
-        sender.sendMessageRaw("§7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " §9Heliosares");
+        sender.sendMessageRaw("&9AuxProtect"
+                + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
+        sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
         if (APPermission.ADMIN.hasPermission(sender)) {
-            sender.sendMessageRaw("§7§ohttps://www.spigotmc.org/resources/auxprotect.99147/");
+            sender.sendMessageRaw("&7&ohttps://www.spigotmc.org/resources/auxprotect.99147/");
         }
     }
 

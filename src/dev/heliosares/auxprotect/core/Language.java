@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.core;
 import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.utils.ColorTranslate;
+import net.md_5.bungee.api.ChatColor;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -52,6 +53,7 @@ public class Language {
 
             for (L l : L.values()) {
                 if (lang.getString(l.name) == null) {
+                    //lang.set(l.name, "");
                     plugin.warning("Lang file does not contain " + l.name);
                 }
             }

@@ -331,20 +331,20 @@ public class LookupCommand extends Command {
                 if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
-                    sender.sendMessageRaw("§fTotal Money: §9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
                 }
                 if (totalExp != 0) {
-                    sender.sendMessageRaw("§fTotal Experience: §9" + Math.round(totalExp * 100f) / 100f);
+                    sender.sendMessageRaw("&fTotal Experience: &9" + Math.round(totalExp * 100f) / 100f);
                 }
                 String msg = "";
                 if (pickupcount > 0) {
-                    msg += "§fPicked up: §9" + pickupcount + "§7, ";
+                    msg += "&fPicked up: &9" + pickupcount + "&7, ";
                 }
                 if (dropcount > 0) {
-                    msg += "§fDropped: §9" + dropcount + "§7, ";
+                    msg += "&fDropped: &9" + dropcount + "&7, ";
                 }
                 if (pickupcount > 0 && dropcount > 0) {
-                    msg += "§fNet: §9" + (pickupcount - dropcount);
+                    msg += "&fNet: &9" + (pickupcount - dropcount);
                 }
                 if (msg.length() > 0) {
                     sender.sendMessageRaw(msg);

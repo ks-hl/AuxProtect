@@ -68,11 +68,11 @@ public class RetentionSolver {
             } else {
                 time = key + "m";
             }
-            sender.sendMessageRaw(String.format("§7Above %s: §9%s §7(%d/%d)", time, Math.round(val) + "%",
+            sender.sendMessageRaw(String.format("&7Above %s: &9%s &7(%d/%d)", time, Math.round(val) + "%",
                     entry.getValue(), playtimes.size()));
         }
-        sender.sendMessageRaw(String.format("§7Online now: §9%s §7(%d/%d)",
+        sender.sendMessageRaw(String.format("&7Online now: &9%s &7(%d/%d)",
                 Math.round((double) onlinern / (double) playtimes.size() * 100) + "%", onlinern, playtimes.size()));
-        sender.sendMessageRaw(String.format("§7(%sms)", "" + (System.currentTimeMillis() - start)));
+        sender.sendMessageRaw(String.format("&7(%sms)", "" + (System.currentTimeMillis() - start)));
     }
 }

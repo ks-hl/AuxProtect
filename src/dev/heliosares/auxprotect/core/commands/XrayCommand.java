@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.*;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -122,7 +123,7 @@ public class XrayCommand extends Command {
                         if (entry.getRating() >= 0 && !override) {
                             sender.sendLang(Language.L.XRAY_ALREADY_RATED);
                             ComponentBuilder message = new ComponentBuilder();
-                            message.append("§c§l[Overwrite]");
+                            message.append(ChatColor.RED + "" + ChatColor.BOLD + "[Overwrite]");
                             StringBuilder thiscmd = new StringBuilder("/" + label);
                             for (String arg : args) {
                                 thiscmd.append(" ").append(arg);
@@ -206,10 +207,10 @@ public class XrayCommand extends Command {
                                             }
                                         }
                                     });
-                                    sender.sendMessageRaw("§aDone!");
+                                    sender.sendMessageRaw("&aDone!");
                                 } else {
-                                    ComponentBuilder message = new ComponentBuilder("§cAre you sure you want to rate all entries from " + name + " as 0?\n\n");
-                                    message.append("§c§l[Yes]");
+                                    ComponentBuilder message = new ComponentBuilder(ChatColor.COLOR_CHAR + "cAre you sure you want to rate all entries from " + name + " as 0?\n\n");
+                                    message.append(ChatColor.COLOR_CHAR + "c" + ChatColor.COLOR_CHAR + "l[Yes]");
                                     StringBuilder thiscmd = new StringBuilder("/" + label);
                                     for (String arg : args) {
                                         thiscmd.append(" ").append(arg);

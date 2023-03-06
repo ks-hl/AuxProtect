@@ -90,10 +90,10 @@ public class InventoryCommand extends Command {
 
             Inventory output = InvCommand.makeInventory(plugin, player, targetP, inv.inventory(), time);
 
-            sender.sendMessageRaw(String.format("§fDisplaying inventory of §9%s§f from §9%s ago §7(%s)",
+            sender.sendMessageRaw(String.format("&fDisplaying inventory of &9%s&f from &9%s ago &7(%s)",
                     targetP.getName(), TimeUtil.millisToString(System.currentTimeMillis() - time), time + "e"));
             sender.sendMessageRaw(
-                    String.format("§fBased on inventory from §9%s§f ago §7(%s)§f with §9%s§f differences",
+                    String.format("&fBased on inventory from &9%s&f ago &7(%s)&f with &9%s&f differences",
                             TimeUtil.millisToString(System.currentTimeMillis() - inv.basetime()),
                             inv.basetime() + "e", inv.numdiff()));
 

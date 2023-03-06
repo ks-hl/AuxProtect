@@ -20,13 +20,13 @@ public class PlayTimeSolver {
     public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours, String player, final boolean currentlyOnline) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         if (hours > 840) {
-            message.append("§cTime period too long. Max 5 weeks.");
+            message.append("" + ChatColor.COLOR_CHAR + "cTime period too long. Max 5 weeks.");
             return message.create();
         }
-        StringBuilder line = new StringBuilder("§7§m");
-        line.append(String.valueOf((char) 65293).repeat(6)).append("§r");
+        StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
+        line.append(String.valueOf((char) 65293).repeat(6)).append("" + ChatColor.COLOR_CHAR + "r");
         player += "'" + (player.toLowerCase().endsWith("s") ? "" : "s");
-        message.append(line + "  §9" + player + " Playtime  " + line);
+        message.append(line + "  " + ChatColor.COLOR_CHAR + "9" + player + " Playtime  " + line);
         message.append("\n");
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withMinute(0).withSecond(0).withNano(0);
@@ -108,7 +108,7 @@ public class PlayTimeSolver {
             LocalDateTime time = startTime.plusHours(i);
             double count = counter[i];
             message.append(AuxProtectSpigot.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(
-                    "§9" + time.format(formatterDateTime) + "\n" + (Math.round(count * 60.0) + " §8min online"))));
+                    "" + ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n" + (Math.round(count * 60.0) + " " + ChatColor.COLOR_CHAR + "8min online"))));
             if (count > 0.99) {
                 message.color(ChatColor.of("#ffffff"));
             } else if (count > 0.75) {

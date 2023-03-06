@@ -23,8 +23,8 @@ public class TimeCommand extends Command {
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMMyy HH:mm.ss");
         if (args.length == 1) {
-            sender.sendMessageRaw("§9Server time:");
-            sender.sendMessageRaw("§7" + LocalDateTime.now().format(formatter));
+            sender.sendMessageRaw("&9Server time:");
+            sender.sendMessageRaw("&7" + LocalDateTime.now().format(formatter));
             return;
         } else if (args.length == 2) {
             if (args[1].startsWith("+") || args[1].startsWith("-")) {
@@ -36,13 +36,13 @@ public class TimeCommand extends Command {
                     sender.sendLang(Language.L.INVALID_SYNTAX);
                     return;
                 }
-                sender.sendMessageRaw("§9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
+                sender.sendMessageRaw("&9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
                 sender.sendMessageRaw(
-                        "§7" + LocalDateTime.now().plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
+                        "&7" + LocalDateTime.now().plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
                 sender.sendMessageRaw(
-                        String.format("§7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
+                        String.format("&7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
                 sender.sendMessageRaw(
-                        String.format("§7%s %s", TimeUtil.millisToStringExtended(time), add ? "from now" : "ago"));
+                        String.format("&7%s %s", TimeUtil.millisToStringExtended(time), add ? "from now" : "ago"));
 
                 return;
             }

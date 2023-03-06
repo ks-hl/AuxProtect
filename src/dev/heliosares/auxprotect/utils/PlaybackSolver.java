@@ -11,6 +11,7 @@ import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
@@ -181,7 +182,7 @@ public class PlaybackSolver extends BukkitRunnable {
             }
             final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
 
-            audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  §7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
+            audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
 
 
             for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {

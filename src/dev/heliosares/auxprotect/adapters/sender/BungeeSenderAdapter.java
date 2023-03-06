@@ -6,6 +6,7 @@ import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
+import org.bukkit.ChatColor;
 
 import java.util.UUID;
 
@@ -20,7 +21,7 @@ public class BungeeSenderAdapter extends SenderAdapter {
     }
 
     public void sendMessageRaw(String message) {
-        sender.sendMessage(TextComponent.fromLegacyText(message));
+        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
     }
 
     public void sendMessage(BaseComponent... message) {

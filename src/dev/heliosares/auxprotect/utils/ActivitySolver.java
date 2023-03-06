@@ -32,11 +32,9 @@ public class ActivitySolver {
         int[] counter = new int[minutes];
         Location[] locations = new Location[minutes];
         Arrays.fill(counter, -1);
-        StringBuilder line = new StringBuilder("§7§m");
-        for (int i = 0; i < 6; i++) {
-            line.append((char) 65293);
-        }
-        line.append("§7");
+        StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
+        line.append(String.valueOf((char) 65293).repeat(6));
+        line.append("" + ChatColor.COLOR_CHAR + "7");
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
             DbEntry entry = entries.get(i);
@@ -89,7 +87,7 @@ public class ActivitySolver {
                 break;
             }
             if (time.getMinute() == 0) {
-                message.append(line + String.format("§f %s ", time.format(formatterHour)) + line + "\n")
+                message.append(line + String.format("" + ChatColor.COLOR_CHAR + "f %s ", time.format(formatterHour)) + line + "\n")
                         .event((ClickEvent) null).event((HoverEvent) null);
             }
             if (millis < newestEntryAt) {
@@ -99,18 +97,18 @@ public class ActivitySolver {
 
                 int activity = counter[i];
 
-                String hovertext = "§9" + time.format(formatterDateTime) + "\n";
+                String hovertext = "" + ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
 
                 if (activity < 0) {
-                    hovertext += "§7Offline";
+                    hovertext += "" + ChatColor.COLOR_CHAR + "7Offline";
                 } else if (activity > 0) {
-                    hovertext += "§7Activity Level §9" + activity;
+                    hovertext += "" + ChatColor.COLOR_CHAR + "7Activity Level " + ChatColor.COLOR_CHAR + "9" + activity;
                 } else {
-                    hovertext += "§cNo Activity";
+                    hovertext += "" + ChatColor.COLOR_CHAR + "cNo Activity";
                 }
                 ClickEvent clickevent = null;
                 if (locations[i] != null) {
-                    hovertext += String.format("\n\n§7(x%d/y%d/z%d/%s)\n§7Click to teleport", locations[i].getBlockX(),
+                    hovertext += String.format("\n\n" + ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)\n" + ChatColor.COLOR_CHAR + "7Click to teleport", locations[i].getBlockX(),
                             locations[i].getBlockY(), locations[i].getBlockZ(), locations[i].getWorld().getName());
                     clickevent = new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                             String.format("/auxprotect tp %d %d %d %s", locations[i].getBlockX(),
@@ -136,37 +134,6 @@ public class ActivitySolver {
                 message.append("\n");
             }
         }
-        /*
-         * int[] counter = new int[minutes + 1]; for (int i = 0; i < counter.length;
-         * i++) { counter[i] = -1; } int minute = 0; for (int i = entries.size() - 1; i
-         * >= 0; i--) { DbEntry entry = entries.get(i); if (entry.getAction() !=
-         * EntryAction.ACTIVITY) { continue; } int activity =
-         * Integer.parseInt(entry.getData());
-         *
-         * while (minute < counter.length) { long hourTime = firstTime + minute *
-         * 60000L; long hourTimeEnd = hourTime + 60000L;
-         *
-         * if (entry.getTime() > hourTimeEnd) { minute++; continue; }
-         *
-         * counter[minute] = activity; break; } } int shiftMinutes = 0; while
-         * ((counter.length + shiftMinutes) % 30 != 0) { message.append(AuxProtect.BLOCK
-         * + "").color(ChatColor.BLACK); shiftMinutes++; }
-         *
-         * for (int i = 0; i < counter.length; i++) { LocalDateTime time =
-         * startTime.plusMinutes(i);
-         *
-         * int activity = counter[i];
-         *
-         * message.append(AuxProtect.BLOCK + "").event(new
-         * HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("§9" +
-         * time.format(formatterDateTime) + "\n" + "Activity Level " + activity))); if
-         * (activity >= 20) { message.color(ChatColor.of("#1ecb0d")); // green } else if
-         * (activity >= 10) { message.color(ChatColor.of("#f9ff17")); // yellow } else
-         * if (activity > 0) { message.color(ChatColor.of("#c50000")); // Light red }
-         * else if (activity == 0) { message.color(ChatColor.of("#4e0808")); // Dark red
-         * } else { message.color(ChatColor.BLACK); } if ((i + 1 + shiftMinutes) % 30 ==
-         * 0 && i < counter.length - 1) { message.append("\n"); } }
-         */
         return message.create();
     }
 }

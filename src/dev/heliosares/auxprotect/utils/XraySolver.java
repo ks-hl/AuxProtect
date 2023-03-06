@@ -9,6 +9,7 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
+import org.bukkit.ChatColor;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -38,26 +39,21 @@ public class XraySolver {
             }
             if (score >= 6 || hash.size() == 1) {
                 String user = entries1.get(0).getUser();
-                StringBuilder tooltip = new StringBuilder("§4Hits for '" + user + "':\n");
+                StringBuilder tooltip = new StringBuilder(ChatColor.DARK_RED + "Hits for '" + user + "':\n");
                 for (DbEntry entry : entries1) {
                     short severity = ((XrayEntry) entry).getRating();
                     switch (severity) {
-                        case 1:
-                            tooltip.append("§e");
-                            break;
-                        case 2:
-                            tooltip.append("§c");
-                            break;
-                        case 3:
-                            tooltip.append("§4");
-                            break;
-                        default:
+                        case 1 -> tooltip.append(ChatColor.YELLOW);
+                        case 2 -> tooltip.append(ChatColor.RED);
+                        case 3 -> tooltip.append(ChatColor.DARK_RED);
+                        default -> {
                             continue;
+                        }
                     }
                     tooltip.append("\n").append(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime())).append(" ago, severity ").append(severity);
                 }
 
-                message.append(String.format("§4§l%s§c - score %d / 6", user, score))
+                message.append(String.format(ChatColor.DARK_RED + "" + ChatColor.BOLD + "%s" + ChatColor.RED + " - score %d / 6", user, score))
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(tooltip.toString())))
                         .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
                                 String.format("/ap lookup action:vein #xray user:%s", user)));

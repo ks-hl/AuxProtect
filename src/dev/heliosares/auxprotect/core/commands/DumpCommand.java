@@ -198,16 +198,16 @@ public class DumpCommand extends Command {
                     }
                 }
             }
-            sender.sendMessageRaw("§aBuilding trace...");
+            sender.sendMessageRaw("&aBuilding trace...");
         }
         try {
-            sender.sendMessageRaw("§a" + dump(plugin, simple, chat, file, config, stats));
+            sender.sendMessageRaw("&a" + dump(plugin, simple, chat, file, config, stats));
         } catch (Exception e) {
             plugin.print(e);
             sender.sendLang(Language.L.ERROR);
         }
         if (config) {
-            sender.sendMessageRaw("§cWARNING! §eThis contains the contents of config.yml. Please ensure all §cMySQL passwords §ewere properly removed before sharing.");
+            sender.sendMessageRaw("&cWARNING! &eThis contains the contents of config.yml. Please ensure all &cMySQL passwords &ewere properly removed before sharing.");
         }
     }
 

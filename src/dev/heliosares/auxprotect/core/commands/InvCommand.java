@@ -12,6 +12,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 import dev.heliosares.auxprotect.utils.Pane.Type;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -134,12 +135,12 @@ public class InvCommand extends Command {
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM.translate());
                         ComponentBuilder message = new ComponentBuilder();
-                        message.append("§f\n         ");
-                        message.append("§a[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")
+                        message.append(ChatColor.COLOR_CHAR + "f\n         ");
+                        message.append(ChatColor.COLOR_CHAR + "a[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")
                                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
                                 .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
                                         new Text(L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
-                        message.append("\n§f").event((ClickEvent) null).event((HoverEvent) null);
+                        message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
                         targetO.spigot().sendMessage(message.create());
                         targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                     }

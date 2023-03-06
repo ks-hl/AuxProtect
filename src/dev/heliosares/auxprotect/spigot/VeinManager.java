@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import net.md_5.bungee.api.ChatColor;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -27,12 +28,12 @@ public class VeinManager {
     }
 
     public static String getSeverityColor(int severity) {
-        return switch (severity) {
-            case -2, -1 -> "§5";
-            case 0 -> "§a";
-            case 1 -> "§e";
-            case 2 -> "§c";
-            case 3 -> "§4";
+        return ChatColor.COLOR_CHAR + switch (severity) {
+            case -2, -1 -> "5";
+            case 0 -> "a";
+            case 1 -> "e";
+            case 2 -> "c";
+            case 3 -> "4";
             default -> "";
         };
     }

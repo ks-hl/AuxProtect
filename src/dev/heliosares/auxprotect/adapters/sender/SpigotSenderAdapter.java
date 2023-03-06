@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -23,7 +24,7 @@ public class SpigotSenderAdapter extends SenderAdapter {
     }
 
     public void sendMessageRaw(String message) {
-        sender.sendMessage(message);
+        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
     }
 
     public void sendMessage(BaseComponent... message) {
