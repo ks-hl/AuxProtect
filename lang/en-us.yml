@@ -79,8 +79,11 @@ command:
       stopped: '&pPlayback stopped.'
       toolong: '&cCan not playback a range greater than <limit>.'
     playtime:
+      header: '&p<target>''<optional_s> Playtime'
+      hover: '&p<time>\n&p<minutes> &8online'
       nouser: '&cNo user specified'
       toomanyusers: '&cToo many users specified'
+      toolong: '&cMax time range for playtime is <days> days.'
     invalid-time-parameter: 'Invalid time specifier: <specifier>'
   help:
     # Note, the <> brackets in the help language are literals and do not refer to translations.

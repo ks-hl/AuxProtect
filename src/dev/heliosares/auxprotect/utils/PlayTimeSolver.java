@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -19,14 +20,14 @@ import java.util.List;
 public class PlayTimeSolver {
     public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours, String player, final boolean currentlyOnline) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
-        if (hours > 840) {
-            message.append("" + ChatColor.COLOR_CHAR + "cTime period too long. Max 5 weeks.");
+        final int limitDays = 60;
+        if (hours > limitDays * 24) {
+            message.append(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOLONG.translate(limitDays));
             return message.create();
         }
         StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
-        line.append(String.valueOf((char) 65293).repeat(6)).append("" + ChatColor.COLOR_CHAR + "r");
-        player += "'" + (player.toLowerCase().endsWith("s") ? "" : "s");
-        message.append(line + "  " + ChatColor.COLOR_CHAR + "9" + player + " Playtime  " + line);
+        line.append(String.valueOf((char) 65293).repeat(6));
+        message.append(line + "  " + Language.L.COMMAND__LOOKUP__PLAYTIME__HEADER.translate(player, Language.getOptionalS(player)) + "  " + line);
         message.append("\n");
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withMinute(0).withSecond(0).withNano(0);
@@ -107,8 +108,8 @@ public class PlayTimeSolver {
         for (int i = 0; i < counter.length; i++) {
             LocalDateTime time = startTime.plusHours(i);
             double count = counter[i];
-            message.append(AuxProtectSpigot.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(
-                    "" + ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n" + (Math.round(count * 60.0) + " " + ChatColor.COLOR_CHAR + "8min online"))));
+            message.append(AuxProtectSpigot.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                    new Text(Language.L.COMMAND__LOOKUP__PLAYTIME__HOVER.translate(time.format(formatterDateTime), Math.round(count * 60.0)))));
             if (count > 0.99) {
                 message.color(ChatColor.of("#ffffff"));
             } else if (count > 0.75) {
