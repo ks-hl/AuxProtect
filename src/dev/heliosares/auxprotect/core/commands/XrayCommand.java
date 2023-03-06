@@ -260,7 +260,7 @@ public class XrayCommand extends Command {
             player.sendLang(Language.L.XRAY_DONE);
             return;
         }
-        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", en.getX(), en.getY(),
+        player.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d.5 %d %d.5 %s %d %d", en.getX(), en.getY(),
                 en.getZ(), en.getWorld(), 45, 0));
         try {
             XrayResults.sendEntry(plugin, player, en, auto);
