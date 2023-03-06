@@ -223,6 +223,6 @@
     <properties>
         <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
         <testserver>${env.USERPROFILE}/Documents/TestServer</testserver>
-        <project.build.sourceEncoding>Cp1252</project.build.sourceEncoding>
+        <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
     </properties>
 </project>
