@@ -2,7 +2,9 @@
 # If there is an included language file for this language and the included version is higher,
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
+
 version: 4
+
 color:
   p: '9'
   s: 'f'
@@ -85,25 +87,25 @@ command:
     nohelp: '&cThis command does not have a help page.'
     header: '&s----- &pAuxProtect Help &s-----'
     help:
-      - '&p/$prefix lookup <params> &s- Perform a lookup'
-      - '&p/$prefix purge <params> &s- Perform a database purge'
-      - '&p/$prefix info &s- Version and credit information'
-      - '&p/$prefix help [command] &s- Show this message, or more information on a subcommand'
-      - '&s'
-      - '&tSee the Wiki for more: https://github.com/Heliosares/AuxProtect/wiki'
+    - '&p/$prefix lookup <params> &s- Perform a lookup'
+    - '&p/$prefix purge <params> &s- Perform a database purge'
+    - '&p/$prefix info &s- Version and credit information'
+    - '&p/$prefix help [command] &s- Show this message, or more information on a subcommand'
+    - '&s'
+    - '&tSee the Wiki for more: https://github.com/Heliosares/AuxProtect/wiki'
     lookup:
-      - '&s/$prefix &plookup &s<params>'
-      - '&pParams:'
-      - '&pTime: &sIn seconds, minutes, hours, days, or weeks, represented by the first letter (i.e ''s'' for seconds).'
-      - '&pBefore/After: &sUsed to set a range for time lookup.'
-      - '&pAction: &sType of world interaction log, see tab completion for options.'
-      - '&pTarget: &sSpecify the parameter an action was performed to. You can use an asterisk as a wildcard and a dash as a space in this parameter.'
-      - '&pRadius: &sSpecify the square block radius for a lookup.'
-      - '&sAll parameters can be inverted using &p''!'' &s(i.e radius:5,!2 would do a lookup within 5 blocks of the player, but NOT within 2 blocks.)'
+    - '&s/$prefix &plookup &s<params>'
+    - '&pParams:'
+    - '&pTime: &sIn seconds, minutes, hours, days, or weeks, represented by the first letter (i.e ''s'' for seconds).'
+    - '&pBefore/After: &sUsed to set a range for time lookup.'
+    - '&pAction: &sType of world interaction log, see tab completion for options.'
+    - '&pTarget: &sSpecify the parameter an action was performed to. You can use an asterisk as a wildcard and a dash as a space in this parameter.'
+    - '&pRadius: &sSpecify the square block radius for a lookup.'
+    - '&sAll parameters can be inverted using &p''!'' &s(i.e radius:5,!2 would do a lookup within 5 blocks of the player, but NOT within 2 blocks.)'
     purge:
-      - '&s/$prefix &ppurge &s<table | all> <time>'
-      - '&sSee tab completion for list of valid tables.'
-      - '&sMinimum time is 2 weeks.'
+    - '&s/$prefix &ppurge &s<table | all> <time>'
+    - '&sSee tab completion for list of valid tables.'
+    - '&sMinimum time is 2 weeks.'
 playernotfound: '&cPlayer not found.'
 lookup-playernotfound: '&cPlayer <target> not found.'
 lookup-unknownaction: '&cUnknown action: <action>.'
@@ -143,30 +145,30 @@ inv-recover-menu:
     force:
       label: '&2&lForce Recover Inventory'
       hover:
-        - ''
-        - '&a&lDouble Click'
-        - ''
-        - '&tThis will &c&loverwrite &7the player''s'
-        - '&7current inventory and exp with'
-        - '&7what is in the view above.'
+      - ''
+      - '&a&lDouble Click'
+      - ''
+      - '&tThis will &c&loverwrite &7the player''s'
+      - '&7current inventory and exp with'
+      - '&7what is in the view above.'
     force-unavailable:
       label: '&8&lForce Recover Inventory Unavailable'
       hover:
-        - '&cPlayer must be online to'
-        - '&cforce recover their inventory'
+      - '&cPlayer must be online to'
+      - '&cforce recover their inventory'
     recover:
       label: '&a&lRecover Inventory'
       hover:
-        - ''
-        - '&tThis will give the player a'
-        - '&tprompt to claim this inventory as'
-        - '&t if they were opening a chest with'
-        - '&t the above contents. They will also get'
-        - '&tthe exp stated here.'
-        - ''
-        - '&cThis will not overwrite anything and may'
-        - '&cduplicate items &tif they weren''t'
-        - '&tactually lost originally.'
+      - ''
+      - '&tThis will give the player a'
+      - '&tprompt to claim this inventory as'
+      - '&t if they were opening a chest with'
+      - '&t the above contents. They will also get'
+      - '&tthe exp stated here.'
+      - ''
+      - '&cThis will not overwrite anything and may'
+      - '&cduplicate items &tif they weren''t'
+      - '&tactually lost originally.'
     close: '&c&lClose'
     ender-chest: '&8&lView Enderchest'
     xp:

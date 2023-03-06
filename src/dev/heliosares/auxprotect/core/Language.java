@@ -3,26 +3,26 @@ package dev.heliosares.auxprotect.core;
 import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.utils.ColorTranslate;
-import net.md_5.bungee.api.ChatColor;
 
 import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 public class Language {
     private static Supplier<ConfigAdapter> langSupplier;
+    private static Supplier<ConfigAdapter> langDefaultSupplier;
     private static IAuxProtect plugin;
     private static ConfigAdapter lang;
     private static String c1;
     private static String c2;
     private static String c3;
 
-    public static void load(IAuxProtect plugin, Supplier<ConfigAdapter> langSupplier) throws IOException {
+    public static void load(IAuxProtect plugin, Supplier<ConfigAdapter> langSupplier, Supplier<ConfigAdapter> englishLangSupplier) throws IOException {
         Language.plugin = plugin;
         Language.langSupplier = langSupplier;
+        Language.langDefaultSupplier = englishLangSupplier;
         reload();
     }
 
@@ -30,7 +30,7 @@ public class Language {
         lang = langSupplier.get();
         lang.load();
 
-        int resourceVersion = lang.getDefaults().getInt("version", -1);
+        int resourceVersion = lang.getDefaults().getInt("version");
         int fileVersion = lang.getInt("version");
 
         if (resourceVersion > 0 && resourceVersion > fileVersion) {
@@ -51,12 +51,21 @@ public class Language {
             c2 = "&" + lang.getString("color.s");
             c3 = "&" + lang.getString("color.t");
 
+            boolean modified = false;
+            ConfigAdapter englishLang = null;
             for (L l : L.values()) {
-                if (lang.getString(l.name) == null) {
-                    //lang.set(l.name, "");
+                Object line = lang.get(l.name);
+                if (line == null || line instanceof String str && str.isEmpty()) {
+                    if (englishLang == null) {
+                        englishLang = langDefaultSupplier.get();
+                        englishLang.load();
+                    }
+                    lang.set(l.name, englishLang.get(l.name));
+                    modified = true;
                     plugin.warning("Lang file does not contain " + l.name);
                 }
             }
+            if (modified) lang.save();
         }
 
     }
@@ -254,7 +263,7 @@ public class Language {
 
         public List<String> translateSubcategoryList(String subcategory) {
             List<String> message = null;
-            String name = this.name();
+            String name = this.name;
             if (subcategory != null && subcategory.length() > 0) {
                 name += "." + subcategory.toLowerCase();
             }
@@ -265,7 +274,7 @@ public class Language {
             if (message == null || message.size() == 0) {
                 return null;
             }
-            return message.stream().map(Language::convert).collect(Collectors.toList());
+            return message.stream().map(Language::convert).toList();
         }
     }
 

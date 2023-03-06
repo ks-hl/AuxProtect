@@ -123,7 +123,11 @@ public class SpigotConfigAdapter extends ConfigAdapter {
         super.load();
         try {
             if (file != null) config = YamlConfiguration.loadConfiguration(file.get());
-            else if (in != null) config = YamlConfiguration.loadConfiguration(new InputStreamReader(in));
+            else if (in != null) {
+                try (InputStreamReader inputStream = new InputStreamReader(in)) {
+                    config = YamlConfiguration.loadConfiguration(inputStream);
+                }
+            }
         } catch (Exception e) {
             AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
             throw e;
@@ -131,7 +135,9 @@ public class SpigotConfigAdapter extends ConfigAdapter {
         if (defaults != null) {
             try (InputStream in = defaults.apply(path)) {
                 if (in != null) {
-                    config.setDefaults(YamlConfiguration.loadConfiguration(new InputStreamReader(in)));
+                    try (InputStreamReader inputStream = new InputStreamReader(in)) {
+                        config.setDefaults(YamlConfiguration.loadConfiguration(inputStream));
+                    }
                 }
             }
         }

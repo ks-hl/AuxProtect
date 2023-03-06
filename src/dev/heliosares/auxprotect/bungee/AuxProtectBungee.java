@@ -75,7 +75,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
             Language.load(this,
                     () -> new BungeeConfigAdapter(getDataFolder(),
                             "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            this::getResourceAsStream, false));
+                            this::getResourceAsStream, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
 
         } catch (FileNotFoundException e1) {
             warning("Language file not found");

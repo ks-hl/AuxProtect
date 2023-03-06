@@ -1,7 +1,9 @@
-﻿#
+#
 # Russian translation courtesy of l_MrBoom_l
 #
+
 version: 4
+
 color:
   p: '9'
   s: 'f'
@@ -80,25 +82,25 @@ command:
     nohelp: '&cДля этой команды нет страницы справки.'
     header: '&s----- &pСправка по AuxProtect &s-----'
     help:
-      - '&p/$prefix lookup <параметры> &s- Произвести поиск'
-      - '&p/$prefix purge <параметры> &s- Произвести очистку базы данных'
-      - '&p/$prefix info &s- Версия и информация об авторах'
-      - '&p/$prefix help [команда] &s- Показать это сообщение или более подробную информации об указанной субкоманде'
-      - '&s'
-      - '&tЧитайте вики, чтобы узнать больше: https://github.com/Heliosares/AuxProtect/wiki'
+    - '&p/$prefix lookup <параметры> &s- Произвести поиск'
+    - '&p/$prefix purge <параметры> &s- Произвести очистку базы данных'
+    - '&p/$prefix info &s- Версия и информация об авторах'
+    - '&p/$prefix help [команда] &s- Показать это сообщение или более подробную информации об указанной субкоманде'
+    - '&s'
+    - '&tЧитайте вики, чтобы узнать больше: https://github.com/Heliosares/AuxProtect/wiki'
     lookup:
-      - '&s/$prefix &plookup &s<параметры>'
-      - '&pПараметры:'
-      - '&pВремя (time): &sВ секундах (s), минутах (m), часах (h), днях (d) или неделях (w).'
-      - '&pДо (before) / после (after): &sИспользуется для указания временного диапазона поиска.'
-      - '&pДействие (action): &sТип взаимодейтвия с миром, смотрите варианты в авто-продолжении.'
-      - '&pЦель (target): &sУказание цели, по отношению к которой это действие было выполнено. В этом параметре вы можете использовать звёздочку в качестве знака подстановки и тире в качестве пробела.'
-      - '&pРадиус (radius): &sУказание квадратного блочного радиуса для поиска.'
-      - '&sВсе параметры можно инвертировать с помощью &p''!'' &s(например, radius:5,!2 проводит поиск в радиусе 5 блоков от игрока, но НЕ в радиусе 2 блоков, т.е. в радиусе от 2 до 5)'
+    - '&s/$prefix &plookup &s<параметры>'
+    - '&pПараметры:'
+    - '&pВремя (time): &sВ секундах (s), минутах (m), часах (h), днях (d) или неделях (w).'
+    - '&pДо (before) / после (after): &sИспользуется для указания временного диапазона поиска.'
+    - '&pДействие (action): &sТип взаимодейтвия с миром, смотрите варианты в авто-продолжении.'
+    - '&pЦель (target): &sУказание цели, по отношению к которой это действие было выполнено. В этом параметре вы можете использовать звёздочку в качестве знака подстановки и тире в качестве пробела.'
+    - '&pРадиус (radius): &sУказание квадратного блочного радиуса для поиска.'
+    - '&sВсе параметры можно инвертировать с помощью &p''!'' &s(например, radius:5,!2 проводит поиск в радиусе 5 блоков от игрока, но НЕ в радиусе 2 блоков, т.е. в радиусе от 2 до 5)'
     purge:
-      - '&s/$prefix &ppurge &s<таблица | all> <время>'
-      - '&sСмотрите все доступные таблицы в авто-продолжении'
-      - '&sМинимальное время – 2 недели.'
+    - '&s/$prefix &ppurge &s<таблица | all> <время>'
+    - '&sСмотрите все доступные таблицы в авто-продолжении'
+    - '&sМинимальное время – 2 недели.'
   ap:
     backup-created: 'Backup created: <file>'
     developed-by: Developed by
@@ -225,25 +227,25 @@ inv-recover-menu:
     ender-chest: '&8&lView Enderchest'
     force:
       hover:
-        - ''
-        - '&a&lDouble Click'
-        - ''
-        - '&tThis will &c&loverwrite &7the player''s'
-        - '&7current inventory and exp with'
-        - '&7what is in the view above.'
+      - ''
+      - '&a&lDouble Click'
+      - ''
+      - '&tThis will &c&loverwrite &7the player''s'
+      - '&7current inventory and exp with'
+      - '&7what is in the view above.'
       label: '&2&lForce Recover Inventory'
     recover:
       hover:
-        - ''
-        - '&tThis will give the player a'
-        - '&tprompt to claim this inventory as'
-        - '&t if they were opening a chest with'
-        - '&t the above contents. They will also get'
-        - '&tthe exp stated here.'
-        - ''
-        - '&cThis will not overwrite anything and may'
-        - '&cduplicate items &tif they weren''t'
-        - '&tactually lost originally.'
+      - ''
+      - '&tThis will give the player a'
+      - '&tprompt to claim this inventory as'
+      - '&t if they were opening a chest with'
+      - '&t the above contents. They will also get'
+      - '&tthe exp stated here.'
+      - ''
+      - '&cThis will not overwrite anything and may'
+      - '&cduplicate items &tif they weren''t'
+      - '&tactually lost originally.'
       label: '&a&lRecover Inventory'
     xp:
       error: '&8No XP data'

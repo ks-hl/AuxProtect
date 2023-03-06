@@ -118,7 +118,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         try {
             Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(),
-                    "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource, false));
+                    "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource, false), () -> new SpigotConfigAdapter(getResource("lang/en-us.yml")));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
@@ -137,7 +137,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         debug("Compatability version: " + SERVER_VERSION, 1);
 
         File sqliteFile = null;
-        String uri = "";
+        String uri;
         if (getAPConfig().isMySQL()) {
             uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
                     getAPConfig().getDatabase());
@@ -223,18 +223,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
                 getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
 
-                /*
-                 * for (Object command : getConfig().getList("purge-cmds")) { String cmd =
-                 * (String) command; String[] argsOld = cmd.split(" "); String[] args = new
-                 * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
-                 * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
-                 * PurgeCommand.purge(AuxProtect.this, new MySender(Bukkit.getConsoleSender()),
-                 * args); }
-                 *
-                 * sqlManager.purgeUIDs();
-                 *
-                 * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
-                 */
             }
         }.runTaskAsynchronously(this);
 
@@ -254,40 +242,24 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         // this feels cursed to run setupEconomy() like this...
         Telemetry.reportHook(this, "Vault", setupEconomy());
 
-        boolean shop = hook(() -> {
-            return new ShopGUIPlusListener(this);
-        }, "ShopGuiPlus");
-        shop = hook(() -> {
-            return new EconomyShopGUIListener(this);
-        }, "EconomyShopGUI", "EconomyShopGUI-Premium") || shop;
-        shop = hook(() -> {
-            return new DynamicShopListener(this);
-        }, "DynamicShop") || shop;
-        shop = hook(() -> {
-            return new ChestShopListener(this);
-        }, "ChestShop") || shop;
+        boolean shop = hook(() -> new ShopGUIPlusListener(this), "ShopGuiPlus");
+        shop = hook(() -> new EconomyShopGUIListener(this), "EconomyShopGUI", "EconomyShopGUI-Premium") || shop;
+        shop = hook(() -> new DynamicShopListener(this), "DynamicShop") || shop;
+        shop = hook(() -> new ChestShopListener(this), "ChestShop") || shop;
         if (!shop) {
             EntryAction.SHOP.setEnabled(false);
         }
-        if (!hook(() -> {
-            return new AuctionHouseListener(this);
-        }, "AuctionHouse")) {
+        if (!hook(() -> new AuctionHouseListener(this), "AuctionHouse")) {
             EntryAction.AUCTIONBUY.setEnabled(false);
             EntryAction.AUCTIONLIST.setEnabled(false);
         }
-        if (!hook(() -> {
-            return new JobsListener(this);
-        }, "Jobs")) {
+        if (!hook(() -> new JobsListener(this), "Jobs")) {
             EntryAction.JOBS.setEnabled(false);
         }
-        if (!hook(() -> {
-            return new EssentialsListener(this);
-        }, "Essentials")) {
+        if (!hook(() -> new EssentialsListener(this), "Essentials")) {
             EntryAction.PAY.setEnabled(false);
         }
-        if (!hook(() -> {
-            return new TownyListener(this);
-        }, "Towny")) {
+        if (!hook(() -> new TownyListener(this), "Towny")) {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_TOWNY) {
                     action.setEnabled(false);
@@ -536,7 +508,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     private boolean hook(Supplier<Listener> listener, String... names) {
-        boolean hook = false;
+        boolean hook;
         try {
             Plugin plugin = null;
             for (String name : names) {
