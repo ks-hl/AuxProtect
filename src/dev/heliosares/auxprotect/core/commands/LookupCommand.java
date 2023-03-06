@@ -361,7 +361,11 @@ public class LookupCommand extends Command {
                     return;
                 }
                 String name = users.get(0);
-                sender.sendMessage(PlayTimeSolver.solvePlaytime(rs, params.getAfter(), (int) Math.round((double) (params.time_created - params.getAfter()) / (1000 * 3600)), name, plugin.getSenderAdapter(name) != null));
+                sender.sendMessage(PlayTimeSolver.solvePlaytime(rs,
+                        params.getAfter(),
+                        params.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params.getBefore(),
+                        name,
+                        plugin.getSenderAdapter(name) != null));
                 return;
             } else if (params.getFlags().contains(Flag.ACTIVITY)) {
                 String uuid = sender.getUniqueId().toString();

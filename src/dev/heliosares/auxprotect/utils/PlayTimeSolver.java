@@ -18,10 +18,11 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class PlayTimeSolver {
-    public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, int hours, String player, final boolean currentlyOnline) {
+    public static BaseComponent[] solvePlaytime(List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         final int limitDays = 60;
-        if (hours > limitDays * 24) {
+        final int hours = (int) Math.ceil((stopTimeMillis - startTimeMillis) / 3600000D);
+        if (hours - 1 > limitDays * 24) {
             message.append(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOLONG.translate(limitDays));
             return message.create();
         }
@@ -37,7 +38,7 @@ public class PlayTimeSolver {
         long logout = 0;
         boolean newLogin = false;
         boolean newLogout = false;
-        double[] counter = new double[hours + 1];
+        double[] counter = new double[hours];
         int hour = 0;
         for (int i = entries.size() - 1; i >= 0; i--) {
             DbEntry entry = entries.get(i);
@@ -134,12 +135,10 @@ public class PlayTimeSolver {
         }
         for (int i = counter.length; ; i++) {
             LocalDateTime time = startTime.plusHours(i);
-            if (time.getHour() == 0) {
-                break;
-            }
+            if (time.getHour() == 0) break;
             message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
         }
-        message.append(" " + LocalDateTime.now().format(formatterDate)).color(ChatColor.BLUE);
+        message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(ChatColor.BLUE);
         message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)
                 .event((HoverEvent) null);
         return message.create();
