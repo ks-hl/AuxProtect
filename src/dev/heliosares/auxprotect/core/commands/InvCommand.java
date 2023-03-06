@@ -54,7 +54,7 @@ public class InvCommand extends Command {
             Pane pane = new Pane(Type.SHOW, player);
             String ago = TimeUtil.millisToString(System.currentTimeMillis() - when);
             Inventory mainInv = Bukkit.getServer().createInventory(pane, 54,
-                    L.INV_RECOVER_MENU__ENDER_HEADER.translate(targetName, Language.getOptionalS(targetName), TimeUtil.millisToString(System.currentTimeMillis() - when)));
+                    L.INV_RECOVER_MENU__MAIN_HEADER.translate(targetName, Language.getOptionalS(targetName), TimeUtil.millisToString(System.currentTimeMillis() - when)));
             pane.setInventory(mainInv);
             Container<Boolean> closed = new Container<>(false);
 
