@@ -25,8 +25,8 @@ public class PlayTimeSolver {
             message.append(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOLONG.translate(limitDays));
             return message.create();
         }
-        StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
-        line.append(String.valueOf((char) 65293).repeat(6));
+        StringBuilder line = new StringBuilder(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH);
+        line.append(String.valueOf((char) 65293).repeat(6)).append(ChatColor.RESET);
         message.append(line + "  " + Language.L.COMMAND__LOOKUP__PLAYTIME__HEADER.translate(player, Language.getOptionalS(player)) + "  " + line);
         message.append("\n");
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
