@@ -32,9 +32,16 @@ command:
     youhavenone: '&cНет инвентаря, который можно было бы восстановить.'
     otherhasnone: '&cУ игрока нет восстанавливаемого инвентаря, который можно было бы отменить.'
     header: 'Восстановление инвентаря'
+    claim-button:
+      hover: '&sClick to claim your recovered inventory'
+      label: Claim
   inv:
     recovered: '&p<admin> &sвосстановил инвентарь &p<target> &sот &p<time> &sназад.'
     force-recovered: '&p<admin> &sпринудительно восстановил инвентарь &p<target> &sот &p<time> &sназад.'
+    item-viewer: Item Viewer
+    notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
+    notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
+    success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
   purge:
     purging: '&pОчистка ''<table>''...'
     uids: '&pОчистка неиспользуемых UIDs...'
@@ -68,6 +75,7 @@ command:
       starting: '&pВоспроизведение запущено...'
       stopped: '&pВоспроизведение остановлено.'
       toolong: '&cНевозможно воспроизвести диапазон более <limit>.'
+    invalid-time-parameter: 'Invalid time specifier: <specifier>'
   help:
     nohelp: '&cДля этой команды нет страницы справки.'
     header: '&s----- &pСправка по AuxProtect &s-----'
@@ -91,6 +99,13 @@ command:
       - '&s/$prefix &ppurge &s<таблица | all> <время>'
       - '&sСмотрите все доступные таблицы в авто-продолжении'
       - '&sМинимальное время – 2 недели.'
+  ap:
+    backup-created: 'Backup created: <file>'
+    developed-by: Developed by
+    help: '&tDo &p/ap help&t for more info.'
+    config-reloaded: '&pConfig reloaded.'
+    lang-reloaded: '&pLanguage reloaded: <locale>'
+    lang-not-found: '&pLanguage file not found: <file>'
 playernotfound: '&cИгрок не найден.'
 lookup-playernotfound: '&cИгрок <target> не найден.'
 lookup-unknownaction: '&cНеизвестное действие: <action>.'
@@ -204,3 +219,49 @@ actions:
   anvil: сковал
   enchant: зачаровал
   smith: улучшил до незерита
+inv-recover-menu:
+  button:
+    close: '&c&lClose'
+    ender-chest: '&8&lView Enderchest'
+    force:
+      hover:
+        - ''
+        - '&a&lDouble Click'
+        - ''
+        - '&tThis will &c&loverwrite &7the player''s'
+        - '&7current inventory and exp with'
+        - '&7what is in the view above.'
+      label: '&2&lForce Recover Inventory'
+    recover:
+      hover:
+        - ''
+        - '&tThis will give the player a'
+        - '&tprompt to claim this inventory as'
+        - '&t if they were opening a chest with'
+        - '&t the above contents. They will also get'
+        - '&tthe exp stated here.'
+        - ''
+        - '&cThis will not overwrite anything and may'
+        - '&cduplicate items &tif they weren''t'
+        - '&tactually lost originally.'
+      label: '&a&lRecover Inventory'
+    xp:
+      error: '&8No XP data'
+      had: '&2Player had <xp> xp'
+  ender-header: <target>'<optional_s> Ender Chest - <time> ago
+  main-header: <target>'<optional_s> Ender Chest - <time> ago
+  xp-error: '&cUnable to recover experience.'
+results:
+  click-to-copy: Click to copy to clipboard
+  click-to-copy-time: '&tClick to copy epoch time. (<time>ms)'
+  click-to-view: Click to view!
+  header: '&pAuxProtect Results'
+  page:
+    first: '&pJump to First Page'
+    previous: '&pPrevious Page'
+    next: '&pNext Page'
+    last: '&pJump to Last Page'
+  time: '&t<time> ago'
+  time-now: '&tJust Now'
+  view: View
+  view-inv: View Inv
