@@ -20,7 +20,7 @@ public class DynamicShopListener implements Listener {
     public void onShopBuySellEvent(ShopBuySellEvent e) {
         ItemStack item = e.getItemStack();
         boolean buy = e.isBuy();
-        double price = 0;
+        double price;
         if (buy) {
             price = e.getNewBuyPrice();
         } else {

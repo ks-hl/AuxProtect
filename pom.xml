@@ -186,8 +186,8 @@
         </dependency>
         <dependency>
             <groupId>com.github.7sat</groupId>
-            <artifactId>SSDynamicShop</artifactId>
-            <version>f99e33d4e4</version>
+            <artifactId>DynamicShop3</artifactId>
+            <version>3.12.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

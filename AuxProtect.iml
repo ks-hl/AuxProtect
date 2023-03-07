@@ -43,9 +43,17 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.hamcrest:hamcrest-core:1.1" level="project" />
     <orderEntry type="library" name="Maven: com.github.brcdev-minecraft:shopgui-api:3.0.0" level="project" />
     <orderEntry type="library" name="Maven: com.github.Gypopo:EconomyShopGUI-API:1.4.0" level="project" />
-    <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.7sat:SSDynamicShop:f99e33d4e4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.7sat:DynamicShop3:3.12.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bstats:bstats-bukkit:2.2.1" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.bstats:bstats-base:2.2.1" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: com.opencsv:opencsv:5.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.commons:commons-lang3:3.10" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.commons:commons-text:1.8" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: commons-beanutils:commons-beanutils:1.9.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: commons-logging:commons-logging:1.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: commons-collections:commons-collections:3.2.2" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: org.apache.commons:commons-collections4:4.4" level="project" />
+    <orderEntry type="library" scope="PROVIDED" name="Maven: commons-io:commons-io:2.11.0" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.PikaMug:LocaleLib:2.4" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: com.github.Zrips:Jobs:4.17.2" level="project" />
     <orderEntry type="library" scope="PROVIDED" name="Maven: net.essentialsx:EssentialsX:2.19.7" level="project" />
