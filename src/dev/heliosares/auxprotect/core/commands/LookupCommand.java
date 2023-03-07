@@ -350,7 +350,7 @@ public class LookupCommand extends Command {
                     sender.sendMessageRaw(msg);
                 }
                 return;
-            } else if (params.getFlags().contains(Flag.PT)) {
+            } else if (params.getFlags().contains(Flag.PLAYTIME)) {
                 Set<String> users = params.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);

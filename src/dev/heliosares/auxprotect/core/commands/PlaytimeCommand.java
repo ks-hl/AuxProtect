@@ -4,6 +4,8 @@ import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
@@ -20,7 +22,7 @@ public class PlaytimeCommand extends Command {
         if (args.length != 2 && args.length != 3) {
             throw new SyntaxException();
         }
-        String cmd = String.format(plugin.getCommandPrefix() + " lookup #pt user:%s action:session time:", args[1]);
+        String cmd = String.format(plugin.getCommandPrefix() + " lookup #" + Parameters.Flag.PLAYTIME.toString().toLowerCase() + " user:%s action:" + EntryAction.SESSION + " time:", args[1]);
         if (args.length > 2) {
             cmd += args[2];
         } else {

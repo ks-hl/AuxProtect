@@ -197,18 +197,18 @@ public class Parameters implements Cloneable {
             }
             parameters.table = Table.AUXPROTECT_MAIN;
         }
-        if (parameters.flags.contains(Flag.BW)) {
+        if (parameters.flags.contains(Flag.COMBINE_USER_TARGET)) {
             parameters.uids.addAll(parameters.targets);
             parameters.targets.addAll(parameters.uids);
         }
-        if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PT)) {
+        if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PLAYTIME)) {
             if (parameters.users.size() > 1) {
                 throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
             } else if (parameters.uids.size() == 0) {
                 throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
             }
         }
-        if (parameters.flags.contains(Flag.PT)) {
+        if (parameters.flags.contains(Flag.PLAYTIME)) {
             parameters.actions.clear();
             parameters.actions.add(EntryAction.SESSION.id);
             parameters.actions.add(EntryAction.SESSION.idPos);
@@ -1053,7 +1053,7 @@ public class Parameters implements Cloneable {
     }
 
     public enum Flag {
-        COUNT(null), COUNT_ONLY(null), PT(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), BW(null),
+        COUNT(null), COUNT_ONLY(null), PLAYTIME(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), COMBINE_USER_TARGET(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
         RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null), RADIUS_HORIZONTAL_ONLY(null);
 
@@ -1068,6 +1068,11 @@ public class Parameters implements Cloneable {
                 return true;
             }
             return perm.hasPermission(sender);
+        }
+
+        public boolean isEnabled() {
+            if (this == PLAYBACK) return AuxProtectAPI.getInstance().getAPConfig().isPrivate();
+            return true;
         }
     }
 
