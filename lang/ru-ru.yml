@@ -35,15 +35,15 @@ command:
     otherhasnone: '&cУ игрока нет восстанавливаемого инвентаря, который можно было бы отменить.'
     header: 'Восстановление инвентаря'
     claim-button:
-      hover: '&sClick to claim your recovered inventory'
-      label: Claim
+      hover: '&sКликните, чтобы получить ваш восстановленный инвентарь'
+      label: Получить
   inv:
     recovered: '&p<admin> &sвосстановил инвентарь &p<target> &sот &p<time> &sназад.'
     force-recovered: '&p<admin> &sпринудительно восстановил инвентарь &p<target> &sот &p<time> &sназад.'
-    item-viewer: Item Viewer
-    notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
-    notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
-    success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
+    item-viewer: Просмотр предметов
+    notify-player: '&p<admin> &sвосстановил ваш инвентарь от &p<time> &sназад.'
+    notify-player-ensure-room: '&tУбедитесь, что у вас достаточно свободного места в инвентаре, перед восстановлением!'
+    success: '&sВы восстановили инвентарь &p<target>&s.'
   purge:
     purging: '&pОчистка ''<table>''...'
     uids: '&pОчистка неиспользуемых UIDs...'
@@ -71,13 +71,16 @@ command:
     rating-wrong: '&cВы можете указывать ''rating'' только для a:vein.'
     nodata: '&cВ этой таблице нет логов данных.'
     playtime:
+      header: '&pНаигранное время <target>'
+      hover: '&p<time>\n&p<minutes> &8онлайн'
       nouser: '&cПользователь не указан'
       toomanyusers: '&cУказано слишком много пользователей'
+      toolong: '&cМаксимальный диапазон для игрового времени - <days> дней.'
     playback:
       starting: '&pВоспроизведение запущено...'
       stopped: '&pВоспроизведение остановлено.'
       toolong: '&cНевозможно воспроизвести диапазон более <limit>.'
-    invalid-time-parameter: 'Invalid time specifier: <specifier>'
+    invalid-time-parameter: 'Неверное значение параметра ''time'': <specifier>'
   help:
     nohelp: '&cДля этой команды нет страницы справки.'
     header: '&s----- &pСправка по AuxProtect &s-----'
@@ -102,12 +105,12 @@ command:
     - '&sСмотрите все доступные таблицы в авто-продолжении'
     - '&sМинимальное время – 2 недели.'
   ap:
-    backup-created: 'Backup created: <file>'
-    developed-by: Developed by
-    help: '&tDo &p/ap help&t for more info.'
-    config-reloaded: '&pConfig reloaded.'
-    lang-reloaded: '&pLanguage reloaded: <locale>'
-    lang-not-found: '&pLanguage file not found: <file>'
+    backup-created: 'Резервная копия создана: <file>'
+    developed-by: Разработано
+    help: '&tИспользуйте &p/ap help&t, чтобы узнать больше.'
+    config-reloaded: '&pКонфиг перезагружен.'
+    lang-reloaded: '&pЯзык перезагружен: <locale>'
+    lang-not-found: '&pФайл языка не найден: <file>'
 playernotfound: '&cИгрок не найден.'
 lookup-playernotfound: '&cИгрок <target> не найден.'
 lookup-unknownaction: '&cНеизвестное действие: <action>.'
@@ -223,47 +226,47 @@ actions:
   smith: улучшил до незерита
 inv-recover-menu:
   button:
-    close: '&c&lClose'
-    ender-chest: '&8&lView Enderchest'
+    close: '&c&lЗакрыть'
+    ender-chest: '&8&lСмотреть эндер-сундук'
     force:
       hover:
       - ''
-      - '&a&lDouble Click'
+      - '&a&lДвойной клик'
       - ''
-      - '&tThis will &c&loverwrite &7the player''s'
-      - '&7current inventory and exp with'
-      - '&7what is in the view above.'
-      label: '&2&lForce Recover Inventory'
+      - '&tЭто действие &c&lперезапишет &7текущий'
+      - '&7инвентарь игрока и опыт тем,'
+      - '&7что указано выше.'
+      label: '&2&lВосстановить инвентарь принудительно'
     recover:
       hover:
       - ''
-      - '&tThis will give the player a'
-      - '&tprompt to claim this inventory as'
-      - '&t if they were opening a chest with'
-      - '&t the above contents. They will also get'
-      - '&tthe exp stated here.'
+      - '&tЭто действие покажет игроку'
+      - '&tпредложение забрать этот инвентарь, как'
+      - '&tесли бы он открывал сундук с предметами,'
+      - '&tуказанными выше. Они также получат опыт,'
+      - '&tуказанный здесь.'
       - ''
-      - '&cThis will not overwrite anything and may'
-      - '&cduplicate items &tif they weren''t'
-      - '&tactually lost originally.'
-      label: '&a&lRecover Inventory'
+      - '&cЭто действие ничего не перезапишет и может'
+      - '&cдублировать предметы, если они на самом деле'
+      - '&tне были потеряны изначально.'
+      label: '&a&lВосстановить инвентарь'
     xp:
-      error: '&8No XP data'
-      had: '&2Player had <xp> xp'
-  ender-header: <target>'<optional_s> Ender Chest - <time> ago
-  main-header: <target>'<optional_s> Ender Chest - <time> ago
-  xp-error: '&cUnable to recover experience.'
+      error: '&8Нет данных об опыте'
+      had: '&2У игрока было <xp> опыта'
+  ender-header: Эндер-сундук <target> - <time> назад
+  main-header: Инвентарь <target> - <time> назад
+  xp-error: '&cНевозможно восстановить опыт.'
 results:
-  click-to-copy: Click to copy to clipboard
-  click-to-copy-time: '&tClick to copy epoch time. (<time>ms)'
-  click-to-view: Click to view!
-  header: '&pAuxProtect Results'
+  click-to-copy: Нажмите, чтобы скопировать в буфер обмена
+  click-to-copy-time: '&tНажмите, чтобы скопировать время. (<time> мс)'
+  click-to-view: Нажмите, чтобы просмотреть!
+  header: '&pРезультаты AuxProtect'
   page:
-    first: '&pJump to First Page'
-    previous: '&pPrevious Page'
-    next: '&pNext Page'
-    last: '&pJump to Last Page'
-  time: '&t<time> ago'
-  time-now: '&tJust Now'
-  view: View
-  view-inv: View Inv
+    first: '&pПерейти на первую страницу'
+    previous: '&pПредыдущая страница'
+    next: '&pСледующая страница'
+    last: '&pПерейти на последнюю страницу'
+  time: '&t<time> назад'
+  time-now: '&tТолько что'
+  view: Просмотреть
+  view-inv: Просмотреть инвентарь
