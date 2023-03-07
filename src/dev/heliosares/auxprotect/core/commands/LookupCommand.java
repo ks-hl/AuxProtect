@@ -351,7 +351,7 @@ public class LookupCommand extends Command {
                 }
                 return;
             } else if (params.getFlags().contains(Flag.PT)) {
-                List<String> users = params.getUsers();
+                Set<String> users = params.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
@@ -360,7 +360,7 @@ public class LookupCommand extends Command {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
                     return;
                 }
-                String name = users.get(0);
+                String name = users.stream().findAny().orElse(null);
                 sender.sendMessage(PlayTimeSolver.solvePlaytime(rs,
                         params.getAfter(),
                         params.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params.getBefore(),
@@ -390,7 +390,7 @@ public class LookupCommand extends Command {
                     }
                 }
             } else if (params.getFlags().contains(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
-                List<String> users = params.getUsers();
+                Set<String> users = params.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
@@ -401,7 +401,7 @@ public class LookupCommand extends Command {
                 }
                 if (sender.getSender() instanceof org.bukkit.entity.Player player) {
                     MoneySolver.showMoney(plugin, player, rs, (int) Math.round((double) params.getAfter() / (1000 * 3600)),
-                            users.get(0));
+                            users.stream().findAny().orElse(null));
                 }
                 return;
             } else if (params.getFlags().contains(Flag.RETENTION)) {

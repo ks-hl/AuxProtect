@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.*;
 import dev.heliosares.auxprotect.exceptions.BusyException;
@@ -14,33 +14,31 @@ import org.bukkit.World;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 import java.util.regex.Pattern;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
-public class Parameters {
+public class Parameters implements Cloneable {
 
     // ----------------------------------------------
     // ------------------- FIELDS -------------------
     // ----------------------------------------------
     public final long time_created = System.currentTimeMillis();
     private final IAuxProtect plugin;
-    private final List<Long> exactTime = new ArrayList<>();
-    private final List<String> uids = new ArrayList<>();
-    private final List<String> users = new ArrayList<>();
+    private final Set<Long> exactTime = new HashSet<>();
+    private final Set<String> uids = new HashSet<>();
+    private final Set<String> targets = new HashSet<>();
+    private final Set<String> users = new HashSet<>();
     // action
-    private final List<Integer> actions = new ArrayList<>();
-    private final List<String> datas = new ArrayList<>();
+    private final Set<Integer> actions = new HashSet<>();
+    private final Set<String> datas = new HashSet<>();
     // radius
     private final HashMap<Integer, Boolean> radius = new HashMap<>();
-    private final List<String> worlds = new ArrayList<>();
+    private final Set<String> worlds = new HashSet<>();
     // flags
-    private final List<Flag> flags = new ArrayList<>();
+    private final Set<Flag> flags = new HashSet<>();
     // ratings
-    private final List<Short> ratings = new ArrayList<>();
+    private final Set<Short> ratings = new HashSet<>();
     // user
     boolean negateUser;
     // target
@@ -52,7 +50,6 @@ public class Parameters {
     // time
     private long after;
     private long before = Long.MAX_VALUE;
-    private List<String> targets = new ArrayList<>();
     // table
     private Table table;
     private Location location;
@@ -202,7 +199,7 @@ public class Parameters {
         }
         if (parameters.flags.contains(Flag.BW)) {
             parameters.uids.addAll(parameters.targets);
-            parameters.targets = parameters.uids;
+            parameters.targets.addAll(parameters.uids);
         }
         if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PT)) {
             if (parameters.users.size() > 1) {
@@ -687,7 +684,7 @@ public class Parameters {
         return before;
     }
 
-    public List<Long> getExactTime() {
+    public Set<Long> getExactTime() {
         return exactTime;
     }
 
@@ -700,15 +697,15 @@ public class Parameters {
      *
      * @return the list of users
      */
-    public List<String> getUsers() {
+    public Set<String> getUsers() {
         return users;
     }
 
-    public List<String> getUIDs() {
+    public Set<String> getUIDs() {
         return uids;
     }
 
-    public List<Integer> getActions() {
+    public Set<Integer> getActions() {
         return actions;
     }
 
@@ -716,7 +713,7 @@ public class Parameters {
         return negateTarget;
     }
 
-    public List<String> getTargets() {
+    public Set<String> getTargets() {
         return targets;
     }
 
@@ -724,7 +721,7 @@ public class Parameters {
         return negateData;
     }
 
-    public List<String> getDatas() {
+    public Set<String> getDatas() {
         return datas;
     }
 
@@ -754,15 +751,15 @@ public class Parameters {
         return this;
     }
 
-    public List<String> getWorld() {
+    public Set<String> getWorld() {
         return worlds;
     }
 
-    public List<Flag> getFlags() {
+    public Set<Flag> getFlags() {
         return flags;
     }
 
-    public List<Short> getRatings() {
+    public Set<Short> getRatings() {
         return ratings;
     }
 
@@ -996,10 +993,10 @@ public class Parameters {
                 Math.abs(entry.getZ() - location.getBlockZ()));
     }
 
-    private String toGroup(List<?> list) {
+    private String toGroup(Set<?> set) {
         StringBuilder stmt = new StringBuilder("(");
         boolean first = true;
-        for (Object id : list) {
+        for (Object id : set) {
             if (first) {
                 first = false;
             } else {
@@ -1008,6 +1005,51 @@ public class Parameters {
             stmt.append(id);
         }
         return stmt + ")";
+    }
+
+    @Override
+    public Parameters clone() {
+        try {
+            Parameters clone = (Parameters) super.clone();
+            clone.exactTime.clear();
+            clone.exactTime.addAll(exactTime);
+
+            clone.uids.clear();
+            clone.uids.addAll(uids);
+
+            clone.targets.clear();
+            clone.targets.addAll(targets);
+
+            clone.users.clear();
+            clone.users.addAll(users);
+
+            clone.actions.clear();
+            clone.actions.addAll(actions);
+
+            clone.datas.clear();
+            clone.datas.addAll(datas);
+
+            clone.worlds.clear();
+            clone.worlds.addAll(worlds);
+
+            clone.ratings.clear();
+            clone.ratings.addAll(ratings);
+
+            clone.negateUser = negateUser;
+            clone.negateTarget = negateTarget;
+            clone.negateData = negateData;
+            clone.negateWorld = negateWorld;
+
+            clone.after = after;
+            clone.before = Long.MAX_VALUE;
+            clone.table = table;
+
+            if (location != null) clone.location = location.clone();
+
+            return clone;
+        } catch (CloneNotSupportedException e) {
+            throw new AssertionError();
+        }
     }
 
     public enum Flag {
