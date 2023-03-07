@@ -97,6 +97,9 @@ public class Parameters implements Cloneable {
                     if (sender != null && !flag.hasPermission(sender)) {
                         throw new ParseException(Language.L.NO_PERMISSION_FLAG);
                     }
+                    if (!flag.isEnabled()) {
+                        throw new ParseException(Language.L.ACTION_DISABLED);
+                    }
                     parameters.flags.add(flag);
                     continue;
                 }
@@ -1071,7 +1074,9 @@ public class Parameters implements Cloneable {
         }
 
         public boolean isEnabled() {
-            if (this == PLAYBACK) return AuxProtectAPI.getInstance().getAPConfig().isPrivate();
+            if (this == PLAYBACK || this == INCREMENTAL_POS) {
+                return AuxProtectAPI.getInstance().getAPConfig().isPrivate();
+            }
             return true;
         }
     }

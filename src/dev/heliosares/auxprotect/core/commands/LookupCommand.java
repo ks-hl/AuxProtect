@@ -152,7 +152,7 @@ public class LookupCommand extends Command {
 
         if (currentArg.startsWith("#")) {
             for (Flag flag : Flag.values()) {
-                if (flag.hasPermission(sender)) {
+                if (flag.hasPermission(sender) && flag.isEnabled()) {
                     possible.add("#" + flag.toString().toLowerCase());
                 }
             }
