@@ -206,7 +206,7 @@ public class Results {
     }
 
     public void sendEntry(DbEntry entry, int index) throws SQLException {
-        sendEntry(plugin, player, entry, index, true, !params.getFlags().contains(Flag.HIDE_COORDS));
+        sendEntry(plugin, player, entry, index, true, !params.hasFlag(Flag.HIDE_COORDS));
     }
 
     public void sendArrowKeys(int page) {

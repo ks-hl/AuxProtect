@@ -236,7 +236,7 @@ public class LookupCommand extends Command {
             sender.sendLang(Language.L.COMMAND__LOOKUP__LOOKING);
 
             int count = plugin.getSqlManager().getLookupManager().count(params);
-            if (params.getFlags().contains(Flag.COUNT_ONLY)) {
+            if (params.hasFlag(Flag.COUNT_ONLY)) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, count);
                 return;
             }
@@ -263,7 +263,7 @@ public class LookupCommand extends Command {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                 return;
             }
-            if (params.getFlags().contains(Flag.COUNT)) {
+            if (params.hasFlag(Flag.COUNT)) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, rs.size());
                 double totalMoney = 0;
                 double totalExp = 0;
@@ -350,7 +350,7 @@ public class LookupCommand extends Command {
                     sender.sendMessageRaw(msg);
                 }
                 return;
-            } else if (params.getFlags().contains(Flag.PLAYTIME)) {
+            } else if (params.hasFlag(Flag.PLAYTIME)) {
                 Set<String> users = params.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
@@ -367,13 +367,13 @@ public class LookupCommand extends Command {
                         name,
                         plugin.getSenderAdapter(name) != null));
                 return;
-            } else if (params.getFlags().contains(Flag.ACTIVITY)) {
+            } else if (params.hasFlag(Flag.ACTIVITY)) {
                 String uuid = sender.getUniqueId().toString();
                 Results result = new ActivityResults(plugin, rs, sender, params);
                 result.showPage(result.getNumPages(4), 4);
                 results.put(uuid, result);
                 return;
-            } else if (params.getFlags().contains(Flag.XRAY)) {
+            } else if (params.hasFlag(Flag.XRAY)) {
                 Set<Integer> users = new HashSet<>();
                 for (DbEntry entry : rs) {
                     users.add(entry.getUid());
@@ -389,7 +389,7 @@ public class LookupCommand extends Command {
                         it.remove();
                     }
                 }
-            } else if (params.getFlags().contains(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
                 Set<String> users = params.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
@@ -404,7 +404,7 @@ public class LookupCommand extends Command {
                             users.stream().findAny().orElse(null));
                 }
                 return;
-            } else if (params.getFlags().contains(Flag.RETENTION)) {
+            } else if (params.hasFlag(Flag.RETENTION)) {
                 RetentionSolver.showRetention(plugin, sender, rs, params.getAfter(), params.getBefore());
                 return;
             } else if (params.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
@@ -448,7 +448,7 @@ public class LookupCommand extends Command {
             result.showPage(1, 4);
             results.put(uuid, result);
 
-            if (params.getFlags().contains(Flag.XRAY)) {
+            if (params.hasFlag(Flag.XRAY)) {
                 sender.sendMessage(XraySolver.solve(rs));
             }
         } catch (LookupException | ParseException e) {

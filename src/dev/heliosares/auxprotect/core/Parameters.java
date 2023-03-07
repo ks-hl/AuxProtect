@@ -191,6 +191,10 @@ public class Parameters implements Cloneable {
         if (count < 1) {
             throw new ParseException(Language.L.INVALID_NOTENOUGH);
         }
+
+        parameters.target(targetstr);
+        parameters.data(datastr);
+
         if (parameters.actions.size() == 0 || parameters.table == null) {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_MAIN
@@ -223,7 +227,7 @@ public class Parameters implements Cloneable {
         }
         if (parameters.hasFlag(Flag.PLAYBACK)) {
             if (plugin.getPlatform() != PlatformType.SPIGOT || sender == null)
-                throw new ParseException(L.INVALID_PARAMETER, "#playback");
+                throw new ParseException(L.INVALID_PARAMETER, "#" + Flag.PLAYBACK.toString().toLowerCase());
             parameters.actions.clear();
             parameters.actions.add(EntryAction.TP.id);
             parameters.actions.add(EntryAction.TP.idPos);
@@ -247,11 +251,6 @@ public class Parameters implements Cloneable {
                 parameters.actions.add(EntryAction.VEIN.id);
             }
         }
-        if (datastr != null) {
-            parameters.data(datastr);
-        }
-
-        parameters.target(targetstr);
 
         plugin.debug("After:" + parameters.after + " Before:" + parameters.before);
         return parameters;
@@ -490,6 +489,10 @@ public class Parameters implements Cloneable {
      * Sets the data. Equivalent to data:<param>
      */
     public void data(String param) throws ParseException {
+        if (param == null) {
+            datas.clear();
+            return;
+        }
         if (table == null) {
             throw new IllegalStateException("action or table must be set before target");
         }
@@ -767,6 +770,7 @@ public class Parameters implements Cloneable {
     }
 
     public boolean hasFlag(Flag flag) {
+        if (!flag.isEnabled()) return false;
         return flags.contains(flag);
     }
 
@@ -1035,6 +1039,9 @@ public class Parameters implements Cloneable {
             clone.worlds.clear();
             clone.worlds.addAll(worlds);
 
+            clone.flags.clear();
+            clone.flags.addAll(flags);
+
             clone.ratings.clear();
             clone.ratings.addAll(ratings);
 
@@ -1074,7 +1081,7 @@ public class Parameters implements Cloneable {
         }
 
         public boolean isEnabled() {
-            if (this == PLAYBACK || this == INCREMENTAL_POS) {
+            if (this == PLAYBACK || this == INCREMENTAL_POS || this == XRAY || this == RETENTION || this == ACTIVITY) {
                 return AuxProtectAPI.getInstance().getAPConfig().isPrivate();
             }
             return true;
