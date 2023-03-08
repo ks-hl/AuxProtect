@@ -33,11 +33,11 @@ public class ActivityResults extends Results {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
             return;
         }
-        perPage = perPage_;
-        prevPage = page;
+        setPerPage(perPage_);
+        setCurrentPage(page);
         super.sendHeader();
 
-        long millisperpage = perPage * 3600000L;
+        long millisperpage = getPerPage() * 3600000L;
         // long thisRangeStart = rangeStart + (page - 1) * millisperpage;
         long thisRangeEnd = rangeEnd - (getNumPages(perPage_) - page) * millisperpage;
 

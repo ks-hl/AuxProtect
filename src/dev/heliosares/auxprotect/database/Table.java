@@ -7,7 +7,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 public enum Table {
     AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
-    AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
+    AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_TOWNY, AUXPROTECT_TRANSACTIONS,
 
     AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS,
     AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
@@ -59,7 +59,7 @@ public enum Table {
 
     public boolean hasAPEntries() {
         return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
+            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY, AUXPROTECT_TRANSACTIONS ->
                     true;
             default -> false;
         };
@@ -100,9 +100,7 @@ public enum Table {
     }
 
     public boolean canPurge() {
-        if (this == Table.AUXPROTECT_LONGTERM) {
-            return false;
-        }
+        if (this == Table.AUXPROTECT_LONGTERM) return false;
         return this.hasAPEntries();
     }
 
@@ -127,6 +125,8 @@ public enum Table {
             return "(time, uid, action_id, world_id, x, y, z, increment, pitch, yaw, target_id, ablob)";
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
+        } else if (this == AUXPROTECT_TRANSACTIONS) {
+            return "(time, uid, action_id, world_id, x, y, z, target_id, item_type, quantity, value, balance)";
         }
         return null;
     }
@@ -195,6 +195,12 @@ public enum Table {
         }
         if (hasData()) {
             stmt += ",\n    data LONGTEXT";
+        }
+        if (this == AUXPROTECT_TRANSACTIONS) {
+            stmt += ",\n    item_type INTEGER";
+            stmt += ",\n    quantity INTEGER";
+            stmt += ",\n    value INTEGER";
+            stmt += ",\n    balance BIGINT";
         }
 
         if (hasBlob()) stmt += ",\n    ablob BLOB";

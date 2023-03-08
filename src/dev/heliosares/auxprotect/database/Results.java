@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
@@ -11,26 +12,28 @@ import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.sql.SQLException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
 public class Results {
 
     protected final SenderAdapter player;
-    final IAuxProtect plugin;
-    private final List<DbEntry> entries;
-    private final Parameters params;
-    public int perPage = 4;
-    public int prevPage = 0;
+    protected final IAuxProtect plugin;
+    protected final List<DbEntry> entries;
+    protected final Parameters params;
+    private int perPage = 4;
+    private int currentPage = 0;
 
     public Results(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
-        this.entries = entries;
+        this.entries = Collections.unmodifiableList(entries);
         this.player = player;
         this.plugin = plugin;
 
@@ -45,10 +48,47 @@ public class Results {
                 break;
             }
         }
-        if (allNullWorld) {
-            perPage = 10;
+        if (allNullWorld || params.hasFlag(Flag.HIDE_COORDS)) {
+            setPerPage(10);
         }
         this.params = params;
+    }
+
+    public static BaseComponent[] getTime(long time) {
+        String msg;
+        if (System.currentTimeMillis() - time < 55) {
+            msg = Language.L.RESULTS__TIME_NOW.translate();
+        } else {
+            msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - time));
+        }
+        ComponentBuilder message = new ComponentBuilder();
+        message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new Text(TimeUtil.format(time, TimeUtil.entryTimeFormat)
+                                + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(time))))
+                .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, time + "e"));
+        return message.create();
+    }
+
+    public static BaseComponent[] getCoordinates(DbEntry entry) {
+        String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
+        if (entry instanceof PosEntry posEntry) {
+            tpCommand += String.format("%s %s %s ", posEntry.getDoubleX(), posEntry.getDoubleY(), posEntry.getDoubleZ());
+        } else {
+            tpCommand += String.format("%d.5 %d %d.5 ", entry.getX(), entry.getY(), entry.getZ());
+        }
+        tpCommand += entry.getWorld();
+        if (entry.getAction().getTable().hasLook()) {
+            tpCommand += String.format(" %d %d", entry.getPitch(), entry.getYaw());
+        }
+        ComponentBuilder message = new ComponentBuilder();
+        message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
+        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", entry.getX(), entry.getY(), entry.getZ(), entry.getWorld()))
+                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+        if (entry.getAction().getTable().hasLook()) {
+            message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", entry.getPitch(), entry.getYaw()));
+        }
+        return message.create();
     }
 
     @SuppressWarnings("deprecation")
@@ -59,32 +99,19 @@ public class Results {
         if (entry.getUser(false) == null) SQLManager.getInstance().execute(c -> entry.getUser(), 3000L);
         if (entry.getTarget(false) == null) SQLManager.getInstance().execute(c -> entry.getTarget(), 3000L);
 
-        plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
+        if (time) message.append(getTime(entry.getTime()));
 
-        if (time) {
-            String msg;
-            if (System.currentTimeMillis() - entry.getTime() < 55) {
-                msg = Language.L.RESULTS__TIME_NOW.translate();
-            } else {
-                msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
-            }
-            message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
-                                    + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
-                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
-        }
-
-        String actionColor = ChatColor.COLOR_CHAR + "7-";
+        String actionColor = ChatColor.GRAY + "-";
         if (entry.getAction().hasDual) {
-            actionColor = entry.getState() ? ChatColor.COLOR_CHAR + "a+" : ChatColor.COLOR_CHAR + "c-";
+            actionColor = entry.getState() ? ChatColor.GREEN + "+" : ChatColor.RED + "-";
         }
         message.append(" " + actionColor + " ").event((HoverEvent) null);
         HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()));
-        message.append(ChatColor.COLOR_CHAR + "9" + entry.getUser()).event(clickToCopy)
+        message.append(ChatColor.BLUE + entry.getUser()).event(clickToCopy)
                 .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
-        message.append(" " + ChatColor.COLOR_CHAR + "f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
+        message.append(" " + ChatColor.WHITE + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
                 .event((ClickEvent) null);
-        message.append(" " + ChatColor.COLOR_CHAR + "9" + entry.getTarget()).event(clickToCopy)
+        message.append(" " + ChatColor.BLUE + entry.getTarget()).event(clickToCopy)
                 .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
 
         XrayEntry xray;
@@ -143,24 +170,9 @@ public class Results {
                     .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
         }
         if (entry.getWorld() != null && !entry.getWorld().equals("$null") && coords) {
-            String tpCommand = commandPrefix + " tp ";
-            if (entry instanceof PosEntry posEntry) {
-                tpCommand += String.format("%s %s %s ", posEntry.getDoubleX(), posEntry.getDoubleY(), posEntry.getDoubleZ());
-            } else {
-                tpCommand += String.format("%d.5 %d %d.5 ", entry.getX(), entry.getY(), entry.getZ());
-            }
-            tpCommand += entry.getWorld();
-            if (entry.getAction().getTable().hasLook()) {
-                tpCommand += String.format(" %d %d", entry.getPitch(), entry.getYaw());
-            }
-            message.append("\n                 ").event((HoverEvent) null).event((ClickEvent) null);
-            message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", entry.getX(), entry.getY(), entry.getZ(), entry.getWorld()))
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
-            if (entry.getAction().getTable().hasLook()) {
-                message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", entry.getPitch(), entry.getYaw()));
-            }
+            message.append(getCoordinates(entry));
         }
+
         player.sendMessage(message.create());
     }
 
@@ -185,7 +197,7 @@ public class Results {
     }
 
     public void showPage(int page) throws SQLException {
-        showPage(page, perPage);
+        showPage(page, getPerPage());
     }
 
     public void showPage(int page, int perPage_) throws SQLException {
@@ -194,10 +206,10 @@ public class Results {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
             return;
         }
-        perPage = perPage_;
-        prevPage = page;
+        setPerPage(perPage_);
+        setCurrentPage(page);
         sendHeader();
-        for (int i = (page - 1) * perPage; i < (page) * perPage && i < getEntries().size(); i++) {
+        for (int i = (page - 1) * getPerPage(); i < (page) * getPerPage() && i < getEntries().size(); i++) {
             DbEntry en = getEntries().get(i);
 
             sendEntry(en, i);
@@ -212,16 +224,16 @@ public class Results {
     public void sendArrowKeys(int page) {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
-        int lastpage = getNumPages(perPage);
+        int lastpage = getNumPages(getPerPage());
         message.append(ChatColor.COLOR_CHAR + "7(");
         if (page > 1) {
             message.append(ChatColor.COLOR_CHAR + "9" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.LEFT_ARROW + AuxProtectSpigot.LEFT_ARROW)
-                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + perPage))
+                    .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, commandPrefix + " l 1:" + getPerPage()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__FIRST.translate())));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append(ChatColor.COLOR_CHAR + "9" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.LEFT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + (page - 1) + ":" + perPage))
+                            commandPrefix + " l " + (page - 1) + ":" + getPerPage()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__PREVIOUS.translate())));
         } else {
             message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, ""));
@@ -234,12 +246,12 @@ public class Results {
         if (page < lastpage) {
             message.append(ChatColor.COLOR_CHAR + "9" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + (page + 1) + ":" + perPage))
+                            commandPrefix + " l " + (page + 1) + ":" + getPerPage()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__NEXT.translate())));
             message.append(" ").event((ClickEvent) null).event((HoverEvent) null);
             message.append(ChatColor.COLOR_CHAR + "9" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW)
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            commandPrefix + " l " + lastpage + ":" + perPage))
+                            commandPrefix + " l " + lastpage + ":" + getPerPage()))
                     .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__PAGE__LAST.translate())));
         } else {
             message.append(ChatColor.COLOR_CHAR + "8" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.RIGHT_ARROW).event((ClickEvent) null).event((HoverEvent) null);
@@ -247,7 +259,7 @@ public class Results {
             message.append(ChatColor.COLOR_CHAR + "8" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
         }
         message.append(ChatColor.COLOR_CHAR + "7)  ").event((ClickEvent) null).event((HoverEvent) null);
-        message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(perPage), getEntries().size()));
+        message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(getPerPage()), getEntries().size()));
         player.sendMessage(message.create());
     }
 
@@ -257,5 +269,21 @@ public class Results {
 
     public int getSize() {
         return getEntries().size();
+    }
+
+    public int getPerPage() {
+        return perPage;
+    }
+
+    public void setPerPage(int perPage) {
+        this.perPage = perPage;
+    }
+
+    public int getCurrentPage() {
+        return currentPage;
+    }
+
+    protected void setCurrentPage(int prevPage) {
+        this.currentPage = prevPage;
     }
 }

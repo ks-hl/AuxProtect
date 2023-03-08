@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
@@ -18,7 +18,8 @@ public class EntryAction {
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
     public static final EntryAction KICK = new EntryAction("kick", 6);
-    public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
+    @Deprecated
+    public static final EntryAction SHOP_OLD = new EntryAction("shop", 8, 9);
     public static final EntryAction BUCKET = new EntryAction("bucket", 10, 11);
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
     public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
@@ -32,11 +33,14 @@ public class EntryAction {
     public static final EntryAction CONNECT = new EntryAction("connect", 135);
     // SKIPPED 135
     public static final EntryAction RECOVER = new EntryAction("recover", 136);
-    public static final EntryAction MONEY = new EntryAction("money", 137);
+    @Deprecated
+    public static final EntryAction MONEY_OLD = new EntryAction("money", 137);
     public static final EntryAction GAMEMODE = new EntryAction("gamemode", 138);
     public static final EntryAction TAME = new EntryAction("tame", 139);
-    public static final EntryAction JOBS = new EntryAction("jobs", 140);
-    public static final EntryAction PAY = new EntryAction("pay", 141);
+    @Deprecated
+    public static final EntryAction JOBS_OLD = new EntryAction("jobs", 140);
+    @Deprecated
+    public static final EntryAction PAY_OLD = new EntryAction("pay", 141);
     public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
     public static final EntryAction EXPLODE = new EntryAction("explode", 143);
     // END MAIN (255)
@@ -70,7 +74,8 @@ public class EntryAction {
     public static final EntryAction DROP = new EntryAction("drop", 1027);
     public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
     public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
-    public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
+    @Deprecated
+    public static final EntryAction AUCTIONBUY_OLD = new EntryAction("auctionbuy", 1030);
     //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
 
@@ -116,6 +121,15 @@ public class EntryAction {
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
     // END TOWNY (1499)
+
+    // START TRANSACTIONS (1500)
+    public static final EntryAction SHOP = new EntryAction("shop", 1500, 1501);
+    public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1502);
+    public static final EntryAction PAY = new EntryAction("pay", 1503);
+    public static final EntryAction JOBS = new EntryAction("jobs", 1504);
+    public static final EntryAction MONEY = new EntryAction("money", 1505);
+
+    // END TRANSACTIONS (1599)
 
     public final boolean hasDual;
     public final int id;
@@ -247,19 +261,22 @@ public class EntryAction {
     }
 
     public Table getTable() {
-        if (id < 256) return Table.AUXPROTECT_MAIN;
-        if (id < 512) return Table.AUXPROTECT_SPAM;
-        if (id < 768) return Table.AUXPROTECT_ABANDONED;
-        if (id < 1024) return Table.AUXPROTECT_LONGTERM;
-        if (id < 1280) return Table.AUXPROTECT_INVENTORY;
-        if (equals(COMMAND)) return Table.AUXPROTECT_COMMANDS;
         if (equals(CHAT)) return Table.AUXPROTECT_CHAT;
-        if (id < 1300) return Table.AUXPROTECT_POSITION;
-        if (id < 1310) return Table.AUXPROTECT_XRAY;
-        if (id < 1500) return Table.AUXPROTECT_TOWNY;
+        if (equals(COMMAND)) return Table.AUXPROTECT_COMMANDS;
         if (id > 1000000) return Table.AUXPROTECT_API;
+        if (id >= 1600) {
+            throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
+        }
+        if (id >= 1500) return Table.AUXPROTECT_TRANSACTIONS;
+        if (id >= 1310) return Table.AUXPROTECT_TOWNY;
+        if (id >= 1300) return Table.AUXPROTECT_XRAY;
+        if (id >= 1280) return Table.AUXPROTECT_POSITION;
+        if (id >= 1024) return Table.AUXPROTECT_INVENTORY;
+        if (id >= 768) return Table.AUXPROTECT_LONGTERM;
+        if (id >= 512) return Table.AUXPROTECT_ABANDONED;
+        if (id >= 256) return Table.AUXPROTECT_SPAM;
 
-        throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
+        return Table.AUXPROTECT_MAIN;
     }
 
     public int getId(boolean state) {

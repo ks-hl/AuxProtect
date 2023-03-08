@@ -208,16 +208,16 @@ public class LookupCommand extends Command {
                         return;
                     }
                     if (perpage == -1) {
-                        perpage = result.perPage;
+                        perpage = result.getPerPage();
                     }
                     if (first) {
                         page = 1;
                     } else if (last) {
-                        page = result.getNumPages(result.perPage);
+                        page = result.getNumPages(result.getPerPage());
                     } else if (next) {
-                        page = result.prevPage + 1;
+                        page = result.getCurrentPage() + 1;
                     } else if (prev) {
-                        page = result.prevPage - 1;
+                        page = result.getCurrentPage() - 1;
                     }
                     if (perpage > 0) {
                         if (perpage > 100) {
