@@ -49,28 +49,17 @@
                         </goals>
                     </execution>
                     <execution>
-                        <id>impl-jar</id>
+                        <id>implement-jar</id>
                         <phase>package</phase>
                         <configuration>
                             <target>
-                                <delete dir="${testserver}/Test1/plugins" failonerror="false"
-                                        includes="${project.artifactId}-*.jar"/>
-                                <copy todir="${testserver}/Test1/plugins">
-                                    <fileset dir="${basedir}/target"
-                                             includes="${project.artifactId}-${project.version}.jar"/>
-                                </copy>
-                                <delete dir="${testserver}/Test2/plugins" failonerror="false"
-                                        includes="${project.artifactId}-*.jar"/>
-                                <copy todir="${testserver}/Test2/plugins">
-                                    <fileset dir="${basedir}/target"
-                                             includes="${project.artifactId}-${project.version}.jar"/>
-                                </copy>
-                                <delete dir="${testserver}/Proxy/plugins" failonerror="false"
-                                        includes="${project.artifactId}-*.jar"/>
-                                <copy todir="${testserver}/Proxy/plugins">
-                                    <fileset dir="${basedir}/target"
-                                             includes="${project.artifactId}-${project.version}.jar"/>
-                                </copy>
+                                <exec executable="cmd.exe" spawn="false">
+                                    <arg value="/c"/>
+                                    <arg value="${basedir}/deploy.bat"/>
+                                    <arg value="${basedir}"/>
+                                    <arg value="${project.artifactId}"/>
+                                    <arg value="${project.version}"/>
+                                </exec>
                             </target>
                         </configuration>
                         <goals>
@@ -222,7 +211,6 @@
     </dependencies>
     <properties>
         <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
-        <testserver>${env.USERPROFILE}/Documents/TestServer</testserver>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
     </properties>
 </project>
