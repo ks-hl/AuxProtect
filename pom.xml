@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>AuxProtect</groupId>
     <artifactId>AuxProtect</artifactId>
-    <version>1.2.5</version>
+    <version>1.2.6-pre1</version>
     <name>AuxProtect</name>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -19,7 +19,7 @@
                 </includes>
             </resource>
         </resources>
-        <sourceDirectory>src</sourceDirectory>
+        <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
