@@ -1,0 +1,7 @@
+/target/
+.idea*
+auxprotect.iml
+AuxProtect.iml
+.classpath
+.project
+*.bat
