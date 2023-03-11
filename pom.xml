@@ -49,10 +49,27 @@
                         </goals>
                     </execution>
                     <execution>
+                        <id>check-deploy</id>
+                        <phase>prepare-package</phase>
+                        <configuration>
+                            <target>
+                                <available
+                                        file="${basedir}/deploy.bat"
+                                        property="fileExistsDeploy"
+                                />
+                            </target>
+                            <exportAntProperties>true</exportAntProperties>
+                        </configuration>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                    </execution>
+                    <execution>
                         <id>implement-jar</id>
                         <phase>package</phase>
                         <configuration>
-                            <target>
+                            <!--suppress UnresolvedMavenProperty -->
+                            <target if="${fileExistsDeploy}">
                                 <exec executable="cmd.exe" spawn="false">
                                     <arg value="/c"/>
                                     <arg value="${basedir}/deploy.bat"/>
