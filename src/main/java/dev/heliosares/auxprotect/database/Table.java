@@ -174,7 +174,7 @@ public enum Table {
             stmt += ",\n    z INTEGER";
         }
         if (this == AUXPROTECT_POSITION) {
-            stmt += ",\n    increment BYTE";
+            stmt += ",\n    increment TINYINT";
         }
         if (hasLook()) {
             stmt += ",\n    pitch SMALLINT";
