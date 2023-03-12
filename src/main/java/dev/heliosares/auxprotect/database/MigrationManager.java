@@ -377,7 +377,7 @@ public class MigrationManager {
 
         migrationActions.put(11, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
         }, () -> {
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment BYTE");
+            tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment TINYINT");
             tryExecute("UPDATE " + Table.AUXPROTECT_POSITION + " set increment=0 where increment is null");
         }));
 
