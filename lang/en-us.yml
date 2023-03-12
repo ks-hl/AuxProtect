@@ -34,7 +34,7 @@ command:
     toosoon: '&cThat user''s inventory has been saved too recently.'
   inv:
     recovered: '&p<admin> &srecovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
-    force-recovered: '&p<admin> &sforce recovered &p<target> &sinventory from &p<time> &sago.'
+    force-recovered: '&p<admin> &sforce recovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
     success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
     notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
     notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
