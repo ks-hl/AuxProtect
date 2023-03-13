@@ -430,4 +430,11 @@ public class ConnectionPool {
         }
     }
 
+    public String concat(String s1, String s2) {
+        if (isMySQL()) {
+            return "CONCAT(" + s1 + "," + s2 + ")";
+        } else {
+            return s1 + "||" + s2;
+        }
+    }
 }

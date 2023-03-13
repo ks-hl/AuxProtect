@@ -186,7 +186,7 @@ public class InvCommand extends Command {
 
     private static void update(IAuxProtect plugin, Player staff, long time) throws SQLException {
         plugin.getSqlManager().execute(
-                "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data=ifnull(data,'')||? WHERE time=? AND action_id=?",
+                "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data=" + plugin.getSqlManager().concat("ifnull(data,'')", "?") + " WHERE time=? AND action_id=?",
                 30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by " + staff.getName() + "; ",
                 time, EntryAction.INVENTORY.id);
     }
