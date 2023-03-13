@@ -190,7 +190,7 @@ public class MigrationManager {
             if (!plugin.getAPConfig().doSkipV6Migration()) {
                 plugin.info("Skipping v6 migration, will migrate in place");
 
-                total = sql.count(Table.AUXPROTECT_INVENTORY);
+                total = sql.count(connection, Table.AUXPROTECT_INVENTORY.toString());
 
                 String stmt = "SELECT time, action_id, data FROM " + Table.AUXPROTECT_INVENTORY
                         + " WHERE (action_id=1024 OR data LIKE '%,ITEM,%') AND (hasblob!=TRUE OR hasblob IS NULL) LIMIT ";
@@ -295,7 +295,7 @@ public class MigrationManager {
 
         migrationActions.put(7, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
 
-            total = sql.count(Table.AUXPROTECT_INVDIFFBLOB);
+            total = sql.count(connection, Table.AUXPROTECT_INVDIFFBLOB.toString());
 
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVDIFFBLOB + " ADD COLUMN hash INT");
 
