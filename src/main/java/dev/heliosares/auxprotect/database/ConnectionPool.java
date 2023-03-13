@@ -83,12 +83,7 @@ public class ConnectionPool {
     }
 
     public static String sanitize(String str) {
-        StringBuilder out = new StringBuilder();
-        for (char c : str.toCharArray()) {
-            if (c > 126) c = '?';
-            out.append(c);
-        }
-        return out.toString();
+        return str.replaceAll("[^\\u0020-\\u007F]", "¿");
     }
 
     public static String getBlobSize(double bytes) {

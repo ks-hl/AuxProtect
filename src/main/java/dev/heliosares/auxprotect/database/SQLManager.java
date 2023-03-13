@@ -386,7 +386,7 @@ public class SQLManager extends ConnectionPool {
                     statement.setInt(i++, dbEntry.getYaw());
                 }
                 if (table.hasStringTarget()) {
-                    statement.setString(i++, dbEntry.getTargetUUID());
+                    statement.setString(i++, sanitize(dbEntry.getTargetUUID()));
                 } else {
                     statement.setInt(i++, dbEntry.getTargetId());
                 }
@@ -394,7 +394,7 @@ public class SQLManager extends ConnectionPool {
                     statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
                 }
                 if (hasData) {
-                    statement.setString(i++, dbEntry.getData());
+                    statement.setString(i++, sanitize(dbEntry.getData()));
                 }
                 if (table.hasBlob()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
