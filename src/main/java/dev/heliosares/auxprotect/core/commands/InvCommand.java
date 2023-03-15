@@ -100,7 +100,7 @@ public class InvCommand extends Command {
                     }), L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
                 } else {
                     pane.addButton(49, Material.GRAY_STAINED_GLASS_PANE, null,
-                            L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
+                            L.INV_RECOVER_MENU__BUTTON__FORCE_UNAVAILABLE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE_UNAVAILABLE__HOVER.translateList());
                 }
                 pane.addButton(50, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
                     if (closed.get()) return;
