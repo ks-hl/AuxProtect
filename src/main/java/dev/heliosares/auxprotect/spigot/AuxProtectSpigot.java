@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.spigot;
 
-import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.config.SpigotConfigAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
@@ -249,7 +249,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         if (!shop) {
             EntryAction.SHOP.setEnabled(false);
         }
-        if (!hook(() -> new AuctionHouseListener(this), "AuctionHouse")) {
+        boolean auctionHook = hook(() -> new AuctionHouseListener(this), "AuctionHouse");
+        if (hook(() -> new PlayerAuctionsListener(this), "PlayerAuctions")) auctionHook = true;
+        if (!auctionHook) {
             EntryAction.AUCTIONBUY.setEnabled(false);
             EntryAction.AUCTIONLIST.setEnabled(false);
         }
