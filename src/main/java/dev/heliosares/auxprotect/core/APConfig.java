@@ -111,15 +111,15 @@ public class APConfig {
         if (interval.equalsIgnoreCase("default") && autopurgeinterval >= Table.MIN_PURGE_INTERVAL) {
             return autopurgeinterval;
         }
-        long time = TimeUtil.stringToMillis(interval);
         try {
+            long time = TimeUtil.stringToMillis(interval);
             if (time >= Table.MIN_PURGE_INTERVAL || time == 0) {
                 return time;
             } else {
                 plugin.warning("Auto purge interval for '" + table + "' too short: '" + interval + "', min 2w");
             }
         } catch (NumberFormatException e) {
-            plugin.warning(e.getMessage());
+            plugin.warning("Error in config, (AutoPurge." + table + "=" + interval + "): " + e.getMessage());
         }
         return -1;
     }
