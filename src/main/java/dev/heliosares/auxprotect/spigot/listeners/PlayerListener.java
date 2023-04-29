@@ -29,23 +29,22 @@ import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import java.util.*;
 
 public class PlayerListener implements Listener {
 
-    private final ArrayList<Material> buckets;
-    private final ArrayList<EntityType> mobs;
+    private final Set<Material> buckets;
+    private final Set<EntityType> mobs;
     private final AuxProtectSpigot plugin;
 
     public PlayerListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
-        buckets = new ArrayList<>();
+        Set<Material> buckets = new HashSet<>();
         if (plugin.getCompatabilityVersion() >= 17) {
             buckets.add(Material.AXOLOTL_BUCKET);
         }
@@ -53,7 +52,8 @@ public class PlayerListener implements Listener {
         buckets.add(Material.SALMON_BUCKET);
         buckets.add(Material.TROPICAL_FISH_BUCKET);
         buckets.add(Material.PUFFERFISH_BUCKET);
-        mobs = new ArrayList<>();
+        this.buckets = Collections.unmodifiableSet(buckets);
+        Set<EntityType> mobs = new HashSet<>();
         mobs.add(EntityType.PUFFERFISH);
         if (plugin.getCompatabilityVersion() >= 17) {
             mobs.add(EntityType.AXOLOTL);
@@ -64,6 +64,7 @@ public class PlayerListener implements Listener {
         mobs.add(EntityType.TROPICAL_FISH);
         mobs.add(EntityType.COD);
         mobs.add(EntityType.SALMON);
+        this.mobs = Collections.unmodifiableSet(mobs);
     }
 
     public static void logMoney(AuxProtectSpigot plugin, Player player, String reason) {
@@ -90,17 +91,29 @@ public class PlayerListener implements Listener {
     public void onPlayerInteractEntityEvent(PlayerInteractEntityEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(1);
 
-        ItemStack mainhand = e.getPlayer().getInventory().getItemInMainHand();
-        ItemStack offhand = e.getPlayer().getInventory().getItemInOffHand();
-        if (mainhand.getType() == Material.WATER_BUCKET || offhand.getType() == Material.WATER_BUCKET) {
-            if (mobs.contains(e.getRightClicked().getType())) {
-                DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
-                        e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), "");
-                plugin.add(entry);
+        ItemStack item = e.getPlayer().getInventory().getItem(e.getHand());
+
+        if (item != null) {
+            if (item.getType() == Material.NAME_TAG) {
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null && meta.hasDisplayName()) {
+                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.NAMETAG, true,
+                            e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), meta.getDisplayName()));
+                }
+            }
+            if (item.getType() == Material.WATER_BUCKET) {
+                if (mobs.contains(e.getRightClicked().getType())) {
+                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                        ItemStack newBucket = e.getPlayer().getInventory().getItem(e.getHand());
+                        if (newBucket != null && !buckets.contains(newBucket.getType())) newBucket = null;
+                        plugin.add(new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
+                                e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), "", newBucket));
+                    }, 1);
+                }
             }
         }
-        if (e.getRightClicked() instanceof final ItemFrame item) {
-            if (item.getItem().getType() == Material.AIR) {
+        if (e.getRightClicked() instanceof final ItemFrame itemFrame) {
+            if (itemFrame.getItem().getType() == Material.AIR) {
                 ItemStack added = e.getPlayer().getInventory().getItemInMainHand();
                 if (added.getType() == Material.AIR) {
                     added = e.getPlayer().getInventory().getItemInOffHand();
@@ -108,7 +121,7 @@ public class PlayerListener implements Listener {
                 if (added.getType() != Material.AIR) {
                     String data = "";
                     DbEntry entry = new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ITEMFRAME, true,
-                            item.getLocation(), added.getType().toString().toLowerCase(), data, added);
+                            itemFrame.getLocation(), added.getType().toString().toLowerCase(), data, added);
                     plugin.add(entry);
                 }
             }
@@ -125,9 +138,8 @@ public class PlayerListener implements Listener {
 
         if (e.getAction() == Action.RIGHT_CLICK_BLOCK && e.getClickedBlock() != null) {
             if ((e.getItem() != null && buckets.contains(e.getItem().getType()))) {
-                DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, false,
-                        e.getClickedBlock().getLocation(), e.getItem().getType().toString().toLowerCase(), "");
-                plugin.add(entry);
+                plugin.add(new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, false,
+                        e.getClickedBlock().getLocation(), e.getItem().getType().toString().toLowerCase(), "", e.getItem()));
             }
         }
     }

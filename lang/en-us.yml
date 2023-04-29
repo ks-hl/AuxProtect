@@ -226,6 +226,7 @@ actions:
     p: mounted
     n: unmounted
   msg: messaged
+  nametag: name tagged
   nationbank:
     p: deposited
     n: withdrew

@@ -280,4 +280,5 @@ public class EntityListener implements Listener {
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }
+
 }
