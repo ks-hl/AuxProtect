@@ -3,7 +3,7 @@
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
 
-version: 4
+version: 5
 
 color:
   p: '9'
@@ -34,7 +34,7 @@ command:
     toosoon: '&cThat user''s inventory has been saved too recently.'
   inv:
     recovered: '&p<admin> &srecovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
-    force-recovered: '&p<admin> &sforce recovered &p<target> &sinventory from &p<time> &sago.'
+    force-recovered: '&p<admin> &sforce recovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
     success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
     notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
     notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
@@ -182,8 +182,8 @@ actions:
   activity: activity
   alert: may be hacking
   anvil: anvilled
-  auctionbuy: bought from ah
-  auctionlist: listed on ah
+  auctionbuy: bought from auction
+  auctionlist: listed for auction
   breakitem: broke item
   bucket:
     p: caught fish
