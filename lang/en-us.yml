@@ -3,7 +3,7 @@
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
 
-version: 5
+version: 6
 
 color:
   p: '9'
@@ -141,7 +141,7 @@ results:
   view-inv: 'View Inv'
 
 inv-recover-menu:
-  main-header: '<target>''<optional_s> Ender Chest - <time> ago'
+  main-header: '<target>''<optional_s> Inventory - <time> ago'
   ender-header: '<target>''<optional_s> Ender Chest - <time> ago'
   xp-error: '&cUnable to recover experience.'
   button:
