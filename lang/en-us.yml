@@ -3,7 +3,7 @@
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
 
-version: 6
+version: 7
 
 color:
   p: '9'
@@ -65,6 +65,7 @@ command:
     noresults: '&cNo results found.'
     count: '&p<results> &sresults found.'
     page-footer: '&tPage (&p<page_number>/<page_count>&t) &p<entry_count> &ttotal entries.'
+    page-footer-groups: '&tPage (&p<page_number>/<page_count>&t) &p<entry_count> &ttotal groups.'
     no-results-selected: '&cYou don''t have a lookup to page through.'
     nopage: '&cThat page does not exist.'
     toomany: '&cToo many entries. Try narrowing your search. (<count> entries, over <max>)'
@@ -139,6 +140,7 @@ results:
   time-now: '&tJust Now'
   view: 'View'
   view-inv: 'View Inv'
+  grouping-of: '&fGrouping of &p<entry_count> &fentries'
 
 inv-recover-menu:
   main-header: '<target>''<optional_s> Inventory - <time> ago'

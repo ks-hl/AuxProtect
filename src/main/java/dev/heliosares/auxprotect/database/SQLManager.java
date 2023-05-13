@@ -489,6 +489,8 @@ public class SQLManager extends ConnectionPool {
         if (worlds.containsKey(world)) {
             return worlds.get(world);
         }
+
+        //TODO move check to AuxProtectSpigot
         if (world == null || Bukkit.getWorld(world) == null) {
             return -1;
         }
@@ -504,7 +506,7 @@ public class SQLManager extends ConnectionPool {
         return -1;
     }
 
-    String getWorld(int wid) {
+    public String getWorld(int wid) {
         for (Entry<String, Integer> entry : worlds.entrySet()) {
             if (entry.getValue() == wid) {
                 return entry.getKey();

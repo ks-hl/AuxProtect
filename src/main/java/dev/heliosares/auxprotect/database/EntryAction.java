@@ -14,6 +14,10 @@ public class EntryAction {
     private static final Set<Integer> usedids = new HashSet<>();
     private static final Set<String> usednames = new HashSet<>();
 
+    // START PLACEHOLDERS
+    public static final EntryAction GROUPING = new EntryAction("grouping", -1001);
+    // END PLACEHOLDERS
+
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
