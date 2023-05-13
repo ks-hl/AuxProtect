@@ -53,7 +53,6 @@ public class Parameters implements Cloneable {
     private int x;
     private int y;
     private int z;
-
     private double groupRange;
 
     // ----------------------------------------------------
@@ -191,6 +190,11 @@ public class Parameters implements Cloneable {
                 }
             }
             parameters.table = Table.AUXPROTECT_MAIN;
+        }
+        if (!parameters.datas.isEmpty() && (parameters.actions.contains(EntryAction.SESSION.id) || parameters.actions.contains(EntryAction.SESSION.idPos))) {
+            if (!APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(sender)) {
+                throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NONE);
+            }
         }
         if (parameters.flags.contains(Flag.COMBINE_USER_TARGET)) {
             parameters.uids.addAll(parameters.targets);

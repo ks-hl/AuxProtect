@@ -139,6 +139,11 @@ public class Results {
                             .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
                 }
             }
+            if (entry.getAction().equals(EntryAction.SESSION)) {
+                if (!APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(player)) {
+                    data = Language.L.RESULTS__REDACTED.translate();
+                }
+            }
             if (entry instanceof SingleItemEntry sientry) {
                 message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + ChatColor.COLOR_CHAR + "8]").event((HoverEvent) null).event((ClickEvent) null);
             }

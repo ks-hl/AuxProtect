@@ -173,20 +173,24 @@ public class PlayerListener implements Listener {
         APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
         apPlayer.lastMoved = System.currentTimeMillis();
         logMoney(plugin, e.getPlayer(), "join");
-        String ip = e.getPlayer().getAddress().getHostString();
-        logSession(e.getPlayer(), true, "IP: " + ip);
-        new BukkitRunnable() {
+        if (e.getPlayer().getAddress() != null) {
+            String ip = e.getPlayer().getAddress().getHostString();
+            String data = "";
+            if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
+            logSession(e.getPlayer(), true, data);
+            new BukkitRunnable() {
 
-            @Override
-            public void run() {
-                try {
-                    plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
-                            e.getPlayer().getName(), ip);
-                } catch (SQLException ex) {
-                    plugin.print(ex);
+                @Override
+                public void run() {
+                    try {
+                        plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
+                                e.getPlayer().getName(), ip);
+                    } catch (SQLException ex) {
+                        plugin.print(ex);
+                    }
                 }
-            }
-        }.runTaskAsynchronously(plugin);
+            }.runTaskAsynchronously(plugin);
+        }
 
         apPlayer.logInventory("join");
 

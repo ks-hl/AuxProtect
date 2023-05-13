@@ -130,17 +130,18 @@ results:
   click-to-copy: 'Click to copy to clipboard'
   click-to-copy-time: '&tClick to copy epoch time. (<time>ms)'
   click-to-view: 'Click to view!'
+  grouping-of: '&fGrouping of &p<entry_count> &fentries'
   header: '&pAuxProtect Results'
   page:
     first: '&pJump to First Page'
     previous: '&pPrevious Page'
     next: '&pNext Page'
     last: '&pJump to Last Page'
+  redacted: 'REDACTED'
   time: '&t<time> ago'
   time-now: '&tJust Now'
   view: 'View'
   view-inv: 'View Inv'
-  grouping-of: '&fGrouping of &p<entry_count> &fentries'
 
 inv-recover-menu:
   main-header: '<target>''<optional_s> Inventory - <time> ago'

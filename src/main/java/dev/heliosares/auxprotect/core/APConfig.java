@@ -23,6 +23,7 @@ public class APConfig {
     private boolean skipV6Migration;
     private boolean logIncrementalPosition;
     private boolean disableVacuum;
+    private boolean sessionLogIP;
     private KeyUtil key;
     private ConfigAdapter config;
     private int debug;
@@ -68,6 +69,7 @@ public class APConfig {
             moneyInterval = config.getLong("Actions.money.Interval", 600000);
             logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
         }
+        sessionLogIP = config.getBoolean("Actions.session.LogIP", true);
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
                 action.setEnabled(false);
@@ -260,4 +262,7 @@ public class APConfig {
         return demoMode;
     }
 
+    public boolean isSessionLogIP() {
+        return sessionLogIP;
+    }
 }
