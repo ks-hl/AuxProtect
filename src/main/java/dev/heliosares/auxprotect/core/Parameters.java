@@ -1038,58 +1038,39 @@ public class Parameters implements Cloneable {
         return stmt + ")";
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     public Parameters clone() {
-        try {
-            Parameters clone = (Parameters) super.clone();
-            clone.exactTime.clear();
-            clone.exactTime.addAll(exactTime);
+        Parameters clone = new Parameters();
 
-            clone.uids.clear();
-            clone.uids.addAll(uids);
+        clone.exactTime.addAll(exactTime);
+        clone.uids.addAll(uids);
+        clone.targets.addAll(targets);
+        clone.users.addAll(users);
+        clone.actions.addAll(actions);
+        clone.datas.addAll(datas);
+        clone.worlds.addAll(worlds);
+        clone.flags.addAll(flags);
+        clone.ratings.addAll(ratings);
+        clone.radius.putAll(radius);
 
-            clone.targets.clear();
-            clone.targets.addAll(targets);
+        clone.negateUser = negateUser;
+        clone.negateTarget = negateTarget;
+        clone.negateData = negateData;
+        clone.negateWorld = negateWorld;
 
-            clone.users.clear();
-            clone.users.addAll(users);
+        clone.after = after;
+        clone.before = Long.MAX_VALUE;
+        clone.table = table;
 
-            clone.actions.clear();
-            clone.actions.addAll(actions);
+        clone.groupRange = groupRange;
 
-            clone.datas.clear();
-            clone.datas.addAll(datas);
+        clone.world = world;
+        clone.x = x;
+        clone.y = y;
+        clone.z = z;
 
-            clone.worlds.clear();
-            clone.worlds.addAll(worlds);
-
-            clone.flags.clear();
-            clone.flags.addAll(flags);
-
-            clone.ratings.clear();
-            clone.ratings.addAll(ratings);
-
-            clone.negateUser = negateUser;
-            clone.negateTarget = negateTarget;
-            clone.negateData = negateData;
-            clone.negateWorld = negateWorld;
-
-            clone.after = after;
-            clone.before = Long.MAX_VALUE;
-            clone.table = table;
-
-            clone.groupRange = groupRange;
-
-            clone.world = world;
-            clone.x = x;
-            clone.y = y;
-            clone.z = z;
-            clone.radius.putAll(radius);
-
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return clone;
     }
 
     public enum Flag {
