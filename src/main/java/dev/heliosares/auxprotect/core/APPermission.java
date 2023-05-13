@@ -14,6 +14,7 @@ public class APPermission {
     public static final APPermission SQL = ROOT.dot("sql");
     public static final APPermission LOOKUP = ROOT.dot("lookup");
     public static final APPermission LOOKUP_ACTION = LOOKUP.dot("action");
+    public static final APPermission LOOKUP_GROUP = LOOKUP.dot("group");
     public static final APPermission LOOKUP_XRAY = LOOKUP.dot("xray");
 
     public static final APPermission LOOKUP_XRAY_BULK = LOOKUP_XRAY.dot("bulk");

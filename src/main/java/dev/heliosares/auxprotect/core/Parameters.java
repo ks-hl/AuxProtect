@@ -160,6 +160,9 @@ public class Parameters implements Cloneable {
                         }
                     }
                     case "group" -> {
+                        if (!APPermission.LOOKUP_GROUP.hasPermission(sender)) {
+                            throw new ParseException(L.NO_PERMISSION);
+                        }
                         double groupRange = 0;
                         try {
                             groupRange = Double.parseDouble(param);

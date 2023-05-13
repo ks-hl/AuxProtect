@@ -59,7 +59,9 @@ public class LookupCommand extends Command {
         possible.add("data:");
         possible.add("before:");
         possible.add("after:");
-        possible.add("group:");
+        if (APPermission.LOOKUP_GROUP.hasPermission(sender)) {
+            possible.add("group:");
+        }
 
         action_check:
         if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
