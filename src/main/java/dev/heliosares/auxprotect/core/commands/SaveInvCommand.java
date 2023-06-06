@@ -8,8 +8,8 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class SaveInvCommand extends Command {
 
@@ -22,23 +22,30 @@ public class SaveInvCommand extends Command {
         if (args.length != 2) {
             throw new SyntaxException();
         }
-        Player target = Bukkit.getPlayer(args[1]);
-        APPlayer apTarget = null;
-        if (target != null) {
-            apTarget = plugin.getAPPlayer(sender);
+        final List<Player> targets = new ArrayList<>();
+        if (args[1].equals("*") && APPermission.INV_SAVE_ALL.hasPermission(sender)) {
+            // TODO generify
+            targets.addAll(Bukkit.getOnlinePlayers());
+        } else {
+            // TODO generify
+            targets.add(Bukkit.getPlayer(args[1]));
         }
-        if (apTarget == null) {
-            sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, args[1]);
-            return;
+        for (Player target : targets) {
+            APPlayer apTarget = null;
+            if (target != null) {
+                apTarget = plugin.getAPPlayer(sender);
+            }
+            if (apTarget == null) {
+                sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, args[1]);
+                return;
+            }
+            if (!APPermission.ADMIN.hasPermission(sender) && System.currentTimeMillis() - apTarget.lastLoggedInventory < 10000L) {
+                sender.sendLang(Language.L.COMMAND__SAVEINV__TOOSOON);
+                return;
+            }
+            long time = apTarget.logInventory("manual");
+            sender.sendLang(Language.L.COMMAND__SAVEINV__SUCCESS, target.getName(), target.getName().endsWith("s") ? "" : "s", time + "e");
         }
-        if (!APPermission.ADMIN.hasPermission(sender)
-                && System.currentTimeMillis() - apTarget.lastLoggedInventory < 10000L) {
-            sender.sendLang(Language.L.COMMAND__SAVEINV__TOOSOON);
-            return;
-        }
-        long time = apTarget.logInventory("manual");
-        sender.sendLang(Language.L.COMMAND__SAVEINV__SUCCESS, target.getName(), target.getName().endsWith("s") ? "" : "s",
-                time + "e");
     }
 
     @Override
@@ -49,7 +56,9 @@ public class SaveInvCommand extends Command {
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         if (args.length == 2 && plugin instanceof AuxProtectSpigot spigot) {
-            return spigot.getServer().getOnlinePlayers().stream().map(Player::getName).collect(Collectors.toList());
+            List<String> out = new ArrayList<>(spigot.getServer().getOnlinePlayers().stream().map(Player::getName).toList());
+            if (APPermission.INV_SAVE_ALL.hasPermission(sender)) out.add("*");
+            return out;
         }
         return null;
     }
