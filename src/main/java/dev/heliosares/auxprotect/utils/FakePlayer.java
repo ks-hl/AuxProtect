@@ -76,7 +76,7 @@ public class FakePlayer {
         if (skin != null) profile.getProperties().put("textures", skin.wrap());
         // TODO fake player still being added to list
         packet.getPlayerInfoDataLists().write(1, List.of(
-                new PlayerInfoData(uuid, 0, false, EnumWrappers.NativeGameMode.SURVIVAL, profile, WrappedChatComponent.fromLegacyText(name), null)
+                new PlayerInfoData(uuid, 0, false, EnumWrappers.NativeGameMode.SURVIVAL, profile, WrappedChatComponent.fromLegacyText(name), (WrappedRemoteChatSessionData) null)
         ));
         protocol.sendServerPacket(audience, packet);
 
