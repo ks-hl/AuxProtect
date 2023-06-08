@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
@@ -33,7 +34,7 @@ public class SaveInvCommand extends Command {
         for (Player target : targets) {
             APPlayer apTarget = null;
             if (target != null) {
-                apTarget = plugin.getAPPlayer(sender);
+                apTarget = plugin.getAPPlayer(plugin.getSenderAdapter(target.getName()));
             }
             if (apTarget == null) {
                 sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, args[1]);
