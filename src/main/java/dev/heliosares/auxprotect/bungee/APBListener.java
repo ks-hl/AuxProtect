@@ -49,8 +49,10 @@ public class APBListener implements Listener {
                 plugin.print(ex);
             }
         });
+        String data = "";
+        if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
         plugin.dbRunnable.add(new DbEntry(AuxProtectBungee.getLabel(e.getConnection().getUniqueId()),
-                EntryAction.SESSION, true, "", "IP: " + ip));
+                EntryAction.SESSION, true, "", data));
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)

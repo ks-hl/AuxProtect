@@ -10,6 +10,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
+import org.bukkit.Bukkit;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -58,6 +59,9 @@ public class LookupCommand extends Command {
         possible.add("data:");
         possible.add("before:");
         possible.add("after:");
+        if (APPermission.LOOKUP_GROUP.hasPermission(sender)) {
+            possible.add("group:");
+        }
 
         action_check:
         if (currentArg.startsWith("action:") || currentArg.startsWith("a:")) {
@@ -172,71 +176,78 @@ public class LookupCommand extends Command {
             return;
         }
         try {
+            Parameters params_ = null;
             if (args.length == 2) {
-                int page = -1;
-                int perpage = -1;
-                boolean isPageLookup = false;
-                boolean next = args[1].equalsIgnoreCase("next");
-                boolean prev = args[1].equalsIgnoreCase("prev");
-                boolean first = args[1].equalsIgnoreCase("first");
-                boolean last = args[1].equalsIgnoreCase("last");
-                if (!next && !prev && !first && !last) {
-                    if (args[1].contains(":")) {
-                        String[] split = args[1].split(":");
-                        try {
-                            page = Integer.parseInt(split[0]);
-                            perpage = Integer.parseInt(split[1]);
-                            isPageLookup = true;
-                        } catch (NumberFormatException ignored) {
-                        }
-                    } else {
-                        try {
-                            page = Integer.parseInt(args[1]);
-                            isPageLookup = true;
-                        } catch (NumberFormatException ignored) {
+                if (args[1].matches("\\d{1,19}g")) {
+                    long hash = Long.parseLong(args[1].substring(0, args[1].length() - 1));
+                    params_ = LookupManager.getParametersForGroup(hash);
+                } else {
+                    int page = -1;
+                    int perpage = -1;
+                    boolean isPageLookup = false;
+                    boolean next = args[1].equalsIgnoreCase("next");
+                    boolean prev = args[1].equalsIgnoreCase("prev");
+                    boolean first = args[1].equalsIgnoreCase("first");
+                    boolean last = args[1].equalsIgnoreCase("last");
+                    if (!next && !prev && !first && !last) {
+                        if (args[1].contains(":")) {
+                            String[] split = args[1].split(":");
+                            try {
+                                page = Integer.parseInt(split[0]);
+                                perpage = Integer.parseInt(split[1]);
+                                isPageLookup = true;
+                            } catch (NumberFormatException ignored) {
+                            }
+                        } else {
+                            try {
+                                page = Integer.parseInt(args[1]);
+                                isPageLookup = true;
+                            } catch (NumberFormatException ignored) {
+                            }
                         }
                     }
-                }
-                if (isPageLookup || first || last || next || prev) {
-                    Results result = null;
-                    String uuid = sender.getUniqueId().toString();
-                    if (results.containsKey(uuid)) {
-                        result = results.get(uuid);
-                    }
-                    if (result == null) {
-                        sender.sendLang(Language.L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
+                    if (isPageLookup || first || last || next || prev) {
+                        Results result = null;
+                        String uuid = sender.getUniqueId().toString();
+                        if (results.containsKey(uuid)) {
+                            result = results.get(uuid);
+                        }
+                        if (result == null) {
+                            sender.sendLang(Language.L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
+                            return;
+                        }
+                        if (perpage == -1) {
+                            perpage = result.perPage;
+                        }
+                        if (first) {
+                            page = 1;
+                        } else if (last) {
+                            page = result.getNumPages(result.perPage);
+                        } else if (next) {
+                            page = result.prevPage + 1;
+                        } else if (prev) {
+                            page = result.prevPage - 1;
+                        }
+                        if (perpage > 0) {
+                            if (perpage > 100) {
+                                perpage = 100;
+                            }
+                            result.showPage(page, perpage);
+                        } else {
+                            result.showPage(page);
+                        }
                         return;
                     }
-                    if (perpage == -1) {
-                        perpage = result.perPage;
-                    }
-                    if (first) {
-                        page = 1;
-                    } else if (last) {
-                        page = result.getNumPages(result.perPage);
-                    } else if (next) {
-                        page = result.prevPage + 1;
-                    } else if (prev) {
-                        page = result.prevPage - 1;
-                    }
-                    if (perpage > 0) {
-                        if (perpage > 100) {
-                            perpage = 100;
-                        }
-                        result.showPage(page, perpage);
-                    } else {
-                        result.showPage(page);
-                    }
-                    return;
                 }
             }
+            if (params_ == null) params_ = Parameters.parse(sender, args);
+            final Parameters params = params_;
 
-            Parameters params = Parameters.parse(sender, args);
 
             sender.sendLang(Language.L.COMMAND__LOOKUP__LOOKING);
 
-            int count = plugin.getSqlManager().getLookupManager().count(params);
-            if (params.hasFlag(Flag.COUNT_ONLY)) {
+            int count = plugin.getSqlManager().getLookupManager().count(params_);
+            if (params_.hasFlag(Flag.COUNT_ONLY)) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, count);
                 return;
             }
@@ -249,7 +260,7 @@ public class LookupCommand extends Command {
                 return;
             }
 
-            List<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params);
+            List<DbEntry> rs = plugin.getSqlManager().getLookupManager().lookup(params_);
             if (plugin.getAPConfig().isDemoMode() && !sender.isConsole()) {
                 rs.removeIf(entry -> {
                     try {
@@ -263,7 +274,7 @@ public class LookupCommand extends Command {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                 return;
             }
-            if (params.hasFlag(Flag.COUNT)) {
+            if (params_.hasFlag(Flag.COUNT)) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, rs.size());
                 double totalMoney = 0;
                 double totalExp = 0;
@@ -350,8 +361,8 @@ public class LookupCommand extends Command {
                     sender.sendMessageRaw(msg);
                 }
                 return;
-            } else if (params.hasFlag(Flag.PLAYTIME)) {
-                Set<String> users = params.getUsers();
+            } else if (params_.hasFlag(Flag.PLAYTIME)) {
+                Set<String> users = params_.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
@@ -362,18 +373,18 @@ public class LookupCommand extends Command {
                 }
                 String name = users.stream().findAny().orElse(null);
                 sender.sendMessage(PlayTimeSolver.solvePlaytime(rs,
-                        params.getAfter(),
-                        params.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params.getBefore(),
+                        params_.getAfter(),
+                        params_.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params_.getBefore(),
                         name,
                         plugin.getSenderAdapter(name) != null));
                 return;
-            } else if (params.hasFlag(Flag.ACTIVITY)) {
+            } else if (params_.hasFlag(Flag.ACTIVITY)) {
                 String uuid = sender.getUniqueId().toString();
-                Results result = new ActivityResults(plugin, rs, sender, params);
+                Results result = new ActivityResults(plugin, rs, sender, params_);
                 result.showPage(result.getNumPages(4), 4);
                 results.put(uuid, result);
                 return;
-            } else if (params.hasFlag(Flag.XRAY)) {
+            } else if (params_.hasFlag(Flag.XRAY)) {
                 Set<Integer> users = new HashSet<>();
                 for (DbEntry entry : rs) {
                     users.add(entry.getUid());
@@ -389,8 +400,8 @@ public class LookupCommand extends Command {
                         it.remove();
                     }
                 }
-            } else if (params.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
-                Set<String> users = params.getUsers();
+            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
+                Set<String> users = params_.getUsers();
                 if (users.size() == 0) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
@@ -400,14 +411,14 @@ public class LookupCommand extends Command {
                     return;
                 }
                 if (sender.getSender() instanceof org.bukkit.entity.Player player) {
-                    MoneySolver.showMoney(plugin, player, rs, (int) Math.round((double) params.getAfter() / (1000 * 3600)),
+                    MoneySolver.showMoney(plugin, player, rs, (int) Math.round((double) params_.getAfter() / (1000 * 3600)),
                             users.stream().findAny().orElse(null));
                 }
                 return;
-            } else if (params.hasFlag(Flag.RETENTION)) {
-                RetentionSolver.showRetention(plugin, sender, rs, params.getAfter(), params.getBefore());
+            } else if (params_.hasFlag(Flag.RETENTION)) {
+                RetentionSolver.showRetention(plugin, sender, rs, params_.getAfter(), params_.getBefore());
                 return;
-            } else if (params.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
                 List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
                 List<DbEntry> newResults = new ArrayList<>();
                 for (PlaybackSolver.PosPoint point : points) {
@@ -415,20 +426,20 @@ public class LookupCommand extends Command {
                 }
                 Collections.reverse(newResults);
                 rs = newResults;
-            } else if (params.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
                 List<PlaybackSolver.BlockAction> actions = null;
                 try {
                     Class.forName("net.coreprotect.CoreProtectAPI");
                     CoreProtectAPI api = CoreProtect.getInstance().getAPI();
                     List<String[]> lookup = api.performLookup(
-                            (int) ((System.currentTimeMillis() - params.getAfter()) / 1000L),
-                            new ArrayList<>(params.getUsers()),
+                            (int) ((System.currentTimeMillis() - params_.getAfter()) / 1000L),
+                            new ArrayList<>(params_.getUsers()),
                             null,
                             null,
                             null,
                             new ArrayList<>(List.of(0, 1)),
-                            params.getRadius().entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).max(Integer::compare).orElse(0),
-                            params.getLocation());
+                            params_.getRadius().entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).max(Integer::compare).orElse(0),
+                            new org.bukkit.Location(Bukkit.getWorld(plugin.getSqlManager().getWorld(params.getWorldID())), params.getX(), params.getY(), params.getZ()));
                     if (lookup != null) {
                         List<CoreProtectAPI.ParseResult> results = lookup
                                 .stream()
@@ -440,15 +451,15 @@ public class LookupCommand extends Command {
                     }
                 } catch (ClassNotFoundException ignored) {
                 }
-                new PlaybackSolver(plugin, sender, rs, params.getAfter(), actions);
+                new PlaybackSolver(plugin, sender, rs, params_.getAfter(), actions);
                 return;
             }
             String uuid = sender.getUniqueId().toString();
-            Results result = new Results(plugin, rs, sender, params);
+            Results result = new Results(plugin, rs, sender, params_);
             result.showPage(1, 4);
             results.put(uuid, result);
 
-            if (params.hasFlag(Flag.XRAY)) {
+            if (params_.hasFlag(Flag.XRAY)) {
                 sender.sendMessage(XraySolver.solve(rs));
             }
         } catch (LookupException | ParseException e) {

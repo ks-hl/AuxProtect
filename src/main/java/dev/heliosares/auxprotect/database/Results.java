@@ -61,86 +61,104 @@ public class Results {
 
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
-        if (time) {
-            String msg;
-            if (System.currentTimeMillis() - entry.getTime() < 55) {
-                msg = Language.L.RESULTS__TIME_NOW.translate();
-            } else {
-                msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
+        if (entry instanceof DbEntryGroup group) {
+            if (time) {
+                message.append(Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - group.getFirstTime()) +
+                                "-" + TimeUtil.millisToString(System.currentTimeMillis() - group.getLastTime())))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new Text(TimeUtil.format(group.getFirstTime(), TimeUtil.entryTimeFormat) + " -\n" + TimeUtil.format(group.getLastTime(), TimeUtil.entryTimeFormat)
+                                        + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
+                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, group.getFormattedEpoch()));
             }
-            message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
-                                    + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
-                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
-        }
+            message.append(" ").event((HoverEvent) null).event((ClickEvent) null);
+            message.append(Language.L.RESULTS__GROUPING_OF.translate(group.getNumEntries())).event(new ClickEvent(
+                    ClickEvent.Action.RUN_COMMAND, commandPrefix + " lookup " + group.hash() + "g"));
+        } else {
+            if (time) {
+                String msg;
+                if (System.currentTimeMillis() - entry.getTime() < 55) {
+                    msg = Language.L.RESULTS__TIME_NOW.translate();
+                } else {
+                    msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
+                }
+                message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                                new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
+                                        + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
+                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
+            }
+            String actionColor = ChatColor.COLOR_CHAR + "7-";
+            if (entry.getAction().hasDual) {
+                actionColor = entry.getState() ? ChatColor.COLOR_CHAR + "a+" : ChatColor.COLOR_CHAR + "c-";
+            }
+            message.append(" " + actionColor + " ").event((HoverEvent) null);
+            HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()));
+            message.append(ChatColor.COLOR_CHAR + "9" + entry.getUser()).event(clickToCopy)
+                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
+            message.append(" " + ChatColor.COLOR_CHAR + "f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
+                    .event((ClickEvent) null);
+            message.append(" " + ChatColor.COLOR_CHAR + "9" + entry.getTarget()).event(clickToCopy)
+                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
 
-        String actionColor = ChatColor.COLOR_CHAR + "7-";
-        if (entry.getAction().hasDual) {
-            actionColor = entry.getState() ? ChatColor.COLOR_CHAR + "a+" : ChatColor.COLOR_CHAR + "c-";
-        }
-        message.append(" " + actionColor + " ").event((HoverEvent) null);
-        HoverEvent clickToCopy = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()));
-        message.append(ChatColor.COLOR_CHAR + "9" + entry.getUser()).event(clickToCopy)
-                .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
-        message.append(" " + ChatColor.COLOR_CHAR + "f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
-                .event((ClickEvent) null);
-        message.append(" " + ChatColor.COLOR_CHAR + "9" + entry.getTarget()).event(clickToCopy)
-                .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
+            XrayEntry xray;
+            if (entry instanceof XrayEntry) {
+                xray = (XrayEntry) entry;
+                String rating;
+                if (xray.getRating() == -2) {
+                    rating = ChatColor.COLOR_CHAR + "5Ignored";
+                } else if (xray.getRating() == -1) {
+                    rating = ChatColor.COLOR_CHAR + "7Unrated";
+                } else {
+                    rating = xray.getRating() + "";
+                }
+                String color = VeinManager.getSeverityColor(xray.getRating());
+                message.append(String.format(" " + ChatColor.COLOR_CHAR + "8[%s%s" + ChatColor.COLOR_CHAR + "8]", color, rating)).event(new ClickEvent(
+                        ClickEvent.Action.RUN_COMMAND, "/" + plugin.getCommandPrefix() + " xray rate " + entry.getTime()));
+                String hover = "";
+                if (xray.getRating() >= 0) {
+                    hover += color + VeinManager.getSeverityDescription(xray.getRating()) + "\n\n";
+                }
+                hover += Language.translate(Language.L.XRAY_CLICK_TO_CHANGE);
+                message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
+            }
 
-        XrayEntry xray;
-        if (entry instanceof XrayEntry) {
-            xray = (XrayEntry) entry;
-            String rating;
-            if (xray.getRating() == -2) {
-                rating = ChatColor.COLOR_CHAR + "5Ignored";
-            } else if (xray.getRating() == -1) {
-                rating = ChatColor.COLOR_CHAR + "7Unrated";
-            } else {
-                rating = xray.getRating() + "";
+            String data = entry.getData();
+            if (entry.hasBlob()) {
+                if (APPermission.INV.hasPermission(player)) {
+                    message.append(" " + ChatColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW + "]")
+                            .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                    String.format(commandPrefix + " inv %d", index)))
+                            .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
+                }
             }
-            String color = VeinManager.getSeverityColor(xray.getRating());
-            message.append(String.format(" " + ChatColor.COLOR_CHAR + "8[%s%s" + ChatColor.COLOR_CHAR + "8]", color, rating)).event(new ClickEvent(
-                    ClickEvent.Action.RUN_COMMAND, "/" + plugin.getCommandPrefix() + " xray rate " + entry.getTime()));
-            String hover = "";
-            if (xray.getRating() >= 0) {
-                hover += color + VeinManager.getSeverityDescription(xray.getRating()) + "\n\n";
+            if (entry.getAction().equals(EntryAction.KILL)) {
+                if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
+                    message.append(" " + ChatColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW_INV + "]")
+                            .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                    String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
+                                            entry.getTarget(), entry.getTime())))
+                            .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
+                }
             }
-            hover += Language.translate(Language.L.XRAY_CLICK_TO_CHANGE);
-            message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
-        }
-
-        String data = entry.getData();
-        if (entry.hasBlob()) {
-            if (APPermission.INV.hasPermission(player)) {
-                message.append(" " + ChatColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW + "]")
-                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                String.format(commandPrefix + " inv %d", index)))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
+            if (entry.getAction().equals(EntryAction.SESSION)) {
+                if (!APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(player)) {
+                    data = Language.L.RESULTS__REDACTED.translate();
+                }
             }
-        }
-        if (entry.getAction().equals(EntryAction.KILL)) {
-            if (APPermission.INV.hasPermission(player) && !entry.getTarget().startsWith("#")) {
-                message.append(" " + ChatColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW_INV + "]")
-                        .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                                String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
-                                        entry.getTarget(), entry.getTime())))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_VIEW.translate())));
+            if (entry instanceof SingleItemEntry sientry) {
+                message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + ChatColor.COLOR_CHAR + "8]").event((HoverEvent) null).event((ClickEvent) null);
             }
-        }
-        if (entry instanceof SingleItemEntry sientry) {
-            message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + ChatColor.COLOR_CHAR + "8]").event((HoverEvent) null).event((ClickEvent) null);
-        }
-        if (plugin.getAPConfig().doSkipV6Migration()) {
-            if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
-                data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));
+            if (plugin.getAPConfig().doSkipV6Migration()) {
+                if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
+                    data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));
+                }
+                if (entry.getAction().equals(EntryAction.INVENTORY)) {
+                    data = null;
+                }
             }
-            if (entry.getAction().equals(EntryAction.INVENTORY)) {
-                data = null;
+            if (data != null && data.length() > 0) {
+                message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + data + ChatColor.COLOR_CHAR + "8]").event(clickToCopy)
+                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
             }
-        }
-        if (data != null && data.length() > 0) {
-            message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + data + ChatColor.COLOR_CHAR + "8]").event(clickToCopy)
-                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getData()));
         }
         if (entry.getWorld() != null && !entry.getWorld().equals("$null") && coords) {
             String tpCommand = commandPrefix + " tp ";
@@ -247,7 +265,13 @@ public class Results {
             message.append(ChatColor.COLOR_CHAR + "8" + ChatColor.COLOR_CHAR + "l" + AuxProtectSpigot.RIGHT_ARROW + AuxProtectSpigot.RIGHT_ARROW);
         }
         message.append(ChatColor.COLOR_CHAR + "7)  ").event((ClickEvent) null).event((HoverEvent) null);
-        message.append(Language.translate(Language.L.COMMAND__LOOKUP__PAGE_FOOTER, page, getNumPages(perPage), getEntries().size()));
+        Language.L lang;
+        if (entries.get(0) instanceof DbEntryGroup) {
+            lang = Language.L.COMMAND__LOOKUP__PAGE_FOOTER_GROUPS;
+        } else {
+            lang = Language.L.COMMAND__LOOKUP__PAGE_FOOTER;
+        }
+        message.append(Language.translate(lang, page, getNumPages(perPage), getEntries().size()));
         player.sendMessage(message.create());
     }
 

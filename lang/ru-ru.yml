@@ -210,6 +210,7 @@ actions:
   townbank:
     p: внёс
     n: снял
+  nametag: имя помечено
   nationcreate: создал нацию
   nationrename: переменовал нацию
   nationdelete: удалил нацию

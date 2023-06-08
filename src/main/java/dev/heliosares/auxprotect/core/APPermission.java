@@ -14,6 +14,7 @@ public class APPermission {
     public static final APPermission SQL = ROOT.dot("sql");
     public static final APPermission LOOKUP = ROOT.dot("lookup");
     public static final APPermission LOOKUP_ACTION = LOOKUP.dot("action");
+    public static final APPermission LOOKUP_GROUP = LOOKUP.dot("group");
     public static final APPermission LOOKUP_XRAY = LOOKUP.dot("xray");
 
     public static final APPermission LOOKUP_XRAY_BULK = LOOKUP_XRAY.dot("bulk");
@@ -26,6 +27,7 @@ public class APPermission {
     public static final APPermission XRAY_EXEMPT = XRAY.dot("exempt");
     public static final APPermission INV = ROOT.dot("inv");
     public static final APPermission INV_SAVE = INV.dot("save");
+    public static final APPermission INV_SAVE_ALL = INV_SAVE.dot("all");
     public static final APPermission INV_EDIT = INV.dot("edit");
     public static final APPermission INV_RECOVER = INV.dot("recover");
     public static final APPermission INV_NOTIFY = INV.dot("notify");

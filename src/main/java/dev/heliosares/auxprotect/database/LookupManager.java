@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.towny.TownyEntry;
+import dev.heliosares.auxprotect.utils.BidiMapCache;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 
 import java.sql.PreparedStatement;
@@ -21,6 +22,7 @@ import java.util.concurrent.ExecutionException;
 public class LookupManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
+    private static final BidiMapCache<Long, Parameters> groupParameterCache = new BidiMapCache<>(3 * 3600000L, 3 * 3600000L, true);
 
     public LookupManager(SQLManager sql, IAuxProtect plugin) {
         this.sql = sql;
@@ -46,7 +48,25 @@ public class LookupManager {
             }
         }
 
+        if (param.getGroupRange() > 0) {
+            List<DbEntryGroup> groups = new ArrayList<>();
+            entries:
+            for (DbEntry entry : out) {
+                for (DbEntryGroup group : groups) {
+                    if (group.add(entry)) continue entries;
+                }
+                groups.add(new DbEntryGroup(entry, param));
+            }
+            out = groups.stream().map(entry -> (DbEntry) entry).toList();
+            groups.forEach(group -> groupParameterCache.put(group.hash(), group.getParams()));
+            groupParameterCache.cleanup();
+        }
+
         return out;
+    }
+
+    public static Parameters getParametersForGroup(long groupHash) {
+        return groupParameterCache.get(groupHash);
     }
 
     public int count(Parameters... params) throws LookupException {

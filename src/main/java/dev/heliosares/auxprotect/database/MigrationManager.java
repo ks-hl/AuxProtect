@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 11;
+    public static final int TARGET_DB_VERSION = 12;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -379,6 +379,20 @@ public class MigrationManager {
         }, () -> {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment TINYINT");
             tryExecute("UPDATE " + Table.AUXPROTECT_POSITION + " set increment=0 where increment is null");
+        }));
+
+
+        //
+        // 12
+        //
+
+        migrationActions.put(12, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        }, () -> {
+            String buckets = Table.AUXPROTECT_MAIN + " WHERE action_id IN (10,11)";
+            sql.execute("INSERT INTO " + Table.AUXPROTECT_INVENTORY + " (time, uid, action_id, world_id, x, y, z, target_id, data) SELECT time, uid, action_id, world_id, x, y, z, target_id, data FROM " + buckets, connection);
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1158 WHERE action_id=10", connection);
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1159 WHERE action_id=11", connection);
+            sql.execute("DELETE FROM " + buckets, connection);
         }));
 
         //

@@ -58,6 +58,9 @@ Actions:
     # Use this if you run into issues with death inventories being empty. 
     # This is usually due to a plugin like DeathChests clearing the inventory before AuxProtect sees it.
     LowestPriority: false
+  session:
+    Enabled: true
+    LogIP: true
 
 # Automatically check for updates and display notifications in game.
 # It's recommended to leave this enabled, as I'm constantly improving the plugin.

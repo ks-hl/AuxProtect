@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
@@ -14,18 +14,23 @@ public class EntryAction {
     private static final Set<Integer> usedids = new HashSet<>();
     private static final Set<String> usednames = new HashSet<>();
 
+    // START PLACEHOLDERS
+    public static final EntryAction GROUPING = new EntryAction("grouping", -1001);
+    // END PLACEHOLDERS
+
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
     public static final EntryAction KICK = new EntryAction("kick", 6);
     public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
-    public static final EntryAction BUCKET = new EntryAction("bucket", 10, 11);
+    // SKIPPED 10/11
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
     public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
 
     public static final EntryAction ALERT = new EntryAction("alert", 128);
     public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
-    //	public static final EntryAction XRAYCHECK = new EntryAction("xraycheck", 130);
+    // SKIPPED 130
+    // SKIPPED 131
     public static final EntryAction CENSOR = new EntryAction("censor", 132);
     public static final EntryAction MSG = new EntryAction("msg", 133);
     public static final EntryAction CONSUME = new EntryAction("consume", 134);
@@ -39,6 +44,7 @@ public class EntryAction {
     public static final EntryAction PAY = new EntryAction("pay", 141);
     public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
     public static final EntryAction EXPLODE = new EntryAction("explode", 143);
+    public static final EntryAction NAMETAG = new EntryAction("nametag", 144);
     // END MAIN (255)
 
     // START SPAM(256)
@@ -83,6 +89,7 @@ public class EntryAction {
     public static final EntryAction ENCHANT = new EntryAction("enchant", 1156);
 
     public static final EntryAction SMITH = new EntryAction("smith", 1157);
+    public static final EntryAction BUCKET = new EntryAction("bucket", 1158, 1159);
     // END INVENTORY(1279)
 
     // COMMANDS (1280)

@@ -8,9 +8,6 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.World;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
@@ -34,7 +31,7 @@ public class Parameters implements Cloneable {
     private final Set<String> datas = new HashSet<>();
     // radius
     private final HashMap<Integer, Boolean> radius = new HashMap<>();
-    private final Set<String> worlds = new HashSet<>();
+    private final Set<Integer> worlds = new HashSet<>();
     // flags
     private final Set<Flag> flags = new HashSet<>();
     // ratings
@@ -52,7 +49,11 @@ public class Parameters implements Cloneable {
     private long before = Long.MAX_VALUE;
     // table
     private Table table;
-    private Location location;
+    private int world;
+    private int x;
+    private int y;
+    private int z;
+    private double groupRange;
 
     // ----------------------------------------------------
     // ------------------- CONSTRUCTORS -------------------
@@ -113,55 +114,32 @@ public class Parameters implements Cloneable {
             token = replaceAlias(token, "r", "radius");
             token = replaceAlias(token, "w", "world");
             token = replaceAlias(token, "a", "action");
+            token = replaceAlias(token, "g", "group");
 
             if (split.length == 2) {
                 String param = split[1];
                 count++;
                 switch (token) {
-                    case "user" -> {
-                        parameters.user(param);
-                        continue;
-                    }
-                    case "target" -> {
-                        targetstr = param;
-                        continue;
-                    }
-                    case "data" -> {
-                        datastr = param;
-                        continue;
-                    }
-                    case "action" -> {
-                        parameters.action(sender, param);
-                        continue;
-                    }
-                    case "before" -> {
-                        parameters.time(param, true);
-                        continue;
-                    }
-                    case "after" -> {
-                        parameters.time(param, false);
-                        continue;
-                    }
-                    case "time" -> {
-                        parameters.time(param);
-                        continue;
-                    }
+                    case "user" -> parameters.user(param);
+                    case "target" -> targetstr = param;
+                    case "data" -> datastr = param;
+                    case "action" -> parameters.action(sender, param);
+                    case "before" -> parameters.time(param, true);
+                    case "after" -> parameters.time(param, false);
+                    case "time" -> parameters.time(param);
                     case "radius" -> {
                         if (sender == null)
                             throw new ParseException(L.NOTPLAYERERROR);
                         if (sender.getPlatform() != PlatformType.SPIGOT)
                             throw new ParseException(L.INVALID_PARAMETER, line);
                         if (sender.getSender() instanceof org.bukkit.entity.Player player) {
-                            parameters.radius(player.getLocation(), param);
+                            parameters.setLocation(player.getWorld().getName(), player.getLocation().getBlockX(), player.getLocation().getBlockY(), player.getLocation().getBlockZ());
+                            parameters.radius(param);
                         } else {
                             throw new ParseException(L.NOTPLAYERERROR);
                         }
-                        continue;
                     }
-                    case "world" -> {
-                        parameters.world(param);
-                        continue;
-                    }
+                    case "world" -> parameters.world(param);
                     case "rating" -> {
                         for (String str : param.split(",")) {
                             try {
@@ -170,7 +148,6 @@ public class Parameters implements Cloneable {
                                 throw new ParseException(L.INVALID_PARAMETER, line);
                             }
                         }
-                        continue;
                     }
                     case "db" -> {
                         if (!APPermission.ADMIN.hasPermission(sender)) {
@@ -181,11 +158,24 @@ public class Parameters implements Cloneable {
                         } catch (Exception e) {
                             throw new ParseException(L.INVALID_PARAMETER, line);
                         }
-                        continue;
                     }
+                    case "group" -> {
+                        if (!APPermission.LOOKUP_GROUP.hasPermission(sender)) {
+                            throw new ParseException(L.NO_PERMISSION);
+                        }
+                        double groupRange = 0;
+                        try {
+                            groupRange = Double.parseDouble(param);
+                        } catch (NumberFormatException ignored) {
+                        }
+                        if (groupRange <= 0) {
+                            throw new ParseException(L.INVALID_PARAMETER, line);
+                        }
+                        parameters.group(groupRange);
+                    }
+                    default -> throw new ParseException(L.INVALID_PARAMETER, line);
                 }
             }
-            throw new ParseException(Language.L.INVALID_PARAMETER, line);
 
         }
         if (count < 1) {
@@ -203,6 +193,11 @@ public class Parameters implements Cloneable {
                 }
             }
             parameters.table = Table.AUXPROTECT_MAIN;
+        }
+        if (!parameters.datas.isEmpty() && (parameters.actions.contains(EntryAction.SESSION.id) || parameters.actions.contains(EntryAction.SESSION.idPos))) {
+            if (!APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(sender)) {
+                throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NONE);
+            }
         }
         if (parameters.flags.contains(Flag.COMBINE_USER_TARGET)) {
             parameters.uids.addAll(parameters.targets);
@@ -232,8 +227,6 @@ public class Parameters implements Cloneable {
             parameters.actions.add(EntryAction.TP.id);
             parameters.actions.add(EntryAction.TP.idPos);
             parameters.actions.add(EntryAction.POS.id);
-            parameters.worlds.clear();
-            parameters.worlds.add(((org.bukkit.entity.Player) sender.getSender()).getWorld().getName());
         }
         if (parameters.flags.contains(Flag.MONEY)) {
             parameters.actions.clear();
@@ -510,8 +503,7 @@ public class Parameters implements Cloneable {
     // ------------------- API BASED -------------------
     // -------------------------------------------------
 
-    public void radius(Location location, String param) throws ParseException {
-        this.location = location;
+    public void radius(String param) throws ParseException {
         for (String str : param.split(",")) {
             try {
                 boolean negate = str.startsWith("!");
@@ -525,18 +517,19 @@ public class Parameters implements Cloneable {
         }
     }
 
-    public void world(String param) throws ParseException {
+    public Parameters world(String param) throws ParseException {
         //noinspection AssignmentUsedAsCondition
         if (negateWorld = param.startsWith("!")) {
             param = param.substring(1);
         }
         for (String str : param.split(",")) {
-            World world = Bukkit.getWorld(str);
-            if (world == null) {
+            int wid = plugin.getSqlManager().getWID(str);
+            if (wid <= 0) {
                 throw new ParseException(Language.L.COMMAND__LOOKUP__UNKNOWN_WORLD, str);
             }
-            worlds.add(world.getName());
+            worlds.add(wid);
         }
+        return this;
     }
 
     public Parameters time(long start, long stop) {
@@ -553,6 +546,11 @@ public class Parameters implements Cloneable {
 
     public Parameters after(long time) {
         this.after = time;
+        return this;
+    }
+
+    public Parameters group(double radius) {
+        this.groupRange = radius;
         return this;
     }
 
@@ -660,8 +658,10 @@ public class Parameters implements Cloneable {
         return this;
     }
 
-    public Parameters addWorld(String world) {
-        this.worlds.add(world);
+    public Parameters addWorld(String world) throws ParseException {
+        int wid = plugin.getSqlManager().getWID(world);
+        if (wid < 0) throw new ParseException(L.COMMAND__LOOKUP__UNKNOWN_WORLD);
+        this.worlds.add(wid);
         return this;
     }
 
@@ -701,7 +701,7 @@ public class Parameters implements Cloneable {
     /**
      * This is only used in a select few places. Parameters#getUIDS matters more
      *
-     * @return the list of users
+     * @return the set of users
      */
     public Set<String> getUsers() {
         return users;
@@ -739,12 +739,34 @@ public class Parameters implements Cloneable {
         return radius;
     }
 
-    public Location getLocation() {
-        return location;
+    public int getWorldID() {
+        return world;
     }
 
-    public Parameters setLocation(Location location) {
-        this.location = location;
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    public int getZ() {
+        return z;
+    }
+
+    public Parameters setLocation(String world, int x, int y, int z) throws ParseException {
+        int wid = plugin.getSqlManager().getWID(world);
+        if (wid < 0) throw new ParseException(L.COMMAND__LOOKUP__UNKNOWN_WORLD);
+        this.world = wid;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        return this;
+    }
+
+    public Parameters clearRadius() {
+        radius.clear();
         return this;
     }
 
@@ -757,7 +779,7 @@ public class Parameters implements Cloneable {
         return this;
     }
 
-    public Set<String> getWorld() {
+    public Set<Integer> getWorld() {
         return worlds;
     }
 
@@ -767,6 +789,10 @@ public class Parameters implements Cloneable {
 
     public Set<Short> getRatings() {
         return ratings;
+    }
+
+    public double getGroupRange() {
+        return groupRange;
     }
 
     public boolean hasFlag(Flag flag) {
@@ -853,16 +879,15 @@ public class Parameters implements Cloneable {
         }
 
         if (table.hasLocation()) {
-            if (!radius.isEmpty() && location != null) {
+            if (!radius.isEmpty() && world >= 0) {
                 radius.forEach((r, n) -> {
                     String between = " BETWEEN ";
-                    assert location.getWorld() != null;
-                    String coordstmt = "x" + between + (location.getBlockX() - r) + " AND " + (location.getBlockX() + r);
+                    String coordstmt = "x" + between + (x - r) + " AND " + (x + r);
                     if (!hasFlag(Flag.RADIUS_HORIZONTAL_ONLY)) {
-                        coordstmt += " AND y" + between + (location.getBlockY() - r) + " AND " + (location.getBlockY() + r);
+                        coordstmt += " AND y" + between + (y - r) + " AND " + (y + r);
                     }
-                    coordstmt += " AND z" + between + (location.getBlockZ() - r) + " AND " + (location.getBlockZ() + r);
-                    coordstmt += " AND world_id=" + sql.getWID(location.getWorld().getName());
+                    coordstmt += " AND z" + between + (z - r) + " AND " + (z + r);
+                    coordstmt += " AND world_id=" + world;
                     if (n) {
                         coordstmt = "NOT (" + coordstmt + ")";
                     }
@@ -872,13 +897,13 @@ public class Parameters implements Cloneable {
             if (!worlds.isEmpty()) {
                 StringBuilder stmt = new StringBuilder("world_id" + (negateWorld ? " NOT" : "") + " IN (");
                 boolean first = true;
-                for (String w : worlds) {
+                for (int i : worlds) {
                     if (first) {
                         first = false;
                     } else {
                         stmt.append(",");
                     }
-                    stmt.append(sql.getWID(w));
+                    stmt.append(i);
                 }
                 stmts.add(stmt + ")");
             }
@@ -902,6 +927,7 @@ public class Parameters implements Cloneable {
         return output;
     }
 
+    @Deprecated
     public boolean matches(DbEntry entry) throws SQLException {
         if (!uids.isEmpty()) {
             boolean contains = false;
@@ -956,13 +982,13 @@ public class Parameters implements Cloneable {
         if (!any) {
             return false;
         }
-        if (!radius.isEmpty() && location != null) {
+        if (!radius.isEmpty() && world > 0) {
             if (radius.entrySet().stream().anyMatch((e) -> e.getValue() == distance(entry) > e.getKey())) {
                 return false;
             }
         }
         if (!worlds.isEmpty()) {
-            return worlds.contains(entry.getWorld()) != negateWorld;
+            return worlds.contains(plugin.getSqlManager().getWID(entry.getWorld())) != negateWorld;
         }
 
         return true;
@@ -989,15 +1015,13 @@ public class Parameters implements Cloneable {
     }
 
     private int distance(DbEntry entry) {
-        if (location == null) {
+        if (world < 0) {
             return -1;
         }
-        assert location.getWorld() != null;
-        if (!entry.getWorld().equals(location.getWorld().getName())) {
+        if (plugin.getSqlManager().getWID(entry.getWorld()) != world) {
             return Integer.MAX_VALUE;
         }
-        return Math.max(Math.max(Math.abs(entry.getX() - location.getBlockX()), Math.abs(entry.getY() - location.getBlockY())),
-                Math.abs(entry.getZ() - location.getBlockZ()));
+        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
     }
 
     private String toGroup(Set<?> set) {
@@ -1014,52 +1038,39 @@ public class Parameters implements Cloneable {
         return stmt + ")";
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
     @Override
     public Parameters clone() {
-        try {
-            Parameters clone = (Parameters) super.clone();
-            clone.exactTime.clear();
-            clone.exactTime.addAll(exactTime);
+        Parameters clone = new Parameters();
 
-            clone.uids.clear();
-            clone.uids.addAll(uids);
+        clone.exactTime.addAll(exactTime);
+        clone.uids.addAll(uids);
+        clone.targets.addAll(targets);
+        clone.users.addAll(users);
+        clone.actions.addAll(actions);
+        clone.datas.addAll(datas);
+        clone.worlds.addAll(worlds);
+        clone.flags.addAll(flags);
+        clone.ratings.addAll(ratings);
+        clone.radius.putAll(radius);
 
-            clone.targets.clear();
-            clone.targets.addAll(targets);
+        clone.negateUser = negateUser;
+        clone.negateTarget = negateTarget;
+        clone.negateData = negateData;
+        clone.negateWorld = negateWorld;
 
-            clone.users.clear();
-            clone.users.addAll(users);
+        clone.after = after;
+        clone.before = Long.MAX_VALUE;
+        clone.table = table;
 
-            clone.actions.clear();
-            clone.actions.addAll(actions);
+        clone.groupRange = groupRange;
 
-            clone.datas.clear();
-            clone.datas.addAll(datas);
+        clone.world = world;
+        clone.x = x;
+        clone.y = y;
+        clone.z = z;
 
-            clone.worlds.clear();
-            clone.worlds.addAll(worlds);
-
-            clone.flags.clear();
-            clone.flags.addAll(flags);
-
-            clone.ratings.clear();
-            clone.ratings.addAll(ratings);
-
-            clone.negateUser = negateUser;
-            clone.negateTarget = negateTarget;
-            clone.negateData = negateData;
-            clone.negateWorld = negateWorld;
-
-            clone.after = after;
-            clone.before = Long.MAX_VALUE;
-            clone.table = table;
-
-            if (location != null) clone.location = location.clone();
-
-            return clone;
-        } catch (CloneNotSupportedException e) {
-            throw new AssertionError();
-        }
+        return clone;
     }
 
     public enum Flag {
