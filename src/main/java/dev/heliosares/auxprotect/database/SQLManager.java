@@ -325,7 +325,17 @@ public class SQLManager extends ConnectionPool {
             return;
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
-        execute("VACUUM;", connection);
+        try {
+            execute("VACUUM;", connection);
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 13) {
+                plugin.info("Your machine has insufficient space in the temporary partition to condense the database. " +
+                        "If you keep running into this issue despite room on the disk, add the following line to the end of the config, with no indentation:\n" +
+                        "disablevacuum: true");
+            } else {
+                throw e;
+            }
+        }
         setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
     }
 
