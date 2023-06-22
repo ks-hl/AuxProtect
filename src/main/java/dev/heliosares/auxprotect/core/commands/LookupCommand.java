@@ -346,7 +346,7 @@ public class LookupCommand extends Command {
                     totalMoney = Math.abs(totalMoney);
                     sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
                     if (!usersForJobsCount.isEmpty()) {
-                        sender.sendMessageRaw("    &7$" + ((AuxProtectSpigot) plugin).formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
+                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
                     }
                 }
                 if (totalExp != 0) {
