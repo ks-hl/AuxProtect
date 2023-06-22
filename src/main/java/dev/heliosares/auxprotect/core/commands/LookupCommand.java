@@ -280,6 +280,7 @@ public class LookupCommand extends Command {
                 double totalExp = 0;
                 int dropcount = 0;
                 int pickupcount = 0;
+                Set<Integer> usersForJobsCount = new HashSet<>();
                 for (DbEntry entry : rs) {
                     if (entry.getAction().equals(EntryAction.SHOP)) {
                         String[] parts = entry.getData().split(", ");
@@ -316,6 +317,7 @@ public class LookupCommand extends Command {
                         } else if (type == '$') {
                             totalMoney += value;
                         }
+                        usersForJobsCount.add(entry.getUid());
                     } else if (entry.getAction().equals(EntryAction.AUCTIONBUY)) {
                         String[] parts = entry.getData().split(" ");
                         try {
@@ -343,9 +345,15 @@ public class LookupCommand extends Command {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
                     sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+                    if (!usersForJobsCount.isEmpty()) {
+                        sender.sendMessageRaw("    &7$" + ((AuxProtectSpigot) plugin).formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
+                    }
                 }
                 if (totalExp != 0) {
                     sender.sendMessageRaw("&fTotal Experience: &9" + Math.round(totalExp * 100f) / 100f);
+                    if (!usersForJobsCount.isEmpty()) {
+                        sender.sendMessageRaw("    &7" + Math.round(totalExp / usersForJobsCount.size()) + "/player");
+                    }
                 }
                 String msg = "";
                 if (pickupcount > 0) {
