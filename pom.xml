@@ -234,7 +234,7 @@
         <dependency>
             <groupId>com.olziedev</groupId>
             <artifactId>playerauctions-api</artifactId>
-            <version>1.18.0</version>
+            <version>1.22.3</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>
