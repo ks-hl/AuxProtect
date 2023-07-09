@@ -336,7 +336,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         players = new ArrayList<>(apPlayers.values());
                     }
                     for (APPlayer apPlayer : players) {
-                        if (!apPlayer.player.isOnline()) {
+                        if (!apPlayer.getPlayer().isOnline()) {
                             continue;
                         }
 
@@ -349,14 +349,14 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
                         if (config.getMoneyInterval() > 0) {
                             if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
-                                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.player, "periodic");
+                                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.getPlayer(), "periodic");
                             }
                         }
 
                         if (config.getPosInterval() > 0) {
                             if (apPlayer.lastMoved > apPlayer.lastLoggedPos
                                     && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
-                                apPlayer.logPos(apPlayer.player.getLocation());
+                                apPlayer.logPos(apPlayer.getPlayer().getLocation());
                             } else if (config.doLogIncrementalPosition()) {
                                 apPlayer.tickDiffPos();
                             }
@@ -364,11 +364,11 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
                         if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
                             if (apPlayer.lastLocation != null
-                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.player.getWorld())) {
+                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.getPlayer().getWorld())) {
                                 apPlayer.movedAmountThisMinute += Math
-                                        .min(apPlayer.lastLocation.distance(apPlayer.player.getLocation()), 10);
+                                        .min(apPlayer.lastLocation.distance(apPlayer.getPlayer().getLocation()), 10);
                             }
-                            apPlayer.lastLocation = apPlayer.player.getLocation();
+                            apPlayer.lastLocation = apPlayer.getPlayer().getLocation();
                             apPlayer.lastCheckedMovement = System.currentTimeMillis();
                         }
 
@@ -376,7 +376,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             apPlayer.lastLoggedActivity = System.currentTimeMillis();
                         }
                         if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
-                            if (apPlayer.player.getWorld().getName().equals("flat") && config.isPrivate()) {
+                            if (apPlayer.getPlayer().getWorld().getName().equals("flat") && config.isPrivate()) {
                                 apPlayer.activity[apPlayer.activityIndex] += 100;
                             }
                             apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
@@ -387,8 +387,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                 apPlayer.hasMovedThisMinute = false;
                             }
 
-                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ACTIVITY, false,
-                                    apPlayer.player.getLocation(), "",
+                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false,
+                                    apPlayer.getPlayer().getLocation(), "",
                                     (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
                             apPlayer.lastLoggedActivity = System.currentTimeMillis();
 
@@ -404,10 +404,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                 }
                             }
                             if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.player)) {
+                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getPlayer())) {
                                 if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
                                     apPlayer.lastNotifyInactive = System.currentTimeMillis();
-                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.player.getName(),
+                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.getPlayer().getName(),
                                             inactive, tallied);
                                     for (Player player : Bukkit.getOnlinePlayers()) {
                                         if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
@@ -415,8 +415,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                         }
                                     }
                                     info(msg);
-                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.player), EntryAction.ALERT, false,
-                                            apPlayer.player.getLocation(), "inactive", inactive + "/" + tallied));
+                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false,
+                                            apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
                                 }
                             }
 
@@ -452,7 +452,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         players = new ArrayList<>(apPlayers.values());
                     }
                     for (APPlayer apPlayer : players) {
-                        if (!apPlayer.player.isOnline()) {
+                        if (!apPlayer.getPlayer().isOnline()) {
                             continue;
                         }
                         if (config.getInventoryDiffInterval() > 0) {
