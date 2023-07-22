@@ -221,6 +221,8 @@ public class PlaybackSolver extends BukkitRunnable {
         }
         swing.forEach(FakePlayer::swingArm);
 
+
+
         for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
             if (closed) return;
             FakePlayer pl = it.next();
