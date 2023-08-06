@@ -24,6 +24,8 @@ MySQL:
 # You only need to enable this if another plugin is interfering. 
 OverrideCommands: false
 
+SanitizeUnicode: false
+
 # Automatic purging
 # This will be performed every time the plugin is loaded, up to once every 12 hours.
 # Times are formatted the same as lookups. (e.g. 10w is 10 weeks)

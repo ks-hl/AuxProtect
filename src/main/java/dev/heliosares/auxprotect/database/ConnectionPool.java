@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
@@ -83,6 +84,7 @@ public class ConnectionPool {
     }
 
     public static String sanitize(String str) {
+        if (!AuxProtectAPI.getInstance().getAPConfig().isSanitizeUnicode()) return str;
         return str.replaceAll("[^\\u0020-\\u007F]", "¿");
     }
 
