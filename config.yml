@@ -24,6 +24,8 @@ MySQL:
 # You only need to enable this if another plugin is interfering. 
 OverrideCommands: false
 
+# Toggles whether to strip strings going into the database of non-standard characters. You only need this
+# if you are getting errors like "Incorrect string value: '\xE1\x83\xA0' for column 'data'"
 SanitizeUnicode: false
 
 # Automatic purging
