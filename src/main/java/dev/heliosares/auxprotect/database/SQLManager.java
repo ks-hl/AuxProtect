@@ -647,7 +647,6 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void tick() {
-        super.tick();
         if (!isConnected() || !isConnectedAndInitDone) return;
         try {
             execute(connection -> {

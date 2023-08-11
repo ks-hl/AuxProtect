@@ -166,7 +166,7 @@ public class SQLUserManager {
         if (uuid == null || uuid.equalsIgnoreCase("#null")) {
             return -1;
         }
-        if (uuid.length() == 0) {
+        if (uuid.isEmpty()) {
             return 0;
         }
         uuid = uuid.toLowerCase();
