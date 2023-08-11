@@ -39,6 +39,7 @@ public class SQLManager extends ConnectionPool {
     int rowcount;
     private MigrationManager migrationmanager;
     private boolean isConnected;
+    private boolean isConnectedAndInitDone;
     private int nextWid;
     private int nextActionId = 1000001;
 
@@ -171,6 +172,8 @@ public class SQLManager extends ConnectionPool {
 
         plugin.info("There are currently " + rowcount + " rows");
         if (townymanager != null) townymanager.init();
+
+        isConnectedAndInitDone = true;
     }
 
     public void close() {
@@ -644,7 +647,8 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void tick() {
-        if (!isConnected()) return;
+        super.tick();
+        if (!isConnected() || !isConnectedAndInitDone) return;
         try {
             execute(connection -> {
                 Arrays.asList(Table.values()).forEach(t -> {
