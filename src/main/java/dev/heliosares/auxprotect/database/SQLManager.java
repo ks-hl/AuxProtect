@@ -170,9 +170,9 @@ public class SQLManager extends ConnectionPool {
 
         count();
 
-        plugin.info("There are currently " + rowcount + " rows");
         if (townymanager != null) townymanager.init();
 
+        plugin.info("Init done. There are currently " + rowcount + " rows.");
         isConnectedAndInitDone = true;
     }
 

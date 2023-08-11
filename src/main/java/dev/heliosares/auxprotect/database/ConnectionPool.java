@@ -31,6 +31,7 @@ public class ConnectionPool {
     private boolean closed;
     @Nullable
     private StackTraceElement[] whoHasLock;
+    private long whoHasLockID = -1;
     private long lockedSince;
     private long timeConnected;
     private boolean ready;
@@ -203,7 +204,7 @@ public class ConnectionPool {
     public <T> T executeReturn(SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
         try {
             return executeReturnException(task::apply, wait, type);
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
@@ -226,11 +227,12 @@ public class ConnectionPool {
         } catch (InterruptedException ignored) {
         }
         if (!havelock) {
-            throw new BusyException(whoHasLock);
+            throw new BusyException(whoHasLock, whoHasLockID);
         }
         if (lock.getHoldCount() == 1) {
             lockedSince = System.currentTimeMillis();
             whoHasLock = Thread.currentThread().getStackTrace().clone();
+            whoHasLockID = Thread.currentThread().getId();
         }
         if (!isConnectionValid()) {
             connection = newConnectionSupplier.get();
@@ -245,6 +247,7 @@ public class ConnectionPool {
                 }
                 accessTimes[writeTimeIndex] = new long[]{lockedSince, System.currentTimeMillis()};
                 whoHasLock = null;
+                whoHasLockID = -1;
             }
             lockedSince = 0;
             lock.unlock();
