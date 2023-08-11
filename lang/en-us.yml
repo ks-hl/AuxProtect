@@ -202,6 +202,9 @@ actions:
     p: started flying
     n: stopped flying
   enchant: enchanted
+  entity:
+    p: placed entity
+    n: destroyed entity
   explode: caused explosion of
   gamemode: switched gamemode to
   grab: grabbed
