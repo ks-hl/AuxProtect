@@ -399,7 +399,11 @@ public class SQLManager extends ConnectionPool {
                     statement.setInt(i++, dbEntry.getYaw());
                 }
                 if (table.hasStringTarget()) {
-                    statement.setString(i++, sanitize(dbEntry.getTargetUUID()));
+                    String target = sanitize(dbEntry.getTargetUUID());
+                    statement.setString(i++, target);
+                    if (table == Table.AUXPROTECT_LONGTERM) {
+                        statement.setInt(i++, target.toLowerCase().hashCode());
+                    }
                 } else {
                     statement.setInt(i++, dbEntry.getTargetId());
                 }
