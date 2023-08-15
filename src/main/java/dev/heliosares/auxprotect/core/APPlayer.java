@@ -15,10 +15,10 @@ import java.util.Arrays;
 import java.util.List;
 
 public class APPlayer {
-    public final Player player;
+    public final double[] activity = new double[30];
+    private final Player player;
     private final IAuxProtect plugin;
     private final List<Byte> posBlob = new ArrayList<>();
-    public final double[] activity = new double[30];
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
@@ -52,40 +52,15 @@ public class APPlayer {
             invDiffItems = getInventory();
         }
         try {
-            return logInventory(reason, player.getLocation(), InvSerialization.playerToByteArray(player));
+            return logInventory(reason, getPlayer().getLocation(), InvSerialization.playerToByteArray(getPlayer()));
         } catch (Exception e) {
             plugin.print(e);
         }
         return -1;
     }
 
-    private List<ItemStack> getInventory() {
-        List<ItemStack> contents = new ArrayList<>();
-        ItemStack[] array = player.getInventory().getStorageContents();
-        for (int i = 9; i < array.length; i++) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        for (int i = 0; i < 9; i++) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        array = player.getInventory().getArmorContents();
-        for (int i = array.length - 1; i >= 0; i--) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        for (ItemStack item : player.getInventory().getExtraContents()) {
-            contents.add(item == null ? null : item.clone());
-        }
-        for (ItemStack item : player.getEnderChest().getContents()) {
-            contents.add(item == null ? null : item.clone());
-        }
-        return contents;
-    }
-
     public long logInventory(String reason, Location loc, byte[] inventory) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INVENTORY, false, loc, reason, "");
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(getPlayer()), EntryAction.INVENTORY, false, loc, reason, "");
         entry.setBlob(inventory);
         plugin.add(entry);
 
@@ -133,7 +108,7 @@ public class APPlayer {
                 }
             }
             try {
-                plugin.getSqlManager().getInvDiffManager().logInvDiff(player.getUniqueId(), i, qty, item);
+                plugin.getSqlManager().getInvDiffManager().logInvDiff(getPlayer().getUniqueId(), i, qty, item);
             } catch (Exception e) {
                 plugin.print(e);
                 return;
@@ -145,14 +120,14 @@ public class APPlayer {
     public void tickDiffPos() {
         if (lastLocationDiff != null) {
             synchronized (posBlob) {
-                PosEncoder.Posture posture = PosEncoder.Posture.fromPlayer(player);
-                for (byte b : PosEncoder.encode(lastLocationDiff, player.getLocation(), posture, lastPosture)) {
+                PosEncoder.Posture posture = PosEncoder.Posture.fromPlayer(getPlayer());
+                for (byte b : PosEncoder.encode(lastLocationDiff, getPlayer().getLocation(), posture, lastPosture)) {
                     posBlob.add(b);
                 }
                 lastPosture = posture;
             }
         }
-        lastLocationDiff = player.getLocation().clone();
+        lastLocationDiff = getPlayer().getLocation().clone();
     }
 
     public void logPos(Location location) {
@@ -164,15 +139,15 @@ public class APPlayer {
     }
 
     public void logPostTeleportPos(Location location) {
-        plugin.add(new PosEntry(AuxProtectSpigot.getLabel(player), EntryAction.TP, true, location, ""));
+        plugin.add(new PosEntry(AuxProtectSpigot.getLabel(getPlayer()), EntryAction.TP, true, location, ""));
         lastLocationDiff = null; // Set to null to force a one-tick pause before checking again
     }
 
     private void logPos(Location location, boolean tp) {
         lastLoggedPos = System.currentTimeMillis();
-        DbEntry entry = new PosEntry("$" + player.getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
+        DbEntry entry = new PosEntry("$" + getPlayer().getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
 
-        if (!tp) lastLocationDiff = player.getLocation().clone();
+        if (!tp) lastLocationDiff = getPlayer().getLocation().clone();
 
         synchronized (posBlob) {
             byte[] blob = new byte[posBlob.size()];
@@ -183,5 +158,34 @@ public class APPlayer {
 
         plugin.add(entry);
 
+    }
+
+    private List<ItemStack> getInventory() {
+        List<ItemStack> contents = new ArrayList<>();
+        ItemStack[] array = getPlayer().getInventory().getStorageContents();
+        for (int i = 9; i < array.length; i++) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        array = getPlayer().getInventory().getArmorContents();
+        for (int i = array.length - 1; i >= 0; i--) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        for (ItemStack item : getPlayer().getInventory().getExtraContents()) {
+            contents.add(item == null ? null : item.clone());
+        }
+        for (ItemStack item : getPlayer().getEnderChest().getContents()) {
+            contents.add(item == null ? null : item.clone());
+        }
+        return contents;
+    }
+
+    public Player getPlayer() {
+        return player;
     }
 }

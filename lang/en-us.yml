@@ -202,6 +202,9 @@ actions:
     p: started flying
     n: stopped flying
   enchant: enchanted
+  entity:
+    p: placed entity
+    n: destroyed entity
   explode: caused explosion of
   gamemode: switched gamemode to
   grab: grabbed
@@ -245,6 +248,8 @@ actions:
     p: loaded plugin
     n: unloaded plugin
   pos: position
+  raidtrigger: triggered raid
+  raidspawn: spawned raider
   recover: recovered inv of
   respawn: respawned
   session:

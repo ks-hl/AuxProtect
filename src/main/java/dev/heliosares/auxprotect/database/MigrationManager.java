@@ -10,7 +10,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 12;
+    public static final int TARGET_DB_VERSION = 13;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -393,6 +393,49 @@ public class MigrationManager {
             sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1158 WHERE action_id=10", connection);
             sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1159 WHERE action_id=11", connection);
             sql.execute("DELETE FROM " + buckets, connection);
+        }));
+
+
+        //
+        // 13
+        //
+
+        migrationActions.put(13, new MigrationAction(true, () -> {
+        }, () -> {
+            tryExecute("DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE ROWID NOT IN (SELECT MIN(ROWID) FROM " + Table.AUXPROTECT_UIDS + " GROUP BY uuid)");
+            tryExecute("ALTER TABLE " + Table.AUXPROTECT_UIDS + " RENAME TO " + Table.AUXPROTECT_UIDS + "_temp");
+            sql.getUserManager().init(connection);
+            tryExecute("INSERT INTO " + Table.AUXPROTECT_UIDS + " (uid,uuid) SELECT uid,uuid FROM " + Table.AUXPROTECT_UIDS + "_temp");
+
+            Set<String> uidValues = new HashSet<>();
+            try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT uuid FROM " + Table.AUXPROTECT_UIDS + " WHERE hash IS NULL")) {
+                try (ResultSet rs = preparedStatement.executeQuery()) {
+                    while (rs.next()) {
+                        uidValues.add(rs.getString(1));
+                    }
+                }
+            }
+            tryExecute("ALTER TABLE " + Table.AUXPROTECT_LONGTERM + " ADD COLUMN target_hash INT");
+            Set<String> longTermValues = new HashSet<>();
+            try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT target FROM " + Table.AUXPROTECT_LONGTERM + " WHERE target_hash IS NULL")) {
+                try (ResultSet rs = preparedStatement.executeQuery()) {
+                    while (rs.next()) {
+                        longTermValues.add(rs.getString(1));
+                    }
+                }
+            }
+
+            total = uidValues.size() + longTermValues.size();
+            complete = 0;
+            for (String value : uidValues) {
+                sql.execute("UPDATE " + Table.AUXPROTECT_UIDS + " SET hash=" + value.hashCode() + " WHERE uuid='" + value + "'", connection);
+                complete++;
+            }
+
+            for (String value : longTermValues) {
+                sql.execute("UPDATE " + Table.AUXPROTECT_LONGTERM + " SET target_hash=" + value.toLowerCase().hashCode() + " WHERE target='" + value + "'", connection);
+                complete++;
+            }
         }));
 
         //

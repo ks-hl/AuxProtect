@@ -39,6 +39,7 @@ public class SQLManager extends ConnectionPool {
     int rowcount;
     private MigrationManager migrationmanager;
     private boolean isConnected;
+    private boolean isConnectedAndInitDone;
     private int nextWid;
     private int nextActionId = 1000001;
 
@@ -169,8 +170,10 @@ public class SQLManager extends ConnectionPool {
 
         count();
 
-        plugin.info("There are currently " + rowcount + " rows");
         if (townymanager != null) townymanager.init();
+
+        plugin.info("Init done. There are currently " + rowcount + " rows.");
+        isConnectedAndInitDone = true;
     }
 
     public void close() {
@@ -325,7 +328,17 @@ public class SQLManager extends ConnectionPool {
             return;
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
-        execute("VACUUM;", connection);
+        try {
+            execute("VACUUM;", connection);
+        } catch (SQLException e) {
+            if (e.getErrorCode() == 13) {
+                plugin.info("Your machine has insufficient space in the temporary partition to condense the database. " +
+                        "If you keep running into this issue despite room on the disk, add the following line to the end of the config, with no indentation:\n" +
+                        "disablevacuum: true");
+            } else {
+                throw e;
+            }
+        }
         setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
     }
 
@@ -386,7 +399,11 @@ public class SQLManager extends ConnectionPool {
                     statement.setInt(i++, dbEntry.getYaw());
                 }
                 if (table.hasStringTarget()) {
-                    statement.setString(i++, sanitize(dbEntry.getTargetUUID()));
+                    String target = sanitize(dbEntry.getTargetUUID());
+                    statement.setString(i++, target);
+                    if (table == Table.AUXPROTECT_LONGTERM) {
+                        statement.setInt(i++, target.toLowerCase().hashCode());
+                    }
                 } else {
                     statement.setInt(i++, dbEntry.getTargetId());
                 }
@@ -634,7 +651,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void tick() {
-        if (!isConnected()) return;
+        if (!isConnected() || !isConnectedAndInitDone) return;
         try {
             execute(connection -> {
                 Arrays.asList(Table.values()).forEach(t -> {

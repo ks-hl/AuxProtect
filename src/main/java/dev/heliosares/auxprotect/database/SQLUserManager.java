@@ -2,13 +2,10 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
-import dev.heliosares.auxprotect.utils.Holder;
 
 import java.sql.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 public class SQLUserManager {
     private final IAuxProtect plugin;
@@ -63,7 +60,7 @@ public class SQLUserManager {
                 plugin.debug("New username: " + name + " for " + newestusername);
                 plugin.add(new DbEntry("$" + uuid, EntryAction.USERNAME, false, name, ""));
             }
-        }, 30000L);
+        }, 300000L);
     }
 
     public String getUsernameFromUID(int uid, boolean wait) throws SQLException {
@@ -101,7 +98,7 @@ public class SQLUserManager {
                 }
             }
             return null;
-        }, wait ? 30000L : 3000L, String.class);
+        }, wait ? 300000L : 3000L, String.class);
     }
 
     public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException {
@@ -122,7 +119,7 @@ public class SQLUserManager {
                     }
                 }
             }
-        }, wait ? 30000L : 3000L);
+        }, wait ? 300000L : 3000L);
         return out;
     }
 
@@ -134,19 +131,20 @@ public class SQLUserManager {
             return usernames.getKey(username);
         }
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
-                + " WHERE action_id=? AND lower(target)=?\nORDER BY time DESC\nLIMIT 1;";
+                + " WHERE action_id=? AND target_hash=?\nORDER BY time DESC\nLIMIT 1;";
         plugin.debug(stmt, 3);
 
         return sql.executeReturn(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
                 pstmt.setInt(1, EntryAction.USERNAME.id);
-                pstmt.setString(2, username.toLowerCase());
+                pstmt.setInt(2, username.toLowerCase().hashCode());
                 try (ResultSet results = pstmt.executeQuery()) {
-                    if (results.next()) {
-                        int uid = results.getInt("uid");
+                    while (results.next()) {
                         String username_ = results.getString("target");
-                        plugin.debug("Resolved username " + username_ + " to UID " + uid, 5);
-                        if (username_ != null && uid > 0) {
+                        if (username_ == null || !username_.equalsIgnoreCase(username)) continue;
+                        int uid = results.getInt("uid");
+                        if (uid > 0) {
+                            plugin.debug("Resolved username " + username_ + " to UID " + uid, 5);
                             usernames.put(uid, username_);
                             return uid;
                         }
@@ -155,7 +153,7 @@ public class SQLUserManager {
             }
             plugin.debug("Unknown UID for " + username, 3);
             return -1;
-        }, wait ? 30000L : 3000L, Integer.class);
+        }, wait ? 300000L : 3000L, Integer.class);
     }
 
     public int getUIDFromUUID(String uuid, boolean wait) throws SQLException {
@@ -166,7 +164,7 @@ public class SQLUserManager {
         if (uuid == null || uuid.equalsIgnoreCase("#null")) {
             return -1;
         }
-        if (uuid.length() == 0) {
+        if (uuid.isEmpty()) {
             return 0;
         }
         uuid = uuid.toLowerCase();
@@ -174,31 +172,32 @@ public class SQLUserManager {
             return uuids.getKey(uuid);
         }
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uuid=?;";
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE hash=?;";
         plugin.debug(stmt, 3);
         final String stmt_ = stmt;
         final String uuid_ = uuid;
 
-        Holder<Integer> uidHolder = new Holder<>();
+        CompletableFuture<Integer> uidHolder = new CompletableFuture<>();
         sql.execute(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt_)) {
-                pstmt.setString(1, uuid_);
+                pstmt.setInt(1, uuid_.hashCode());
                 try (ResultSet results = pstmt.executeQuery()) {
-                    if (results.next()) {
+                    while (results.next()) {
+                        if (!results.getString("uuid").equals(uuid_)) continue;
                         int uid = results.getInt("uid");
                         uuids.put(uid, uuid_);
-                        uidHolder.set(uid);
+                        uidHolder.complete(uid);
                     }
                 }
             }
-        }, wait ? 30000L : 3000L);
-        if (uidHolder.isSet()) return uidHolder.getNumberOrElse(-1).intValue();
+        }, wait ? 300000L : 3000L);
+        if (uidHolder.isDone()) return uidHolder.getNow(-1);
 
         if (insert) {
-            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid) VALUES (?)";
-            int uid = sql.executeReturnGenerated(stmt, uuid);
-            uuids.put(uid, uuid);
-            plugin.debug("New UUID: " + uuid + ":" + uid, 1);
+            stmt = "INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid,hash) VALUES (?,?)";
+            int uid = sql.executeReturnGenerated(stmt, uuid_, uuid_.hashCode());
+            uuids.put(uid, uuid_);
+            plugin.debug("New UUID: " + uuid_ + ":" + uid, 1);
             sql.incrementRows();
             return uid;
         }
@@ -217,7 +216,7 @@ public class SQLUserManager {
         }
         return sql.executeReturn(connection -> {
             try (Statement statement = connection.createStatement()) {
-                String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uid='" + uid + "';";
+                String stmt = "SELECT * FROM " + Table.AUXPROTECT_UIDS + " WHERE uid=" + uid;
                 plugin.debug(stmt, 3);
                 try (ResultSet results = statement.executeQuery(stmt)) {
                     if (results.next()) {
@@ -228,7 +227,7 @@ public class SQLUserManager {
                 }
             }
             return null;
-        }, wait ? 30000L : 3000L, String.class);
+        }, wait ? 300000L : 3000L, String.class);
     }
 
     public Collection<String> getCachedUsernames() {
@@ -259,15 +258,15 @@ public class SQLUserManager {
         }
         long time = System.currentTimeMillis();
         if (blob == null) {
-            sql.execute("DELETE FROM " + Table.AUXPROTECT_USERDATA_PENDINV + " WHERE uid=?", 30000L, uid);
+            sql.execute("DELETE FROM " + Table.AUXPROTECT_USERDATA_PENDINV + " WHERE uid=?", 300000L, uid);
         } else {
             try {
                 sql.execute(
                         "INSERT INTO " + Table.AUXPROTECT_USERDATA_PENDINV + " (time, uid, pending) VALUES (?,?,?)",
-                        30000L, time, uid, blob);
+                        300000L, time, uid, blob);
             } catch (SQLException ignored) {
                 sql.execute("UPDATE " + Table.AUXPROTECT_USERDATA_PENDINV + " SET time=?,pending=? WHERE uid=?",
-                        30000L, time, blob, uid);
+                        300000L, time, blob, uid);
             }
         }
     }
@@ -280,9 +279,9 @@ public class SQLUserManager {
     public void init(Connection connection) throws SQLException {
         String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS;
         if (sql.isMySQL()) {
-            stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(255), PRIMARY KEY (uid));";
+            stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(255) UNIQUE, hash INT, PRIMARY KEY (uid));";
         } else {
-            stmt += " (uuid varchar(255), uid INTEGER PRIMARY KEY AUTOINCREMENT);";
+            stmt += " (uuid varchar(255) UNIQUE, uid INTEGER PRIMARY KEY AUTOINCREMENT, hash INT);";
         }
         plugin.debug(stmt, 3);
         sql.execute(stmt, connection);

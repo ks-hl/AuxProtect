@@ -26,6 +26,7 @@ public class EntryAction {
     // SKIPPED 10/11
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
     public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
+    public static final EntryAction ENTITY = new EntryAction("entity", 16, 17);
 
     public static final EntryAction ALERT = new EntryAction("alert", 128);
     public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
@@ -57,6 +58,8 @@ public class EntryAction {
     public static final EntryAction ELYTRA = new EntryAction("elytra", 263, 264);
     public static final EntryAction ACTIVITY = new EntryAction("activity", 265);
     public static final EntryAction TOTEM = new EntryAction("totem", 266);
+    public static final EntryAction RAIDTRIGGER = new EntryAction("raidtrigger", 267);
+    public static final EntryAction RAIDSPAWN = new EntryAction("raidspawn", 268);
     // END SPAM(511)
 
     // START IGNOREABANDONED(512)

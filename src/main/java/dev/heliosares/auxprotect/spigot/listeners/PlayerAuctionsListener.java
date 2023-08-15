@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
-import com.olziedev.playerauctions.api.events.PlayerAuctionBuyEvent;
-import com.olziedev.playerauctions.api.events.PlayerAuctionSellEvent;
+import com.olziedev.playerauctions.api.events.auction.PlayerAuctionBuyEvent;
+import com.olziedev.playerauctions.api.events.auction.PlayerAuctionSellEvent;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;

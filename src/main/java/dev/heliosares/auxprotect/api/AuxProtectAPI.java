@@ -16,7 +16,7 @@ import java.sql.SQLException;
 import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
-public class AuxProtectAPI {
+public final class AuxProtectAPI {
 
     private static IAuxProtect instance;
 

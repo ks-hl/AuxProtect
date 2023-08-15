@@ -36,6 +36,7 @@ public class APConfig {
     private String tablePrefix;
     private boolean autopurge;
     private boolean demoMode;
+    private boolean sanitizeUnicode;
 
     public void load(IAuxProtect plugin, ConfigAdapter config) throws IOException {
         this.plugin = plugin;
@@ -69,6 +70,7 @@ public class APConfig {
             moneyInterval = config.getLong("Actions.money.Interval", 600000);
             logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
         }
+        sanitizeUnicode = config.getBoolean("SanitizeUnicode");
         sessionLogIP = config.getBoolean("Actions.session.LogIP", true);
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
@@ -264,5 +266,9 @@ public class APConfig {
 
     public boolean isSessionLogIP() {
         return sessionLogIP;
+    }
+
+    public boolean isSanitizeUnicode() {
+        return sanitizeUnicode;
     }
 }

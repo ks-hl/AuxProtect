@@ -174,79 +174,81 @@ public class PlaybackSolver extends BukkitRunnable {
 
     @Override
     public void run() {
-        synchronized (this) {
-            if (closed || isCancelled() || !audience.isOnline()) {
-                close();
-                cancel();
-                return;
-            }
-            final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
-
-            audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
-
-
-            for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
-                PosPoint point = it.next();
-                if (timeNow > point.time()) {
-                    FakePlayer actor = actors.get(point.name());
-                    Location loc = point.location.clone();
-                    assert loc.getWorld() != null;
-
-                    if (actor == null) {
-                        String name = "~" + point.name;
-                        if (name.length() > 16) name = name.substring(0, 16);
-                        actor = new FakePlayer(name, protocol, audience);
-                        actor.spawn(point.location(), skins.get(point.uuid));
-                    }
-                    actors.put(point.name(), actor);
-                    actor.setLocation(loc, false);
-                    if (point.posture != null) actor.setPosture(point.posture);
-
-                    it.remove();
-                } else break;
-            }
-
-            Set<FakePlayer> swing = new HashSet<>();
-            for (Iterator<BlockAction> it = blockActions.iterator(); it.hasNext(); ) {
-                BlockAction action = it.next();
-                if (timeNow > action.time()) {
-                    it.remove();
-                    FakePlayer actor = actors.get(action.name());
-                    if (actor != null) {
-                        swing.add(actor);
-                        action.sendChange(audience, false);
-                    }
-                }
-            }
-            swing.forEach(FakePlayer::swingArm);
-
-            for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
-                FakePlayer pl = it.next();
-                if (System.currentTimeMillis() - pl.getLastMoved() > 1000) {
-                    pl.remove();
-                    it.remove();
-                }
-            }
-            if (points.isEmpty()) close();
+        if (closed) return;
+        if (!audience.isOnline()) {
+            close();
+            return;
         }
+        final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
+
+        audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
+
+
+        for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
+            if (closed) return;
+            PosPoint point = it.next();
+            if (timeNow > point.time()) {
+                FakePlayer actor = actors.get(point.name());
+                Location loc = point.location.clone();
+                assert loc.getWorld() != null;
+
+                if (actor == null) {
+                    String name = "~" + point.name;
+                    if (name.length() > 16) name = name.substring(0, 16);
+                    actor = new FakePlayer(name, protocol, audience);
+                    actor.spawn(point.location(), skins.get(point.uuid));
+                }
+                actors.put(point.name(), actor);
+                actor.setLocation(loc, false);
+                if (point.posture != null) actor.setPosture(point.posture);
+
+                it.remove();
+            } else break;
+        }
+
+        Set<FakePlayer> swing = new HashSet<>();
+        for (Iterator<BlockAction> it = blockActions.iterator(); it.hasNext(); ) {
+            if (closed) return;
+            BlockAction action = it.next();
+            if (timeNow > action.time()) {
+                it.remove();
+                FakePlayer actor = actors.get(action.name());
+                if (actor != null) {
+                    swing.add(actor);
+                    action.sendChange(audience, false);
+                }
+            }
+        }
+        swing.forEach(FakePlayer::swingArm);
+
+
+
+        for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
+            if (closed) return;
+            FakePlayer pl = it.next();
+            if (System.currentTimeMillis() - pl.getLastMoved() > 1000) {
+                pl.remove();
+                it.remove();
+            }
+        }
+        if (points.isEmpty()) close();
     }
 
     public void close() {
-        synchronized (this) {
-            if (closed) return;
-            closed = true;
-            if (audience.isOnline()) {
-                audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));
-                audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED)));
-                actors.values().forEach(FakePlayer::remove);
-                actors.clear();
-                int countBlocks = 0;
-                for (Location location : modified) {
-                    if (audience.getWorld().equals(location.getWorld()) && location.distance(audience.getLocation()) < 250) {
-                        audience.sendBlockChange(location, location.getBlock().getBlockData());
-                    }
-                    if (++countBlocks > 10000) break;
+        if (closed) return;
+        cancel();
+        closed = true;
+        if (audience.isOnline()) {
+            audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));
+            audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED)));
+            actors.values().forEach(FakePlayer::remove);
+            actors.clear();
+            int countBlocks = 0;
+            for (Location location : modified) {
+                if (audience.getWorld().equals(location.getWorld()) && location.distance(audience.getLocation()) < 250) {
+                    audience.sendBlockChange(location, location.getBlock().getBlockData());
                 }
+                if (++countBlocks > 10000) break;
             }
         }
         cleanup();

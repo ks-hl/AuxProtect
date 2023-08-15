@@ -108,7 +108,7 @@ public enum Table {
 
     public String getValuesHeader(PlatformType platform) {
         if (this == Table.AUXPROTECT_LONGTERM) {
-            return "(time, uid, action_id, target)";
+            return "(time, uid, action_id, target, target_hash)";
         } else if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
             if (platform == PlatformType.BUNGEE) {
                 return "(time, uid, target)";
@@ -133,7 +133,7 @@ public enum Table {
 
     public int getNumColumns(PlatformType platform) {
         if (this == Table.AUXPROTECT_LONGTERM) {
-            return 4;
+            return 5;
         }
         if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
             if (platform == PlatformType.BUNGEE) {
@@ -186,6 +186,9 @@ public enum Table {
                 stmt += "LONGTEXT";
             } else {
                 stmt += "varchar(255)";
+            }
+            if(this==AUXPROTECT_LONGTERM) {
+                stmt += ",\n    target_hash INT";
             }
         } else {
             stmt += ",\n    target_id integer";

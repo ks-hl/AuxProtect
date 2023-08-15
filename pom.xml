@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>AuxProtect</groupId>
     <artifactId>AuxProtect</artifactId>
-    <version>1.2.6</version>
+    <version>1.2.7</version>
     <name>AuxProtect</name>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -22,6 +22,7 @@
         <sourceDirectory>src/main/java</sourceDirectory>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
@@ -234,7 +235,7 @@
         <dependency>
             <groupId>com.olziedev</groupId>
             <artifactId>playerauctions-api</artifactId>
-            <version>1.18.0</version>
+            <version>1.22.3</version>
             <scope>provided</scope>
         </dependency>
     </dependencies>

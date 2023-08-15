@@ -2,11 +2,11 @@ package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import dev.heliosares.auxprotect.core.PlatformType;
+import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
-import org.bukkit.ChatColor;
 
 import java.util.UUID;
 

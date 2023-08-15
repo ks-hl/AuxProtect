@@ -24,9 +24,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.EntityDeathEvent;
+import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
 import org.bukkit.event.player.*;
+import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -302,6 +305,20 @@ public class PlayerListener implements Listener {
     public void onPlayerLeashEntityEvent(PlayerLeashEntityEvent e) {
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, true,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
+        plugin.add(entry);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onEntityPlaceEvent(EntityPlaceEvent e) {
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ENTITY, true,
+                e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
+        plugin.add(entry);
+    }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onVehicleDestroyEvent(VehicleDestroyEvent e) {
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getAttacker()), EntryAction.ENTITY, false,
+                e.getVehicle().getLocation(), AuxProtectSpigot.getLabel(e.getVehicle()), "");
         plugin.add(entry);
     }
 
