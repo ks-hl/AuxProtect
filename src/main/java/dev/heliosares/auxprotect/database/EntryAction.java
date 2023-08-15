@@ -58,6 +58,8 @@ public class EntryAction {
     public static final EntryAction ELYTRA = new EntryAction("elytra", 263, 264);
     public static final EntryAction ACTIVITY = new EntryAction("activity", 265);
     public static final EntryAction TOTEM = new EntryAction("totem", 266);
+    public static final EntryAction RAIDTRIGGER = new EntryAction("raidtrigger", 267);
+    public static final EntryAction RAIDSPAWN = new EntryAction("raidspawn", 268);
     // END SPAM(511)
 
     // START IGNOREABANDONED(512)
