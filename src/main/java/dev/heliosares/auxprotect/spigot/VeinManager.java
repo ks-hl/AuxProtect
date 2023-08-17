@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import net.md_5.bungee.api.ChatColor;
 
 import java.sql.SQLException;
@@ -64,7 +65,7 @@ public class VeinManager {
                     if (o1.getUser(false) == null) SQLManager.getInstance().execute(c -> o1.getUser(), 3000L);
                     if (o2.getUser(false) == null) SQLManager.getInstance().execute(c -> o2.getUser(), 3000L);
                     return o1.getUser().compareTo(o2.getUser());
-                } catch (SQLException e) {
+                } catch (SQLException | BusyException e) {
                     AuxProtectAPI.getInstance().print(e);
                     return 0;
                 }

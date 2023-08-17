@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.towny;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Location;
 
 import java.sql.SQLException;
@@ -24,7 +25,7 @@ public class TownyEntry extends DbEntry {
     }
 
     @Override
-    public String getUser() throws SQLException {
+    public String getUser() throws SQLException, BusyException {
         if (user != null) {
             return user;
         }
@@ -39,7 +40,7 @@ public class TownyEntry extends DbEntry {
     }
 
     @Override
-    public String getTarget() throws SQLException {
+    public String getTarget() throws SQLException, BusyException {
         if (target != null) {
             return target;
         }

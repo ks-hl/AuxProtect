@@ -8,6 +8,7 @@ import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
 import com.palmergames.bukkit.towny.object.*;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -48,18 +49,18 @@ public class TownyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewDayEvent e) {
         e.getFallenTowns().forEach((t) -> {
-            handledeleted(t, false);
+            handleDeleted(t, false);
         });
         e.getFallenNations().forEach((n) -> {
-            handledeleted(n, true);
+            handleDeleted(n, true);
         });
     }
 
-    private void handledeleted(String name, boolean nation) {
+    private void handleDeleted(String name, boolean nation) {
         int uid;
         try {
             uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             plugin.print(e);
             return;
         }
@@ -71,7 +72,7 @@ public class TownyListener implements Listener {
         String uuid = null;
         try {
             uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, true);
-        } catch (SQLException ignored) {
+        } catch (SQLException | BusyException ignored) {
             //Unlikely
         }
         if (uuid == null) {

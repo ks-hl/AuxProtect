@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.DbEntryBukkit;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
@@ -41,7 +42,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
     private final Set<Location> modified = new HashSet<>();
 
-    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime, @Nullable List<BlockAction> blockActions) throws SQLException, LookupException {
+    public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime, @Nullable List<BlockAction> blockActions) throws SQLException, LookupException, BusyException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         this.audience = (Player) sender.getSender();
         this.realReferenceTime = System.currentTimeMillis();
@@ -130,7 +131,7 @@ public class PlaybackSolver extends BukkitRunnable {
     }
 
 
-    public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException {
+    public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, BusyException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
         Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));

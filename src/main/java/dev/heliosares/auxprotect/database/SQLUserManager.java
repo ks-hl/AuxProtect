@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
 import java.sql.*;
@@ -18,7 +19,7 @@ public class SQLUserManager {
         this.sql = sql;
     }
 
-    public void updateUsernameAndIP(UUID uuid, String name, String ip) throws SQLException {
+    public void updateUsernameAndIP(UUID uuid, String name, String ip) throws SQLException, BusyException {
         final int uid = this.getUIDFromUUID("$" + uuid, true, true);
         if (uid <= 0) {
             return;
@@ -63,7 +64,7 @@ public class SQLUserManager {
         }, 300000L);
     }
 
-    public String getUsernameFromUID(int uid, boolean wait) throws SQLException {
+    public String getUsernameFromUID(int uid, boolean wait) throws SQLException, BusyException {
         if (uid < 0) {
             return null;
         }
@@ -101,7 +102,7 @@ public class SQLUserManager {
         }, wait ? 300000L : 3000L, String.class);
     }
 
-    public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException {
+    public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException, BusyException {
         HashMap<Long, String> out = new HashMap<>();
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=?;";
         plugin.debug(stmt, 3);
@@ -123,7 +124,7 @@ public class SQLUserManager {
         return out;
     }
 
-    public int getUIDFromUsername(String username, boolean wait) throws SQLException {
+    public int getUIDFromUsername(String username, boolean wait) throws SQLException, BusyException {
         if (username == null) {
             return -1;
         }
@@ -156,11 +157,11 @@ public class SQLUserManager {
         }, wait ? 300000L : 3000L, Integer.class);
     }
 
-    public int getUIDFromUUID(String uuid, boolean wait) throws SQLException {
+    public int getUIDFromUUID(String uuid, boolean wait) throws SQLException, BusyException {
         return getUIDFromUUID(uuid, false, wait);
     }
 
-    public int getUIDFromUUID(String uuid, boolean insert, boolean wait) throws SQLException {
+    public int getUIDFromUUID(String uuid, boolean insert, boolean wait) throws SQLException, BusyException {
         if (uuid == null || uuid.equalsIgnoreCase("#null")) {
             return -1;
         }
@@ -204,7 +205,7 @@ public class SQLUserManager {
         return -1;
     }
 
-    public String getUUIDFromUID(int uid, boolean wait) throws SQLException {
+    public String getUUIDFromUID(int uid, boolean wait) throws SQLException, BusyException {
         if (uid < 0) {
             return "#null";
         }
@@ -234,7 +235,7 @@ public class SQLUserManager {
         return Collections.unmodifiableCollection(usernames.values());
     }
 
-    public byte[] getPendingInventory(int uid) throws SQLException {
+    public byte[] getPendingInventory(int uid) throws SQLException, BusyException {
         if (uid <= 0) {
             return null;
         }
@@ -252,7 +253,7 @@ public class SQLUserManager {
         }, 3000L, byte[].class);
     }
 
-    public void setPendingInventory(int uid, byte[] blob) throws SQLException {
+    public void setPendingInventory(int uid, byte[] blob) throws SQLException, BusyException {
         if (uid <= 0) {
             throw new IllegalArgumentException();
         }

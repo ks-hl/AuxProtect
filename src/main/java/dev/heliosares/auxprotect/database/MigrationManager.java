@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
@@ -114,12 +115,8 @@ public class MigrationManager {
                         }
                     }
                 }
-                if (output.size() > 0) {
-                    putRaw(table, output);
-                }
-                if (commands.size() > 0) {
-                    putRaw(Table.AUXPROTECT_COMMANDS, commands);
-                }
+                if (!output.isEmpty()) putRaw(table, output);
+                if (!commands.isEmpty()) putRaw(Table.AUXPROTECT_COMMANDS, commands);
             }
         }));
 
@@ -165,9 +162,8 @@ public class MigrationManager {
                         }
                     }
                 }
-                if (output.size() > 0) {
-                    putRaw(Table.AUXPROTECT_POSITION, output);
-                }
+                if (!output.isEmpty()) putRaw(Table.AUXPROTECT_POSITION, output);
+
                 plugin.info("Deleting old entries.");
                 sql.execute("DELETE FROM " + Table.AUXPROTECT_SPAM + " WHERE action_id = 256;", connection);
             }
@@ -256,7 +252,7 @@ public class MigrationManager {
                             continue;
                         }
                         if (size + entry.getValue().length > 16777215 || subBlobs.size() >= 1000) {
-                            if (subBlobs.size() == 0) {
+                            if (subBlobs.isEmpty()) {
                                 plugin.warning("Blob too big. Skipping. " + entry.getKey() + "e");
                                 continue;
                             }
@@ -274,7 +270,7 @@ public class MigrationManager {
                     }
 
                     StringBuilder where = new StringBuilder();
-                    if (blobs.size() > 0) {
+                    if (!blobs.isEmpty()) {
                         where.append(" WHERE time IN (");
                         for (Long time : blobs.keySet()) {
                             where.append(time).append(",");
@@ -483,7 +479,7 @@ public class MigrationManager {
         return isMigrating;
     }
 
-    void preTables() throws SQLException {
+    void preTables() throws SQLException, BusyException {
         sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);", connection);
 
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION;
@@ -537,7 +533,7 @@ public class MigrationManager {
         }
     }
 
-    void postTables() throws SQLException {
+    void postTables() throws SQLException, BusyException {
         for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
             MigrationAction action = migrationActions.get(i);
             if (action.necessary && action.postTableAction != null) {
@@ -668,7 +664,7 @@ public class MigrationManager {
 
     @FunctionalInterface
     interface MigrateRunnable {
-        void run() throws SQLException;
+        void run() throws SQLException, BusyException;
     }
 
     private record MigrationAction(boolean necessary, @Nullable MigrateRunnable preTableAction,

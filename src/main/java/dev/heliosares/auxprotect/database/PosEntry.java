@@ -56,7 +56,7 @@ public class PosEntry extends DbEntry {
     }
 
     /**
-     * Retrieves the fractional values from the increment byte generated in {@link PosEncoder#getFractionalByte(double, double, double)}
+     * Retrieves the fractional values from the increment byte generated in {@link #getFractionalByte(double, double, double)}
      *
      * @return An array of doubles of length 3, containing the x, y, and z fractions respectively.
      */

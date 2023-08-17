@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
@@ -49,7 +50,7 @@ public class SingleItemEntry extends DbEntry {
         this.damage = damage;
     }
 
-    public ItemStack getItem() throws SQLException {
+    public ItemStack getItem() throws SQLException, BusyException {
         if (item != null) {
             return item;
         }

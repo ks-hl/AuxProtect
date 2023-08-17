@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
@@ -109,14 +110,14 @@ public class DbEntry {
         this.data = data;
     }
 
-    public int getUid() throws SQLException {
+    public int getUid() throws SQLException, BusyException {
         if (uid > 0) {
             return uid;
         }
         return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true, true);
     }
 
-    public int getTargetId() throws SQLException {
+    public int getTargetId() throws SQLException, BusyException {
         if (action.getTable().hasStringTarget()) {
             return -1;
         }
@@ -126,11 +127,11 @@ public class DbEntry {
         return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
     }
 
-    public String getUser() throws SQLException {
+    public String getUser() throws SQLException, BusyException {
         return getUser(true);
     }
 
-    public String getUser(boolean resolve) throws SQLException {
+    public String getUser(boolean resolve) throws SQLException, BusyException {
         if (user != null || !resolve) return user;
 
         if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
@@ -143,11 +144,11 @@ public class DbEntry {
         return user;
     }
 
-    public String getTarget() throws SQLException {
+    public String getTarget() throws SQLException, BusyException {
         return getTarget(true);
     }
 
-    public String getTarget(boolean resolve) throws SQLException {
+    public String getTarget(boolean resolve) throws SQLException, BusyException {
         if (target != null || !resolve) return target;
 
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
@@ -160,7 +161,7 @@ public class DbEntry {
         return target;
     }
 
-    public String getTargetUUID() throws SQLException {
+    public String getTargetUUID() throws SQLException, BusyException {
         if (targetLabel != null) {
             return targetLabel;
         }
@@ -175,7 +176,7 @@ public class DbEntry {
         return targetLabel;
     }
 
-    public String getUserUUID() throws SQLException {
+    public String getUserUUID() throws SQLException, BusyException {
         if (userLabel != null) {
             return userLabel;
         }
@@ -205,7 +206,7 @@ public class DbEntry {
         return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
     }
 
-    public byte[] getBlob() throws SQLException {
+    public byte[] getBlob() throws SQLException, BusyException {
         if (blob == null) blob = SQLManager.getInstance().getBlob(this);
         return blob;
     }
@@ -232,10 +233,10 @@ public class DbEntry {
         try {
             out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
                     getAction().getId(getState()), getTarget());
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             out = "ERROR ";
         }
-        if (getData() != null && getData().length() > 0) {
+        if (getData() != null && !getData().isEmpty()) {
             String data = getData();
             if (data.length() > 64) {
                 data = data.substring(0, 64) + "...";

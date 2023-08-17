@@ -5,6 +5,7 @@ import com.palmergames.bukkit.towny.object.Government;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
@@ -36,7 +37,7 @@ public class TownyManager {
         TownyUniverse.getInstance().getNations().forEach((nation) -> sql.getTownyManager().updateName(nation, false));
     }
 
-    public String getNameFromID(int uid, boolean wait) throws SQLException {
+    public String getNameFromID(int uid, boolean wait) throws SQLException, BusyException {
         if (uid < 0) {
             return null;
         }
@@ -69,7 +70,7 @@ public class TownyManager {
         }, wait ? 30000L : 1000L, String.class);
     }
 
-    public int getIDFromName(String name, boolean wait) throws SQLException {
+    public int getIDFromName(String name, boolean wait) throws SQLException, BusyException {
         if (name == null) {
             return -1;
         }
@@ -109,7 +110,7 @@ public class TownyManager {
             int uid = -1;
             try {
                 uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true, true);
-            } catch (SQLException e) {
+            } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }
             if (uid <= 0) {
@@ -121,7 +122,7 @@ public class TownyManager {
             String newestusername;
             try {
                 newestusername = getNameFromID(uid, true);
-            } catch (SQLException e) {
+            } catch (SQLException | BusyException e) {
                 plugin.print(e);
                 return;
             }

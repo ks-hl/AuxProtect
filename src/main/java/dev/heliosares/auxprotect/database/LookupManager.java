@@ -43,8 +43,10 @@ public class LookupManager {
         if (param.hasFlag(Parameters.Flag.PLAYBACK) || param.hasFlag(Parameters.Flag.INCREMENTAL_POS)) {
             try {
                 sql.getMultipleBlobs(out.toArray(new DbEntry[0]));
+            } catch (BusyException e) {
+                throw new LookupException(Language.L.DATABASE_BUSY);
             } catch (SQLException e) {
-                plugin.print(e);
+                throw new LookupException(Language.L.ERROR);
             }
         }
 

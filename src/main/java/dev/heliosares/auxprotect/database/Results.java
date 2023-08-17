@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -52,7 +53,7 @@ public class Results {
     }
 
     @SuppressWarnings("deprecation")
-    public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time, boolean coords) throws SQLException {
+    public static void sendEntry(IAuxProtect plugin, SenderAdapter player, DbEntry entry, int index, boolean time, boolean coords) throws SQLException, BusyException {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         ComponentBuilder message = new ComponentBuilder();
 
@@ -202,11 +203,11 @@ public class Results {
         player.sendMessageRaw(headerColor + line + "  " + Language.L.RESULTS__HEADER + "&7  " + line);
     }
 
-    public void showPage(int page) throws SQLException {
+    public void showPage(int page) throws SQLException, BusyException {
         showPage(page, perPage);
     }
 
-    public void showPage(int page, int perPage_) throws SQLException {
+    public void showPage(int page, int perPage_) throws SQLException, BusyException {
         int lastpage = getNumPages(perPage_);
         if (page > lastpage || page < 1) {
             player.sendLang(Language.L.COMMAND__LOOKUP__NOPAGE);
@@ -223,7 +224,7 @@ public class Results {
         sendArrowKeys(page);
     }
 
-    public void sendEntry(DbEntry entry, int index) throws SQLException {
+    public void sendEntry(DbEntry entry, int index) throws SQLException, BusyException {
         sendEntry(plugin, player, entry, index, true, !params.hasFlag(Flag.HIDE_COORDS));
     }
 

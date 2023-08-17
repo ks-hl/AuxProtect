@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.bungee;
 
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.event.ChatEvent;
 import net.md_5.bungee.api.event.LoginEvent;
@@ -45,6 +46,8 @@ public class APBListener implements Listener {
             try {
                 plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(),
                         ip);
+            } catch (BusyException ex) {
+                plugin.warning("Database Busy: Unable to update username/ip for " + e.getConnection().getName() + ", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
             } catch (SQLException ex) {
                 plugin.print(ex);
             }

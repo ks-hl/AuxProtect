@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
@@ -92,7 +93,7 @@ public class BlobManager {
     }
 
     @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException {
+    public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
         if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
             return null;
         }

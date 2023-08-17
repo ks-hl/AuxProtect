@@ -21,8 +21,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
-import java.util.function.BinaryOperator;
-import java.util.stream.Stream;
 
 public class SQLManager extends ConnectionPool {
     public static final int MAX_LOOKUP_SIZE = 500000;
@@ -112,7 +110,7 @@ public class SQLManager extends ConnectionPool {
         return migrationmanager.getOriginalVersion();
     }
 
-    public void connect() throws SQLException {
+    public void connect() throws SQLException, BusyException {
         plugin.info("Connecting to database...");
 
         try {
@@ -204,7 +202,7 @@ public class SQLManager extends ConnectionPool {
         return backup.getAbsolutePath();
     }
 
-    private void init(Connection connection) throws SQLException {
+    private void init(Connection connection) throws SQLException, BusyException {
         this.migrationmanager = new MigrationManager(this, connection, plugin);
         migrationmanager.preTables();
 
@@ -332,6 +330,7 @@ public class SQLManager extends ConnectionPool {
         // Log and Clear Cache
         plugin.debug("Purged " + count + " UIDs");
         this.usermanager.clearCache();
+
         return count;
     }
 
@@ -361,7 +360,7 @@ public class SQLManager extends ConnectionPool {
     }
 
 
-    protected void put(Connection connection, Table table) throws SQLException {
+    protected void put(Connection connection, Table table) throws SQLException, BusyException {
         long start = System.nanoTime();
         int count;
         List<DbEntry> entries = new ArrayList<>();
@@ -469,7 +468,7 @@ public class SQLManager extends ConnectionPool {
                 + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
     }
 
-    public int purge(Table table, long time) throws SQLException {
+    public int purge(Table table, long time) throws SQLException, BusyException {
         if (!isConnected)
             return 0;
         if (time < Table.MIN_PURGE_INTERVAL) {
@@ -507,7 +506,7 @@ public class SQLManager extends ConnectionPool {
         return count;
     }
 
-    public void updateXrayEntry(XrayEntry entry) throws SQLException {
+    public void updateXrayEntry(XrayEntry entry) throws SQLException, BusyException {
         if (!isConnected)
             return;
         String stmt = "UPDATE " + entry.getAction().getTable().toString();
@@ -531,11 +530,11 @@ public class SQLManager extends ConnectionPool {
         }
 
         try {
-            execute("INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid) VALUES (?,?)", 30000L, world, nextWid);
+            execute("INSERT INTO " + Table.AUXPROTECT_WORLDS + " (name, wid) VALUES (?,?)", 300000L, world, nextWid);
             worlds.put(world, nextWid);
             rowcount++;
             return nextWid++;
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             plugin.print(e);
         }
         return -1;
@@ -568,8 +567,8 @@ public class SQLManager extends ConnectionPool {
      * @see dev.heliosares.auxprotect.api.AuxProtectAPI#createAction(String, String, String, String)
      */
     @SuppressWarnings("unused")
-    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException {
-        if (plugin.length() == 0 || key.isEmpty() || ntext.isEmpty()) {
+    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException, BusyException {
+        if (plugin.isEmpty() || key.isEmpty() || ntext.isEmpty()) {
             throw new IllegalArgumentException("Arguments cannot be empty.");
         }
         EntryAction preexisting = EntryAction.getAction(key);
@@ -602,18 +601,18 @@ public class SQLManager extends ConnectionPool {
             }
             try {
                 total += count(table);
-            } catch (SQLException ignored) {
+            } catch (SQLException | BusyException ignored) {
             }
         }
         plugin.debug("Counted all tables. " + total + " rows.");
         rowcount = total;
     }
 
-    public int count(Table table) throws SQLException {
+    public int count(Table table) throws SQLException, BusyException {
         return executeReturn(connection -> count(connection, table.toString()), 30000L, Integer.class);
     }
 
-    public byte[] getBlob(DbEntry entry) throws SQLException {
+    public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
         if (entry.getAction().getTable().hasBlob())
             return executeReturn(connection -> {
                 try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getTime() + " LIMIT 1")) {
@@ -630,7 +629,7 @@ public class SQLManager extends ConnectionPool {
         return null;
     }
 
-    public void getMultipleBlobs(DbEntry... entries) throws SQLException {
+    public void getMultipleBlobs(DbEntry... entries) throws SQLException, BusyException {
         execute(connection -> {
             Table table = null;
             StringBuilder stmt = new StringBuilder("SELECT time,ablob FROM %s WHERE time IN (");
@@ -676,6 +675,7 @@ public class SQLManager extends ConnectionPool {
                     try {
                         put(connection, t);
                     } catch (BusyException ignored) {
+                        // Only thrown by UID lookups. Shouldn't happen because this thread already has the lock
                     } catch (SQLException e) {
                         plugin.print(e);
                     }
@@ -692,7 +692,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     //TODO implement
-    public void setLast(LastKeys key, long value) throws SQLException {
+    public void setLast(LastKeys key, long value) throws SQLException, BusyException {
         key.value = value;
         execute(connection -> setLast(key, value, connection), 30000L);
     }
@@ -702,7 +702,7 @@ public class SQLManager extends ConnectionPool {
         execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", connection, value, key.id);
     }
 
-    public long getLast(LastKeys key) throws SQLException {
+    public long getLast(LastKeys key) throws SQLException, BusyException {
         if (key.value != null) return key.value;
         return executeReturn(connection -> getLast(key, connection), 30000L, Long.class);
     }

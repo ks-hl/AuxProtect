@@ -115,7 +115,7 @@ public class ConnectionPool {
         return true;
     }
 
-    public void init(SQLConsumer initializationTask) throws SQLException {
+    public void init(SQLConsumer initializationTask) throws SQLException, BusyException {
         connection = newConnectionSupplier.get();
         if (ready) throw new IllegalStateException("Already initialized");
         initializationTask.accept(connection);
@@ -184,7 +184,7 @@ public class ConnectionPool {
     /**
      * Same as {@link ConnectionPool#executeReturn(SQLFunction, long, Class)} but as a void
      */
-    public void execute(SQLConsumer task, long wait) throws SQLException {
+    public void execute(SQLConsumer task, long wait) throws SQLException, BusyException {
         executeReturn(connection -> {
             task.accept(connection);
             return null;
@@ -201,7 +201,7 @@ public class ConnectionPool {
      * @throws BusyException If the wait time is exceeded
      * @throws SQLException  For SQLException thrown by the task
      */
-    public <T> T executeReturn(SQLFunction<T> task, long wait, Class<T> type) throws SQLException {
+    public <T> T executeReturn(SQLFunction<T> task, long wait, Class<T> type) throws SQLException, BusyException {
         try {
             return executeReturnException(task::apply, wait, type);
         } catch (SQLException | BusyException e) {
@@ -261,7 +261,7 @@ public class ConnectionPool {
     /**
      * @see PreparedStatement#execute()
      */
-    public void execute(String stmt, long wait, Object... args) throws SQLException {
+    public void execute(String stmt, long wait, Object... args) throws SQLException, BusyException {
         execute(connection -> execute(stmt, connection, args), wait);
     }
 
@@ -279,7 +279,7 @@ public class ConnectionPool {
     /**
      * @see PreparedStatement#executeUpdate()
      */
-    public int executeReturnRows(String stmt, Object... args) throws SQLException {
+    public int executeReturnRows(String stmt, Object... args) throws SQLException, BusyException {
         debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
@@ -289,7 +289,7 @@ public class ConnectionPool {
         }, 30000L, Integer.class);
     }
 
-    public int executeReturnGenerated(String stmt, Object... args) throws SQLException {
+    public int executeReturnGenerated(String stmt, Object... args) throws SQLException, BusyException {
         debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
@@ -305,7 +305,7 @@ public class ConnectionPool {
         }, 30000L, Integer.class);
     }
 
-    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException {
+    public ResultMap executeGetMap(String stmt, Object... args) throws SQLException, BusyException {
         debugSQLStatement(stmt, args);
         return executeReturn(connection -> {
             try (PreparedStatement statement = connection.prepareStatement(stmt)) {

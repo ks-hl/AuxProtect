@@ -201,6 +201,9 @@ public class XrayCommand extends Command {
                                                 entry.setRating((short) 0, player.getName() + " BULK");
                                                 plugin.getSqlManager().updateXrayEntry(entry);
                                                 it.remove();
+                                            } catch (BusyException e) {
+                                                sender.sendLang(Language.L.DATABASE_BUSY);
+                                                return;
                                             } catch (SQLException e) {
                                                 sender.sendLang(Language.L.ERROR);
                                                 return;
