@@ -297,21 +297,39 @@ public class SQLManager extends ConnectionPool {
 
     }
 
-    public int purgeUIDs() throws SQLException {
-        BinaryOperator<String> reducer = (a, b) -> a + " AND " + b;
-        String stmt = "DELETE FROM auxprotect_uids WHERE " +
-                Stream.of(
-                        Arrays.stream(Table.values())
-                                .filter(Table::hasAPEntries)
-                                .map(table -> "(uid NOT IN (SELECT uid FROM " + table + " WHERE uid IS NOT NULL))")
-                                .reduce(reducer).orElse(""),
-                        Arrays.stream(Table.values())
-                                .filter(Table::hasAPEntries)
-                                .filter(table -> !table.hasStringTarget())
-                                .map(table -> "(uid NOT IN (SELECT target_id FROM " + table + " WHERE target_id IS NOT NULL))")
-                                .reduce(reducer).orElse("")
-                ).reduce(reducer).orElseThrow();
-        int count = executeReturnRows(stmt);
+    public int purgeUIDs() throws SQLException, BusyException {
+        int count = executeReturn(connection -> {
+            execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
+            try {
+                // Step 1: Create a Temporary Table
+                execute("CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)", connection);
+
+                // Step 2: Insert Data into the Temporary Table
+                for (Table table : Table.values()) {
+                    if (table.hasAPEntries()) {
+                        execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT uid FROM " + table, connection);
+                        if (!table.hasStringTarget()) {
+                            execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT target_id FROM " + table, connection);
+                        }
+                    }
+                }
+
+                // Step 3: Delete the UIDs
+                int count_ = executeReturnRows("DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
+
+                // Step 4: Drop the Temporary Table
+                execute("DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids", connection);
+
+                execute("COMMIT", connection);
+
+                return count_;
+            } catch (Throwable t) {
+                execute("ROLLBACK", connection);
+                throw t;
+            }
+        }, 30000L, Integer.class);
+
+        // Log and Clear Cache
         plugin.debug("Purged " + count + " UIDs");
         this.usermanager.clearCache();
         return count;
