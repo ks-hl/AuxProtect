@@ -567,7 +567,7 @@ public class SQLManager extends ConnectionPool {
             stmt += " AND time>" + since;
         }
         try {
-            return lookupmanager.lookup(this, Table.AUXPROTECT_XRAY, stmt, null);
+            return lookupmanager.lookup(Table.AUXPROTECT_XRAY, stmt, null);
         } catch (LookupException e) {
             plugin.print(e);
         }

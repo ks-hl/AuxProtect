@@ -82,8 +82,7 @@ public class XrayCommand extends Command {
                     if (time > 0) {
                         ArrayList<DbEntry> entries;
                         try {
-                            entries = plugin.getSqlManager().getLookupManager().lookup(plugin.getSqlManager(),
-                                    Table.AUXPROTECT_XRAY,
+                            entries = plugin.getSqlManager().getLookupManager().lookup(Table.AUXPROTECT_XRAY,
                                     "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE time = " + time, null);
                         } catch (LookupException e) {
                             plugin.print(e);
@@ -94,7 +93,7 @@ public class XrayCommand extends Command {
                             sender.sendLang(Language.L.XRAY_TOOMANY);
                             return;
                         }
-                        if (entries.size() == 0 && !override) {
+                        if (entries.isEmpty() && !override) {
                             sender.sendLang(Language.L.XRAY_NOTFOUND);
                             return;
                         }

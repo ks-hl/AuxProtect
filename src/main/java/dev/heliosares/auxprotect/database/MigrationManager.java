@@ -442,7 +442,7 @@ public class MigrationManager {
         migrationActions.put(14, new MigrationAction(sql.isMySQL(), () -> {
         }, () -> {
             for (Table table : Table.values()) {
-                if (!table.hasStringTarget() && !table.hasData()) continue;
+                if (!table.hasStringTarget() && !table.hasData() || !table.exists(plugin)) continue;
                 sql.execute("ALTER TABLE " + table + " CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;", connection);
             }
         }));

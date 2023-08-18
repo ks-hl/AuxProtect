@@ -21,7 +21,7 @@ public class TownyEntry extends DbEntry {
 
     public TownyEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
                       int pitch, int yaw, String target, int target_id, String data) {
-        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
+        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data, SQLManager.getInstance());
     }
 
     @Override
