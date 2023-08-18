@@ -116,7 +116,7 @@ public class SQLManager extends ConnectionPool {
         try {
             super.init(this::init);
         } catch (SQLException e) {
-            if (migrationmanager.isMigrating()) {
+            if (migrationmanager != null && migrationmanager.isMigrating()) {
                 plugin.warning(
                         "Error while migrating database. This database will likely not work with the current version. You will need to restore a backup (plugins/AuxProtect/database/backups) and try again. Please contact the plugin developer if you are unable to complete migration.");
             }
@@ -203,101 +203,112 @@ public class SQLManager extends ConnectionPool {
     }
 
     private void init(Connection connection) throws SQLException, BusyException {
-        this.migrationmanager = new MigrationManager(this, connection, plugin);
-        migrationmanager.preTables();
+        startTransaction(connection);
+        try {
+            this.migrationmanager = new MigrationManager(this, connection, plugin);
+            migrationmanager.preTables();
 
-        if (invdiffmanager != null) {
-            invdiffmanager.createTable(connection);
-        }
-
-        if (invblobmanager != null) {
-            invblobmanager.createTable(connection);
-        }
-
-        for (Table table : Table.values()) {
-            if (table.hasAPEntries()) {
-                execute(table.getSQLCreateString(plugin), connection);
+            if (invdiffmanager != null) {
+                invdiffmanager.createTable(connection);
             }
-        }
-        String stmt;
-        if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
-            stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-            execute(stmt, connection);
 
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
-            stmt += " (name varchar(255), wid SMALLINT);";
-            execute(stmt, connection);
+            if (invblobmanager != null) {
+                invblobmanager.createTable(connection);
+            }
 
-            stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
-            debugSQLStatement(stmt);
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet results = statement.executeQuery(stmt)) {
-                    while (results.next()) {
-                        String world = results.getString("name");
-                        int wid = results.getInt("wid");
-                        worlds.put(world, wid);
-                        if (wid >= nextWid) {
-                            nextWid = wid + 1;
+            for (Table table : Table.values()) {
+                if (table.hasAPEntries()) {
+                    execute(table.getSQLCreateString(plugin), connection);
+                }
+            }
+            String stmt;
+            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
+                stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
+                execute(stmt, connection);
+
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
+                stmt += " (name varchar(255), wid SMALLINT);";
+                execute(stmt, connection);
+
+                stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
+                debugSQLStatement(stmt);
+                try (Statement statement = connection.createStatement()) {
+                    try (ResultSet results = statement.executeQuery(stmt)) {
+                        while (results.next()) {
+                            String world = results.getString("name");
+                            int wid = results.getInt("wid");
+                            worlds.put(world, wid);
+                            if (wid >= nextWid) {
+                                nextWid = wid + 1;
+                            }
                         }
                     }
                 }
             }
-        }
 
-        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-        stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
-        execute(stmt, connection);
-        for (LastKeys key : LastKeys.values()) {
-            try {
-                execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
-            } catch (SQLException ignored) {
-                // Ensures each LastKeys has a value, so we can just UPDATE later
-            }
-        }
-
-        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
-                + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
-        execute(stmt, connection);
-
-        stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
-        debugSQLStatement(stmt);
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet results = statement.executeQuery(stmt)) {
-                while (results.next()) {
-                    String key = results.getString("name");
-                    int nid = results.getInt("nid");
-                    int pid = results.getInt("pid");
-                    String ntext = results.getString("ntext");
-                    String ptext = results.getString("ptext");
-                    nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
-                    new EntryAction(key, nid, pid, ntext, ptext);
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
+            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
+            execute(stmt, connection);
+            for (LastKeys key : LastKeys.values()) {
+                try {
+                    execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
+                } catch (SQLException ignored) {
+                    // Ensures each LastKeys has a value, so we can just UPDATE later
                 }
             }
+
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
+                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
+            execute(stmt, connection);
+
+            stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
+            debugSQLStatement(stmt);
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet results = statement.executeQuery(stmt)) {
+                    while (results.next()) {
+                        String key = results.getString("name");
+                        int nid = results.getInt("nid");
+                        int pid = results.getInt("pid");
+                        String ntext = results.getString("ntext");
+                        String ptext = results.getString("ptext");
+                        nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
+                        new EntryAction(key, nid, pid, ntext, ptext);
+                    }
+                }
+            }
+
+            usermanager.init(connection);
+
+            migrationmanager.postTables();
+
+            if (invdiffmanager != null) {
+                invdiffmanager.init(connection);
+            }
+
+            if (invblobmanager != null) {
+                invblobmanager.init(connection);
+            }
+
+            if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
+                setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
+
+            execute("COMMIT", connection);
+            plugin.debug("init done.");
+        } catch (Throwable t) {
+            plugin.warning("An error occurred during initialization. Rolling back changes.");
+            execute("ROLLBACK", connection);
+            throw t;
         }
+    }
 
-        usermanager.init(connection);
-
-        migrationmanager.postTables();
-
-        if (invdiffmanager != null) {
-            invdiffmanager.init(connection);
-        }
-
-        if (invblobmanager != null) {
-            invblobmanager.init(connection);
-        }
-
-        if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
-            setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
-
-        plugin.debug("init done.");
-
+    private void startTransaction(Connection connection) throws SQLException {
+        execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
     }
 
     public int purgeUIDs() throws SQLException, BusyException {
         int count = executeReturn(connection -> {
-            execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
+            startTransaction(connection);
             try {
                 // Step 1: Create a Temporary Table
                 execute("CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)", connection);

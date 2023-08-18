@@ -11,7 +11,7 @@ import java.sql.*;
 import java.util.*;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 13;
+    public static final int TARGET_DB_VERSION = 14;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -434,6 +434,19 @@ public class MigrationManager {
             }
         }));
 
+
+        //
+        // 14
+        //
+
+        migrationActions.put(14, new MigrationAction(sql.isMySQL(), () -> {
+        }, () -> {
+            for (Table table : Table.values()) {
+                if (!table.hasStringTarget() && !table.hasData()) continue;
+                sql.execute("ALTER TABLE " + table + " CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;", connection);
+            }
+        }));
+
         //
         // Finalizing
         //
@@ -513,7 +526,15 @@ public class MigrationManager {
                     + "...");
             plugin.info("This may take a while. Please do not interrupt.");
             isMigrating = true;
-            if (!sql.isMySQL()) {
+            boolean needBackup = false;
+            for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
+                MigrationAction action = migrationActions.get(i);
+                if (action.necessary) {
+                    needBackup = true;
+                    break;
+                }
+            }
+            if (!sql.isMySQL() && needBackup) {
                 String path = sql.backup(connection);
                 if (path != null) plugin.info("Pre-migration database backup created: " + path);
             }

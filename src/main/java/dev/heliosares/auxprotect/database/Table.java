@@ -187,7 +187,7 @@ public enum Table {
             } else {
                 stmt += "varchar(255)";
             }
-            if(this==AUXPROTECT_LONGTERM) {
+            if (this == AUXPROTECT_LONGTERM) {
                 stmt += ",\n    target_hash INT";
             }
         } else {
@@ -207,7 +207,12 @@ public enum Table {
             stmt += ",\n    qty INTEGER";
             stmt += ",\n    damage INTEGER";
         }
-        stmt += "\n);";
+        stmt += "\n)";
+
+        if (plugin.getSqlManager().isMySQL() && (hasStringTarget() || hasData())) {
+            stmt += " CHARACTER SET utf8mb4";
+            stmt += " COLLATE utf8mb4_general_ci;";
+        }
 
         return stmt;
     }
