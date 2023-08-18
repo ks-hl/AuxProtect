@@ -5,10 +5,7 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
 import java.sql.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.CompletableFuture;
 
 public class SQLUserManager {
@@ -234,6 +231,10 @@ public class SQLUserManager {
         }, wait ? 300000L : 3000L, String.class);
     }
 
+    public Collection<String> getCachedUsernames() {
+        return Collections.unmodifiableCollection(usernames.values());
+    }
+
     public byte[] getPendingInventory(int uid) throws SQLException, BusyException {
         if (uid <= 0) {
             return null;
@@ -271,6 +272,11 @@ public class SQLUserManager {
         }
     }
 
+    protected void cleanup() {
+        usernames.cleanup();
+        uuids.cleanup();
+    }
+
     public void init(Connection connection) throws SQLException {
         String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS;
         if (sql.isMySQL()) {
@@ -287,14 +293,5 @@ public class SQLUserManager {
     public void clearCache() {
         usernames.clear();
         uuids.clear();
-    }
-
-    protected void cleanup() {
-        usernames.cleanup();
-        uuids.cleanup();
-    }
-
-    public Collection<String> getCachedUsernames() {
-        return Collections.unmodifiableCollection(usernames.values());
     }
 }

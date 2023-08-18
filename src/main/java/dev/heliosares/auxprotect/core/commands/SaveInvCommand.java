@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;

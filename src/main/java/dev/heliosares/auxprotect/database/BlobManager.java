@@ -15,9 +15,9 @@ import java.util.Iterator;
 import java.util.Map;
 
 public class BlobManager {
-    protected final HashMap<Integer, BlobCache> cache = new HashMap<>();
     private final SQLManager sql;
     private final IAuxProtect plugin;
+    protected final HashMap<Integer, BlobCache> cache = new HashMap<>();
     private final Table table;
     private long nextBlobID = 1;
     private long lastcleanup;
@@ -26,68 +26,6 @@ public class BlobManager {
         this.table = table;
         this.sql = sqlManager;
         this.plugin = plugin;
-    }
-
-    @SuppressWarnings("deprecation")
-    public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
-        if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
-            return null;
-        }
-        byte[] blob = sql.executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID())) {
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        return sql.getBlob(rs, 1);
-                    }
-                }
-            }
-            return null;
-        }, 30000L, byte[].class);
-
-        if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
-            boolean hasblob = false;
-            String data = entry.getData();
-            if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
-                data = data.substring(
-                        data.indexOf(InvSerialization.ITEM_SEPARATOR) + InvSerialization.ITEM_SEPARATOR.length());
-                hasblob = true;
-            }
-            if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
-                plugin.info("Migrating inventory in place to v6: " + entry.getTime());
-                try {
-                    blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
-                } catch (Exception e) {
-                    plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
-                }
-            } else if (hasblob) {
-                plugin.info("Migrating item in place to v6: " + entry.getTime());
-                blob = Base64Coder.decodeLines(data);
-            } else {
-                plugin.info("Attempted to migrate invalid log");
-                return null;
-            }
-            final byte[] blob_ = blob;
-            long blobid = sql.executeReturn(connection -> getBlobId(connection, blob_), 3000L, Long.class);
-            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", 30000L, blobid, entry.getTime());
-
-        }
-        return blob;
-    }
-
-    public void cleanup() {
-        synchronized (cache) {
-            if (System.currentTimeMillis() - lastcleanup < 300000) {
-                return;
-            }
-            lastcleanup = System.currentTimeMillis();
-            Iterator<Map.Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
-            for (Map.Entry<Integer, BlobCache> other; it.hasNext(); ) {
-                other = it.next();
-                if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
-                    it.remove();
-                }
-            }
-        }
     }
 
     protected void createTable(Connection connection) throws SQLException {
@@ -152,6 +90,68 @@ public class BlobManager {
             }
         }
         return id;
+    }
+
+    @SuppressWarnings("deprecation")
+    public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
+        if (entry.getBlobID() <= 0) {// TODO does this break skipV6?
+            return null;
+        }
+        byte[] blob = sql.executeReturn(connection -> {
+            try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID())) {
+                try (ResultSet rs = pstmt.executeQuery()) {
+                    if (rs.next()) {
+                        return sql.getBlob(rs, 1);
+                    }
+                }
+            }
+            return null;
+        }, 30000L, byte[].class);
+
+        if (blob == null && plugin.getAPConfig().doSkipV6Migration()) {
+            boolean hasblob = false;
+            String data = entry.getData();
+            if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
+                data = data.substring(
+                        data.indexOf(InvSerialization.ITEM_SEPARATOR) + InvSerialization.ITEM_SEPARATOR.length());
+                hasblob = true;
+            }
+            if (entry.getAction().id == EntryAction.INVENTORY.id && data.length() > 20) {
+                plugin.info("Migrating inventory in place to v6: " + entry.getTime());
+                try {
+                    blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
+                } catch (Exception e) {
+                    plugin.warning("Failed to migrate inventory " + entry.getTime() + ".");
+                }
+            } else if (hasblob) {
+                plugin.info("Migrating item in place to v6: " + entry.getTime());
+                blob = Base64Coder.decodeLines(data);
+            } else {
+                plugin.info("Attempted to migrate invalid log");
+                return null;
+            }
+            final byte[] blob_ = blob;
+            long blobid = sql.executeReturn(connection -> getBlobId(connection, blob_), 3000L, Long.class);
+            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=?, data = '' where time=?", 30000L, blobid, entry.getTime());
+
+        }
+        return blob;
+    }
+
+    public void cleanup() {
+        synchronized (cache) {
+            if (System.currentTimeMillis() - lastcleanup < 300000) {
+                return;
+            }
+            lastcleanup = System.currentTimeMillis();
+            Iterator<Map.Entry<Integer, BlobCache>> it = cache.entrySet().iterator();
+            for (Map.Entry<Integer, BlobCache> other; it.hasNext(); ) {
+                other = it.next();
+                if (System.currentTimeMillis() - other.getValue().lastused > 600000L) {
+                    it.remove();
+                }
+            }
+        }
     }
 
     static class BlobCache {

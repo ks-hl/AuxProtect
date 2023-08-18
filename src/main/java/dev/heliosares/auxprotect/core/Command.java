@@ -9,9 +9,9 @@ import java.util.List;
 public abstract class Command {
     protected final IAuxProtect plugin;
     protected final String label;
+    private final boolean async;
     protected final String[] aliases;
     protected final APPermission permission;
-    private final boolean async;
     protected boolean tabComplete = true;
 
     public Command(IAuxProtect plugin, String label, APPermission permission, boolean async, String... aliases) {
@@ -25,6 +25,14 @@ public abstract class Command {
     public abstract void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException;
 
     public abstract @Nullable List<String> onTabComplete(SenderAdapter sender, String label, String[] args);
+
+    public String getLabel() {
+        return label;
+    }
+
+    public String[] getAliases() {
+        return aliases;
+    }
 
     public boolean hasPermission(SenderAdapter sender) {
         return permission.hasPermission(sender);
@@ -56,14 +64,6 @@ public abstract class Command {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public abstract boolean exists();
-
-    public String getLabel() {
-        return label;
-    }
-
-    public String[] getAliases() {
-        return aliases;
-    }
 
     public boolean isAsync() {
         return async;

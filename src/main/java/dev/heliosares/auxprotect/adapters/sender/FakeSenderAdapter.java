@@ -21,35 +21,6 @@ public class FakeSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public void sendMessage(BaseComponent... message) {
-        StringBuilder line = new StringBuilder();
-        for (BaseComponent part : message) {
-            line.append(part);
-        }
-        console += line + "\n";
-    }
-
-    @Override
-    public void sendMessageRaw(String message) {
-        console += message + "\n";
-    }
-
-    @Override
-    public boolean hasPermission(String node) {
-        return permissions;
-    }
-
-    @Override
-    public void executeCommand(String command) {
-        sendMessageRaw("**Executing " + command);
-    }
-
-    @Override
-    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
-            throws NullPointerException, UnsupportedOperationException {
-    }
-
-    @Override
     public Object getSender() {
         return null;
     }
@@ -74,12 +45,41 @@ public class FakeSenderAdapter extends SenderAdapter {
     }
 
     @Override
+    public void sendMessage(BaseComponent... message) {
+        StringBuilder line = new StringBuilder();
+        for (BaseComponent part : message) {
+            line.append(part);
+        }
+        console += line + "\n";
+    }
+
+    @Override
+    public void sendMessageRaw(String message) {
+        console += message + "\n";
+    }
+
+    @Override
+    public boolean hasPermission(String node) {
+        return permissions;
+    }
+
+    @Override
+    public void executeCommand(String command) {
+        sendMessageRaw("**Executing " + command);
+    }
+
+    @Override
     public boolean isConsole() {
         return false;
     }
 
     public String getConsoleLog() {
         return console;
+    }
+
+    @Override
+    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
+            throws NullPointerException, UnsupportedOperationException {
     }
 
 }

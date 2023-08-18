@@ -46,6 +46,11 @@ public class ConnectionPool {
         checkDriver();
     }
 
+    @FunctionalInterface
+    public interface ConnectionSupplier {
+        Connection get() throws SQLException;
+    }
+
     public static int getExpiredConnections() {
         return expired;
     }
@@ -116,6 +121,44 @@ public class ConnectionPool {
         initializationTask.accept(connection);
         ready = true;
         timeConnected = System.currentTimeMillis();
+    }
+
+    public long getLockedSince() {
+        return lockedSince;
+    }
+
+    public long getTimeConnected() {
+        return timeConnected;
+    }
+
+    public StackTraceElement[] getWhoHasLock() {
+        return whoHasLock;
+    }
+
+    private void checkDriver() throws ClassNotFoundException {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        throw new ClassNotFoundException("SQL Driver not found");
+    }
+
+    private void checkAsync() throws IllegalStateException {
+        if (skipAsyncCheck) return;
+        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException("Synchronous call to database.");
+        }
     }
 
     @OverridingMethodsMustInvokeSuper
@@ -211,6 +254,10 @@ public class ConnectionPool {
         }
     }
 
+    public boolean isMySQL() {
+        return mysql;
+    }
+
     /**
      * @see PreparedStatement#execute()
      */
@@ -290,6 +337,7 @@ public class ConnectionPool {
         plugin.debug(stmt, 5);
     }
 
+
     public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
         if (isMySQL()) {
             Blob ablob = connection.createBlob();
@@ -321,14 +369,6 @@ public class ConnectionPool {
             }
         } else {
             return rs.getBytes(index);
-        }
-    }
-
-    public String concat(String s1, String s2) {
-        if (isMySQL()) {
-            return "CONCAT(" + s1 + "," + s2 + ")";
-        } else {
-            return s1 + "||" + s2;
         }
     }
 
@@ -378,53 +418,6 @@ public class ConnectionPool {
         }
     }
 
-    private void checkDriver() throws ClassNotFoundException {
-        try {
-            Class.forName("org.sqlite.JDBC");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        throw new ClassNotFoundException("SQL Driver not found");
-    }
-
-    private void checkAsync() throws IllegalStateException {
-        if (skipAsyncCheck) return;
-        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
-            throw new IllegalStateException("Synchronous call to database.");
-        }
-    }
-
-    @FunctionalInterface
-    public interface ConnectionSupplier {
-        Connection get() throws SQLException;
-    }
-
-    public long getLockedSince() {
-        return lockedSince;
-    }
-
-    public long getTimeConnected() {
-        return timeConnected;
-    }
-
-    public StackTraceElement[] getWhoHasLock() {
-        return whoHasLock;
-    }
-
-    public boolean isMySQL() {
-        return mysql;
-    }
-
     private boolean isConnectionValid() {
         if (connection == null) return false;
         if (!isMySQL()) return true;
@@ -439,6 +432,14 @@ public class ConnectionPool {
             } catch (SQLException ignored) {
             }
             return false;
+        }
+    }
+
+    public String concat(String s1, String s2) {
+        if (isMySQL()) {
+            return "CONCAT(" + s1 + "," + s2 + ")";
+        } else {
+            return s1 + "||" + s2;
         }
     }
 }

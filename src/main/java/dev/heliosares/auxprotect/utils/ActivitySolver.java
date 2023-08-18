@@ -97,12 +97,12 @@ public class ActivitySolver {
 
                 int activity = counter[i];
 
-                String hovertext = ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
+                String hovertext = "" + ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
 
                 if (activity < 0) {
                     hovertext += "" + ChatColor.COLOR_CHAR + "7Offline";
                 } else if (activity > 0) {
-                    hovertext += ChatColor.COLOR_CHAR + "7Activity Level " + ChatColor.COLOR_CHAR + "9" + activity;
+                    hovertext += "" + ChatColor.COLOR_CHAR + "7Activity Level " + ChatColor.COLOR_CHAR + "9" + activity;
                 } else {
                     hovertext += "" + ChatColor.COLOR_CHAR + "cNo Activity";
                 }

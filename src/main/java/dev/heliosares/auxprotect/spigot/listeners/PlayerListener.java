@@ -189,7 +189,7 @@ public class PlayerListener implements Listener {
                         plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
                                 e.getPlayer().getName(), ip);
                     } catch (BusyException ex) {
-                        plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getName() + ", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
+                        plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getName()+", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
                     } catch (SQLException ex) {
                         plugin.print(ex);
                     }
@@ -298,6 +298,11 @@ public class PlayerListener implements Listener {
                 e.getPlayer().getLocation(), "", e.getReason()));
     }
 
+    protected void logSession(Player player, boolean login, String supp) {
+        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
+                supp));
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeashEntityEvent(PlayerLeashEntityEvent e) {
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, true,
@@ -357,10 +362,5 @@ public class PlayerListener implements Listener {
             e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "cChat is disabled.");
             e.setCancelled(true);
         }
-    }
-
-    protected void logSession(Player player, boolean login, String supp) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
-                supp));
     }
 }

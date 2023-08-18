@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
-    final Set<Integer> stackHashHistory = new HashSet<>();
     private final APConfig config = new APConfig();
+    final Set<Integer> stackHashHistory = new HashSet<>();
     protected DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
     private boolean isShuttingDown;
@@ -186,8 +186,17 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public boolean isShuttingDown() {
+        return isShuttingDown;
+    }
+
+    @Override
     public InputStream getResource(String string) {
         return getResourceAsStream(string);
+    }
+
+    public SQLManager getSqlManager() {
+        return sqlManager;
     }
 
     @Override
@@ -223,71 +232,8 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         logToStackLog(stack);
     }
 
-    @Override
-    public void add(DbEntry dbEntry) {
-        dbRunnable.add(dbEntry);
-    }
-
-    @Override
-    public void runAsync(Runnable run) {
-        getProxy().getScheduler().runAsync(this, run);
-    }
-
-    @Override
-    public void runSync(Runnable run) {
-        runAsync(run);
-    }
-
-    @Nullable
-    @Override
-    public SenderAdapter getSenderAdapter(String name) {
-        ProxiedPlayer target = getProxy().getPlayer(name);
-        if (target == null) return null;
-        return new BungeeSenderAdapter(this, target);
-    }
-
-    @Override
-    public boolean isHooked(String name) {
-        // TODO zz Future implementation
-        return false;
-    }
-
-    @Override
-    public APPlayer getAPPlayer(SenderAdapter sender) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int queueSize() {
-        return dbRunnable.queueSize();
-    }
-
-    @Override
-    public Set<String> listPlayers() {
-        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toUnmodifiableSet());
-    }
-
-    @Override
-    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
-        dbRunnable.addRemoveEntryListener(consumer, add);
-    }
-
-    @Override
-    public void broadcast(String msg, APPermission node) {
-        getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
-    }
-
     private void logToStackLog(String msg) {
         stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
-    }
-
-    @Override
-    public boolean isShuttingDown() {
-        return isShuttingDown;
-    }
-
-    public SQLManager getSqlManager() {
-        return sqlManager;
     }
 
     @Override
@@ -306,6 +252,21 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public void add(DbEntry dbEntry) {
+        dbRunnable.add(dbEntry);
+    }
+
+    @Override
+    public void runAsync(Runnable run) {
+        getProxy().getScheduler().runAsync(this, run);
+    }
+
+    @Override
+    public void runSync(Runnable run) {
+        runAsync(run);
+    }
+
+    @Override
     public String getCommandPrefix() {
         return "auxprotectbungee";
     }
@@ -313,6 +274,20 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public SenderAdapter getConsoleSender() {
         return new BungeeSenderAdapter(this, this.getProxy().getConsole());
+    }
+
+    @Nullable
+    @Override
+    public SenderAdapter getSenderAdapter(String name) {
+        ProxiedPlayer target = getProxy().getPlayer(name);
+        if (target == null) return null;
+        return new BungeeSenderAdapter(this, target);
+    }
+
+    @Override
+    public boolean isHooked(String name) {
+        // TODO zz Future implementation
+        return false;
     }
 
     @Override
@@ -331,6 +306,21 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public APPlayer getAPPlayer(SenderAdapter sender) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int queueSize() {
+        return dbRunnable.queueSize();
+    }
+
+    @Override
+    public Set<String> listPlayers() {
+        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toUnmodifiableSet());
+    }
+
+    @Override
     public boolean isEnabled() {
         return enabled;
     }
@@ -338,5 +328,15 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public String getCommandAlias() {
         return "apb";
+    }
+
+    @Override
+    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
+        dbRunnable.addRemoveEntryListener(consumer, add);
+    }
+
+    @Override
+    public void broadcast(String msg, APPermission node) {
+        getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
     }
 }

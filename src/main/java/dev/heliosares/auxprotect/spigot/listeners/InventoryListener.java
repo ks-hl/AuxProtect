@@ -38,6 +38,29 @@ public class InventoryListener implements Listener {
         log(e.getPlayer(), e.getInventory(), false);
     }
 
+    private void log(HumanEntity player, Inventory inv, boolean state) {
+        int count = 0;
+        for (ItemStack item : inv.getContents()) {
+            if (item == null)
+                continue;
+            count += item.getAmount();
+        }
+        String label = AuxProtectSpigot.getLabel(inv.getHolder());
+        if (label.equals("#null")) {
+            if (inv.getLocation() != null) {
+                Block block = inv.getLocation().getBlock();
+                label = "#" + block.getType().toString().toLowerCase();
+            }
+        }
+        Location location = inv.getLocation();
+        if (location == null) {
+            location = player.getLocation();
+        }
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
+                count + " items in inventory.");
+        plugin.add(entry);
+    }
+
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEnchantItemEvent(EnchantItemEvent e) {
         ItemStack item = e.getItem().clone();
@@ -137,29 +160,6 @@ public class InventoryListener implements Listener {
             }
         }
 
-        plugin.add(entry);
-    }
-
-    private void log(HumanEntity player, Inventory inv, boolean state) {
-        int count = 0;
-        for (ItemStack item : inv.getContents()) {
-            if (item == null)
-                continue;
-            count += item.getAmount();
-        }
-        String label = AuxProtectSpigot.getLabel(inv.getHolder());
-        if (label.equals("#null")) {
-            if (inv.getLocation() != null) {
-                Block block = inv.getLocation().getBlock();
-                label = "#" + block.getType().toString().toLowerCase();
-            }
-        }
-        Location location = inv.getLocation();
-        if (location == null) {
-            location = player.getLocation();
-        }
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
-                count + " items in inventory.");
         plugin.add(entry);
     }
 

@@ -18,12 +18,13 @@ public class ChartRenderer extends MapRenderer {
     public static final int yShift = 12;
     public static final int xSize = 100;
     public static final int ySize = 100;
-    public final double xScale = 1;
     private final double[] values;
     private final Color bgColor;
     private final String title;
     private final int xDivs;
+
     private final AuxProtectSpigot plugin;
+    public final double xScale = 1;
     private final Color[][] map = new Color[128][128];
     public double yScale = 1;
 
@@ -99,7 +100,7 @@ public class ChartRenderer extends MapRenderer {
                 case 2 -> 'M';
                 default -> ' ';
             };
-            canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + suffix);
+            canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + "" + suffix);
             setPixelColor(canvas, xShift - 2, yPos, Color.BLACK);
         }
         drawXDivs(view, canvas, player);
@@ -110,6 +111,27 @@ public class ChartRenderer extends MapRenderer {
         for (int x = 0; x < xDivs; x++) {
             map[(int) Math.round(x * pixelsPerDiv + xShift) - 1][ySize + yShift + 2] = Color.BLACK;
         }
+    }
+
+    private int[] getCoordsForData(double x, double y) {
+        x *= xScale;
+        y *= yScale;
+
+        if (x > xSize + 1) {
+            x = xSize + 1;
+        }
+        if (x < 0) {
+            x = 0;
+        }
+
+        if (y > ySize + 1) {
+            y = ySize + 1;
+        }
+        if (y < 0) {
+            y = 0;
+        }
+
+        return new int[]{xShift + (int) Math.round(x), yShift + 100 - (int) Math.round(y)};
     }
 
     public ItemStack asItem(Player player) {
@@ -137,26 +159,5 @@ public class ChartRenderer extends MapRenderer {
         } else {
             canvas.setPixel(x, y, MapPalette.matchColor(color));
         }
-    }
-
-    private int[] getCoordsForData(double x, double y) {
-        x *= xScale;
-        y *= yScale;
-
-        if (x > xSize + 1) {
-            x = xSize + 1;
-        }
-        if (x < 0) {
-            x = 0;
-        }
-
-        if (y > ySize + 1) {
-            y = ySize + 1;
-        }
-        if (y < 0) {
-            y = 0;
-        }
-
-        return new int[]{xShift + (int) Math.round(x), yShift + 100 - (int) Math.round(y)};
     }
 }

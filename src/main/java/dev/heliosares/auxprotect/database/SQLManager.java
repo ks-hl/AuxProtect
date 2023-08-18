@@ -73,6 +73,43 @@ public class SQLManager extends ConnectionPool {
         return instance;
     }
 
+    public String getTablePrefix() {
+        return tablePrefix;
+    }
+
+    public SQLUserManager getUserManager() {
+        return usermanager;
+    }
+
+    public LookupManager getLookupManager() {
+        return lookupmanager;
+    }
+
+    public InvDiffManager getInvDiffManager() {
+        return invdiffmanager;
+    }
+
+    public TownyManager getTownyManager() {
+        return townymanager;
+    }
+
+    public int getCount() {
+        return rowcount;
+    }
+
+    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
+    public boolean isConnected() {
+        return isConnected;
+    }
+
+    public int getVersion() {
+        return migrationmanager.getVersion();
+    }
+
+    public int getOriginalVersion() {
+        return migrationmanager.getOriginalVersion();
+    }
+
     public void connect() throws SQLException, BusyException {
         plugin.info("Connecting to database...");
 
@@ -165,6 +202,110 @@ public class SQLManager extends ConnectionPool {
         return backup.getAbsolutePath();
     }
 
+    private void init(Connection connection) throws SQLException, BusyException {
+        startTransaction(connection);
+        try {
+            this.migrationmanager = new MigrationManager(this, connection, plugin);
+            migrationmanager.preTables();
+
+            if (invdiffmanager != null) {
+                invdiffmanager.createTable(connection);
+            }
+
+            if (invblobmanager != null) {
+                invblobmanager.createTable(connection);
+            }
+
+            for (Table table : Table.values()) {
+                if (table.hasAPEntries()) {
+                    execute(table.getSQLCreateString(plugin), connection);
+                }
+            }
+            String stmt;
+            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
+                stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
+                execute(stmt, connection);
+
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
+                stmt += " (name varchar(255), wid SMALLINT);";
+                execute(stmt, connection);
+
+                stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
+                debugSQLStatement(stmt);
+                try (Statement statement = connection.createStatement()) {
+                    try (ResultSet results = statement.executeQuery(stmt)) {
+                        while (results.next()) {
+                            String world = results.getString("name");
+                            int wid = results.getInt("wid");
+                            worlds.put(world, wid);
+                            if (wid >= nextWid) {
+                                nextWid = wid + 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
+            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
+            execute(stmt, connection);
+            for (LastKeys key : LastKeys.values()) {
+                try {
+                    execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
+                } catch (SQLException ignored) {
+                    // Ensures each LastKeys has a value, so we can just UPDATE later
+                }
+            }
+
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
+                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
+            execute(stmt, connection);
+
+            stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
+            debugSQLStatement(stmt);
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet results = statement.executeQuery(stmt)) {
+                    while (results.next()) {
+                        String key = results.getString("name");
+                        int nid = results.getInt("nid");
+                        int pid = results.getInt("pid");
+                        String ntext = results.getString("ntext");
+                        String ptext = results.getString("ptext");
+                        nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
+                        new EntryAction(key, nid, pid, ntext, ptext);
+                    }
+                }
+            }
+
+            usermanager.init(connection);
+
+            migrationmanager.postTables();
+
+            if (invdiffmanager != null) {
+                invdiffmanager.init(connection);
+            }
+
+            if (invblobmanager != null) {
+                invblobmanager.init(connection);
+            }
+
+            if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
+                setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
+
+            execute("COMMIT", connection);
+            plugin.debug("init done.");
+        } catch (Throwable t) {
+            plugin.warning("An error occurred during initialization. Rolling back changes.");
+            execute("ROLLBACK", connection);
+            throw t;
+        }
+    }
+
+    private void startTransaction(Connection connection) throws SQLException {
+        execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
+    }
+
     public int purgeUIDs() throws SQLException, BusyException {
         int count = executeReturn(connection -> {
             startTransaction(connection);
@@ -227,6 +368,115 @@ public class SQLManager extends ConnectionPool {
             }
         }
         setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
+    }
+
+
+    protected void put(Connection connection, Table table) throws SQLException, BusyException {
+        long start = System.nanoTime();
+        int count;
+        List<DbEntry> entries = new ArrayList<>();
+
+        DbEntry entry;
+        while ((entry = table.queue.poll()) != null) {
+            entries.add(entry);
+        }
+        count = entries.size();
+        if (count == 0) {
+            return;
+        }
+        StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
+        int numColumns = table.getNumColumns(plugin.getPlatform());
+        String inc = Table.getValuesTemplate(numColumns);
+        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
+        final boolean hasData = table.hasData();
+        final boolean hasAction = table.hasActionId();
+        final boolean hasLook = table.hasLook();
+        stmt.append(table.getValuesHeader(plugin.getPlatform()));
+        stmt.append(" VALUES");
+        for (int i = 0; i < entries.size(); i++) {
+            stmt.append("\n").append(inc);
+            if (i + 1 == entries.size()) {
+                stmt.append(";");
+            } else {
+                stmt.append(",");
+            }
+        }
+        try (PreparedStatement statement = connection.prepareStatement(stmt.toString())) {
+
+            int i = 1;
+            for (DbEntry dbEntry : entries) {
+                int prior = i;
+                statement.setLong(i++, dbEntry.getTime());
+                statement.setInt(i++, dbEntry.getUid());
+                int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
+
+                if (hasAction) {
+                    statement.setInt(i++, action);
+                }
+                if (hasLocation) {
+                    statement.setInt(i++, getWID(dbEntry.getWorld()));
+                    statement.setInt(i++, dbEntry.getX());
+                    statement.setInt(i++, Math.max(Math.min(dbEntry.getY(), Short.MAX_VALUE), Short.MIN_VALUE));
+                    statement.setInt(i++, dbEntry.getZ());
+
+                    if (dbEntry instanceof PosEntry posEntry) statement.setByte(i++, posEntry.getIncrement());
+                    else if (table == Table.AUXPROTECT_POSITION) statement.setByte(i++, (byte) 0);
+                }
+                if (hasLook) {
+                    statement.setInt(i++, dbEntry.getPitch());
+                    statement.setInt(i++, dbEntry.getYaw());
+                }
+                if (table.hasStringTarget()) {
+                    String target = sanitize(dbEntry.getTargetUUID());
+                    statement.setString(i++, target);
+                    if (table == Table.AUXPROTECT_LONGTERM) {
+                        statement.setInt(i++, target.toLowerCase().hashCode());
+                    }
+                } else {
+                    statement.setInt(i++, dbEntry.getTargetId());
+                }
+                if (dbEntry instanceof XrayEntry) {
+                    statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
+                }
+                if (hasData) {
+                    statement.setString(i++, sanitize(dbEntry.getData()));
+                }
+                if (table.hasBlob()) {
+                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
+                        setBlob(connection, statement, i++, dbEntry.getBlob());
+                    } else statement.setNull(i++, Types.NULL);
+                } else if (table.hasBlobID()) {
+                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
+                        long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
+                        statement.setLong(i++, blobid);
+                    } else statement.setNull(i++, Types.NULL);
+                    if (table.hasItemMeta()) {
+                        if (dbEntry instanceof SingleItemEntry sientry && sientry.getItem() != null) {
+                            statement.setInt(i++, sientry.getQty());
+                            statement.setInt(i++, sientry.getDamage());
+                        } else {
+                            statement.setNull(i++, Types.NULL);
+                            statement.setNull(i++, Types.NULL);
+                        }
+                    }
+                }
+                if (i - prior != numColumns) {
+                    plugin.warning("Incorrect number of columns provided inserting action "
+                            + dbEntry.getAction().toString() + " into " + table);
+                    plugin.warning(i - prior + " =/= " + numColumns);
+                    plugin.warning("Statement: " + stmt);
+                    throw new IllegalArgumentException();
+                }
+            }
+
+            statement.executeUpdate();
+        }
+
+        rowcount += entries.size();
+
+        double elapsed = (System.nanoTime() - start) / 1000000.0;
+        plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
+                + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
     }
 
     public int purge(Table table, long time) throws SQLException, BusyException {
@@ -353,6 +603,22 @@ public class SQLManager extends ConnectionPool {
         return action;
     }
 
+    private void count() {
+        int total = 0;
+        plugin.debug("Counting rows..");
+        for (Table table : Table.values()) {
+            if (!table.exists(plugin) || !table.hasAPEntries()) {
+                continue;
+            }
+            try {
+                total += count(table);
+            } catch (SQLException | BusyException ignored) {
+            }
+        }
+        plugin.debug("Counted all tables. " + total + " rows.");
+        rowcount = total;
+    }
+
     public int count(Table table) throws SQLException, BusyException {
         return executeReturn(connection -> count(connection, table.toString()), 30000L, Integer.class);
     }
@@ -396,6 +662,10 @@ public class SQLManager extends ConnectionPool {
                 }
             }
         }, 30000L);
+    }
+
+    protected void incrementRows() {
+        rowcount++;
     }
 
     public void cleanup() {
@@ -459,237 +729,12 @@ public class SQLManager extends ConnectionPool {
         }
     }
 
-    protected void put(Connection connection, Table table) throws SQLException, BusyException {
-        long start = System.nanoTime();
-        int count;
-        List<DbEntry> entries = new ArrayList<>();
-
-        DbEntry entry;
-        while ((entry = table.queue.poll()) != null) {
-            entries.add(entry);
-        }
-        count = entries.size();
-        if (count == 0) {
-            return;
-        }
-        StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
-        int numColumns = table.getNumColumns(plugin.getPlatform());
-        String inc = Table.getValuesTemplate(numColumns);
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
-        final boolean hasData = table.hasData();
-        final boolean hasAction = table.hasActionId();
-        final boolean hasLook = table.hasLook();
-        stmt.append(table.getValuesHeader(plugin.getPlatform()));
-        stmt.append(" VALUES");
-        for (int i = 0; i < entries.size(); i++) {
-            stmt.append("\n").append(inc);
-            if (i + 1 == entries.size()) {
-                stmt.append(";");
-            } else {
-                stmt.append(",");
-            }
-        }
-        try (PreparedStatement statement = connection.prepareStatement(stmt.toString())) {
-
-            int i = 1;
-            for (DbEntry dbEntry : entries) {
-                int prior = i;
-                statement.setLong(i++, dbEntry.getTime());
-                statement.setInt(i++, dbEntry.getUid());
-                int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
-
-                if (hasAction) {
-                    statement.setInt(i++, action);
-                }
-                if (hasLocation) {
-                    statement.setInt(i++, getWID(dbEntry.getWorld()));
-                    statement.setInt(i++, dbEntry.getX());
-                    statement.setInt(i++, Math.max(Math.min(dbEntry.getY(), Short.MAX_VALUE), Short.MIN_VALUE));
-                    statement.setInt(i++, dbEntry.getZ());
-
-                    if (dbEntry instanceof PosEntry posEntry) statement.setByte(i++, posEntry.getIncrement());
-                    else if (table == Table.AUXPROTECT_POSITION) statement.setByte(i++, (byte) 0);
-                }
-                if (hasLook) {
-                    statement.setInt(i++, dbEntry.getPitch());
-                    statement.setInt(i++, dbEntry.getYaw());
-                }
-                if (table.hasStringTarget()) {
-                    String target = sanitize(dbEntry.getTargetUUID());
-                    statement.setString(i++, target);
-                    if (table == Table.AUXPROTECT_LONGTERM) {
-                        statement.setInt(i++, target.toLowerCase().hashCode());
-                    }
-                } else {
-                    statement.setInt(i++, dbEntry.getTargetId());
-                }
-                if (dbEntry instanceof XrayEntry) {
-                    statement.setShort(i++, ((XrayEntry) dbEntry).getRating());
-                }
-                if (hasData) {
-                    statement.setString(i++, sanitize(dbEntry.getData()));
-                }
-                if (table.hasBlob()) {
-                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        setBlob(connection, statement, i++, dbEntry.getBlob());
-                    } else statement.setNull(i++, Types.NULL);
-                } else if (table.hasBlobID()) {
-                    if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
-                        statement.setLong(i++, blobid);
-                    } else statement.setNull(i++, Types.NULL);
-                    if (table.hasItemMeta()) {
-                        if (dbEntry instanceof SingleItemEntry sientry && sientry.getItem() != null) {
-                            statement.setInt(i++, sientry.getQty());
-                            statement.setInt(i++, sientry.getDamage());
-                        } else {
-                            statement.setNull(i++, Types.NULL);
-                            statement.setNull(i++, Types.NULL);
-                        }
-                    }
-                }
-                if (i - prior != numColumns) {
-                    plugin.warning("Incorrect number of columns provided inserting action "
-                            + dbEntry.getAction().toString() + " into " + table);
-                    plugin.warning(i - prior + " =/= " + numColumns);
-                    plugin.warning("Statement: " + stmt);
-                    throw new IllegalArgumentException();
-                }
-            }
-
-            statement.executeUpdate();
-        }
-
-        rowcount += entries.size();
-
-        double elapsed = (System.nanoTime() - start) / 1000000.0;
-        plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
-                + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
+    @Nullable
+    public String getMigrationStatus() {
+        if (migrationmanager == null) return null;
+        return migrationmanager.getProgressString();
     }
 
-    protected void incrementRows() {
-        rowcount++;
-    }
-
-    private void init(Connection connection) throws SQLException, BusyException {
-        startTransaction(connection);
-        try {
-            this.migrationmanager = new MigrationManager(this, connection, plugin);
-            migrationmanager.preTables();
-
-            if (invdiffmanager != null) {
-                invdiffmanager.createTable(connection);
-            }
-
-            if (invblobmanager != null) {
-                invblobmanager.createTable(connection);
-            }
-
-            for (Table table : Table.values()) {
-                if (table.hasAPEntries()) {
-                    execute(table.getSQLCreateString(plugin), connection);
-                }
-            }
-            String stmt;
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
-                stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-                execute(stmt, connection);
-
-                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
-                stmt += " (name varchar(255), wid SMALLINT);";
-                execute(stmt, connection);
-
-                stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
-                debugSQLStatement(stmt);
-                try (Statement statement = connection.createStatement()) {
-                    try (ResultSet results = statement.executeQuery(stmt)) {
-                        while (results.next()) {
-                            String world = results.getString("name");
-                            int wid = results.getInt("wid");
-                            worlds.put(world, wid);
-                            if (wid >= nextWid) {
-                                nextWid = wid + 1;
-                            }
-                        }
-                    }
-                }
-            }
-
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
-            execute(stmt, connection);
-            for (LastKeys key : LastKeys.values()) {
-                try {
-                    execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
-                } catch (SQLException ignored) {
-                    // Ensures each LastKeys has a value, so we can just UPDATE later
-                }
-            }
-
-            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
-                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
-            execute(stmt, connection);
-
-            stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
-            debugSQLStatement(stmt);
-            try (Statement statement = connection.createStatement()) {
-                try (ResultSet results = statement.executeQuery(stmt)) {
-                    while (results.next()) {
-                        String key = results.getString("name");
-                        int nid = results.getInt("nid");
-                        int pid = results.getInt("pid");
-                        String ntext = results.getString("ntext");
-                        String ptext = results.getString("ptext");
-                        nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
-                        new EntryAction(key, nid, pid, ntext, ptext);
-                    }
-                }
-            }
-
-            usermanager.init(connection);
-
-            migrationmanager.postTables();
-
-            if (invdiffmanager != null) {
-                invdiffmanager.init(connection);
-            }
-
-            if (invblobmanager != null) {
-                invblobmanager.init(connection);
-            }
-
-            if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
-                setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
-
-            execute("COMMIT", connection);
-            plugin.debug("init done.");
-        } catch (Throwable t) {
-            plugin.warning("An error occurred during initialization. Rolling back changes.");
-            execute("ROLLBACK", connection);
-            throw t;
-        }
-    }
-
-    private void startTransaction(Connection connection) throws SQLException {
-        execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
-    }
-
-    private void count() {
-        int total = 0;
-        plugin.debug("Counting rows..");
-        for (Table table : Table.values()) {
-            if (!table.exists(plugin) || !table.hasAPEntries()) {
-                continue;
-            }
-            try {
-                total += count(table);
-            } catch (SQLException | BusyException ignored) {
-            }
-        }
-        plugin.debug("Counted all tables. " + total + " rows.");
-        rowcount = total;
-    }
 
     public enum LastKeys {
         AUTO_PURGE(1), VACUUM(2), TELEMETRY(3), LEGACY_POSITIONS(4);
@@ -700,48 +745,5 @@ public class SQLManager extends ConnectionPool {
         LastKeys(int id) {
             this.id = (short) id;
         }
-    }
-
-    public String getTablePrefix() {
-        return tablePrefix;
-    }
-
-    public SQLUserManager getUserManager() {
-        return usermanager;
-    }
-
-    public LookupManager getLookupManager() {
-        return lookupmanager;
-    }
-
-    public InvDiffManager getInvDiffManager() {
-        return invdiffmanager;
-    }
-
-    public TownyManager getTownyManager() {
-        return townymanager;
-    }
-
-    public int getCount() {
-        return rowcount;
-    }
-
-    @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-    public boolean isConnected() {
-        return isConnected;
-    }
-
-    public int getVersion() {
-        return migrationmanager.getVersion();
-    }
-
-    public int getOriginalVersion() {
-        return migrationmanager.getOriginalVersion();
-    }
-
-    @Nullable
-    public String getMigrationStatus() {
-        if (migrationmanager == null) return null;
-        return migrationmanager.getProgressString();
     }
 }

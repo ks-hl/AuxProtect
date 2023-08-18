@@ -70,6 +70,35 @@ public class InvDiffManager extends BlobManager {
         queue.add(new InvDiffRecord(uuid, slot, qty, item));
     }
 
+    protected void put(Connection connection) {
+        for (InvDiffRecord diff; (diff = queue.poll()) != null; ) {
+            byte[] blob = null;
+            final long time = System.currentTimeMillis();
+            Integer damage = null;
+            if (diff.qty() != 0 && diff.item() != null) {
+                if (diff.item().getItemMeta() != null && diff.item().getItemMeta() instanceof Damageable meta) {
+                    damage = meta.getDamage();
+                    meta.setDamage(0);
+                    diff.item().setItemMeta(meta);
+                }
+                try {
+                    blob = InvSerialization.toByteArraySingle(diff.item());
+                } catch (IOException e) {
+                    plugin.print(e);
+                    continue;
+                }
+            }
+            try {
+                long blobid = getBlobId(connection, blob);
+                String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
+
+                sql.execute(stmt, connection, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
+            } catch (SQLException | BusyException e) {
+                plugin.print(e);
+            }
+        }
+    }
+
     public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
         long after = 0;
 
@@ -154,35 +183,6 @@ public class InvDiffManager extends BlobManager {
         } catch (Exception e) {
             plugin.print(e);
             return null;
-        }
-    }
-
-    protected void put(Connection connection) {
-        for (InvDiffRecord diff; (diff = queue.poll()) != null; ) {
-            byte[] blob = null;
-            final long time = System.currentTimeMillis();
-            Integer damage = null;
-            if (diff.qty() != 0 && diff.item() != null) {
-                if (diff.item().getItemMeta() != null && diff.item().getItemMeta() instanceof Damageable meta) {
-                    damage = meta.getDamage();
-                    meta.setDamage(0);
-                    diff.item().setItemMeta(meta);
-                }
-                try {
-                    blob = InvSerialization.toByteArraySingle(diff.item());
-                } catch (IOException e) {
-                    plugin.print(e);
-                    continue;
-                }
-            }
-            try {
-                long blobid = getBlobId(connection, blob);
-                String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
-
-                sql.execute(stmt, connection, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
-            } catch (SQLException | BusyException e) {
-                plugin.print(e);
-            }
         }
     }
 

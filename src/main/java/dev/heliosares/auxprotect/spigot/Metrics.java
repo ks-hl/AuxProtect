@@ -120,6 +120,21 @@ public class Metrics {
         builder.appendField("pluginVersion", plugin.getDescription().getVersion());
     }
 
+    private int getPlayerAmount() {
+        try {
+            // Around MC 1.8 the return type was changed from an array to a collection,
+            // This fixes java.lang.NoSuchMethodError:
+            // org.bukkit.Bukkit.getOnlinePlayers()Ljava/util/Collection;
+            Method onlinePlayersMethod = Class.forName("org.bukkit.Server").getMethod("getOnlinePlayers");
+            return onlinePlayersMethod.getReturnType().equals(Collection.class)
+                    ? ((Collection<?>) onlinePlayersMethod.invoke(Bukkit.getServer())).size()
+                    : ((Player[]) onlinePlayersMethod.invoke(Bukkit.getServer())).length;
+        } catch (Exception e) {
+            // Just use the new method if the reflection failed
+            return Bukkit.getOnlinePlayers().size();
+        }
+    }
+
     public static class MetricsBase {
 
         /**
@@ -786,20 +801,6 @@ public class Metrics {
         }
 
         /**
-         * Builds the JSON string and invalidates this builder.
-         *
-         * @return The built JSON string.
-         */
-        public JsonObject build() {
-            if (builder == null) {
-                throw new IllegalStateException("JSON has already been built");
-            }
-            JsonObject object = new JsonObject(builder.append("}").toString());
-            builder = null;
-            return object;
-        }
-
-        /**
          * Appends a field to the object.
          *
          * @param key          The key of the field.
@@ -817,6 +818,20 @@ public class Metrics {
             }
             builder.append("\"").append(escape(key)).append("\":").append(escapedValue);
             hasAtLeastOneField = true;
+        }
+
+        /**
+         * Builds the JSON string and invalidates this builder.
+         *
+         * @return The built JSON string.
+         */
+        public JsonObject build() {
+            if (builder == null) {
+                throw new IllegalStateException("JSON has already been built");
+            }
+            JsonObject object = new JsonObject(builder.append("}").toString());
+            builder = null;
+            return object;
         }
 
         /**
@@ -839,21 +854,6 @@ public class Metrics {
             public String toString() {
                 return value;
             }
-        }
-    }
-
-    private int getPlayerAmount() {
-        try {
-            // Around MC 1.8 the return type was changed from an array to a collection,
-            // This fixes java.lang.NoSuchMethodError:
-            // org.bukkit.Bukkit.getOnlinePlayers()Ljava/util/Collection;
-            Method onlinePlayersMethod = Class.forName("org.bukkit.Server").getMethod("getOnlinePlayers");
-            return onlinePlayersMethod.getReturnType().equals(Collection.class)
-                    ? ((Collection<?>) onlinePlayersMethod.invoke(Bukkit.getServer())).size()
-                    : ((Player[]) onlinePlayersMethod.invoke(Bukkit.getServer())).length;
-        } catch (Exception e) {
-            // Just use the new method if the reflection failed
-            return Bukkit.getOnlinePlayers().size();
         }
     }
 }

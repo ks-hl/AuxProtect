@@ -25,70 +25,6 @@ public class PosEncoder {
                 posture.equals(lastPosture) ? null : posture);
     }
 
-    /**
-     * Decodes all components with an incremental byte array according to {@link PosEncoder#decodeSingle(byte[], int)}
-     *
-     * @param bytes The incremental byte array
-     * @return A list of records representing the presence and value of each component of position.
-     */
-    public static List<PositionIncrement> decode(byte[] bytes) {
-        List<PositionIncrement> out = new ArrayList<>();
-        for (int i = 0, safety = 0; i < bytes.length && safety < bytes.length; safety++) {
-            PositionIncrement decoded = decodeSingle(bytes, i);
-            i += decoded.bytes;
-            out.add(decoded);
-        }
-        return out;
-    }
-
-    public static byte setBit(byte b, int index, boolean value) {
-        if (index > 7 || index < 0) throw new IndexOutOfBoundsException(index + " is not a valid byte index.");
-        byte val = (byte) (1 << index);
-        if (value) b |= val;
-        else b &= ~val;
-        return b;
-    }
-
-    public static boolean getBit(byte b, int index) {
-        return ((b >> index) & 1) == 1;
-    }
-
-    public static List<PosEncoder.PositionIncrement> decodeLegacy(byte[] bytes) {
-        List<PosEncoder.PositionIncrement> out = new ArrayList<>();
-        for (int offset = 0, safety = 0; offset < bytes.length && safety < bytes.length; safety++) {
-            double[] doubles = new double[5];
-            byte hdr = bytes[offset];
-
-            boolean yaw = hdr < 0;
-            if (yaw) hdr += 128;
-
-            int xlen = hdr & 0b11;
-            int ylen = (hdr >> 2) & 0b11;
-            int zlen = (hdr >> 4) & 0b11;
-
-            if (xlen > 0) doubles[0] = toDouble(bytes, offset + 1, xlen);
-            if (xlen == 3) xlen = 1;
-            if (ylen > 0) doubles[1] = toDouble(bytes, offset + 1 + xlen, ylen);
-            if (ylen == 3) ylen = 1;
-            if (zlen > 0) doubles[2] = toDouble(bytes, offset + 1 + xlen + ylen, zlen);
-            if (zlen == 3) zlen = 1;
-
-            boolean pitch = (hdr >> 6 & 1) == 1;
-            if (pitch) doubles[3] = bytes[offset + 1 + xlen + ylen + zlen];
-            if (yaw) doubles[4] = (double) bytes[offset + 1 + xlen + ylen + zlen + (pitch ? 1 : 0)] / 127.0 * 180;
-
-            PosEncoder.PositionIncrement decod = new PosEncoder.PositionIncrement(
-                    xlen > 0, doubles[0],
-                    ylen > 0, doubles[1],
-                    zlen > 0, doubles[2], pitch && yaw, (float) doubles[3], (float) doubles[4],
-                    false, null,
-                    1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
-            offset += decod.bytes();
-            out.add(decod);
-        }
-        return out;
-    }
-
     private static byte[] encode(double diffX_, double diffY_, double diffZ_, boolean doLook, float pitch_, float yaw_, @Nullable Posture posture) {
         IncrementalByte diffX = simplify(diffX_);
         IncrementalByte diffY = simplify(diffY_);
@@ -133,6 +69,22 @@ public class PosEncoder {
         }
 
         return bb.array();
+    }
+
+    /**
+     * Decodes all components with an incremental byte array according to {@link PosEncoder#decodeSingle(byte[], int)}
+     *
+     * @param bytes The incremental byte array
+     * @return A list of records representing the presence and value of each component of position.
+     */
+    public static List<PositionIncrement> decode(byte[] bytes) {
+        List<PositionIncrement> out = new ArrayList<>();
+        for (int i = 0, safety = 0; i < bytes.length && safety < bytes.length; safety++) {
+            PositionIncrement decoded = decodeSingle(bytes, i);
+            i += decoded.bytes;
+            out.add(decoded);
+        }
+        return out;
     }
 
     /**
@@ -235,12 +187,26 @@ public class PosEncoder {
         return new IncrementalByte(new byte[]{(byte) (s >> 8), lower}, false);
     }
 
+    /**
+     * @param array The data
+     * @param fine  Whether the value is stored in hundredths or tenths. true indicates hundredths.
+     */
+    record IncrementalByte(byte[] array, boolean fine) {
+        public int getBytesNeeded() {
+            return fine ? 3 : array.length;
+        }
+    }
+
     public enum Posture {
         STANDING(0), SNEAKING(1), SWIMMING(2), GLIDING(3), SITTING(4), CRAWLING(5), SLEEPING(6);
         private final byte id;
 
         Posture(int id) {
             this.id = (byte) id;
+        }
+
+        public byte getID() {
+            return id;
         }
 
         public static Posture fromPlayer(Player player) {
@@ -257,20 +223,6 @@ public class PosEncoder {
             for (Posture posture : values()) if (posture.id == id) return posture;
             throw new IllegalArgumentException("Unknown posture: " + id);
         }
-
-        public byte getID() {
-            return id;
-        }
-    }
-
-    /**
-     * @param array The data
-     * @param fine  Whether the value is stored in hundredths or tenths. true indicates hundredths.
-     */
-    record IncrementalByte(byte[] array, boolean fine) {
-        public int getBytesNeeded() {
-            return fine ? 3 : array.length;
-        }
     }
 
     public record PositionIncrement(boolean hasX, double x, boolean hasY, double y, boolean hasZ, double z,
@@ -280,5 +232,53 @@ public class PosEncoder {
         public String toString() {
             return "X=" + (hasX ? x : "none") + " Y=" + (hasY ? y : "none") + " Z=" + (hasZ ? z : "none") + " Pitch=" + pitch + " Yaw=" + yaw + " Posture=" + posture;
         }
+    }
+
+    public static byte setBit(byte b, int index, boolean value) {
+        if (index > 7 || index < 0) throw new IndexOutOfBoundsException(index + " is not a valid byte index.");
+        byte val = (byte) (1 << index);
+        if (value) b |= val;
+        else b &= ~val;
+        return b;
+    }
+
+    public static boolean getBit(byte b, int index) {
+        return ((b >> index) & 1) == 1;
+    }
+
+    public static List<PosEncoder.PositionIncrement> decodeLegacy(byte[] bytes) {
+        List<PosEncoder.PositionIncrement> out = new ArrayList<>();
+        for (int offset = 0, safety = 0; offset < bytes.length && safety < bytes.length; safety++) {
+            double[] doubles = new double[5];
+            byte hdr = bytes[offset];
+
+            boolean yaw = hdr < 0;
+            if (yaw) hdr += 128;
+
+            int xlen = hdr & 0b11;
+            int ylen = (hdr >> 2) & 0b11;
+            int zlen = (hdr >> 4) & 0b11;
+
+            if (xlen > 0) doubles[0] = toDouble(bytes, offset + 1, xlen);
+            if (xlen == 3) xlen = 1;
+            if (ylen > 0) doubles[1] = toDouble(bytes, offset + 1 + xlen, ylen);
+            if (ylen == 3) ylen = 1;
+            if (zlen > 0) doubles[2] = toDouble(bytes, offset + 1 + xlen + ylen, zlen);
+            if (zlen == 3) zlen = 1;
+
+            boolean pitch = (hdr >> 6 & 1) == 1;
+            if (pitch) doubles[3] = bytes[offset + 1 + xlen + ylen + zlen];
+            if (yaw) doubles[4] = (double) bytes[offset + 1 + xlen + ylen + zlen + (pitch ? 1 : 0)] / 127.0 * 180;
+
+            PosEncoder.PositionIncrement decod = new PosEncoder.PositionIncrement(
+                    xlen > 0, doubles[0],
+                    ylen > 0, doubles[1],
+                    zlen > 0, doubles[2], pitch && yaw, (float) doubles[3], (float) doubles[4],
+                    false, null,
+                    1 + xlen + ylen + zlen + (yaw ? 1 : 0) + (pitch ? 1 : 0));
+            offset += decod.bytes();
+            out.add(decod);
+        }
+        return out;
     }
 }

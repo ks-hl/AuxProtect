@@ -196,6 +196,15 @@ public class APCommand extends Command {
         }
     }
 
+    private void sendInfo(SenderAdapter sender) {
+        sender.sendMessageRaw("&9AuxProtect"
+                + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
+        sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
+        if (APPermission.ADMIN.hasPermission(sender)) {
+            sender.sendMessageRaw("&7&ohttps://www.spigotmc.org/resources/auxprotect.99147/");
+        }
+    }
+
     @Override
     public boolean exists() {
         return true;
@@ -236,14 +245,5 @@ public class APCommand extends Command {
         }
         final String currentArg_ = currentArg.toLowerCase();
         return out.stream().filter((s) -> s.toLowerCase().startsWith(currentArg_)).collect(Collectors.toList());
-    }
-
-    private void sendInfo(SenderAdapter sender) {
-        sender.sendMessageRaw("&9AuxProtect"
-                + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
-        sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
-        if (APPermission.ADMIN.hasPermission(sender)) {
-            sender.sendMessageRaw("&7&ohttps://www.spigotmc.org/resources/auxprotect.99147/");
-        }
     }
 }
