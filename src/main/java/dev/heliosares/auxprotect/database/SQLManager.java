@@ -49,7 +49,7 @@ public class SQLManager extends ConnectionPool {
         this.lookupmanager = new LookupManager(this, plugin);
         this.invdiffmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
         this.invblobmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
-        if (prefix == null || prefix.length() == 0) {
+        if (prefix == null || prefix.isEmpty()) {
             tablePrefix = "";
         } else {
             prefix = prefix.replaceAll(" ", "_");

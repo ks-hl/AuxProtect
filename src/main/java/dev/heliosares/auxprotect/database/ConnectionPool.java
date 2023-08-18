@@ -16,13 +16,12 @@ import java.io.InputStream;
 import java.sql.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.Supplier;
 
 public class ConnectionPool {
     private static final long[][] accessTimes = new long[500][];
     private static int expired = 0;
     private static int writeTimeIndex;
-    private final Supplier<Connection> newConnectionSupplier;
+    private final ConnectionSupplier newConnectionSupplier;
     private final boolean mysql;
     private final IAuxProtect plugin;
     private final ReentrantLock lock = new ReentrantLock();
@@ -41,14 +40,15 @@ public class ConnectionPool {
         this.plugin = plugin;
         this.mysql = mysql;
         this.newConnectionSupplier = () -> {
-            try {
-                if (mysql) return DriverManager.getConnection(connString, user, pwd);
-                else return DriverManager.getConnection(connString);
-            } catch (SQLException ignored) {
-            }
-            return null;
+            if (mysql) return DriverManager.getConnection(connString, user, pwd);
+            else return DriverManager.getConnection(connString);
         };
         checkDriver();
+    }
+
+    @FunctionalInterface
+    public interface ConnectionSupplier {
+        Connection get() throws SQLException;
     }
 
     public static int getExpiredConnections() {
