@@ -257,6 +257,17 @@ public class XrayCommand extends Command {
         }
     }
 
+    @Override
+    public boolean exists() {
+        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
+    }
+
+    @Override
+    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+        // TODO This whole thing...
+        return null;
+    }
+
     private void nextEntry(AuxProtectSpigot plugin, SenderAdapter player, boolean auto) {
         XrayEntry en = plugin.getVeinManager().next(player.getUniqueId());
         if (en == null) {
@@ -272,16 +283,5 @@ public class XrayCommand extends Command {
         } catch (SQLException e) {
             player.sendLang(Language.L.ERROR);
         }
-    }
-
-    @Override
-    public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
-    }
-
-    @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-        // TODO This whole thing...
-        return null;
     }
 }

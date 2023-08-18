@@ -6,7 +6,6 @@ public class APPermission {
     public static final APPermission NONE = new APPermission(null);
     public static final APPermission NOTIFY_INACTIVE = new APPermission("inactive.notify");
     public static final APPermission BYPASS_INACTIVE = new APPermission("inactive.bypass");
-    private static final APPermission ROOT = new APPermission("auxprotect");
     public static final APPermission ADMIN = ROOT.dot("admin");
     public static final APPermission PURGE = ROOT.dot("purge");
     public static final APPermission TP = ROOT.dot("tp");
@@ -16,7 +15,6 @@ public class APPermission {
     public static final APPermission LOOKUP_ACTION = LOOKUP.dot("action");
     public static final APPermission LOOKUP_GROUP = LOOKUP.dot("group");
     public static final APPermission LOOKUP_XRAY = LOOKUP.dot("xray");
-
     public static final APPermission LOOKUP_XRAY_BULK = LOOKUP_XRAY.dot("bulk");
     public static final APPermission LOOKUP_PLAYTIME = LOOKUP.dot("playtime");
     public static final APPermission LOOKUP_ACTIVITY = LOOKUP.dot("activity");
@@ -32,7 +30,7 @@ public class APPermission {
     public static final APPermission INV_RECOVER = INV.dot("recover");
     public static final APPermission INV_NOTIFY = INV.dot("notify");
     public static final APPermission WATCH = ROOT.dot("watch");
-
+    private static final APPermission ROOT = new APPermission("auxprotect");
     public final String node;
 
     private APPermission(String node) {

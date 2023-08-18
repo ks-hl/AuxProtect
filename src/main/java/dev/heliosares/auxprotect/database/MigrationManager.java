@@ -459,39 +459,6 @@ public class MigrationManager {
         }
     }
 
-    public int getComplete() {
-        return complete;
-    }
-
-    public int getTotal() {
-        return total;
-    }
-
-    public String getProgressString() {
-        if (!isMigrating()) return null;
-        if (migratingToVersion <= 0) return null;
-        int progressPercentage = (int) Math.floor((double) getComplete() / getTotal() * 100);
-        return String.format("Migration to v%d %d%% complete. (%d/%d). DO NOT INTERRUPT", migratingToVersion, progressPercentage, getComplete(), getTotal());
-    }
-
-    public int getOriginalVersion() {
-        return originalVersion;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    private void setVersion(int version) throws SQLException {
-        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-                + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
-        plugin.info("Done migrating to version " + version);
-    }
-
-    boolean isMigrating() {
-        return isMigrating;
-    }
-
     void preTables() throws SQLException, BusyException {
         sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);", connection);
 
@@ -682,7 +649,6 @@ public class MigrationManager {
         }
     }
 
-
     @FunctionalInterface
     interface MigrateRunnable {
         void run() throws SQLException, BusyException;
@@ -690,5 +656,38 @@ public class MigrationManager {
 
     private record MigrationAction(boolean necessary, @Nullable MigrateRunnable preTableAction,
                                    @Nullable MigrateRunnable postTableAction) {
+    }
+
+    public int getComplete() {
+        return complete;
+    }
+
+    public int getTotal() {
+        return total;
+    }
+
+    public String getProgressString() {
+        if (!isMigrating()) return null;
+        if (migratingToVersion <= 0) return null;
+        int progressPercentage = (int) Math.floor((double) getComplete() / getTotal() * 100);
+        return String.format("Migration to v%d %d%% complete. (%d/%d). DO NOT INTERRUPT", migratingToVersion, progressPercentage, getComplete(), getTotal());
+    }
+
+    public int getOriginalVersion() {
+        return originalVersion;
+    }
+
+    public int getVersion() {
+        return version;
+    }
+
+    private void setVersion(int version) throws SQLException {
+        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
+                + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
+        plugin.info("Done migrating to version " + version);
+    }
+
+    boolean isMigrating() {
+        return isMigrating;
     }
 }

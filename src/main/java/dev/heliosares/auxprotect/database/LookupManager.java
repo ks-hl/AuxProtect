@@ -20,13 +20,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class LookupManager {
+    private static final BidiMapCache<Long, Parameters> groupParameterCache = new BidiMapCache<>(3 * 3600000L, 3 * 3600000L, true);
     private final SQLManager sql;
     private final IAuxProtect plugin;
-    private static final BidiMapCache<Long, Parameters> groupParameterCache = new BidiMapCache<>(3 * 3600000L, 3 * 3600000L, true);
 
     public LookupManager(SQLManager sql, IAuxProtect plugin) {
         this.sql = sql;
         this.plugin = plugin;
+    }
+
+    public static Parameters getParametersForGroup(long groupHash) {
+        return groupParameterCache.get(groupHash);
     }
 
     public List<DbEntry> lookup(Parameters param) throws LookupException {
@@ -65,10 +69,6 @@ public class LookupManager {
         }
 
         return out;
-    }
-
-    public static Parameters getParametersForGroup(long groupHash) {
-        return groupParameterCache.get(groupHash);
     }
 
     public int count(Parameters... params) throws LookupException {

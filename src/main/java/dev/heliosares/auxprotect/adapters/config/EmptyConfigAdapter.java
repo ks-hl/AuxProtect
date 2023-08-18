@@ -74,11 +74,6 @@ public class EmptyConfigAdapter extends ConfigAdapter {
     }
 
     @Override
-    public PlatformType getPlatform() {
-        return null;
-    }
-
-    @Override
     public Set<String> getKeys(boolean recur) {
         return new HashSet<>();
     }
@@ -97,16 +92,6 @@ public class EmptyConfigAdapter extends ConfigAdapter {
     }
 
     @Override
-    public ConfigAdapter getDefaults() {
-        return null;
-    }
-
-    @Override
-    public boolean isNull() {
-        return true;
-    }
-
-    @Override
     public List<String> getStringList(String key) {
         return new ArrayList<>();
     }
@@ -114,5 +99,20 @@ public class EmptyConfigAdapter extends ConfigAdapter {
     @Override
     protected ConfigAdapter fromInputStream(InputStream stream) {
         return new EmptyConfigAdapter();
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return null;
+    }
+
+    @Override
+    public ConfigAdapter getDefaults() {
+        return null;
+    }
+
+    @Override
+    public boolean isNull() {
+        return true;
     }
 }

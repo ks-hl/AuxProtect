@@ -36,10 +36,6 @@ public enum Table {
         return SQLManager.getInstance().getTablePrefix() + super.toString().toLowerCase();
     }
 
-    public String getName() {
-        return super.toString().toLowerCase();
-    }
-
     public boolean exists(IAuxProtect plugin) {
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
             return switch (this) {
@@ -225,6 +221,14 @@ public enum Table {
         return this == AUXPROTECT_POSITION;
     }
 
+    public boolean hasItemMeta() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+    }
+
+    public String getName() {
+        return super.toString().toLowerCase();
+    }
+
     public long getAutoPurgeInterval() {
         if (!canPurge()) {
             throw new UnsupportedOperationException();
@@ -237,9 +241,5 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
-    }
-
-    public boolean hasItemMeta() {
-        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 }

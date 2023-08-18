@@ -74,11 +74,6 @@ public class BungeeConfigAdapter extends ConfigAdapter {
     }
 
     @Override
-    public PlatformType getPlatform() {
-        return PlatformType.BUNGEE;
-    }
-
-    @Override
     public Set<String> getKeys(boolean recur) {
         return config.getKeys().stream().collect(Collectors.toUnmodifiableSet());
     }
@@ -142,11 +137,6 @@ public class BungeeConfigAdapter extends ConfigAdapter {
     }
 
     @Override
-    public boolean isNull() {
-        return config == null;
-    }
-
-    @Override
     public List<String> getStringList(String key) {
         return config.getStringList(key);
     }
@@ -154,5 +144,15 @@ public class BungeeConfigAdapter extends ConfigAdapter {
     @Override
     protected ConfigAdapter fromInputStream(InputStream stream) {
         return new BungeeConfigAdapter(stream);
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return PlatformType.BUNGEE;
+    }
+
+    @Override
+    public boolean isNull() {
+        return config == null;
     }
 }

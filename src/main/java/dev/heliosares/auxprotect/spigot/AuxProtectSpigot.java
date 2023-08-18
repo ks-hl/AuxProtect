@@ -45,10 +45,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectSpigot instance;
     private static SQLManager sqlManager;
+    final Set<Integer> stackHashHistory = new HashSet<>();
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
     private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
-    final Set<Integer> stackHashHistory = new HashSet<>();
     public String update;
     protected DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
@@ -87,18 +87,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             return o.toString().toLowerCase();
         }
         return "#null";
-    }
-
-    public ClaimInvCommand getClaiminvcommand() {
-        return claiminvcommand;
-    }
-
-    public APSCommand getApcommand() {
-        return apcommand;
-    }
-
-    public int getCompatabilityVersion() {
-        return SERVER_VERSION;
     }
 
     @Override
@@ -509,41 +497,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
-    private boolean hook(Supplier<Listener> listener, String... names) {
-        boolean hook;
-        try {
-            Plugin plugin = null;
-            for (String name : names) {
-                plugin = getPlugin(name);
-                if (plugin != null) {
-                    break;
-                }
-            }
-            hook = plugin != null && plugin.isEnabled();
-            if (hook) {
-                getServer().getPluginManager().registerEvents(listener.get(), this);
-                hooks.add(plugin.getName());
-            }
-        } catch (Exception e) {
-            warning("Exception while hooking " + names[0]);
-            print(e);
-            hook = false;
-        }
-        Telemetry.reportHook(this, names[0], hook);
-        return hook;
-    }
-
     public boolean isHooked(String name) {
         return hooks.contains(name);
-    }
-
-    private Plugin getPlugin(String name) {
-        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
-            if (plugin.getName().equalsIgnoreCase(name)) {
-                return plugin;
-            }
-        }
-        return null;
     }
 
     public APPlayer getAPPlayer(Player player) {
@@ -595,23 +550,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
-    public boolean isShuttingDown() {
-        return isShuttingDown;
-    }
-
-    private boolean setupEconomy() {
-        if (getServer().getPluginManager().getPlugin("Vault") == null) {
-            return false;
-        }
-        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
-        if (rsp == null) {
-            return false;
-        }
-        econ = rsp.getProvider();
-        return true;
-    }
-
-    @Override
     public void info(String string) {
         this.getLogger().info(string);
         logToStackLog("[INFO] " + string);
@@ -627,14 +565,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         if (getAPConfig().getDebug() >= verbosity) {
             this.info("DEBUG" + verbosity + ": " + string);
         }
-    }
-
-    public SQLManager getSqlManager() {
-        return sqlManager;
-    }
-
-    public Economy getEconomy() {
-        return econ;
     }
 
     public String formatMoney(double d) {
@@ -666,24 +596,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         logToStackLog(stack);
     }
 
-    private void logToStackLog(String msg) {
-        stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
-    }
-
-    @Override
-    public String getStackLog() {
-        return stackLog;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.SPIGOT;
-    }
-
-    public APConfig getAPConfig() {
-        return config;
-    }
-
     @Override
     public void add(DbEntry entry) {
         // This is only async because veinManager performs SQL lookups
@@ -695,10 +607,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             }
             dbRunnable.add(entry);
         });
-    }
-
-    public VeinManager getVeinManager() {
-        return veinManager;
     }
 
     @Override
@@ -715,37 +623,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return dbRunnable.queueSize();
     }
 
-    @Override
-    public String getCommandPrefix() {
-        return "auxprotect";
-    }
-
-    @Override
-    public SenderAdapter getConsoleSender() {
-        return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
-    }
-
     @Nullable
     @Override
     public SenderAdapter getSenderAdapter(String name) {
         Player target = getServer().getPlayer(name);
         if (target == null) return null;
         return new SpigotSenderAdapter(this, target);
-    }
-
-    @Override
-    public File getRootDirectory() {
-        return getDataFolder();
-    }
-
-    @Override
-    public String getPlatformVersion() {
-        return getServer().getVersion();
-    }
-
-    @Override
-    public String getPluginVersion() {
-        return this.getDescription().getVersion();
     }
 
     @Override
@@ -766,6 +649,123 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     @Override
     public void broadcast(String msg, APPermission node) {
         Bukkit.broadcast(msg, node.node);
+    }
+
+    private boolean hook(Supplier<Listener> listener, String... names) {
+        boolean hook;
+        try {
+            Plugin plugin = null;
+            for (String name : names) {
+                plugin = getPlugin(name);
+                if (plugin != null) {
+                    break;
+                }
+            }
+            hook = plugin != null && plugin.isEnabled();
+            if (hook) {
+                getServer().getPluginManager().registerEvents(listener.get(), this);
+                hooks.add(plugin.getName());
+            }
+        } catch (Exception e) {
+            warning("Exception while hooking " + names[0]);
+            print(e);
+            hook = false;
+        }
+        Telemetry.reportHook(this, names[0], hook);
+        return hook;
+    }
+
+    private Plugin getPlugin(String name) {
+        for (Plugin plugin : Bukkit.getPluginManager().getPlugins()) {
+            if (plugin.getName().equalsIgnoreCase(name)) {
+                return plugin;
+            }
+        }
+        return null;
+    }
+
+    private boolean setupEconomy() {
+        if (getServer().getPluginManager().getPlugin("Vault") == null) {
+            return false;
+        }
+        RegisteredServiceProvider<Economy> rsp = getServer().getServicesManager().getRegistration(Economy.class);
+        if (rsp == null) {
+            return false;
+        }
+        econ = rsp.getProvider();
+        return true;
+    }
+
+    private void logToStackLog(String msg) {
+        stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
+    }
+
+    public ClaimInvCommand getClaiminvcommand() {
+        return claiminvcommand;
+    }
+
+    public APSCommand getApcommand() {
+        return apcommand;
+    }
+
+    public int getCompatabilityVersion() {
+        return SERVER_VERSION;
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return isShuttingDown;
+    }
+
+    public SQLManager getSqlManager() {
+        return sqlManager;
+    }
+
+    public Economy getEconomy() {
+        return econ;
+    }
+
+    @Override
+    public String getStackLog() {
+        return stackLog;
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return PlatformType.SPIGOT;
+    }
+
+    public APConfig getAPConfig() {
+        return config;
+    }
+
+    public VeinManager getVeinManager() {
+        return veinManager;
+    }
+
+    @Override
+    public String getCommandPrefix() {
+        return "auxprotect";
+    }
+
+    @Override
+    public SenderAdapter getConsoleSender() {
+        return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
+    }
+
+    @Override
+    public File getRootDirectory() {
+        return getDataFolder();
+    }
+
+    @Override
+    public String getPlatformVersion() {
+        return getServer().getVersion();
+    }
+
+    @Override
+    public String getPluginVersion() {
+        return this.getDescription().getVersion();
     }
 
     @Override

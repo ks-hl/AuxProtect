@@ -93,6 +93,12 @@ public class Language {
         return ColorTranslate.cc(s);
     }
 
+    public static String getOptionalS(String name) {
+        if (name == null) return "";
+        if (name.toLowerCase().endsWith("s")) return "";
+        return "s";
+    }
+
     public enum L {
         ACTIONS,
         ACTION_DISABLED,
@@ -284,11 +290,5 @@ public class Language {
             }
             return message.stream().map(Language::convert).toList();
         }
-    }
-
-    public static String getOptionalS(String name) {
-        if (name == null) return "";
-        if (name.toLowerCase().endsWith("s")) return "";
-        return "s";
     }
 }

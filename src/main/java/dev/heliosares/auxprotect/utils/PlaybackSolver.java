@@ -37,10 +37,9 @@ public class PlaybackSolver extends BukkitRunnable {
     private final ProtocolManager protocol;
     private final Player audience;
     private final Map<UUID, FakePlayer.Skin> skins = new HashMap<>();
-    private boolean closed;
     private final List<BlockAction> blockActions;
-
     private final Set<Location> modified = new HashSet<>();
+    private boolean closed;
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime, @Nullable List<BlockAction> blockActions) throws SQLException, LookupException, BusyException {
         if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
@@ -223,7 +222,6 @@ public class PlaybackSolver extends BukkitRunnable {
         swing.forEach(FakePlayer::swingArm);
 
 
-
         for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
             if (closed) return;
             FakePlayer pl = it.next();
@@ -255,10 +253,6 @@ public class PlaybackSolver extends BukkitRunnable {
         cleanup();
     }
 
-    public boolean isClosed() {
-        return closed;
-    }
-
     public record PosPoint(long time, UUID uuid, String name, int uid, Location location, boolean inc,
                            @Nullable PosEncoder.Posture posture) {
     }
@@ -270,5 +264,9 @@ public class PlaybackSolver extends BukkitRunnable {
             audience.sendBlockChange(loc, material.createBlockData());
             return loc;
         }
+    }
+
+    public boolean isClosed() {
+        return closed;
     }
 }

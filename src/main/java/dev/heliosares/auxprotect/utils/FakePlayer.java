@@ -196,13 +196,13 @@ public class FakePlayer {
         packet.getIntegers().write(0, id);
     }
 
-    public long getLastMoved() {
-        return lastMoved;
-    }
-
     public record Skin(UUID uuid, String skin, String signature) {
         public WrappedSignedProperty wrap() {
             return new WrappedSignedProperty("textures", skin, signature);
         }
+    }
+
+    public long getLastMoved() {
+        return lastMoved;
     }
 }

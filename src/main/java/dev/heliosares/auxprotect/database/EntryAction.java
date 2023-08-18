@@ -10,24 +10,18 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import java.util.*;
 
 public class EntryAction {
-    private static final HashMap<String, EntryAction> values = new HashMap<>();
-    private static final Set<Integer> usedids = new HashSet<>();
-    private static final Set<String> usednames = new HashSet<>();
-
     // START PLACEHOLDERS
     public static final EntryAction GROUPING = new EntryAction("grouping", -1001);
-    // END PLACEHOLDERS
-
     // START MAIN (0)
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
     public static final EntryAction KICK = new EntryAction("kick", 6);
+    // END PLACEHOLDERS
     public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
     // SKIPPED 10/11
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
     public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
     public static final EntryAction ENTITY = new EntryAction("entity", 16, 17);
-
     public static final EntryAction ALERT = new EntryAction("alert", 128);
     public static final EntryAction RESPAWN = new EntryAction("respawn", 129);
     // SKIPPED 130
@@ -46,87 +40,74 @@ public class EntryAction {
     public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
     public static final EntryAction EXPLODE = new EntryAction("explode", 143);
     public static final EntryAction NAMETAG = new EntryAction("nametag", 144);
-    // END MAIN (255)
-
     // START SPAM(256)
     // SKIPPED 256
     public static final EntryAction HURT = new EntryAction("hurt", 257);
     public static final EntryAction INV = new EntryAction("inv", 258, 259);
     // SKIPPED 260
     public static final EntryAction KILL = new EntryAction("kill", 261);
+    // END MAIN (255)
     public static final EntryAction LAND = new EntryAction("land", 262);
     public static final EntryAction ELYTRA = new EntryAction("elytra", 263, 264);
     public static final EntryAction ACTIVITY = new EntryAction("activity", 265);
     public static final EntryAction TOTEM = new EntryAction("totem", 266);
     public static final EntryAction RAIDTRIGGER = new EntryAction("raidtrigger", 267);
     public static final EntryAction RAIDSPAWN = new EntryAction("raidspawn", 268);
-    // END SPAM(511)
-
     // START IGNOREABANDONED(512)
     public static final EntryAction IGNOREABANDONED = new EntryAction("ignoreabandoned", 512);
-    // END IGNOREABANDONED(767)
-
     // START LONGTERM (768)
     public static final EntryAction IP = new EntryAction("ip", 768);
     public static final EntryAction USERNAME = new EntryAction("username", 769);
+    // END SPAM(511)
     public static final EntryAction TOWNYNAME = new EntryAction("townyname", 770);
-    // END LONGTERM (1023)
-
+    // END IGNOREABANDONED(767)
     // START INVENTORY (1024)
     public static final EntryAction INVENTORY = new EntryAction("inventory", 1024);
     public static final EntryAction LAUNCH = new EntryAction("launch", 1025);
     public static final EntryAction GRAB = new EntryAction("grab", 1026);
+    // END LONGTERM (1023)
     public static final EntryAction DROP = new EntryAction("drop", 1027);
     public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
     public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
     public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
     //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
-
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
-
     public static final EntryAction CRAFT = new EntryAction("craft", 1154);
-
     public static final EntryAction ANVIL = new EntryAction("anvil", 1155);
-
     public static final EntryAction ENCHANT = new EntryAction("enchant", 1156);
-
     public static final EntryAction SMITH = new EntryAction("smith", 1157);
     public static final EntryAction BUCKET = new EntryAction("bucket", 1158, 1159);
-    // END INVENTORY(1279)
-
     // COMMANDS (1280)
     public static final EntryAction COMMAND = new EntryAction("command", 1280);
-
     // CHAT (1285)
     public static final EntryAction CHAT = new EntryAction("chat", 1285);
-
     // START POSITION (1290)
     public static final EntryAction POS = new EntryAction("pos", 1290);
+    // END INVENTORY(1279)
     public static final EntryAction TP = new EntryAction("tp", 1291, 1292);
-    // END POSITION(1299)
-
     // START XRAY (1300)
     public static final EntryAction VEIN = new EntryAction("vein", 1300);
-    // END XRAY(1309)
-
     // START TOWNY (1310)
     public static final EntryAction TOWNCREATE = new EntryAction("towncreate", 1310);
     public static final EntryAction TOWNRENAME = new EntryAction("townrename", 1311);
+    // END POSITION(1299)
     public static final EntryAction TOWNDELETE = new EntryAction("towndelete", 1312);
+    // END XRAY(1309)
     public static final EntryAction TOWNJOIN = new EntryAction("townjoin", 1313, 1314);
     public static final EntryAction TOWNCLAIM = new EntryAction("townclaim", 1315, 1316);
     //    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
     public static final EntryAction TOWNMAYOR = new EntryAction("townmayor", 1318);
     public static final EntryAction TOWNBANK = new EntryAction("townbank", 1319, 1320);
-
     public static final EntryAction NATIONCREATE = new EntryAction("nationcreate", 1400);
     public static final EntryAction NATIONRENAME = new EntryAction("nationrename", 1401);
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
+    private static final HashMap<String, EntryAction> values = new HashMap<>();
+    private static final Set<Integer> usedids = new HashSet<>();
+    private static final Set<String> usednames = new HashSet<>();
     // END TOWNY (1499)
-
     public final boolean hasDual;
     public final int id;
     public final int idPos;
@@ -191,18 +172,6 @@ public class EntryAction {
         return null;
     }
 
-    private void validateID(String name, int id, int idPos) throws IllegalArgumentException {
-        if (!usedids.add(id)) {
-            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
-        }
-        if (idPos > 0 && !usedids.add(idPos)) {
-            throw new IllegalArgumentException("Duplicate entry id: " + idPos + " from action: " + name);
-        }
-        if (!usednames.add(name)) {
-            throw new IllegalArgumentException("Duplicate action name: " + name);
-        }
-    }
-
     public String getText(boolean state) {
         if (hasDual) {
             if (state) {
@@ -220,13 +189,6 @@ public class EntryAction {
             return overrideNText;
         }
         return Language.L.ACTIONS.translateSubcategory(getLang(state));
-    }
-
-    private String getLang(boolean state) {
-        if (hasDual) {
-            return toString().toLowerCase() + "." + (state ? "p" : "n");
-        }
-        return toString().toLowerCase();
     }
 
     public boolean exists() {
@@ -256,6 +218,49 @@ public class EntryAction {
         throw new UnsupportedOperationException("Unknown platform " + plugin.getPlatform());
     }
 
+    public int getId(boolean state) {
+        if (state) {
+            return idPos;
+        }
+        return id;
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (other instanceof EntryAction otherEntry) {
+            return this.id == otherEntry.id && this.idPos == otherEntry.idPos;
+        }
+        return false;
+    }
+
+    public boolean hasPermission(SenderAdapter sender) {
+        return APPermission.LOOKUP_ACTION.dot(toString().toLowerCase()).hasPermission(sender);
+    }
+
+    private void validateID(String name, int id, int idPos) throws IllegalArgumentException {
+        if (!usedids.add(id)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+        }
+        if (idPos > 0 && !usedids.add(idPos)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + idPos + " from action: " + name);
+        }
+        if (!usednames.add(name)) {
+            throw new IllegalArgumentException("Duplicate action name: " + name);
+        }
+    }
+
+    private String getLang(boolean state) {
+        if (hasDual) {
+            return toString().toLowerCase() + "." + (state ? "p" : "n");
+        }
+        return toString().toLowerCase();
+    }
+
     public Table getTable() {
         if (id < 256) return Table.AUXPROTECT_MAIN;
         if (id < 512) return Table.AUXPROTECT_SPAM;
@@ -270,13 +275,6 @@ public class EntryAction {
         if (id > 1000000) return Table.AUXPROTECT_API;
 
         throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
-    }
-
-    public int getId(boolean state) {
-        if (state) {
-            return idPos;
-        }
-        return id;
     }
 
     public boolean isEnabled() {
@@ -294,19 +292,6 @@ public class EntryAction {
         this.enabled = state;
     }
 
-    @Override
-    public String toString() {
-        return name;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (other instanceof EntryAction otherEntry) {
-            return this.id == otherEntry.id && this.idPos == otherEntry.idPos;
-        }
-        return false;
-    }
-
     public boolean isLowestpriority() {
         return lowestpriority;
     }
@@ -317,9 +302,5 @@ public class EntryAction {
 
     public String getNode() {
         return APPermission.LOOKUP_ACTION.dot(toString().toLowerCase()).node;
-    }
-
-    public boolean hasPermission(SenderAdapter sender) {
-        return APPermission.LOOKUP_ACTION.dot(toString().toLowerCase()).hasPermission(sender);
     }
 }

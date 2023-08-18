@@ -59,13 +59,13 @@ public class Parameters implements Cloneable {
     // ------------------- CONSTRUCTORS -------------------
     // ----------------------------------------------------
 
-    private Parameters() {
-        plugin = AuxProtectAPI.getInstance();
-    }
-
     public Parameters(Table table) {
         this();
         this.table = table;
+    }
+
+    private Parameters() {
+        plugin = AuxProtectAPI.getInstance();
     }
 
     // -----------------------------------------------
@@ -684,79 +684,6 @@ public class Parameters implements Cloneable {
     // ------------------- GETTERS -------------------
     // -----------------------------------------------
 
-    public long getAfter() {
-        return after;
-    }
-
-    public long getBefore() {
-        return before;
-    }
-
-    public Set<Long> getExactTime() {
-        return exactTime;
-    }
-
-    public boolean isNegateUser() {
-        return negateUser;
-    }
-
-    /**
-     * This is only used in a select few places. Parameters#getUIDS matters more
-     *
-     * @return the set of users
-     */
-    public Set<String> getUsers() {
-        return users;
-    }
-
-    public Set<String> getUIDs() {
-        return uids;
-    }
-
-    public Set<Integer> getActions() {
-        return actions;
-    }
-
-    public boolean isNegateTarget() {
-        return negateTarget;
-    }
-
-    public Set<String> getTargets() {
-        return targets;
-    }
-
-    public boolean isNegateData() {
-        return negateData;
-    }
-
-    public Set<String> getDatas() {
-        return datas;
-    }
-
-    public Table getTable() {
-        return table;
-    }
-
-    public HashMap<Integer, Boolean> getRadius() {
-        return radius;
-    }
-
-    public int getWorldID() {
-        return world;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
-    }
-
     public Parameters setLocation(String world, int x, int y, int z) throws ParseException {
         int wid = plugin.getSqlManager().getWID(world);
         if (wid < 0) throw new ParseException(L.COMMAND__LOOKUP__UNKNOWN_WORLD);
@@ -772,39 +699,10 @@ public class Parameters implements Cloneable {
         return this;
     }
 
-    public boolean isNegateWorld() {
-        return negateWorld;
-    }
-
-    public Parameters setNegateWorld(boolean negateWorld) {
-        this.negateWorld = negateWorld;
-        return this;
-    }
-
-    public Set<Integer> getWorld() {
-        return worlds;
-    }
-
-    public Set<Flag> getFlags() {
-        return flags;
-    }
-
-    public Set<Short> getRatings() {
-        return ratings;
-    }
-
-    public double getGroupRange() {
-        return groupRange;
-    }
-
     public boolean hasFlag(Flag flag) {
         if (!flag.isEnabled()) return false;
         return flags.contains(flag);
     }
-
-    // -----------------------------------------------
-    // ------------------- PRIVATE -------------------
-    // -----------------------------------------------
 
     public String[] toSQL(IAuxProtect plugin) {
         if (table == null) {
@@ -996,6 +894,41 @@ public class Parameters implements Cloneable {
         return true;
     }
 
+    @SuppressWarnings("MethodDoesntCallSuperMethod")
+    @Override
+    public Parameters clone() {
+        Parameters clone = new Parameters();
+
+        clone.exactTime.addAll(exactTime);
+        clone.uids.addAll(uids);
+        clone.targets.addAll(targets);
+        clone.users.addAll(users);
+        clone.actions.addAll(actions);
+        clone.datas.addAll(datas);
+        clone.worlds.addAll(worlds);
+        clone.flags.addAll(flags);
+        clone.ratings.addAll(ratings);
+        clone.radius.putAll(radius);
+
+        clone.negateUser = negateUser;
+        clone.negateTarget = negateTarget;
+        clone.negateData = negateData;
+        clone.negateWorld = negateWorld;
+
+        clone.after = after;
+        clone.before = Long.MAX_VALUE;
+        clone.table = table;
+
+        clone.groupRange = groupRange;
+
+        clone.world = world;
+        clone.x = x;
+        clone.y = y;
+        clone.z = z;
+
+        return clone;
+    }
+
     private Parameters time(String param, boolean before) throws ParseException {
         try {
             long time = TimeUtil.stringToMillis(param);
@@ -1040,41 +973,6 @@ public class Parameters implements Cloneable {
         return stmt + ")";
     }
 
-    @SuppressWarnings("MethodDoesntCallSuperMethod")
-    @Override
-    public Parameters clone() {
-        Parameters clone = new Parameters();
-
-        clone.exactTime.addAll(exactTime);
-        clone.uids.addAll(uids);
-        clone.targets.addAll(targets);
-        clone.users.addAll(users);
-        clone.actions.addAll(actions);
-        clone.datas.addAll(datas);
-        clone.worlds.addAll(worlds);
-        clone.flags.addAll(flags);
-        clone.ratings.addAll(ratings);
-        clone.radius.putAll(radius);
-
-        clone.negateUser = negateUser;
-        clone.negateTarget = negateTarget;
-        clone.negateData = negateData;
-        clone.negateWorld = negateWorld;
-
-        clone.after = after;
-        clone.before = Long.MAX_VALUE;
-        clone.table = table;
-
-        clone.groupRange = groupRange;
-
-        clone.world = world;
-        clone.x = x;
-        clone.y = y;
-        clone.z = z;
-
-        return clone;
-    }
-
     public enum Flag {
         COUNT(null), COUNT_ONLY(null), PLAYTIME(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), COMBINE_USER_TARGET(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
@@ -1099,6 +997,108 @@ public class Parameters implements Cloneable {
             }
             return true;
         }
+    }
+
+    public long getAfter() {
+        return after;
+    }
+
+    public long getBefore() {
+        return before;
+    }
+
+    public Set<Long> getExactTime() {
+        return exactTime;
+    }
+
+    public boolean isNegateUser() {
+        return negateUser;
+    }
+
+    /**
+     * This is only used in a select few places. Parameters#getUIDS matters more
+     *
+     * @return the set of users
+     */
+    public Set<String> getUsers() {
+        return users;
+    }
+
+    public Set<String> getUIDs() {
+        return uids;
+    }
+
+    public Set<Integer> getActions() {
+        return actions;
+    }
+
+    public boolean isNegateTarget() {
+        return negateTarget;
+    }
+
+    public Set<String> getTargets() {
+        return targets;
+    }
+
+    public boolean isNegateData() {
+        return negateData;
+    }
+
+    public Set<String> getDatas() {
+        return datas;
+    }
+
+    public Table getTable() {
+        return table;
+    }
+
+    public HashMap<Integer, Boolean> getRadius() {
+        return radius;
+    }
+
+    public int getWorldID() {
+        return world;
+    }
+
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
+    }
+
+    // -----------------------------------------------
+    // ------------------- PRIVATE -------------------
+    // -----------------------------------------------
+
+    public int getZ() {
+        return z;
+    }
+
+    public boolean isNegateWorld() {
+        return negateWorld;
+    }
+
+    public Parameters setNegateWorld(boolean negateWorld) {
+        this.negateWorld = negateWorld;
+        return this;
+    }
+
+    public Set<Integer> getWorld() {
+        return worlds;
+    }
+
+    public Set<Flag> getFlags() {
+        return flags;
+    }
+
+    public Set<Short> getRatings() {
+        return ratings;
+    }
+
+    public double getGroupRange() {
+        return groupRange;
     }
 
 }

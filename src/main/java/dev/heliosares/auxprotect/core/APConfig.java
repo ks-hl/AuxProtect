@@ -105,6 +105,26 @@ public class APConfig {
         config.save();
     }
 
+    public boolean shouldCheckForUpdates() {
+        return checkforupdates;
+    }
+
+    public boolean doSkipV6Migration() {
+        return skipV6Migration;
+    }
+
+    public boolean doAutoPurge() {
+        return autopurge;
+    }
+
+    public boolean doLogIncrementalPosition() {
+        return logIncrementalPosition;
+    }
+
+    public boolean doDisableVacuum() {
+        return disableVacuum;
+    }
+
     private long getAutoPurgeInterval(String table, long autopurgeinterval) {
         String interval = config.getString("AutoPurge." + table);
         if (interval == null) interval = "default";
@@ -159,10 +179,6 @@ public class APConfig {
         return inventoryOnWorldChange;
     }
 
-    public boolean shouldCheckForUpdates() {
-        return checkforupdates;
-    }
-
     public long getPosInterval() {
         return posInterval;
     }
@@ -197,10 +213,6 @@ public class APConfig {
 
     public boolean isOverrideCommands() {
         return overrideCommands;
-    }
-
-    public boolean doSkipV6Migration() {
-        return skipV6Migration;
     }
 
     public ConfigAdapter getConfig() {
@@ -246,18 +258,6 @@ public class APConfig {
             return null;
         }
         return tablePrefix;
-    }
-
-    public boolean doAutoPurge() {
-        return autopurge;
-    }
-
-    public boolean doLogIncrementalPosition() {
-        return logIncrementalPosition;
-    }
-
-    public boolean doDisableVacuum() {
-        return disableVacuum;
     }
 
     public boolean isDemoMode() {

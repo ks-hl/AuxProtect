@@ -47,14 +47,6 @@ public class ResultMap {
         results = Collections.unmodifiableList(results_);
     }
 
-    public List<String> getLabels() {
-        return labels;
-    }
-
-    public List<Result> getResults() {
-        return results;
-    }
-
     public static class Result {
         private final ResultMap parent;
         private final List<Object> values;
@@ -87,5 +79,13 @@ public class ResultMap {
         public List<Object> getValues() {
             return values;
         }
+    }
+
+    public List<String> getLabels() {
+        return labels;
+    }
+
+    public List<Result> getResults() {
+        return results;
     }
 }

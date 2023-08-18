@@ -10,20 +10,6 @@ public class TimeUtil {
 
     public static final DateTimeFormatter entryTimeFormat = DateTimeFormatter.ofPattern("ddMMMyy HH:mm:ss.SSS");
 
-    private static String padDouble(double d) {
-        String[] split = (d + "").split("\\.");
-        while (split[0].length() < 2) {
-            split[0] = "0" + split[0];
-        }
-        if (split.length == 1) {
-            return split[0] + ".00";
-        }
-        while (split[1].length() < 2) {
-            split[1] += "0";
-        }
-        return split[0] + "." + split[1];
-    }
-
     public static double roundToPlaces(double value, int places) {
         double factor = Math.pow(10, places);
         return Math.round(value * factor) / factor;
@@ -120,5 +106,19 @@ public class TimeUtil {
 
     public static String format(long millis, DateTimeFormatter formatter) {
         return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(formatter);
+    }
+
+    private static String padDouble(double d) {
+        String[] split = (d + "").split("\\.");
+        while (split[0].length() < 2) {
+            split[0] = "0" + split[0];
+        }
+        if (split.length == 1) {
+            return split[0] + ".00";
+        }
+        while (split[1].length() < 2) {
+            split[1] += "0";
+        }
+        return split[0] + "." + split[1];
     }
 }

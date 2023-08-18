@@ -32,6 +32,17 @@ public class BungeeSenderAdapter extends SenderAdapter {
         return sender.hasPermission(node);
     }
 
+    @Override
+    public void executeCommand(String command) {
+        plugin.getProxy().getPluginManager().dispatchCommand(sender, command);
+    }
+
+    @Override
+    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
+            throws NullPointerException, UnsupportedOperationException {
+        throw new UnsupportedOperationException();
+    }
+
     public String getName() {
         return sender.getName();
     }
@@ -54,18 +65,7 @@ public class BungeeSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public void executeCommand(String command) {
-        plugin.getProxy().getPluginManager().dispatchCommand(sender, command);
-    }
-
-    @Override
     public boolean isConsole() {
         return sender.equals(plugin.getProxy().getConsole());
-    }
-
-    @Override
-    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
-            throws NullPointerException, UnsupportedOperationException {
-        throw new UnsupportedOperationException();
     }
 }

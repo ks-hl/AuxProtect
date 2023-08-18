@@ -183,10 +183,6 @@ public class Results {
         player.sendMessage(message.create());
     }
 
-    public List<DbEntry> getEntries() {
-        return entries;
-    }
-
     public DbEntry get(int i) {
         return getEntries().get(i);
     }
@@ -278,6 +274,10 @@ public class Results {
 
     public int getNumPages(int perpage) {
         return (int) Math.ceil(getEntries().size() / (double) perpage);
+    }
+
+    public List<DbEntry> getEntries() {
+        return entries;
     }
 
     public int getSize() {

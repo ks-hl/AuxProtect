@@ -34,8 +34,8 @@ import java.util.stream.Collectors;
 public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
-    private final APConfig config = new APConfig();
     final Set<Integer> stackHashHistory = new HashSet<>();
+    private final APConfig config = new APConfig();
     protected DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
     private boolean isShuttingDown;
@@ -186,17 +186,8 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public boolean isShuttingDown() {
-        return isShuttingDown;
-    }
-
-    @Override
     public InputStream getResource(String string) {
         return getResourceAsStream(string);
-    }
-
-    public SQLManager getSqlManager() {
-        return sqlManager;
     }
 
     @Override
@@ -232,25 +223,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         logToStackLog(stack);
     }
 
-    private void logToStackLog(String msg) {
-        stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
-    }
-
-    @Override
-    public String getStackLog() {
-        return stackLog;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.BUNGEE;
-    }
-
-    @Override
-    public APConfig getAPConfig() {
-        return config;
-    }
-
     @Override
     public void add(DbEntry dbEntry) {
         dbRunnable.add(dbEntry);
@@ -266,16 +238,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         runAsync(run);
     }
 
-    @Override
-    public String getCommandPrefix() {
-        return "auxprotectbungee";
-    }
-
-    @Override
-    public SenderAdapter getConsoleSender() {
-        return new BungeeSenderAdapter(this, this.getProxy().getConsole());
-    }
-
     @Nullable
     @Override
     public SenderAdapter getSenderAdapter(String name) {
@@ -288,21 +250,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     public boolean isHooked(String name) {
         // TODO zz Future implementation
         return false;
-    }
-
-    @Override
-    public File getRootDirectory() {
-        return getDataFolder();
-    }
-
-    @Override
-    public String getPlatformVersion() {
-        return getProxy().getVersion();
-    }
-
-    @Override
-    public String getPluginVersion() {
-        return this.getDescription().getVersion();
     }
 
     @Override
@@ -321,16 +268,6 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public boolean isEnabled() {
-        return enabled;
-    }
-
-    @Override
-    public String getCommandAlias() {
-        return "apb";
-    }
-
-    @Override
     public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
         dbRunnable.addRemoveEntryListener(consumer, add);
     }
@@ -338,5 +275,68 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public void broadcast(String msg, APPermission node) {
         getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
+    }
+
+    private void logToStackLog(String msg) {
+        stackLog += "[" + LocalDateTime.now().format(ERROR_TIME_FORMAT) + "] " + msg + "\n";
+    }
+
+    @Override
+    public boolean isShuttingDown() {
+        return isShuttingDown;
+    }
+
+    public SQLManager getSqlManager() {
+        return sqlManager;
+    }
+
+    @Override
+    public String getStackLog() {
+        return stackLog;
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return PlatformType.BUNGEE;
+    }
+
+    @Override
+    public APConfig getAPConfig() {
+        return config;
+    }
+
+    @Override
+    public String getCommandPrefix() {
+        return "auxprotectbungee";
+    }
+
+    @Override
+    public SenderAdapter getConsoleSender() {
+        return new BungeeSenderAdapter(this, this.getProxy().getConsole());
+    }
+
+    @Override
+    public File getRootDirectory() {
+        return getDataFolder();
+    }
+
+    @Override
+    public String getPlatformVersion() {
+        return getProxy().getVersion();
+    }
+
+    @Override
+    public String getPluginVersion() {
+        return this.getDescription().getVersion();
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    @Override
+    public String getCommandAlias() {
+        return "apb";
     }
 }

@@ -8,20 +8,6 @@ import java.sql.SQLException;
 
 public class DbEntry {
 
-    protected SQLManager getSql() {
-        return sql;
-    }
-
-    void setSql(SQLManager sql) {
-        this.sql = sql;
-    }
-
-    public void deResolveUIDs() {
-        uid = -1;
-        target_id = -1;
-    }
-
-    protected SQLManager sql;
     protected final String world;
     protected final int x;
     protected final int y;
@@ -31,34 +17,16 @@ public class DbEntry {
     protected final EntryAction action;
     protected final boolean state;
     private final long time;
+    protected SQLManager sql;
     protected String data;
     protected String userLabel;
     protected String user;
     protected int uid;
-
     protected String targetLabel;
     protected String target;
     protected int target_id;
-
     private long blobid = -1;
     private byte[] blob;
-
-    private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
-                    int yaw, String targetLabel, String data, SQLManager sql) {
-        this.time = DatabaseRunnable.getTime(action.getTable());
-        this.userLabel = userLabel;
-        this.action = action;
-        this.state = state;
-        this.world = world;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.pitch = pitch;
-        this.yaw = yaw;
-        this.targetLabel = targetLabel;
-        this.data = data;
-        this.sql = sql;
-    }
 
     /**
      *
@@ -79,17 +47,11 @@ public class DbEntry {
      * @param data        Extra data about your entry. This is stored as plain text
      *                    so use sparingly.
      */
-    public DbEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel,
-                   String data) throws NullPointerException {
-        this(userLabel, action, state, location == null ? null : location.getWorld().getName(),
-                location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
-                location == null ? 0 : location.getBlockZ(),
-                location == null ? 0 : Math.round(location.getPitch()),
-                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data, SQLManager.getInstance());
+    public DbEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel, String data) throws NullPointerException {
+        this(userLabel, action, state, location == null ? null : location.getWorld().getName(), location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(), location == null ? 0 : location.getBlockZ(), location == null ? 0 : Math.round(location.getPitch()), location == null ? 0 : Math.round(location.getYaw()), targetLabel, data, SQLManager.getInstance());
     }
 
-    protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
-                      int pitch, int yaw, String target, int target_id, String data, SQLManager sql) {
+    protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, String target, int target_id, String data, SQLManager sql) {
         this.time = time;
         this.uid = uid;
         this.action = action;
@@ -103,6 +65,99 @@ public class DbEntry {
         this.targetLabel = target;
         this.target_id = target_id;
         this.data = data;
+        this.sql = sql;
+    }
+
+    private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, String targetLabel, String data, SQLManager sql) {
+        this.time = DatabaseRunnable.getTime(action.getTable());
+        this.userLabel = userLabel;
+        this.action = action;
+        this.state = state;
+        this.world = world;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.pitch = pitch;
+        this.yaw = yaw;
+        this.targetLabel = targetLabel;
+        this.data = data;
+        this.sql = sql;
+    }
+
+    public void deResolveUIDs() {
+        uid = -1;
+        target_id = -1;
+    }
+
+    public String getUser(boolean resolve) throws SQLException, BusyException {
+        if (user != null || !resolve) return user;
+
+        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+            return user = getUserUUID();
+        }
+        user = sql.getUserManager().getUsernameFromUID(getUid(), false);
+        if (user == null) {
+            user = getUserUUID();
+        }
+        return user;
+    }
+
+    public String getTarget(boolean resolve) throws SQLException, BusyException {
+        if (target != null || !resolve) return target;
+
+        if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
+            return target = getTargetUUID();
+        }
+        target = sql.getUserManager().getUsernameFromUID(getTargetId(), false);
+        if (target == null) {
+            target = getTargetUUID();
+        }
+        return target;
+    }
+
+    public double getBoxDistance(DbEntry entry) {
+        if (!entry.getWorld().equals(getWorld())) {
+            return -1;
+        }
+        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
+    }
+
+    public double getDistance(DbEntry entry) {
+        return Math.sqrt(getDistanceSq(entry));
+    }
+
+    public double getDistanceSq(DbEntry entry) {
+        return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
+    }
+
+    public boolean hasBlob() {
+        return blob != null || blobid >= 0;
+    }
+
+    @Override
+    public String toString() {
+        String out;
+        try {
+            out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()), getAction().getId(getState()), getTarget());
+        } catch (SQLException | BusyException e) {
+            out = "ERROR ";
+        }
+        if (getData() != null && !getData().isEmpty()) {
+            String data = getData();
+            if (data.length() > 64) {
+                data = data.substring(0, 64) + "...";
+            }
+            out += "(" + data + ")";
+
+        }
+        return out;
+    }
+
+    protected SQLManager getSql() {
+        return sql;
+    }
+
+    void setSql(SQLManager sql) {
         this.sql = sql;
     }
 
@@ -147,34 +202,8 @@ public class DbEntry {
         return getUser(true);
     }
 
-    public String getUser(boolean resolve) throws SQLException, BusyException {
-        if (user != null || !resolve) return user;
-
-        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
-            return user = getUserUUID();
-        }
-        user = sql.getUserManager().getUsernameFromUID(getUid(), false);
-        if (user == null) {
-            user = getUserUUID();
-        }
-        return user;
-    }
-
     public String getTarget() throws SQLException, BusyException {
         return getTarget(true);
-    }
-
-    public String getTarget(boolean resolve) throws SQLException, BusyException {
-        if (target != null || !resolve) return target;
-
-        if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
-            return target = getTargetUUID();
-        }
-        target = sql.getUserManager().getUsernameFromUID(getTargetId(), false);
-        if (target == null) {
-            target = getTargetUUID();
-        }
-        return target;
     }
 
     public String getTargetUUID() throws SQLException, BusyException {
@@ -207,21 +236,6 @@ public class DbEntry {
         return userLabel;
     }
 
-    public double getBoxDistance(DbEntry entry) {
-        if (!entry.getWorld().equals(getWorld())) {
-            return -1;
-        }
-        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
-    }
-
-    public double getDistance(DbEntry entry) {
-        return Math.sqrt(getDistanceSq(entry));
-    }
-
-    public double getDistanceSq(DbEntry entry) {
-        return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
-    }
-
     public byte[] getBlob() throws SQLException, BusyException {
         if (blob == null) blob = sql.getBlob(this);
         return blob;
@@ -231,36 +245,12 @@ public class DbEntry {
         this.blob = blob;
     }
 
-    public boolean hasBlob() {
-        return blob != null || blobid >= 0;
-    }
-
     public long getBlobID() {
         return blobid;
     }
 
     protected void setBlobID(long blobid) {
         this.blobid = blobid;
-    }
-
-    @Override
-    public String toString() {
-        String out;
-        try {
-            out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
-                    getAction().getId(getState()), getTarget());
-        } catch (SQLException | BusyException e) {
-            out = "ERROR ";
-        }
-        if (getData() != null && !getData().isEmpty()) {
-            String data = getData();
-            if (data.length() > 64) {
-                data = data.substring(0, 64) + "...";
-            }
-            out += "(" + data + ")";
-
-        }
-        return out;
     }
 
     public String getWorld() {

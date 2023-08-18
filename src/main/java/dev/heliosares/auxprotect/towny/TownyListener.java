@@ -25,6 +25,11 @@ public class TownyListener implements Listener {
         this.plugin = plugin;
     }
 
+    public static String getLabel(Government gov) {
+        if (gov == null || gov.getUUID() == null) return "#null";
+        return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
+    }
+
     private static Location toLoc(Resident res) {
         if (res == null || res.getPlayer() == null) {
             return null;
@@ -32,18 +37,13 @@ public class TownyListener implements Listener {
         return res.getPlayer().getLocation();
     }
 
+    // Towns
+
     private static Location toLoc(Coord coord) {
         if (coord instanceof WorldCoord c) {
             return new Location(c.getBukkitWorld(), c.getX() * 16, 128, c.getZ() * 16);
         }
         return null;
-    }
-
-    // Towns
-
-    public static String getLabel(Government gov) {
-        if (gov == null || gov.getUUID() == null) return "#null";
-        return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -54,33 +54,6 @@ public class TownyListener implements Listener {
         e.getFallenNations().forEach((n) -> {
             handleDeleted(n, true);
         });
-    }
-
-    private void handleDeleted(String name, boolean nation) {
-        int uid;
-        try {
-            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
-        } catch (SQLException | BusyException e) {
-            plugin.print(e);
-            return;
-        }
-
-        if (uid <= 0) {
-            plugin.info("Unknown town/nation " + name);
-            return;
-        }
-        String uuid = null;
-        try {
-            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, true);
-        } catch (SQLException | BusyException ignored) {
-            //Unlikely
-        }
-        if (uuid == null) {
-            plugin.info("Unknown town/nation " + name + " with uid " + uid);
-            return;
-        }
-        plugin.add(
-                new TownyEntry("#server", nation ? EntryAction.NATIONDELETE : EntryAction.TOWNDELETE, false, uuid, ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -155,24 +128,6 @@ public class TownyListener implements Listener {
         handleBank(e, e.getTown(), EntryAction.TOWNBANK);
     }
 
-    // Nations
-
-    private void handleBank(BankTransactionEvent e, Government g, EntryAction action) {
-        String user = "#server";
-        Location loc = null;
-        if (e.getTransaction().getPlayer() != null) {
-            user = AuxProtectSpigot.getLabel(e.getTransaction().getPlayer());
-            loc = e.getTransaction().getPlayer().getLocation();
-        }
-        boolean state = switch (e.getTransaction().getType()) {
-            case ADD, DEPOSIT -> true;
-            default -> false;
-        };
-        String data = plugin.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
-                + plugin.formatMoney(e.getAccount().getHoldingBalance());
-        plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));
-    }
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewNationEvent e) {
         Player king = e.getNation().getKing().getPlayer();
@@ -180,6 +135,8 @@ public class TownyListener implements Listener {
         plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(king), EntryAction.NATIONCREATE, false,
                 toLoc(e.getNation().getKing()), TownyManager.getLabel(e.getNation()), null));
     }
+
+    // Nations
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RenameNationEvent e) {
@@ -210,5 +167,48 @@ public class TownyListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NationTransactionEvent e) {
         handleBank(e, e.getNation(), EntryAction.NATIONBANK);
+    }
+
+    private void handleDeleted(String name, boolean nation) {
+        int uid;
+        try {
+            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+        } catch (SQLException | BusyException e) {
+            plugin.print(e);
+            return;
+        }
+
+        if (uid <= 0) {
+            plugin.info("Unknown town/nation " + name);
+            return;
+        }
+        String uuid = null;
+        try {
+            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, true);
+        } catch (SQLException | BusyException ignored) {
+            //Unlikely
+        }
+        if (uuid == null) {
+            plugin.info("Unknown town/nation " + name + " with uid " + uid);
+            return;
+        }
+        plugin.add(
+                new TownyEntry("#server", nation ? EntryAction.NATIONDELETE : EntryAction.TOWNDELETE, false, uuid, ""));
+    }
+
+    private void handleBank(BankTransactionEvent e, Government g, EntryAction action) {
+        String user = "#server";
+        Location loc = null;
+        if (e.getTransaction().getPlayer() != null) {
+            user = AuxProtectSpigot.getLabel(e.getTransaction().getPlayer());
+            loc = e.getTransaction().getPlayer().getLocation();
+        }
+        boolean state = switch (e.getTransaction().getType()) {
+            case ADD, DEPOSIT -> true;
+            default -> false;
+        };
+        String data = plugin.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
+                + plugin.formatMoney(e.getAccount().getHoldingBalance());
+        plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));
     }
 }
