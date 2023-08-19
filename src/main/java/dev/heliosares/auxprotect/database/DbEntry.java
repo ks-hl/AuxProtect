@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
@@ -7,6 +8,20 @@ import java.sql.SQLException;
 
 public class DbEntry {
 
+    protected SQLManager getSql() {
+        return sql;
+    }
+
+    void setSql(SQLManager sql) {
+        this.sql = sql;
+    }
+
+    public void deResolveUIDs() {
+        uid = -1;
+        target_id = -1;
+    }
+
+    protected SQLManager sql;
     protected final String world;
     protected final int x;
     protected final int y;
@@ -29,7 +44,7 @@ public class DbEntry {
     private byte[] blob;
 
     private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
-                    int yaw, String targetLabel, String data) {
+                    int yaw, String targetLabel, String data, SQLManager sql) {
         this.time = DatabaseRunnable.getTime(action.getTable());
         this.userLabel = userLabel;
         this.action = action;
@@ -42,13 +57,14 @@ public class DbEntry {
         this.yaw = yaw;
         this.targetLabel = targetLabel;
         this.data = data;
+        this.sql = sql;
     }
 
     /**
      *
      */
     public DbEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
-        this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data);
+        this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data, SQLManager.getInstance());
     }
 
     /**
@@ -69,11 +85,11 @@ public class DbEntry {
                 location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
                 location == null ? 0 : location.getBlockZ(),
                 location == null ? 0 : Math.round(location.getPitch()),
-                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data);
+                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data, SQLManager.getInstance());
     }
 
     protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
-                      int pitch, int yaw, String target, int target_id, String data) {
+                      int pitch, int yaw, String target, int target_id, String data, SQLManager sql) {
         this.time = time;
         this.uid = uid;
         this.action = action;
@@ -87,6 +103,7 @@ public class DbEntry {
         this.targetLabel = target;
         this.target_id = target_id;
         this.data = data;
+        this.sql = sql;
     }
 
     public long getTime() {
@@ -109,63 +126,63 @@ public class DbEntry {
         this.data = data;
     }
 
-    public int getUid() throws SQLException {
+    public int getUid() throws SQLException, BusyException {
         if (uid > 0) {
             return uid;
         }
-        return uid = SQLManager.getInstance().getUserManager().getUIDFromUUID(getUserUUID(), true, true);
+        return uid = sql.getUserManager().getUIDFromUUID(getUserUUID(), true, true);
     }
 
-    public int getTargetId() throws SQLException {
+    public int getTargetId() throws SQLException, BusyException {
         if (action.getTable().hasStringTarget()) {
             return -1;
         }
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = SQLManager.getInstance().getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
+        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
     }
 
-    public String getUser() throws SQLException {
+    public String getUser() throws SQLException, BusyException {
         return getUser(true);
     }
 
-    public String getUser(boolean resolve) throws SQLException {
+    public String getUser(boolean resolve) throws SQLException, BusyException {
         if (user != null || !resolve) return user;
 
         if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
             return user = getUserUUID();
         }
-        user = SQLManager.getInstance().getUserManager().getUsernameFromUID(getUid(), false);
+        user = sql.getUserManager().getUsernameFromUID(getUid(), false);
         if (user == null) {
             user = getUserUUID();
         }
         return user;
     }
 
-    public String getTarget() throws SQLException {
+    public String getTarget() throws SQLException, BusyException {
         return getTarget(true);
     }
 
-    public String getTarget(boolean resolve) throws SQLException {
+    public String getTarget(boolean resolve) throws SQLException, BusyException {
         if (target != null || !resolve) return target;
 
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
             return target = getTargetUUID();
         }
-        target = SQLManager.getInstance().getUserManager().getUsernameFromUID(getTargetId(), false);
+        target = sql.getUserManager().getUsernameFromUID(getTargetId(), false);
         if (target == null) {
             target = getTargetUUID();
         }
         return target;
     }
 
-    public String getTargetUUID() throws SQLException {
+    public String getTargetUUID() throws SQLException, BusyException {
         if (targetLabel != null) {
             return targetLabel;
         }
         if (target_id > 0) {
-            targetLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(target_id, false);
+            targetLabel = sql.getUserManager().getUUIDFromUID(target_id, false);
         } else if (target_id == 0) {
             return targetLabel = "";
         }
@@ -175,12 +192,12 @@ public class DbEntry {
         return targetLabel;
     }
 
-    public String getUserUUID() throws SQLException {
+    public String getUserUUID() throws SQLException, BusyException {
         if (userLabel != null) {
             return userLabel;
         }
         if (uid > 0) {
-            userLabel = SQLManager.getInstance().getUserManager().getUUIDFromUID(uid, false);
+            userLabel = sql.getUserManager().getUUIDFromUID(uid, false);
         } else if (uid == 0) {
             return userLabel = "";
         }
@@ -205,8 +222,8 @@ public class DbEntry {
         return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
     }
 
-    public byte[] getBlob() throws SQLException {
-        if (blob == null) blob = SQLManager.getInstance().getBlob(this);
+    public byte[] getBlob() throws SQLException, BusyException {
+        if (blob == null) blob = sql.getBlob(this);
         return blob;
     }
 
@@ -232,10 +249,10 @@ public class DbEntry {
         try {
             out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
                     getAction().getId(getState()), getTarget());
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             out = "ERROR ";
         }
-        if (getData() != null && getData().length() > 0) {
+        if (getData() != null && !getData().isEmpty()) {
             String data = getData();
             if (data.length() > 64) {
                 data = data.substring(0, 64) + "...";

@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.SQLConsumer;
 
@@ -105,9 +106,10 @@ public final class AuxProtectAPI {
      *                                  database.
      * @throws NullPointerException     if the plugin, key, or ntext is null or zero length.
      * @throws IllegalArgumentException if the plugin, key, or ntext is null or zero length.
+     * @throws BusyException            if the database is busy
      */
 
-    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException {
+    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException, BusyException {
         return getSQLManager().createAction(plugin, key, ntext, ptext);
     }
 }

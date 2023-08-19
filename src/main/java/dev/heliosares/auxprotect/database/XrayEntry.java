@@ -21,7 +21,7 @@ public class XrayEntry extends DbEntry {
     }
 
     public XrayEntry(long time, int uid, String world, int x, int y, int z, int target_id, short rating, String data) {
-        super(time, uid, EntryAction.VEIN, false, world, x, y, z, 0, 0, null, target_id, data);
+        super(time, uid, EntryAction.VEIN, false, world, x, y, z, 0, 0, null, target_id, data, SQLManager.getInstance());
         this.rating = rating;
     }
 

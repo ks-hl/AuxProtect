@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.sql.SQLException;
@@ -70,7 +71,7 @@ public class PurgeCommand extends Command {
             if (!plugin.getSqlManager().isMySQL()) {
                 plugin.getSqlManager().execute(plugin.getSqlManager()::vacuum, 30000L);
             }
-        } catch (SQLException e) {
+        } catch (SQLException | BusyException e) {
             plugin.print(e);
             sender.sendLang(Language.L.COMMAND__PURGE__ERROR);
             return;

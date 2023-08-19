@@ -209,7 +209,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 long lastloaded = 0;
                 try {
                     lastloaded = sqlManager.getLast(SQLManager.LastKeys.TELEMETRY);
-                } catch (SQLException ignored) {
+                } catch (SQLException | BusyException ignored) {
                 }
                 long delay = 15 * 20;
                 if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {

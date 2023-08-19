@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
@@ -24,7 +25,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
@@ -188,6 +188,8 @@ public class PlayerListener implements Listener {
                     try {
                         plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
                                 e.getPlayer().getName(), ip);
+                    } catch (BusyException ex) {
+                        plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getName()+", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
                     } catch (SQLException ex) {
                         plugin.print(ex);
                     }
@@ -206,7 +208,7 @@ public class PlayerListener implements Listener {
                                     .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
                         return;
                     }
-                } catch (SQLException e1) {
+                } catch (SQLException | BusyException e1) {
                     return;
                 }
                 e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "aYou have an inventory waiting to be claimed!");

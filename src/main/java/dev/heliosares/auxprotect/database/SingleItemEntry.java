@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
@@ -17,8 +18,7 @@ public class SingleItemEntry extends DbEntry {
     @Nullable
     private ItemStack item;
 
-    public SingleItemEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel,
-                           String data, @Nullable ItemStack item) {
+    public SingleItemEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel, String data, @Nullable ItemStack item) {
         super(userLabel, action, state, location, targetLabel, data);
         if (item != null) {
             item = item.clone();
@@ -42,14 +42,13 @@ public class SingleItemEntry extends DbEntry {
         }
     }
 
-    protected SingleItemEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
-                              int pitch, int yaw, String target, int target_id, String data, int qty, int damage) {
-        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
+    protected SingleItemEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, String target, int target_id, String data, int qty, int damage) {
+        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data, SQLManager.getInstance());
         this.qty = qty;
         this.damage = damage;
     }
 
-    public ItemStack getItem() throws SQLException {
+    public ItemStack getItem() throws SQLException, BusyException {
         if (item != null) {
             return item;
         }

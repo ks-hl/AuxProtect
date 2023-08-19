@@ -38,13 +38,15 @@ public class LookupManager {
             stmt += "\nWHERE " + sqlstmts[0];
         }
         stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
-        List<DbEntry> out = lookup(sql, param.getTable(), stmt, writeparams);
+        List<DbEntry> out = lookup(param.getTable(), stmt, writeparams);
 
         if (param.hasFlag(Parameters.Flag.PLAYBACK) || param.hasFlag(Parameters.Flag.INCREMENTAL_POS)) {
             try {
                 sql.getMultipleBlobs(out.toArray(new DbEntry[0]));
+            } catch (BusyException e) {
+                throw new LookupException(Language.L.DATABASE_BUSY);
             } catch (SQLException e) {
-                plugin.print(e);
+                throw new LookupException(Language.L.ERROR);
             }
         }
 
@@ -104,7 +106,6 @@ public class LookupManager {
     /**
      * Performs a SQL Lookup in the table provided with the statement provided.
      *
-     * @param sqlManager  TODO
      * @param table       The table being utilized. This is not user in the
      *                    statement and is merely provided for entry parsing
      * @param stmt        The statement to be executed
@@ -114,7 +115,7 @@ public class LookupManager {
      * @see LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters)
      */
     @SuppressWarnings("deprecation")
-    public ArrayList<DbEntry> lookup(SQLManager sqlManager, Table table, String stmt, ArrayList<String> writeParams)
+    public ArrayList<DbEntry> lookup(Table table, String stmt, ArrayList<String> writeParams)
             throws LookupException {
         final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();
@@ -159,7 +160,7 @@ public class LookupManager {
                             String world = null;
                             int x = 0, y = 0, z = 0;
                             if (hasLocation) {
-                                world = sqlManager.getWorld(rs.getInt("world_id"));
+                                world = sql.getWorld(rs.getInt("world_id"));
                                 x = rs.getInt("x");
                                 y = rs.getInt("y");
                                 z = rs.getInt("z");
@@ -208,7 +209,7 @@ public class LookupManager {
                             } else if (table.hasBlobID() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
                                 entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, qty, damage);
                             } else {
-                                entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
+                                entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
                             }
 
                             if (table.hasBlobID()) {
@@ -233,7 +234,6 @@ public class LookupManager {
                 plugin.debug("Completed lookup. Total: " + (System.currentTimeMillis() - lookupStart) + "ms Lookup: " + (parseStart - lookupStart) + "ms Parse: " + (System.currentTimeMillis() - parseStart) + "ms", 1);
             }, 3000L);
         } catch (BusyException e) {
-            e.printStackTrace();
             throw new LookupException(Language.L.DATABASE_BUSY);
         } catch (SQLException e) {
             plugin.warning("Error while executing command");

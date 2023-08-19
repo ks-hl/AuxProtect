@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 import org.bukkit.inventory.ItemStack;
@@ -92,14 +93,13 @@ public class InvDiffManager extends BlobManager {
                 String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
                 sql.execute(stmt, connection, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
-            } catch (SQLException e) {
+            } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }
         }
     }
 
-    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException {
-
+    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
         long after = 0;
 
         try {
@@ -178,7 +178,7 @@ public class InvDiffManager extends BlobManager {
                 }
                 return new DiffInventoryRecord(basetime, numdiff, listToPlayerInv(output, inv.exp()));
             }, 3000L, DiffInventoryRecord.class);
-        } catch (SQLException | IOException | ClassNotFoundException e) {
+        } catch (SQLException | IOException | ClassNotFoundException | BusyException e) {
             throw e;
         } catch (Exception e) {
             plugin.print(e);

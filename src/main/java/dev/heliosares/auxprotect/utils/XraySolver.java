@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -18,7 +19,7 @@ import java.util.List;
 
 public class XraySolver {
 
-    public static BaseComponent[] solve(List<DbEntry> entries) throws SQLException {
+    public static BaseComponent[] solve(List<DbEntry> entries) throws SQLException, BusyException {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
         for (int i = entries.size() - 1; i >= 0; i--) {

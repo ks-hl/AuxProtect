@@ -17,6 +17,7 @@ package dev.heliosares.auxprotect.spigot;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -307,7 +308,7 @@ public class Metrics {
                 }
                 try {
                     AuxProtectAPI.getInstance().getSqlManager().setLast(SQLManager.LastKeys.TELEMETRY, System.currentTimeMillis());
-                } catch (SQLException ignored) {
+                } catch (SQLException | BusyException ignored) {
                 }
             });
         }

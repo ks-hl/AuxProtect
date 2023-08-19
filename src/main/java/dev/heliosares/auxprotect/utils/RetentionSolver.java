@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
@@ -14,7 +15,7 @@ import java.util.Map.Entry;
 public class RetentionSolver {
 
     public static void showRetention(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries,
-                                     long startTime, long endTime) throws SQLException {
+                                     long startTime, long endTime) throws SQLException, BusyException {
         long start = System.currentTimeMillis();
         Set<Integer> lookupUids = new HashSet<>();
         for (DbEntry entry : entries) {

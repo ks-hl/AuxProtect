@@ -15,7 +15,7 @@ public class DbEntryGroup extends DbEntry {
     private long lastTime;
 
     protected DbEntryGroup(DbEntry root, Parameters params) {
-        super(0, 0, EntryAction.GROUPING, false, root.getWorld(), root.getX(), root.getY(), root.getZ(), root.getPitch(), root.getYaw(), null, 0, "");
+        super(0, 0, EntryAction.GROUPING, false, root.getWorld(), root.getX(), root.getY(), root.getZ(), root.getPitch(), root.getYaw(), null, 0, "", root.sql);
         if (root instanceof DbEntryGroup) throw new IllegalArgumentException("Tried to add a group to a group!");
         this.range = Math.pow(params.getGroupRange(), 2);
         try {

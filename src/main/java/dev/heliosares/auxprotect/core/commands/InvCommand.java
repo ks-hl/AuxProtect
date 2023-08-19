@@ -72,6 +72,9 @@ public class InvCommand extends Command {
                         player.sendMessage(L.COMMAND__LOOKUP__LOOKING.translate());
                         try {
                             update(plugin, player, when);
+                        } catch (BusyException e) {
+                            player.sendMessage(L.DATABASE_BUSY.translate());
+                            return;
                         } catch (Exception e) {
                             plugin.print(e);
                             player.sendMessage(L.ERROR.translate());
@@ -184,7 +187,7 @@ public class InvCommand extends Command {
         return null;
     }
 
-    private static void update(IAuxProtect plugin, Player staff, long time) throws SQLException {
+    private static void update(IAuxProtect plugin, Player staff, long time) throws SQLException, BusyException {
         plugin.getSqlManager().execute(
                 "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data=" + plugin.getSqlManager().concat("ifnull(data,'')", "?") + " WHERE time=? AND action_id=?",
                 30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by " + staff.getName() + "; ",

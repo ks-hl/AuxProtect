@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.VeinManager;
 import net.md_5.bungee.api.ChatColor;
@@ -18,7 +19,7 @@ public class XrayResults {
         sender.sendMessageRaw("&f------  &9AuxProtect Xray Check Results&7  ------"); // TODO lang
     }
 
-    public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) throws SQLException {
+    public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) throws SQLException, BusyException {
         sendHeader(sender);
 
         Results.sendEntry(plugin, sender, en, -1, true, true);

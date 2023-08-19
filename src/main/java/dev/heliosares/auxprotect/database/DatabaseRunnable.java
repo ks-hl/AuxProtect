@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
@@ -128,7 +129,7 @@ public class DatabaseRunnable implements Runnable {
                 try {
                     if (!next.getUserUUID().equals(entry.getUserUUID())) continue;
                     if (!next.getTargetUUID().equals(entry.getTargetUUID())) continue;
-                } catch (SQLException ignored) {
+                } catch (SQLException | BusyException ignored) {
                     //Unlikely / N/A
                     continue;
                 }

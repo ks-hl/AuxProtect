@@ -566,8 +566,10 @@ public class Parameters implements Cloneable {
         int uid;
         try {
             uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
-        } catch (SQLException e) {
+        } catch (BusyException e) {
             throw new LookupException(L.DATABASE_BUSY);
+        } catch (SQLException e) {
+            throw new LookupException(L.ERROR);
         }
 
         if (uid > 0) {
@@ -928,7 +930,7 @@ public class Parameters implements Cloneable {
     }
 
     @Deprecated
-    public boolean matches(DbEntry entry) throws SQLException {
+    public boolean matches(DbEntry entry) throws SQLException, BusyException {
         if (!uids.isEmpty()) {
             boolean contains = false;
             for (String user : uids) {

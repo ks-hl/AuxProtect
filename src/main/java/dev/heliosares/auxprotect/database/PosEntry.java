@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.utils.PosEncoder;
 import org.bukkit.Location;
 
 import java.util.Objects;
@@ -20,7 +19,7 @@ public class PosEntry extends DbEntry {
     }
 
     protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
-        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
+        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data, SQLManager.getInstance());
         double[] dInc = byteToFractions(increment);
         this.x = x + dInc[0];
         this.y = y + dInc[1];
@@ -30,7 +29,7 @@ public class PosEntry extends DbEntry {
     public PosEntry(long time, int uid, Location location) {
         super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
                 (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
-                Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "");
+                Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "", SQLManager.getInstance());
         this.x = location.getX();
         this.y = location.getY();
         this.z = location.getZ();
@@ -56,7 +55,7 @@ public class PosEntry extends DbEntry {
     }
 
     /**
-     * Retrieves the fractional values from the increment byte generated in {@link PosEncoder#getFractionalByte(double, double, double)}
+     * Retrieves the fractional values from the increment byte generated in {@link #getFractionalByte(double, double, double)}
      *
      * @return An array of doubles of length 3, containing the x, y, and z fractions respectively.
      */

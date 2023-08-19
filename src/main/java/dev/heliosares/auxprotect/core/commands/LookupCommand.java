@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -25,7 +26,7 @@ public class LookupCommand extends Command {
         super(plugin, "lookup", APPermission.LOOKUP, true, "l");
     }
 
-    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String label, String[] args) {
+    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String[] args) {
         List<String> possible = new ArrayList<>();
         String currentArg = args[args.length - 1];
         boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
@@ -265,12 +266,12 @@ public class LookupCommand extends Command {
                 rs.removeIf(entry -> {
                     try {
                         return entry.getUserUUID().startsWith("$") && !entry.getUserUUID().equals("$" + sender.getUniqueId());
-                    } catch (SQLException ignored) {
+                    } catch (SQLException | BusyException ignored) {
                         return true;
                     }
                 });
             }
-            if (rs == null || rs.size() == 0) {
+            if (rs == null || rs.isEmpty()) {
                 sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                 return;
             }
@@ -365,13 +366,13 @@ public class LookupCommand extends Command {
                 if (pickupcount > 0 && dropcount > 0) {
                     msg += "&fNet: &9" + (pickupcount - dropcount);
                 }
-                if (msg.length() > 0) {
+                if (!msg.isEmpty()) {
                     sender.sendMessageRaw(msg);
                 }
                 return;
             } else if (params_.hasFlag(Flag.PLAYTIME)) {
                 Set<String> users = params_.getUsers();
-                if (users.size() == 0) {
+                if (users.isEmpty()) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
                 }
@@ -410,7 +411,7 @@ public class LookupCommand extends Command {
                 }
             } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
                 Set<String> users = params_.getUsers();
-                if (users.size() == 0) {
+                if (users.isEmpty()) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
                     return;
                 }
@@ -472,6 +473,8 @@ public class LookupCommand extends Command {
             }
         } catch (LookupException | ParseException e) {
             sender.sendMessageRaw(e.getMessage());
+        } catch (BusyException e) {
+            sender.sendLang(Language.L.DATABASE_BUSY);
         } catch (Exception e) {
             sender.sendLang(Language.L.ERROR);
             plugin.warning("Error during lookup:");
@@ -486,6 +489,6 @@ public class LookupCommand extends Command {
 
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-        return onTabCompleteStatic(plugin, sender, label, args);
+        return onTabCompleteStatic(plugin, sender, args);
     }
 }
