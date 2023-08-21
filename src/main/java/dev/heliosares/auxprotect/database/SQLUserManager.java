@@ -280,9 +280,9 @@ public class SQLUserManager {
     public void init(Connection connection) throws SQLException {
         String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS;
         if (sql.isMySQL()) {
-            stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(255) UNIQUE, hash INT, PRIMARY KEY (uid));";
+            stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(200) UNIQUE, hash INT, PRIMARY KEY (uid));";
         } else {
-            stmt += " (uuid varchar(255) UNIQUE, uid INTEGER PRIMARY KEY AUTOINCREMENT, hash INT);";
+            stmt += " (uuid TEXT UNIQUE, uid INTEGER PRIMARY KEY AUTOINCREMENT, hash INT);";
         }
         plugin.debug(stmt, 3);
         sql.execute(stmt, connection);
