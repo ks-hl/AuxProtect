@@ -424,12 +424,12 @@ public class MigrationManager {
             total = uidValues.size() + longTermValues.size();
             complete = 0;
             for (String value : uidValues) {
-                sql.execute("UPDATE " + Table.AUXPROTECT_UIDS + " SET hash=" + value.hashCode() + " WHERE uuid='" + value + "'", connection);
+                sql.execute("UPDATE " + Table.AUXPROTECT_UIDS + " SET hash=? WHERE uuid=?", connection, value.hashCode(), value);
                 complete++;
             }
 
             for (String value : longTermValues) {
-                sql.execute("UPDATE " + Table.AUXPROTECT_LONGTERM + " SET target_hash=" + value.toLowerCase().hashCode() + " WHERE target='" + value + "'", connection);
+                sql.execute("UPDATE " + Table.AUXPROTECT_LONGTERM + " SET target_hash=? WHERE target=?", connection, value.toLowerCase().hashCode(), value);
                 complete++;
             }
         }));
