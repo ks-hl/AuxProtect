@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 
 public class TimeUtil {
 
-    public static final DateTimeFormatter entryTimeFormat = DateTimeFormatter.ofPattern("ddMMMyy HH:mm:ss.SSS");
+    public static final DateTimeFormatter entryTimeFormat = DateTimeFormatter.ofPattern("dd-MMM-yy HH:mm:ss.SSS z");
 
     private static String padDouble(double d) {
         String[] split = (d + "").split("\\.");
