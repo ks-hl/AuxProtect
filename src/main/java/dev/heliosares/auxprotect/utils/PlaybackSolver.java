@@ -113,11 +113,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
 
-        APPlayer apPlayer = plugin.getAPPlayer(sender);
-        if (apPlayer.getTimeZone() == null) {
-            apPlayer.fetchTimeZone();
-        }
-        timeZone = apPlayer.getTimeZone().toZoneId();
+        timeZone = plugin.getAPPlayer(sender).getTimeZone().toZoneId();
     }
 
     public static void shutdown() {
@@ -231,7 +227,6 @@ public class PlaybackSolver extends BukkitRunnable {
             }
         }
         swing.forEach(FakePlayer::swingArm);
-
 
 
         for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {

@@ -195,16 +195,16 @@ public class APPlayer {
     }
 
     public TimeZone getTimeZone() {
-        return timeZone;
-    }
+        if (timeZone != null) return timeZone;
 
-    public void fetchTimeZone() {
-        if (player.getAddress() == null) return;
+        if (player.getAddress() == null) return null;
         try {
-            timeZone = IPService.getTimeZoneForIP(player.getAddress().getHostString());
+            return timeZone = IPService.getTimeZoneForIP(player.getAddress().getHostString());
         } catch (IOException ex) {
             plugin.warning("Failed to get timezone for " + player.getName() + ", " + ex.getMessage());
             if (plugin.getAPConfig().getDebug() > 0) plugin.print(ex);
         }
+
+        return timeZone = TimeZone.getDefault();
     }
 }

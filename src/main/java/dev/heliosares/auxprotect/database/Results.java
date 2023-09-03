@@ -60,9 +60,6 @@ public class Results {
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
         APPlayer apPlayer = plugin.getAPPlayer(player);
-        if (time && apPlayer.getTimeZone() == null) {
-            apPlayer.fetchTimeZone();
-        }
 
         if (entry instanceof DbEntryGroup group) {
             if (time) {

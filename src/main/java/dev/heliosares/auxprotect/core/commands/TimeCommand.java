@@ -27,25 +27,30 @@ public class TimeCommand extends Command {
             sender.sendMessageRaw("&7" + LocalDateTime.now().format(formatter));
             return;
         } else if (args.length == 2) {
-            if (args[1].startsWith("+") || args[1].startsWith("-")) {
-                boolean add = args[1].startsWith("+");
-                long time;
-                try {
-                    time = TimeUtil.stringToMillis(args[1].substring(1));
-                } catch (NumberFormatException e) {
-                    sender.sendLang(Language.L.INVALID_SYNTAX);
-                    return;
+            boolean add = args[1].startsWith("+");
+            String timeStr = args[1];
+            if (add) timeStr = timeStr.substring(1);
+            long time;
+            try {
+                if (timeStr.matches("\\d+e")) {
+                    time = Long.parseLong(timeStr.substring(0, timeStr.length() - 1));
+                } else {
+                    time = TimeUtil.stringToMillis(timeStr);
                 }
-                sender.sendMessageRaw("&9Server time " + (add ? "plus" : "minus") + " " + args[1].substring(1) + ":");
-                sender.sendMessageRaw(
-                        "&7" + LocalDateTime.now().plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
-                sender.sendMessageRaw(
-                        String.format("&7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
-                sender.sendMessageRaw(
-                        String.format("&7%s %s", TimeUtil.millisToStringExtended(time), add ? "from now" : "ago"));
-
+            } catch (NumberFormatException e) {
+                sender.sendLang(Language.L.INVALID_SYNTAX);
                 return;
             }
+            sender.sendMessageRaw("&9" + args[1].substring(1) + "&f " + (add ? "from now" : "ago") + ":");
+            sender.sendMessageRaw(
+                    "&7" + LocalDateTime.now().atZone(plugin.getAPPlayer(sender).getTimeZone().toZoneId()).plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
+            sender.sendMessageRaw(
+                    String.format("&7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
+            sender.sendMessageRaw(
+                    String.format("&7%s %s", TimeUtil.millisToStringExtended(time), add ? "from now" : "ago"));
+            sender.sendMessageRaw("&7" + (System.currentTimeMillis() + time) + "e");
+
+            return;
         }
         throw new SyntaxException();
     }

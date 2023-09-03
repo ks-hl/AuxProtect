@@ -192,7 +192,7 @@ public class PlayerListener implements Listener {
                 }
             });
             if (APPermission.LOOKUP.hasPermission(e.getPlayer())) {
-                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, apPlayer::fetchTimeZone);
+                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, apPlayer::getTimeZone);
             }
         }
 
