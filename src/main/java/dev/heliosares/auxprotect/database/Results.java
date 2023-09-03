@@ -1,10 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.APPermission;
-import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.core.Parameters;
+import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -62,12 +59,17 @@ public class Results {
 
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
+        APPlayer apPlayer = plugin.getAPPlayer(player);
+        if (time && apPlayer.getTimeZone() == null) {
+            apPlayer.fetchTimeZone();
+        }
+
         if (entry instanceof DbEntryGroup group) {
             if (time) {
                 message.append(Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - group.getFirstTime()) +
                                 "-" + TimeUtil.millisToString(System.currentTimeMillis() - group.getLastTime())))
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new Text(TimeUtil.format(group.getFirstTime(), TimeUtil.entryTimeFormat) + " -\n" + TimeUtil.format(group.getLastTime(), TimeUtil.entryTimeFormat)
+                                new Text(TimeUtil.format(group.getFirstTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId()) + " -\n" + TimeUtil.format(group.getLastTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId())
                                         + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
                         .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, group.getFormattedEpoch()));
             }
@@ -83,7 +85,7 @@ public class Results {
                     msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - entry.getTime()));
                 }
                 message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat)
+                                new Text(TimeUtil.format(entry.getTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId())
                                         + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
                         .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTime() + "e"));
             }

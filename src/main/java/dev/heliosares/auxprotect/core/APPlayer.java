@@ -4,15 +4,18 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.utils.IPService;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PosEncoder;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.TimeZone;
 
 public class APPlayer {
     public final double[] activity = new double[30];
@@ -35,6 +38,8 @@ public class APPlayer {
     private List<ItemStack> invDiffItems;
     private Location lastLocationDiff;
     private PosEncoder.Posture lastPosture;
+
+    private TimeZone timeZone;
 
     public APPlayer(IAuxProtect plugin, Player player) {
         this.player = player;
@@ -187,5 +192,19 @@ public class APPlayer {
 
     public Player getPlayer() {
         return player;
+    }
+
+    public TimeZone getTimeZone() {
+        return timeZone;
+    }
+
+    public void fetchTimeZone() {
+        if (player.getAddress() == null) return;
+        try {
+            timeZone = IPService.getTimeZoneForIP(player.getAddress().getHostString());
+        } catch (IOException ex) {
+            plugin.warning("Failed to get timezone for " + player.getName() + ", " + ex.getMessage());
+            if (plugin.getAPConfig().getDebug() > 0) plugin.print(ex);
+        }
     }
 }

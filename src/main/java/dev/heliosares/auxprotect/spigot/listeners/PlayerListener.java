@@ -181,56 +181,47 @@ public class PlayerListener implements Listener {
             String data = "";
             if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
             logSession(e.getPlayer(), true, data);
-            new BukkitRunnable() {
-
-                @Override
-                public void run() {
-                    try {
-                        plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
-                                e.getPlayer().getName(), ip);
-                    } catch (BusyException ex) {
-                        plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getName()+", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
-                    } catch (SQLException ex) {
-                        plugin.print(ex);
-                    }
+            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+                try {
+                    plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
+                            e.getPlayer().getName(), ip);
+                } catch (BusyException ex) {
+                    plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getName() + ", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
+                } catch (SQLException ex) {
+                    plugin.print(ex);
                 }
-            }.runTaskAsynchronously(plugin);
+            });
+            if (APPermission.LOOKUP.hasPermission(e.getPlayer())) {
+                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, apPlayer::fetchTimeZone);
+            }
         }
 
         apPlayer.logInventory("join");
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                try {
-                    if (plugin.getSqlManager().getUserManager()
-                            .getPendingInventory(plugin.getSqlManager().getUserManager()
-                                    .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
-                        return;
-                    }
-                } catch (SQLException | BusyException e1) {
+        plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+            try {
+                if (plugin.getSqlManager().getUserManager()
+                        .getPendingInventory(plugin.getSqlManager().getUserManager()
+                                .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
                     return;
                 }
-                e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "aYou have an inventory waiting to be claimed!");
-                e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "7Ensure you have room in your inventory before claiming!");
-                ComponentBuilder message = new ComponentBuilder();
-                message.append(ChatColor.COLOR_CHAR + "f\n         ");
-                message.append(ChatColor.COLOR_CHAR + "a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new Text(ChatColor.COLOR_CHAR + "aClick to claim your recovered inventory")));
-                message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
-                e.getPlayer().spigot().sendMessage(message.create());
-                e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+            } catch (SQLException | BusyException e1) {
+                return;
             }
-        }.runTaskLaterAsynchronously(plugin, 40);
+            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "aYou have an inventory waiting to be claimed!");
+            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "7Ensure you have room in your inventory before claiming!");
+            ComponentBuilder message = new ComponentBuilder();
+            message.append(ChatColor.COLOR_CHAR + "f\n         ");
+            message.append(ChatColor.COLOR_CHAR + "a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                            new Text(ChatColor.COLOR_CHAR + "aClick to claim your recovered inventory")));
+            message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
+            e.getPlayer().spigot().sendMessage(message.create());
+            e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
+        }, 40);
 
         if (plugin.update != null && APPermission.ADMIN.hasPermission(e.getPlayer())) {
-            new BukkitRunnable() {
-                @Override
-                public void run() {
-                    plugin.tellAboutUpdate(e.getPlayer());
-                }
-            }.runTaskLater(plugin, 20);
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.tellAboutUpdate(e.getPlayer()), 20);
         }
     }
 

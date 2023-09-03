@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -24,6 +25,7 @@ import org.json.simple.parser.ParseException;
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -39,6 +41,8 @@ public class PlaybackSolver extends BukkitRunnable {
     private final Map<UUID, FakePlayer.Skin> skins = new HashMap<>();
     private boolean closed;
     private final List<BlockAction> blockActions;
+
+    private final ZoneId timeZone;
 
     private final Set<Location> modified = new HashSet<>();
 
@@ -108,6 +112,12 @@ public class PlaybackSolver extends BukkitRunnable {
         }
 
         runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
+
+        APPlayer apPlayer = plugin.getAPPlayer(sender);
+        if (apPlayer.getTimeZone() == null) {
+            apPlayer.fetchTimeZone();
+        }
+        timeZone = apPlayer.getTimeZone().toZoneId();
     }
 
     public static void shutdown() {
@@ -182,7 +192,7 @@ public class PlaybackSolver extends BukkitRunnable {
         }
         final long timeNow = System.currentTimeMillis() - realReferenceTime + startTime;
 
-        audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
+        audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat, timeZone) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
 
 
         for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {

@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.utils;
 
 import dev.heliosares.auxprotect.core.Language;
 
+import javax.annotation.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -118,7 +119,8 @@ public class TimeUtil {
         return time;
     }
 
-    public static String format(long millis, DateTimeFormatter formatter) {
-        return Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).format(formatter);
+    public static String format(long millis, DateTimeFormatter formatter, @Nullable ZoneId timeZone) {
+        if (timeZone == null) timeZone = ZoneId.systemDefault();
+        return Instant.ofEpochMilli(millis).atZone(timeZone).format(formatter);
     }
 }
