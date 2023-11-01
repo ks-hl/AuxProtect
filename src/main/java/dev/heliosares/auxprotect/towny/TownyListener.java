@@ -1,12 +1,17 @@
 package dev.heliosares.auxprotect.towny;
 
 import com.palmergames.bukkit.towny.event.*;
+import com.palmergames.bukkit.towny.event.economy.BankTransactionEvent;
+import com.palmergames.bukkit.towny.event.economy.NationTransactionEvent;
+import com.palmergames.bukkit.towny.event.economy.TownTransactionEvent;
 import com.palmergames.bukkit.towny.event.town.TownMayorChangeEvent;
-import com.palmergames.bukkit.towny.event.town.TownMergeEvent;
 import com.palmergames.bukkit.towny.event.town.TownUnclaimEvent;
 import com.palmergames.bukkit.towny.exceptions.NotRegisteredException;
 import com.palmergames.bukkit.towny.exceptions.TownyException;
-import com.palmergames.bukkit.towny.object.*;
+import com.palmergames.bukkit.towny.object.Coord;
+import com.palmergames.bukkit.towny.object.Government;
+import com.palmergames.bukkit.towny.object.Resident;
+import com.palmergames.bukkit.towny.object.WorldCoord;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
