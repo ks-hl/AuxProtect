@@ -44,13 +44,6 @@ public class TownyListener implements Listener {
         return null;
     }
 
-    // Towns
-
-    public static String getLabel(Government gov) {
-        if (gov == null || gov.getUUID() == null) return "#null";
-        return "#" + (gov instanceof Nation ? "N" : "T") + gov.getUUID().toString();
-    }
-
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NewDayEvent e) {
         e.getFallenTowns().forEach((t) -> {
@@ -144,15 +137,9 @@ public class TownyListener implements Listener {
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void on(TownMergeEvent e) {
-        plugin.add(new TownyEntry("$t" + e.getSuccumbingTownUUID(), EntryAction.TOWNCLAIM, false,
-                TownyManager.getLabel(e.getRemainingTown()), ""));
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(TownMayorChangeEvent e) {
         plugin.add(new TownyEntry(AuxProtectSpigot.getLabel(e.getNewMayor().getPlayer()), EntryAction.TOWNMAYOR, false,
-                toLoc(e.getNewMayor()), getLabel(e.getTown()), "Prior: " + e.getOldMayor().getName()));
+                toLoc(e.getNewMayor()), TownyManager.getLabel(e.getTown()), "Prior: " + e.getOldMayor().getName()));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -199,17 +186,17 @@ public class TownyListener implements Listener {
     public void on(DeleteNationEvent e) {
         plugin.getSqlManager().getTownyManager().updateName(e.getNationUUID(), e.getNationName(), true);
         plugin.add(
-                new TownyEntry("$" + e.getNationKing(), EntryAction.TOWNDELETE, false, "$t" + e.getNationUUID(), ""));
+                new TownyEntry(e.getLeader() == null ? "" : ("$" + e.getLeader().getUUID()), EntryAction.TOWNDELETE, false, "$t" + e.getNationUUID(), ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NationAddTownEvent e) {
-        plugin.add(new TownyEntry(getLabel(e.getTown()), EntryAction.NATIONJOIN, true, getLabel(e.getNation()), ""));
+        plugin.add(new TownyEntry(TownyManager.getLabel(e.getTown()), EntryAction.NATIONJOIN, true, TownyManager.getLabel(e.getNation()), ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(NationRemoveTownEvent e) {
-        plugin.add(new TownyEntry(getLabel(e.getTown()), EntryAction.NATIONJOIN, false, getLabel(e.getNation()), ""));
+        plugin.add(new TownyEntry(TownyManager.getLabel(e.getTown()), EntryAction.NATIONJOIN, false, TownyManager.getLabel(e.getNation()), ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
