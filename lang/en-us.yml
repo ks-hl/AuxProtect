@@ -233,6 +233,7 @@ actions:
     n: unmounted
   msg: messaged
   nametag: name tagged
+  nationbalance: nation balance
   nationbank:
     p: deposited
     n: withdrew
@@ -261,6 +262,7 @@ actions:
   smith: upgraded to netherite
   tame: tamed
   totem: used totem
+  townbalance: town balance
   townbank:
     p: deposited
     n: withdrew

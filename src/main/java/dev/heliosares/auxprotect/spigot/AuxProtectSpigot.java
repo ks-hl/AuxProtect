@@ -362,6 +362,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             }
                         }
 
+                        if (getSqlManager().getTownyManager() != null) {
+                            getSqlManager().getTownyManager().run();
+                        }
+
                         if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
                             if (apPlayer.lastLocation != null
                                     && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.getPlayer().getWorld())) {

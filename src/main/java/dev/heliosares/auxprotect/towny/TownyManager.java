@@ -2,6 +2,9 @@ package dev.heliosares.auxprotect.towny;
 
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
+import com.palmergames.bukkit.towny.object.Nation;
+import com.palmergames.bukkit.towny.object.Town;
+import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
@@ -13,12 +16,17 @@ import javax.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
-public class TownyManager {
+public class TownyManager implements Runnable {
     private final AuxProtectSpigot plugin;
     private final SQLManager sql;
     private final BidiMapCache<Integer, String> names = new BidiMapCache<>(300000L, 300000L, true);
+    private final Map<UUID, Double> lastBalances = new HashMap<>();
+    private long lastTownBankUpdate;
+    private long lastNationBankUpdate;
 
     public TownyManager(AuxProtectSpigot plugin, SQLManager sql) {
         this.plugin = plugin;
@@ -37,7 +45,7 @@ public class TownyManager {
         TownyUniverse.getInstance().getNations().forEach((nation) -> sql.getTownyManager().updateName(nation, false));
     }
 
-    public String getNameFromID(int uid, boolean wait) throws SQLException, BusyException {
+    String getNameFromID(int uid, boolean wait) throws SQLException, BusyException {
         if (uid < 0) {
             return null;
         }
@@ -141,5 +149,34 @@ public class TownyManager {
 
     public void cleanup() {
         names.cleanup();
+    }
+
+    @Override
+    public void run() {
+        if (EntryAction.TOWNBANK.isEnabled() && plugin.getAPConfig().getTownBankInterval() > 0) {
+            if (System.currentTimeMillis() - lastTownBankUpdate >= plugin.getAPConfig().getTownBankInterval()) {
+                lastTownBankUpdate = System.currentTimeMillis();
+                for (Town town : TownyUniverse.getInstance().getTowns()) {
+                    Double lastBalance = lastBalances.get(town.getUUID());
+                    double balance = town.getAccount().getHoldingBalance();
+                    if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
+                    lastBalances.put(town.getUUID(), balance);
+                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                }
+            }
+        }
+
+        if (EntryAction.NATIONBANK.isEnabled() && plugin.getAPConfig().getNationBankInterval() > 0) {
+            if (System.currentTimeMillis() - lastNationBankUpdate >= plugin.getAPConfig().getNationBankInterval()) {
+                lastNationBankUpdate = System.currentTimeMillis();
+                for (Nation nation : TownyUniverse.getInstance().getNations()) {
+                    Double lastBalance = lastBalances.get(nation.getUUID());
+                    double balance = nation.getAccount().getHoldingBalance();
+                    if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
+                    lastBalances.put(nation.getUUID(), balance);
+                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                }
+            }
+        }
     }
 }

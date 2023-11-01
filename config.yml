@@ -79,6 +79,14 @@ Actions:
     # Use this if you run into issues with death inventories being empty. 
     # This is usually due to a plugin like DeathChests clearing the inventory before AuxProtect sees it.
     LowestPriority: false
+  townbalance:
+    Enabled: true
+    # The logging interval in ms. Only makes an entry if there has been a change.
+    Interval: 5000
+  nationbalance:
+    Enabled: true
+    # The logging interval in ms. Only makes an entry if there has been a change.
+    Interval: 5000
   session:
     Enabled: true
     # Whether to log the current session's IP in the data of a:session

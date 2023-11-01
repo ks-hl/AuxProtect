@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>AuxProtect</groupId>
     <artifactId>AuxProtect</artifactId>
-    <version>1.2.10-pre2</version>
+    <version>1.2.10-pre3</version>
     <name>AuxProtect</name>
     <build>
         <finalName>${project.artifactId}-${project.version}</finalName>
@@ -218,7 +218,7 @@
         <dependency>
             <groupId>com.palmergames.bukkit.towny</groupId>
             <artifactId>towny</artifactId>
-            <version>0.98.2.0</version>
+            <version>0.100.0.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

@@ -19,6 +19,8 @@ public class APConfig {
     private long inventoryInterval;
     private long inventoryDiffInterval;
     private long moneyInterval;
+    private long townBankInterval;
+    private long nationBankInterval;
     private boolean overrideCommands;
     private boolean skipV6Migration;
     private boolean logIncrementalPosition;
@@ -68,6 +70,8 @@ public class APConfig {
             inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
             inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 0);
             moneyInterval = config.getLong("Actions.money.Interval", 60000);
+            townBankInterval = config.getLong("Actions.townbank.Interval", 5000);
+            nationBankInterval = config.getLong("Actions.nationbank.Interval", 5000);
             logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
         }
         sanitizeUnicode = config.getBoolean("SanitizeUnicode");
@@ -177,6 +181,14 @@ public class APConfig {
 
     public long getMoneyInterval() {
         return moneyInterval;
+    }
+
+    public long getTownBankInterval() {
+        return townBankInterval;
+    }
+
+    public long getNationBankInterval() {
+        return nationBankInterval;
     }
 
     public boolean isPrivate() {

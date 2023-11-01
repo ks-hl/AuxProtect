@@ -119,12 +119,14 @@ public class EntryAction {
     //    public static final EntryAction TOWNMERGE = new EntryAction("townmerge", 1317);
     public static final EntryAction TOWNMAYOR = new EntryAction("townmayor", 1318);
     public static final EntryAction TOWNBANK = new EntryAction("townbank", 1319, 1320);
+    public static final EntryAction TOWNBALANCE = new EntryAction("townbalance", 1321);
 
     public static final EntryAction NATIONCREATE = new EntryAction("nationcreate", 1400);
     public static final EntryAction NATIONRENAME = new EntryAction("nationrename", 1401);
     public static final EntryAction NATIONDELETE = new EntryAction("nationdelete", 1402);
     public static final EntryAction NATIONJOIN = new EntryAction("nationjoin", 1403, 1404);
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
+    public static final EntryAction NATIONBALANCE = new EntryAction("nationbalance", 1407);
     // END TOWNY (1499)
 
     public final boolean hasDual;
