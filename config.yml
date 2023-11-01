@@ -60,7 +60,7 @@ Actions:
   money:
     Enabled: true
     # The logging interval in ms.
-    Interval: 600000
+    Interval: 60000
   pos:
     Enabled: true
     # The logging interval in ms.
