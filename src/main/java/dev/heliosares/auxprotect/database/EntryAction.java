@@ -88,6 +88,11 @@ public class EntryAction {
     public static final EntryAction ENCHANT = new EntryAction("enchant", 1156);
 
     public static final EntryAction SMITH = new EntryAction("smith", 1157);
+    public static final EntryAction BUCKET = new EntryAction("bucket", 1158, 1159);
+
+    public static final EntryAction CRATEOPEN = new EntryAction("crateopen", 1160);
+    public static final EntryAction CRATEREWARD = new EntryAction("cratereward", 1161);
+	
     // END INVENTORY(1279)
 
     // COMMANDS (1280)

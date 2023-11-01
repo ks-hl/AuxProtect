@@ -267,6 +267,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             }
             EntryAction.TOWNYNAME.setEnabled(false);
         }
+        //if(hook(()-> new ExcellentCratesListener))
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
         Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = new APSCommand(this)));

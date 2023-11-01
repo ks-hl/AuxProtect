@@ -176,7 +176,7 @@
         <dependency>
             <groupId>com.github.7sat</groupId>
             <artifactId>DynamicShop3</artifactId>
-            <version>3.12.1</version>
+            <version>3.15.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -207,6 +207,12 @@
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
             <version>5.0.0-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.ks-hl</groupId>
+            <artifactId>ExcellentCrates-spigot</artifactId>
+            <version>47ad28b0a3</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
     <properties>
