@@ -4,11 +4,14 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
+import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
@@ -153,13 +156,41 @@ public class TownyManager implements Runnable {
 
     @Override
     public void run() {
+        if (lastTownBankUpdate == 0) {
+            lastTownBankUpdate = 1;
+            try {
+                for (DbEntry dbEntry : plugin.getSqlManager().getLookupManager().lookup(new Parameters(Table.AUXPROTECT_TOWNY).addAction(null, EntryAction.TOWNBALANCE, 0))) {
+                    TownyEntry townyEntry = (TownyEntry) dbEntry;
+                    UUID uuid = UUID.fromString(townyEntry.getUserUUID().substring(2));
+                    double bal = Double.parseDouble(townyEntry.getData().replaceAll("[$,]", ""));
+                    lastBalances.put(uuid, bal);
+                }
+            } catch (LookupException | ParseException | SQLException | BusyException e) {
+                plugin.print(e);
+            }
+        }
+
+        if (lastNationBankUpdate == 0) {
+            lastNationBankUpdate = 1;
+            try {
+                for (DbEntry dbEntry : plugin.getSqlManager().getLookupManager().lookup(new Parameters(Table.AUXPROTECT_TOWNY).addAction(null, EntryAction.NATIONBALANCE, 0))) {
+                    TownyEntry townyEntry = (TownyEntry) dbEntry;
+                    UUID uuid = UUID.fromString(townyEntry.getUserUUID().substring(2));
+                    double bal = Double.parseDouble(townyEntry.getData().replaceAll("[$,]", ""));
+                    lastBalances.put(uuid, bal);
+                }
+            } catch (LookupException | ParseException | SQLException | BusyException e) {
+                plugin.print(e);
+            }
+        }
+
         if (EntryAction.TOWNBANK.isEnabled() && plugin.getAPConfig().getTownBankInterval() > 0) {
             if (System.currentTimeMillis() - lastTownBankUpdate >= plugin.getAPConfig().getTownBankInterval()) {
                 lastTownBankUpdate = System.currentTimeMillis();
                 for (Town town : TownyUniverse.getInstance().getTowns()) {
                     Double lastBalance = lastBalances.get(town.getUUID());
                     double balance = town.getAccount().getHoldingBalance();
-                    if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
+                    if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) continue;
                     lastBalances.put(town.getUUID(), balance);
                     plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
                 }
