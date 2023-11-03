@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
@@ -27,7 +28,16 @@ public class SingleItemEntry extends DbEntry {
             if (item.hasItemMeta() && item.getItemMeta() instanceof Damageable meta) {
                 damage = meta.getDamage();
                 meta.setDamage(0);
-                item.setItemMeta(meta);
+                try {
+                    item.setItemMeta(meta);
+                } catch (NullPointerException e) {
+                    if (!(meta instanceof SkullMeta)) {
+                        throw e;
+                    }
+                    // For some reason, SkullMeta is throwing a null pointer randomly. Shouldn't affect
+                    // anything because setting the damage to 0 is only done to reduce the number of blobs
+                    // stored in the database.
+                }
             } else damage = 0;
             this.item = item;
             try {
