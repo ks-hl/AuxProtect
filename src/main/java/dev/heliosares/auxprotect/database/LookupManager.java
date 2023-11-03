@@ -187,6 +187,9 @@ public class LookupManager {
                                 entry = new PosEntry(time, uid, entryAction, state, world, x, y, z, rs.getByte("increment"), pitch, yaw, target, target_id, data);
                             } else if (table.hasBlobID() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
                                 entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, qty, damage);
+                            } else if (table.hasUID2()) {
+                                int uid2 = rs.getInt("uid2");
+                                entry = new DbEntry2(time, uid, uid2, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
                             } else {
                                 entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
                             }

@@ -790,6 +790,11 @@ public class Parameters implements Cloneable {
             String stmt = "uid " + (negateUser ? "NOT " : "") + "IN ";
             stmt += toGroup(uids);
             stmts.add(stmt);
+            if (table.hasUID2()) {
+                stmt = "uid2 " + (negateUser ? "NOT " : "") + "IN ";
+                stmt += toGroup(uids);
+                stmts.add(stmt);
+            }
         }
         if (!targets.isEmpty()) {
             StringBuilder stmt = new StringBuilder("(");

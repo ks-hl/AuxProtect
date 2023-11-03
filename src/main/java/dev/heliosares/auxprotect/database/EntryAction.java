@@ -39,7 +39,6 @@ public class EntryAction {
     public static final EntryAction TAME = new EntryAction("tame", 139);
     @Deprecated
     public static final EntryAction JOBS_OLD = new EntryAction("jobs", 140);
-    @Deprecated
     public static final EntryAction PAY_OLD = new EntryAction("pay", 141);
     public static final EntryAction LIGHTNING = new EntryAction("lightning", 142);
     public static final EntryAction EXPLODE = new EntryAction("explode", 143);
@@ -73,10 +72,12 @@ public class EntryAction {
     public static final EntryAction GRAB = new EntryAction("grab", 1026);
     public static final EntryAction DROP = new EntryAction("drop", 1027);
     public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
+	
     public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
     @Deprecated
     public static final EntryAction AUCTIONBUY_OLD = new EntryAction("auctionbuy", 1030);
     //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
+	
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
 
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
@@ -134,7 +135,15 @@ public class EntryAction {
     public static final EntryAction JOBS = new EntryAction("jobs", 1504);
     public static final EntryAction MONEY = new EntryAction("money", 1505);
 
-    // END TRANSACTIONS (1599)
+    // END TRANSACT (1699)
+
+    @java.lang.Deprecated
+    public static class Deprecated {
+        public static final EntryAction OLD_SHOP = new EntryAction("shop", 8, 9);
+        public static final EntryAction OLD_PAY = new EntryAction("pay", 141);
+        public static final EntryAction OLD_AUCTIONLIST = new EntryAction("old_auctionlist", 1029);
+        public static final EntryAction OLD_AUCTIONBUY = new EntryAction("old_auctionbuy", 1030);
+    }
 
     public final boolean hasDual;
     public final int id;
@@ -268,6 +277,10 @@ public class EntryAction {
     public Table getTable() {
         if (equals(CHAT)) return Table.AUXPROTECT_CHAT;
         if (equals(COMMAND)) return Table.AUXPROTECT_COMMANDS;
+        if (id < 1300) return Table.AUXPROTECT_POSITION;
+        if (id < 1310) return Table.AUXPROTECT_XRAY;
+        if (id < 1500) return Table.AUXPROTECT_TOWNY;
+        if (id < 1700) return Table.AUXPROTECT_TRANSACT;
         if (id > 1000000) return Table.AUXPROTECT_API;
         if (id >= 1600) {
             throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);

@@ -10,11 +10,12 @@ public enum Table {
     AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_TOWNY, AUXPROTECT_TRANSACTIONS,
 
     AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS,
-    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
+    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV, AUXPROTECT_TRANSACTBLOB;
 
     public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
     final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
     private long autopurgeinterval;
+    private BlobManager blobManager;
 
     public static String getValuesTemplate(int numColumns) {
         if (numColumns <= 0) {
@@ -67,7 +68,7 @@ public enum Table {
 
     public boolean hasData() {
         return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY ->
+            case AUXPROTECT_MAIN, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY, AUXPROTECT_TRANSACT ->
                     true;
             default -> false;
         };
@@ -75,7 +76,7 @@ public enum Table {
 
     public boolean hasLocation() {
         return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
+            case AUXPROTECT_MAIN, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY, AUXPROTECT_TRANSACT ->
                     true;
             default -> false;
         };
@@ -126,6 +127,7 @@ public enum Table {
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         } else if (this == AUXPROTECT_TRANSACTIONS) {
+			// not the best, don't really need dedicated item_type, could just use target for this?
             return "(time, uid, action_id, world_id, x, y, z, target_id, item_type, quantity, value, balance)";
         }
         return null;
@@ -144,6 +146,7 @@ public enum Table {
         if (platform == PlatformType.BUNGEE) {
             return 5;
         }
+        if (this == AUXPROTECT_TRANSACT) return 10;
 
         return switch (this) {
             case AUXPROTECT_ABANDONED -> 8;
@@ -164,6 +167,9 @@ public enum Table {
         String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (\n";
         stmt += "    time BIGINT";
         stmt += ",\n    uid integer";
+        if (hasUID2()) {
+            stmt += ",\n    uid2 integer";
+        }
         if (hasActionId()) {
             stmt += ",\n    action_id SMALLINT";
         }
@@ -215,12 +221,47 @@ public enum Table {
         return stmt;
     }
 
+    /**
+     * @return Whether this table has a column named "blobid"
+     */
     public boolean hasBlobID() {
-        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+        return getBlobTable() != null;
     }
 
+    /**
+     * @return Whether this table has a column named "ablob" of datatype blob
+     */
     public boolean hasBlob() {
         return this == AUXPROTECT_POSITION;
+    }
+
+    public boolean hasUID2() {
+        return this == AUXPROTECT_TRANSACT;
+    }
+
+    /**
+     * @return The table's associated blob, or null
+     */
+    public Table getBlobTable() {
+        return switch (this) {
+            case AUXPROTECT_INVENTORY -> AUXPROTECT_INVBLOB;
+            case AUXPROTECT_TRANSACT -> AUXPROTECT_TRANSACTBLOB;
+            case AUXPROTECT_INVDIFF -> AUXPROTECT_INVDIFFBLOB;
+            default -> null;
+        };
+    }
+
+    void setBlobManager(BlobManager blobManager) {
+        Table blobTable = getBlobTable();
+        if (blobTable == null) {
+            throw new IllegalArgumentException("Cannot set blob manager for a table without a blobid (" + this + ")");
+        }
+        this.blobManager = blobManager;
+        blobTable.blobManager = blobManager;
+    }
+
+    public BlobManager getBlobManager() {
+        return blobManager;
     }
 
     public long getAutoPurgeInterval() {

@@ -32,7 +32,6 @@ public class SQLManager extends ConnectionPool {
     private final File sqliteFile;
     private final LookupManager lookupmanager;
     private final InvDiffManager invdiffmanager;
-    private final BlobManager invblobmanager;
     private final TownyManager townymanager;
     private final SQLUserManager usermanager;
     private final String tablePrefix;
@@ -49,8 +48,12 @@ public class SQLManager extends ConnectionPool {
         this.usermanager = new SQLUserManager(plugin, this);
         this.lookupmanager = new LookupManager(this, plugin);
         this.invdiffmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
-        this.invblobmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
-        if (prefix == null || prefix.length() == 0) {
+		
+        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            Table.AUXPROTECT_INVENTORY.setBlobManager(new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin));
+            Table.AUXPROTECT_TRANSACT.setBlobManager(new BlobManager(Table.AUXPROTECT_TRANSACTBLOB, this, plugin));
+        }
+        if (prefix == null || prefix.isEmpty()) {
             tablePrefix = "";
         } else {
             prefix = prefix.replaceAll(" ", "_");
@@ -222,6 +225,59 @@ public class SQLManager extends ConnectionPool {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
             stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
+
+            if (Table.AUXPROTECT_INVENTORY.getBlobManager() != null) {
+                Table.AUXPROTECT_INVENTORY.getBlobManager().createTable(connection);
+            }
+
+            if (Table.AUXPROTECT_TRANSACT.getBlobManager() != null) {
+                Table.AUXPROTECT_TRANSACT.getBlobManager().createTable(connection);
+            }
+
+            for (Table table : Table.values()) {
+                if (table.hasAPEntries()) {
+                    execute(table.getSQLCreateString(plugin), connection);
+                }
+            }
+            String stmt;
+            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
+                stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
+                execute(stmt, connection);
+
+                stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
+                stmt += " (name varchar(255), wid SMALLINT);";
+                execute(stmt, connection);
+
+                stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
+                debugSQLStatement(stmt);
+                try (Statement statement = connection.createStatement()) {
+                    try (ResultSet results = statement.executeQuery(stmt)) {
+                        while (results.next()) {
+                            String world = results.getString("name");
+                            int wid = results.getInt("wid");
+                            worlds.put(world, wid);
+                            if (wid >= nextWid) {
+                                nextWid = wid + 1;
+                            }
+                        }
+                    }
+                }
+            }
+
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
+            stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
+            execute(stmt, connection);
+            for (LastKeys key : LastKeys.values()) {
+                try {
+                    execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
+                } catch (SQLException ignored) {
+                    // Ensures each LastKeys has a value, so we can just UPDATE later
+                }
+            }
+
+            stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
+                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
             execute(stmt, connection);
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
@@ -238,6 +294,63 @@ public class SQLManager extends ConnectionPool {
                         worlds.put(world, wid);
                         if (wid >= nextWid) {
                             nextWid = wid + 1;
+							
+                        String key = results.getString("name");
+                        int nid = results.getInt("nid");
+                        int pid = results.getInt("pid");
+                        String ntext = results.getString("ntext");
+                        String ptext = results.getString("ptext");
+                        nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
+                        new EntryAction(key, nid, pid, ntext, ptext);
+                    }
+                }
+            }
+
+            usermanager.init(connection);
+
+            migrationmanager.postTables();
+
+            if (invdiffmanager != null) {
+                invdiffmanager.init(connection);
+            }
+
+            if (Table.AUXPROTECT_INVENTORY.getBlobManager() != null) {
+                Table.AUXPROTECT_INVENTORY.getBlobManager().init(connection);
+            }
+
+            if (Table.AUXPROTECT_TRANSACT.getBlobManager() != null) {
+                Table.AUXPROTECT_TRANSACT.getBlobManager().init(connection);
+            }
+
+            if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
+                setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
+
+            execute("COMMIT", connection);
+            plugin.debug("init done.");
+        } catch (Throwable t) {
+            plugin.warning("An error occurred during initialization. Rolling back changes.");
+            execute("ROLLBACK", connection);
+            throw t;
+        }
+    }
+
+    private void startTransaction(Connection connection) throws SQLException {
+        execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
+    }
+
+    public int purgeUIDs() throws SQLException, BusyException {
+        int count = executeReturn(connection -> {
+            startTransaction(connection);
+            try {
+                // Step 1: Create a Temporary Table
+                execute("CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)", connection);
+
+                // Step 2: Insert Data into the Temporary Table
+                for (Table table : Table.values()) {
+                    if (table.hasAPEntries()) {
+                        execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT uid FROM " + table, connection);
+                        if (!table.hasStringTarget()) {
+                            execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT target_id FROM " + table, connection);
                         }
                     }
                 }
@@ -402,7 +515,7 @@ public class SQLManager extends ConnectionPool {
                     } else statement.setNull(i++, Types.NULL);
                 } else if (table.hasBlobID()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
+                        long blobid = table.getBlobManager().getBlobId(connection, dbEntry.getBlob());
                         statement.setLong(i++, blobid);
                     } else statement.setNull(i++, Types.NULL);
                     if (table.hasItemMeta()) {
@@ -588,8 +701,9 @@ public class SQLManager extends ConnectionPool {
                 }
                 return null;
             }, 30000L, byte[].class);
-        if (entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY)
-            return invblobmanager.getBlob(entry);
+        if (entry.getAction().getTable().getBlobManager() != null) {
+            return entry.getAction().getTable().getBlobManager().getBlob(entry);
+        }
         return null;
     }
 
