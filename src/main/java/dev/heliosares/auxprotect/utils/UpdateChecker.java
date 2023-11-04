@@ -21,11 +21,14 @@ public class UpdateChecker {
         return null;
     }
 
+    /**
+     * @return -1 if ver1 is greater, 0 if equal, 1 if ver2 i greater
+     */
     public static int compareVersions(String ver1, String ver2) {
         return new Version(ver2).compareTo(new Version(ver1));
     }
 
-    private static class Version implements Comparable<Version> {
+    public static class Version implements Comparable<Version> {
         private final List<Integer> version;
 
         public Version(String versionString) {
@@ -41,7 +44,7 @@ public class UpdateChecker {
                     } else if (s.startsWith("rc")) {
                         part = Integer.parseInt(s.substring(3)) - 500000;
                     } else {
-                        s = s.replaceAll("\\w", "");
+                        s = s.replaceAll("\\D", "");
                         part = Integer.parseInt(s);
                     }
                     array.add(part);
