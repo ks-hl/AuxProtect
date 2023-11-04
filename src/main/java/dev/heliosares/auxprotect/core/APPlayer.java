@@ -11,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -194,12 +195,13 @@ public class APPlayer {
         return player;
     }
 
+    @Nonnull
     public TimeZone getTimeZone() {
         if (timeZone != null) return timeZone;
 
-        if (player.getAddress() == null) return null;
-        try {
-            return timeZone = IPService.getTimeZoneForIP(player.getAddress().getHostString());
+        if (player.getAddress() != null) try {
+            timeZone = IPService.getTimeZoneForIP(player.getAddress().getHostString());
+            if (timeZone != null) return timeZone;
         } catch (IOException ex) {
             plugin.warning("Failed to get timezone for " + player.getName() + ", " + ex.getMessage());
             if (plugin.getAPConfig().getDebug() > 0) plugin.print(ex);
