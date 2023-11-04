@@ -1,75 +1,68 @@
 package dev.heliosares.auxprotect.utils;
 
-import org.bukkit.plugin.java.JavaPlugin;
-
+import javax.annotation.Nonnull;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Scanner;
 
 public class UpdateChecker {
 
     /**
-     * From:
-     * https://www.spigotmc.org/wiki/creating-an-update-checker-that-checks-for-updates
+     * <a href="https://www.spigotmc.org/wiki/creating-an-update-checker-that-checks-for-updates">Source</a>
      */
-    public static String getVersion(JavaPlugin plugin, int resourceId) throws IOException {
-        try (InputStream inputStream = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + resourceId)
-                .openStream(); Scanner scanner = new Scanner(inputStream)) {
-            if (scanner.hasNext()) {
-                return scanner.next();
-            }
+    public static String getVersion(int resourceId) throws IOException {
+        try (InputStream inputStream = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + resourceId).openStream(); Scanner scanner = new Scanner(inputStream)) {
+            if (scanner.hasNext()) return scanner.next();
         }
         return null;
     }
 
-    public static Integer[] versionAsIntArray(String version) {
-        String[] parts = version.split("[\\.\\-]+");
-        if (version.startsWith("v")) {
-            version = version.substring(1);
-        }
-        ArrayList<Integer> array = new ArrayList<>();
-        for (String s : parts) {
-            try {
-                int part = 0;
-                if (s.startsWith("pre")) {
-                    part = Integer.parseInt(s.substring(3)) - 1000000;
-                } else if (s.startsWith("rc")) {
-                    part = Integer.parseInt(s.substring(3)) - 500000;
-                } else {
-                    part = Integer.parseInt(s);
-                }
-                array.add(part);
-            } catch (NumberFormatException ignored) {
-
-            }
-        }
-        return array.toArray(new Integer[0]);
+    public static int compareVersions(String ver1, String ver2) {
+        return new Version(ver2).compareTo(new Version(ver1));
     }
 
-    /**
-     * @return -1 if ver1 is greater, 0 if equal, 1 if ver2 i greater
-     */
-    public static int compareVersions(String ver1, String ver2) {
-        Integer[] ver1int = versionAsIntArray(ver1);
-        Integer[] ver2int = versionAsIntArray(ver2);
-        for (int i = 0; i < ver1int.length || i < ver2int.length; i++) {
-            int ver1part = 0;
-            int ver2part = 0;
-            if (i < ver1int.length) {
-                ver1part = ver1int[i];
+    private static class Version implements Comparable<Version> {
+        private final List<Integer> version;
+
+        public Version(String versionString) {
+            if (versionString.startsWith("v")) versionString = versionString.substring(1);
+
+            String[] parts = versionString.split("[.-]+");
+            ArrayList<Integer> array = new ArrayList<>();
+            for (String s : parts) {
+                try {
+                    int part;
+                    if (s.startsWith("pre")) {
+                        part = Integer.parseInt(s.substring(3)) - 1000000;
+                    } else if (s.startsWith("rc")) {
+                        part = Integer.parseInt(s.substring(3)) - 500000;
+                    } else {
+                        s = s.replaceAll("\\w", "");
+                        part = Integer.parseInt(s);
+                    }
+                    array.add(part);
+                } catch (NumberFormatException ignored) {
+                    array.add(0);
+                }
             }
-            if (i < ver2int.length) {
-                ver2part = ver2int[i];
-            }
-            if (ver1part > ver2part) {
-                return -1;
-            }
-            if (ver1part < ver2part) {
-                return 1;
-            }
+            version = Collections.unmodifiableList(array);
         }
-        return 0;
+
+        @Override
+        public int compareTo(@Nonnull Version other) {
+            for (int i = 0; i < version.size() || i < other.version.size(); i++) {
+                int versionIntThis = 0;
+                int versionIntOther = 0;
+                if (i < version.size()) versionIntThis = version.get(i);
+                if (i < other.version.size()) versionIntOther = other.version.get(i);
+                if (versionIntThis < versionIntOther) return -1;
+                if (versionIntThis > versionIntOther) return 1;
+            }
+            return 0;
+        }
     }
 }

@@ -481,7 +481,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     debug("Checking for updates...", 1);
                     String newVersion;
                     try {
-                        newVersion = UpdateChecker.getVersion(AuxProtectSpigot.this, 99147);
+                        newVersion = UpdateChecker.getVersion(99147);
                     } catch (IOException e) {
                         print(e);
                         return;
