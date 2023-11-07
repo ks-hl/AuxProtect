@@ -57,7 +57,7 @@ public interface IAuxProtect {
 
     String getPluginVersion();
 
-    APPlayer getAPPlayer(SenderAdapter sender);
+    APPlayer<?> getAPPlayer(SenderAdapter sender);
 
     int queueSize();
 

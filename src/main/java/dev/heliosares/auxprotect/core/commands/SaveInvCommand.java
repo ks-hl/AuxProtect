@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -32,9 +33,9 @@ public class SaveInvCommand extends Command {
             targets.add(Bukkit.getPlayer(args[1]));
         }
         for (Player target : targets) {
-            APPlayer apTarget = null;
+            APPlayerSpigot apTarget = null;
             if (target != null) {
-                apTarget = plugin.getAPPlayer(plugin.getSenderAdapter(target.getName()));
+                apTarget = (APPlayerSpigot) plugin.getAPPlayer(plugin.getSenderAdapter(target.getName()));
             }
             if (apTarget == null) {
                 sender.sendLang(Language.L.LOOKUP_PLAYERNOTFOUND, args[1]);

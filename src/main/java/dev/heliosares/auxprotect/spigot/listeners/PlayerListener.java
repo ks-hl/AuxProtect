@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
@@ -173,7 +174,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoinEvent(PlayerJoinEvent e) {
-        APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+        APPlayerSpigot apPlayer = plugin.getAPPlayer(e.getPlayer());
         apPlayer.lastMoved = System.currentTimeMillis();
         logMoney(plugin, e.getPlayer(), "join");
         if (e.getPlayer().getAddress() != null) {
@@ -227,7 +228,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerMoveEvent(PlayerMoveEvent e) {
-        APPlayer player = plugin.getAPPlayer(e.getPlayer());
+        APPlayerSpigot player = plugin.getAPPlayer(e.getPlayer());
         player.lastMoved = System.currentTimeMillis();
         player.hasMovedThisMinute = true;
     }
@@ -235,7 +236,7 @@ public class PlayerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerTeleport(PlayerTeleportEvent e) {
         if (e.getTo() == null) return;
-        APPlayer apPlayer = plugin.getAPPlayer(e.getPlayer());
+        APPlayerSpigot apPlayer = plugin.getAPPlayer(e.getPlayer());
         apPlayer.logPreTeleportPos(e.getFrom());
         apPlayer.logPostTeleportPos(e.getTo());
         apPlayer.lastLoggedPos = System.currentTimeMillis();
