@@ -39,14 +39,12 @@ public class UpdateChecker {
             for (String s : parts) {
                 try {
                     int part;
-                    if (s.startsWith("pre")) {
-                        part = Integer.parseInt(s.substring(3)) - 1000000;
-                    } else if (s.startsWith("rc")) {
-                        part = Integer.parseInt(s.substring(3)) - 500000;
-                    } else {
-                        s = s.replaceAll("\\D", "");
-                        part = Integer.parseInt(s);
-                    }
+                    if (s.startsWith("pre")) part = -1000000;
+                    else if (s.startsWith("rc")) part = -500000;
+                    else part = 0;
+
+                    s = s.replaceAll("\\D", "");
+                    part += Integer.parseInt(s);
                     array.add(part);
                 } catch (NumberFormatException ignored) {
                     array.add(0);

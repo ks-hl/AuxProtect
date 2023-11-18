@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -35,6 +36,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
     private final APConfig config = new APConfig();
+    private final HashMap<UUID, APPlayerBungee> apPlayers = new HashMap<>();
     final Set<Integer> stackHashHistory = new HashSet<>();
     protected DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
@@ -306,8 +308,21 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public APPlayer getAPPlayer(SenderAdapter sender) {
-        throw new UnsupportedOperationException();
+    public APPlayerBungee getAPPlayer(SenderAdapter sender) {
+        synchronized (apPlayers) {
+            if (apPlayers.containsKey(sender.getUniqueId())) {
+                return apPlayers.get(sender.getUniqueId());
+            }
+            APPlayerBungee apPlayer = new APPlayerBungee(this, (ProxiedPlayer) sender.getSender());
+            apPlayers.put(sender.getUniqueId(), apPlayer);
+            return apPlayer;
+        }
+    }
+
+    public void removeAPPlayer(SenderAdapter sender) {
+        synchronized (apPlayers) {
+            apPlayers.remove(sender.getUniqueId());
+        }
     }
 
     @Override

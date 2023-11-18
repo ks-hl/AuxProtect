@@ -11,6 +11,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
+import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 
 import java.sql.SQLException;
@@ -381,11 +382,13 @@ public class LookupCommand extends Command {
                     return;
                 }
                 String name = users.stream().findAny().orElse(null);
-                sender.sendMessage(PlayTimeSolver.solvePlaytime(rs,
+                for (BaseComponent[] line : PlayTimeSolver.solvePlaytime(rs,
                         params_.getAfter(),
                         params_.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params_.getBefore(),
                         name,
-                        plugin.getSenderAdapter(name) != null));
+                        plugin.getSenderAdapter(name) != null)) {
+                    sender.sendMessage(line);
+                }
                 return;
             } else if (params_.hasFlag(Flag.ACTIVITY)) {
                 String uuid = sender.getUniqueId().toString();

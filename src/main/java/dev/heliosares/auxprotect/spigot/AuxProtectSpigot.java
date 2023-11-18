@@ -47,7 +47,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private static SQLManager sqlManager;
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
-    private final HashMap<UUID, APPlayer> apPlayers = new HashMap<>();
+    private final HashMap<UUID, APPlayerSpigot> apPlayers = new HashMap<>();
     final Set<Integer> stackHashHistory = new HashSet<>();
     public String update;
     protected DatabaseRunnable dbRunnable;
@@ -330,12 +330,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
                 running = true;
                 try {
-                    List<APPlayer> players;
+                    List<APPlayerSpigot> players;
                     // Make a new list to not tie up other calls to apPlayers
                     synchronized (apPlayers) {
                         players = new ArrayList<>(apPlayers.values());
                     }
-                    for (APPlayer apPlayer : players) {
+                    for (APPlayerSpigot apPlayer : players) {
                         if (!apPlayer.getPlayer().isOnline()) {
                             continue;
                         }
@@ -450,12 +450,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 if (running || !sqlManager.isConnected()) return;
                 running = true;
                 try {
-                    List<APPlayer> players;
+                    List<APPlayerSpigot> players;
                     // Make a new list to not tie up other calls to apPlayers
                     synchronized (apPlayers) {
                         players = new ArrayList<>(apPlayers.values());
                     }
-                    for (APPlayer apPlayer : players) {
+                    for (APPlayerSpigot apPlayer : players) {
                         if (!apPlayer.getPlayer().isOnline()) {
                             continue;
                         }
@@ -550,12 +550,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return null;
     }
 
-    public APPlayer getAPPlayer(Player player) {
+    public APPlayerSpigot getAPPlayer(Player player) {
         synchronized (apPlayers) {
             if (apPlayers.containsKey(player.getUniqueId())) {
                 return apPlayers.get(player.getUniqueId());
             }
-            APPlayer apPlayer = new APPlayer(this, player);
+            APPlayerSpigot apPlayer = new APPlayerSpigot(this, player);
             apPlayers.put(player.getUniqueId(), apPlayer);
             return apPlayer;
         }
@@ -753,7 +753,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
-    public APPlayer getAPPlayer(SenderAdapter sender) {
+    public APPlayerSpigot getAPPlayer(SenderAdapter sender) {
         return getAPPlayer((Player) sender.getSender());
     }
 

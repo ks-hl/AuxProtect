@@ -7,6 +7,7 @@ import com.comphenix.protocol.wrappers.*;
 import com.google.common.collect.Lists;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.json.simple.JSONArray;
@@ -83,14 +84,16 @@ public class FakePlayer {
 
         // Set initial location
 
-        packet = new PacketContainer(PacketType.Play.Server.NAMED_ENTITY_SPAWN);
+        packet = new PacketContainer(PacketType.Play.Server.SPAWN_ENTITY);
         setIdInPacket(packet);
         packet.getUUIDs().write(0, uuid);
+        packet.getEntityTypeModifier().write(0, EntityType.PLAYER);
         packet.getDoubles().write(0, loc.getX());
         packet.getDoubles().write(1, loc.getY());
         packet.getDoubles().write(2, loc.getZ());
         packet.getBytes().write(0, (byte) (loc.getYaw() * 256f / 360f));
         packet.getBytes().write(1, (byte) (loc.getPitch() * 256f / 360f));
+        packet.getBytes().write(2, (byte) (loc.getYaw() * 256f / 360f)); // head angle
         protocol.sendServerPacket(audience, packet);
     }
 

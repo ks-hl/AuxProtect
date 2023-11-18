@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
+import net.md_5.bungee.api.chat.BaseComponent;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -21,8 +22,7 @@ public class ActivityResults extends Results {
 
         rangeEnd = entries.get(0).getTime();
 
-        LocalDateTime startTime = Instant.ofEpochMilli(entries.get(entries.size() - 1).getTime())
-                .atZone(ZoneId.systemDefault()).toLocalDateTime().withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime startTime = Instant.ofEpochMilli(entries.get(entries.size() - 1).getTime()).atZone(ZoneId.systemDefault()).toLocalDateTime().withMinute(0).withSecond(0).withNano(0);
         rangeStart = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
     }
 
@@ -41,8 +41,9 @@ public class ActivityResults extends Results {
         // long thisRangeStart = rangeStart + (page - 1) * millisperpage;
         long thisRangeEnd = rangeEnd - (getNumPages(perPage_) - page) * millisperpage;
 
-        player.sendMessage(ActivitySolver.solveActivity(getEntries(),
-                Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd));
+        for (BaseComponent[] baseComponent : ActivitySolver.solveActivity(getEntries(), Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd)) {
+            player.sendMessage(baseComponent);
+        }
 
         super.sendArrowKeys(page);
     }
