@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
@@ -27,7 +28,7 @@ public class InventoryCommand extends Command {
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
-        if (args.length != 3) {
+        if (args.length != 2 && args.length != 3) {
             throw new SyntaxException();
         }
         if (sender.getPlatform() != PlatformType.SPIGOT) {
@@ -35,7 +36,16 @@ public class InventoryCommand extends Command {
         }
         if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot) {
             String target = args[1];
-            String paramtime = args[2];
+            String paramtime;
+            if (args.length == 3) paramtime = args[2];
+            else paramtime = "2w";
+
+            if (!paramtime.startsWith("@")) {
+                sender.executeCommand(String.format(plugin.getCommandPrefix() + " lookup user:%s action:" + EntryAction.INVENTORY + " time:%s", target, paramtime));
+                return;
+            }
+
+            paramtime = paramtime.substring(1);
 
             long time_;
             try {
@@ -110,6 +120,10 @@ public class InventoryCommand extends Command {
 
     @Override
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-        return APCommand.tabCompletePlayerAndTime(plugin, sender, args);
+        List<String> out = APCommand.tabCompletePlayerAndTime(plugin, sender, args);
+        if (out != null && args.length == 3 && plugin.getAPConfig().getInventoryDiffInterval() > 0) {
+            out.add("@");
+        }
+        return out;
     }
 }
