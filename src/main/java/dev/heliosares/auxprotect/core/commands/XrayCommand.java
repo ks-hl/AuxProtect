@@ -181,8 +181,7 @@ public class XrayCommand extends Command {
                         if (args.length != 3 && args.length != 4) throw new IllegalArgumentException();
                         target = UUID.fromString(args[2]);
                     } catch (IllegalArgumentException e) {
-                        sender.sendLang(Language.L.INVALID_SYNTAX);
-                        return;
+                        throw new SyntaxException();
                     }
                     boolean confirmed = args.length == 4 && args[3].equalsIgnoreCase("-i");
                     plugin.runAsync(() -> {

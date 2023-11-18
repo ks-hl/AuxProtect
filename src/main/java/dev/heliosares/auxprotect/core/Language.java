@@ -274,14 +274,14 @@ public class Language {
         public List<String> translateSubcategoryList(String subcategory) {
             List<String> message = null;
             String name = this.name;
-            if (subcategory != null && subcategory.length() > 0) {
+            if (subcategory != null && !subcategory.isEmpty()) {
                 name += "." + subcategory.toLowerCase();
             }
             if (lang != null && !lang.isNull()) {
                 message = lang.getStringList(name);
             }
 
-            if (message == null || message.size() == 0) {
+            if (message == null || message.isEmpty()) {
                 return null;
             }
             return message.stream().map(Language::convert).toList();

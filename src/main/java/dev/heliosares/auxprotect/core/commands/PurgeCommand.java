@@ -7,6 +7,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import java.sql.SQLException;
@@ -20,11 +22,8 @@ public class PurgeCommand extends Command {
         super(plugin, "purge", APPermission.PURGE, true);
     }
 
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
-        if (args.length != 3) {
-            sender.sendLang(Language.L.INVALID_SYNTAX);
-            return;
-        }
+    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+        if (args.length != 3) throw new SyntaxException();
         if (!plugin.getSqlManager().isConnected()) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
@@ -46,12 +45,11 @@ public class PurgeCommand extends Command {
             return;
         }
         final Table table = table_;
-        long time_ = 0;
+        long time_;
         try {
             time_ = TimeUtil.stringToMillis(args[2]);
         } catch (NumberFormatException e) {
-            sender.sendLang(Language.L.INVALID_SYNTAX);
-            return;
+            throw new SyntaxException();
         }
 
         if (time_ < Table.MIN_PURGE_INTERVAL) {

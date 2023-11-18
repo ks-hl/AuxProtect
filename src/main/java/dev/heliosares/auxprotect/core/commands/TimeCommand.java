@@ -47,8 +47,7 @@ public class TimeCommand extends Command {
                         time = TimeUtil.stringToMillis(timeStr);
                     }
                 } catch (NumberFormatException e) {
-                    sender.sendLang(Language.L.INVALID_SYNTAX);
-                    return;
+                    throw new SyntaxException();
                 }
                 builder = new ComponentBuilder(Language.convert("&9" + timeStr + "&f " + (add ? "from now" : "ago") + ":"));
             }

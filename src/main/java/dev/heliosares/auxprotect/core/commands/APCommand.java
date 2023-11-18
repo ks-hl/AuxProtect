@@ -92,7 +92,7 @@ public class APCommand extends Command {
                             sender.sendLang(Language.L.NOTPLAYERERROR);
                         } catch (SyntaxException e) {
                             sender.sendLang(Language.L.INVALID_SYNTAX);
-                            List<String> help = HelpCommand.getHelpFor(getLabel());
+                            List<String> help = HelpCommand.getHelpFor(c.getLabel());
                             if (help != null) {
                                 for (String helpLine : help) {
                                     sender.sendMessageRaw(helpLine);

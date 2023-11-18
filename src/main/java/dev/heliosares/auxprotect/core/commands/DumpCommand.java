@@ -7,6 +7,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
@@ -179,7 +181,7 @@ public class DumpCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
+    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         boolean simple = false;
         boolean chat = false;
         boolean file = false;
@@ -193,8 +195,7 @@ public class DumpCommand extends Command {
 //                        case "file" -> file = true;
                     case "config" -> config = true;
                     default -> {
-                        sender.sendLang(Language.L.INVALID_SYNTAX);
-                        return;
+                        throw new SyntaxException();
                     }
                 }
             }
