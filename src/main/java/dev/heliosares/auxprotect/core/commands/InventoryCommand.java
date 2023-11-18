@@ -45,6 +45,11 @@ public class InventoryCommand extends Command {
                 return;
             }
 
+            if (plugin.getAPConfig().getInventoryDiffInterval() == 0) {
+                sender.sendLang(Language.L.ACTION_DISABLED);
+                return;
+            }
+
             paramtime = paramtime.substring(1);
 
             long time_;
