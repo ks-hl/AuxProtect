@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 public class HelpCommand extends Command {
@@ -26,8 +27,8 @@ public class HelpCommand extends Command {
         } else {
             String arg = args[1].toLowerCase();
             try {
-                helpOn = commands.stream().filter(c -> c.matches(arg)).findAny().get();
-            } catch (NullPointerException e) {
+                helpOn = commands.stream().filter(c -> c.matches(arg)).findAny().orElseThrow();
+            } catch (NoSuchElementException e) {
                 sender.sendLang(L.UNKNOWN_SUBCOMMAND);
                 return;
             }

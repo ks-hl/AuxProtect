@@ -4,9 +4,7 @@ import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.exceptions.LookupException;
-import dev.heliosares.auxprotect.exceptions.ParseException;
+import dev.heliosares.auxprotect.exceptions.*;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.*;
 import net.coreprotect.CoreProtect;
@@ -168,11 +166,9 @@ public class LookupCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
-        if (args.length < 2) {
-            sender.sendLang(Language.L.INVALID_SYNTAX);
-            return;
-        }
+    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+        if (args.length < 2) throw new SyntaxException();
+
         if (!plugin.getSqlManager().isConnected()) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
