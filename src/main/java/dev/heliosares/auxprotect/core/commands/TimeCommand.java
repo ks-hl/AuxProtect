@@ -35,11 +35,11 @@ public class TimeCommand extends Command {
             ComponentBuilder builder;
             if (now) {
                 builder = new ComponentBuilder(Language.L.COMMAND__TIME__SERVER_TIME.translate());
-                time = System.currentTimeMillis();
+                time = 0;
             } else {
                 add = args[1].startsWith("+");
                 String timeStr = args[1];
-                if (add) timeStr = timeStr.substring(1);
+                if (add || timeStr.startsWith("-")) timeStr = timeStr.substring(1);
                 try {
                     if (timeStr.matches("\\d+e")) {
                         time = Long.parseLong(timeStr.substring(0, timeStr.length() - 1));
@@ -50,15 +50,21 @@ public class TimeCommand extends Command {
                     sender.sendLang(Language.L.INVALID_SYNTAX);
                     return;
                 }
-                builder = new ComponentBuilder("&9" + timeStr + "&f " + (add ? "from now" : "ago") + ":");
+                builder = new ComponentBuilder(Language.convert("&9" + timeStr + "&f " + (add ? "from now" : "ago") + ":"));
             }
-            Consumer<String> consume = ln -> builder.append("\n").append(ln) //
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()))) //
-                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatColor.stripColor(ln)));
+            Consumer<String> consume = ln -> {
+                ln = Language.convert(ln);
+                builder.append("\n").append(ln) //
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()))) //
+                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatColor.stripColor(ln)));
+            };
             consume.accept("&7" + LocalDateTime.now().atZone(plugin.getAPPlayer(sender).getTimeZone().toZoneId()).plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
-            consume.accept(String.format("&7%s %s", TimeUtil.millisToString(time), add ? "from now" : "ago"));
-            consume.accept(String.format("&7%s %s", TimeUtil.millisToStringExtended(time), add ? "from now" : "ago"));
-            consume.accept("&7" + (System.currentTimeMillis() + time) + "e");
+            if (!now) {
+                String fromNowAgo = add ? "from now" : "ago";
+                consume.accept(String.format("&7%s %s", TimeUtil.millisToString(time), fromNowAgo));
+                consume.accept(String.format("&7%s %s", TimeUtil.millisToStringExtended(time), fromNowAgo));
+            }
+            consume.accept("&7" + (System.currentTimeMillis() + (add ? 1 : -1) * time) + "e");
 
             sender.sendMessage(builder.create());
 
