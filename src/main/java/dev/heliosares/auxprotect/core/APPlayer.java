@@ -1,11 +1,9 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.utils.IPService;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.IOException;
 import java.util.TimeZone;
 
 public abstract class APPlayer<T> {
@@ -26,17 +24,9 @@ public abstract class APPlayer<T> {
 
     @Nonnull
     public TimeZone getTimeZone() {
-        if (timeZone != null) return timeZone;
+        if (timeZone == null) timeZone = IPService.getTimeZoneForIP(getIPAddress());
 
-        if (getIPAddress() != null) try {
-            timeZone = IPService.getTimeZoneForIP(getIPAddress());
-            if (timeZone != null) return timeZone;
-        } catch (IOException ex) {
-            AuxProtectAPI.getInstance().warning("Failed to get timezone for " + getName() + ", " + ex.getMessage());
-            if (AuxProtectAPI.getInstance().getAPConfig().getDebug() > 0) AuxProtectAPI.getInstance().print(ex);
-        }
-
-        return timeZone = TimeZone.getDefault();
+        return timeZone;
     }
 
     public abstract String getName();
