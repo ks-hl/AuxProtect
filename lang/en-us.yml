@@ -87,9 +87,9 @@ command:
       toolong: '&cMax time range for playtime is <days> days.'
     invalid-time-parameter: 'Invalid time specifier: <specifier>'
   help:
-    # Note, the <> brackets in the help language are literals and do not refer to translations.
     nohelp: '&cThis command does not have a help page.'
-    header: '&s----- &pAuxProtect Help &s-----'
+    header: '&t----- &pAuxProtect Help &t- &p/$prefix <command> &t-----'
+    # Note, the <> brackets in the help language lists are literals and do not refer to translations.
     help:
     - '&p/$prefix lookup <params> &s- Perform a lookup'
     - '&p/$prefix purge <params> &s- Perform a database purge'
@@ -97,6 +97,8 @@ command:
     - '&p/$prefix help [command] &s- Show this message, or more information on a subcommand'
     - '&s'
     - '&tSee the Wiki for more: https://github.com/Heliosares/AuxProtect/wiki'
+    inventory:
+      - '&s/$prefix &pinventory &s<name> [time]'
     lookup:
     - '&s/$prefix &plookup &s<params>'
     - '&pParams:'
@@ -106,6 +108,8 @@ command:
     - '&pTarget: &sSpecify the parameter an action was performed to. You can use an asterisk as a wildcard and a dash as a space in this parameter.'
     - '&pRadius: &sSpecify the square block radius for a lookup.'
     - '&sAll parameters can be inverted using &p''!'' &s(i.e radius:5,!2 would do a lookup within 5 blocks of the player, but NOT within 2 blocks.)'
+    playtime:
+      - '&s/$prefix &pplaytime &s<name> [time]'
     purge:
     - '&s/$prefix &ppurge &s<table | all> <time>'
     - '&sSee tab completion for list of valid tables.'

@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -47,14 +48,18 @@ public class APCommand extends Command {
             return new ArrayList<>(allPlayers(plugin, true));
         } else if (args.length == 3) {
             String currentArg = args[args.length - 1];
-            if (APPermission.INV.hasPermission(sender) && currentArg.matches("\\d+")) {
+            if (APPermission.INV.hasPermission(sender)) {
                 List<String> out = new ArrayList<>();
-                out.add(currentArg + "ms");
-                out.add(currentArg + "s");
-                out.add(currentArg + "m");
-                out.add(currentArg + "h");
-                out.add(currentArg + "d");
-                out.add(currentArg + "w");
+                if (currentArg.isEmpty()) {
+                    for (int i = 1; i <= 10; i++) out.add(String.valueOf(i));
+                } else if (currentArg.matches("\\d+")) {
+                    out.add(currentArg + "ms");
+                    out.add(currentArg + "s");
+                    out.add(currentArg + "m");
+                    out.add(currentArg + "h");
+                    out.add(currentArg + "d");
+                    out.add(currentArg + "w");
+                }
                 return out;
             }
         }
@@ -85,11 +90,18 @@ public class APCommand extends Command {
                         } catch (PlatformException ignored) {
                         } catch (NotPlayerException e) {
                             sender.sendLang(Language.L.NOTPLAYERERROR);
+                        } catch (SyntaxException e) {
+                            sender.sendLang(Language.L.INVALID_SYNTAX);
+                            List<String> help = HelpCommand.getHelpFor(getLabel());
+                            if (help != null) {
+                                for (String helpLine : help) {
+                                    sender.sendMessageRaw(helpLine);
+                                }
+                            }
                         } catch (CommandException e) {
+                            sender.sendLang(Language.L.ERROR);
                             if (e.getMessage() != null) {
                                 sender.sendMessageRaw(e.getMessage());
-                            } else {
-                                sender.sendLang(Language.L.INVALID_SYNTAX);
                             }
                         } catch (Throwable t) {
                             sender.sendLang(Language.L.ERROR);

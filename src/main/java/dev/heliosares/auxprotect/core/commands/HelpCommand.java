@@ -20,7 +20,7 @@ public class HelpCommand extends Command {
 
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) {
-        Command helpOn = null;
+        Command helpOn;
         if (args.length < 2) {
             helpOn = this;
         } else {
@@ -36,15 +36,19 @@ public class HelpCommand extends Command {
             sender.sendLang(L.NO_PERMISSION);
             return;
         }
-        List<String> help = Language.L.COMMAND__HELP.translateSubcategoryList(helpOn.getLabel());
+        List<String> help = getHelpFor(helpOn.getLabel());
         if (help == null) {
             sender.sendMessageRaw(Language.L.COMMAND__HELP.translateSubcategory("nohelp"));
         } else {
-            sender.sendMessageRaw(Language.L.COMMAND__HELP.translateSubcategory("header"));
+            sender.sendLang(L.COMMAND__HELP__HEADER, helpOn.getLabel());
             for (String str : help) {
                 sender.sendMessageRaw(str);
             }
         }
+    }
+
+    public static List<String> getHelpFor(String command) {
+        return Language.L.COMMAND__HELP.translateSubcategoryList(command);
     }
 
     @Override

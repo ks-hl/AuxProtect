@@ -111,6 +111,7 @@ public class Language {
         COMMAND__CLAIMINV__OTHERHASNONE,
         COMMAND__CLAIMINV__YOUHAVENONE,
         COMMAND__HELP,
+        COMMAND__HELP__HEADER("command"),
         COMMAND__INV__FORCE_RECOVERED("admin", "target", "optional_s", "time"),
         COMMAND__INV__ITEM_VIEWER,
         COMMAND__INV__NOTIFY_PLAYER("admin", "time"),
