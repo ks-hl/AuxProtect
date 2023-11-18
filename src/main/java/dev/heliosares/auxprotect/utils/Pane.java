@@ -51,9 +51,8 @@ public class Pane implements InventoryHolder {
     }
 
     public void addButton(int slot, Material type, Runnable action, @Nullable String name, @Nullable List<String> lore) {
-        if (inventory == null) {
-            return;
-        }
+        if (inventory == null) throw new IllegalStateException("Inventory not set before adding button");
+
         ItemStack item = new ItemStack(type);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) throw new IllegalArgumentException("Null meta on specified item");
