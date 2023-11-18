@@ -154,6 +154,7 @@ public class Language {
         COMMAND__PURGE__VACUUM,
         COMMAND__SAVEINV__SUCCESS("target", "optional_s", "time"),
         COMMAND__SAVEINV__TOOSOON,
+        COMMAND__TIME__SERVER_TIME,
         DATABASE_BUSY,
         ERROR,
         INACTIVE_ALERT("user", "inactive_minutes", "total_minutes"),

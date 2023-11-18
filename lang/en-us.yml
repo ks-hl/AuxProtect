@@ -114,6 +114,8 @@ command:
     - '&s/$prefix &ppurge &s<table | all> <time>'
     - '&sSee tab completion for list of valid tables.'
     - '&sMinimum time is 2 weeks.'
+  time:
+    server-time: '&pServer time:'
 playernotfound: '&cPlayer not found.'
 lookup-playernotfound: '&cPlayer <target> not found.'
 lookup-unknownaction: '&cUnknown action: <action>.'
