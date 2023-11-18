@@ -17,11 +17,12 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ActivitySolver {
-    public static BaseComponent[] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
+    public static BaseComponent[][] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         LocalDateTime startTime = Instant.ofEpochMilli(rangeStart).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withSecond(0).withNano(0);
@@ -35,6 +36,11 @@ public class ActivitySolver {
         StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
         line.append(String.valueOf((char) 65293).repeat(6));
         line.append("" + ChatColor.COLOR_CHAR + "7");
+
+        List<BaseComponent[]> components = new ArrayList<>();
+        components.add(message.create());
+        message = new ComponentBuilder();
+
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
             DbEntry entry = entries.get(i);
@@ -87,8 +93,10 @@ public class ActivitySolver {
                 break;
             }
             if (time.getMinute() == 0) {
-                message.append(line + String.format("" + ChatColor.COLOR_CHAR + "f %s ", time.format(formatterHour)) + line + "\n")
+                message.append(line + String.format("" + ChatColor.COLOR_CHAR + "f %s ", time.format(formatterHour)) + line)
                         .event((ClickEvent) null).event((HoverEvent) null);
+                components.add(message.create());
+                message = new ComponentBuilder();
             }
             if (millis < newestEntryAt) {
                 message.append(AuxProtectSpigot.BLOCK + "").event((HoverEvent) null).event((ClickEvent) null);
@@ -134,6 +142,7 @@ public class ActivitySolver {
                 message.append("\n");
             }
         }
-        return message.create();
+        components.add(message.create());
+        return components.toArray(new BaseComponent[0][0]);
     }
 }
