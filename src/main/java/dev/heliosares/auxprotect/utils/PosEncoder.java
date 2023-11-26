@@ -29,8 +29,8 @@ public class PosEncoder {
         IncrementalByte diffX = simplify(diffX_);
         IncrementalByte diffY = simplify(diffY_);
         IncrementalByte diffZ = simplify(diffZ_);
-        byte pitch = (byte) pitch_;
-        byte yaw = (byte) ((yaw_ / 180.0) * 127);
+        byte pitch = (byte) Math.round(pitch_);
+        byte yaw = (byte) Math.round((yaw_ / 180.0) * 127);
 
         // bitMask indicates the presence of various values
         // 0-1 represent number of bytes (0-2) representing X. Value of 0b11 indicates fine
@@ -40,9 +40,9 @@ public class PosEncoder {
         // 7 represents whether there is posture data (sneak, gliding, etc.)
         byte bitMask = 0;
         int len = 1 + diffX.array.length + diffY.array.length + diffZ.array.length;
-        bitMask |= diffX.getBytesNeeded();
-        bitMask |= diffY.getBytesNeeded() << 2;
-        bitMask |= diffZ.getBytesNeeded() << 4;
+        bitMask |= (byte) diffX.getBytesNeeded();
+        bitMask |= (byte) (diffY.getBytesNeeded() << 2);
+        bitMask |= (byte) (diffZ.getBytesNeeded() << 4);
 
         if (doLook) {
             bitMask = setBit(bitMask, 6, true);
@@ -156,7 +156,7 @@ public class PosEncoder {
         } else sig = 10.0;
         if (bitMask == 0) return 0;
         if (bitMask == 1) return (double) bytes[index] / sig;
-        return Math.round((((int) bytes[index]) << 8) | (bytes[index + 1] & 0xff)) / sig;
+        return ((((int) bytes[index]) << 8) | (bytes[index + 1] & 0xff)) / sig;
     }
 
     /**
@@ -170,7 +170,7 @@ public class PosEncoder {
         if (fine) value *= 10;
 
         // Convert the value to a short, so it is 2 bytes max.
-        short s = (short) Math.round(value);
+        short s = (short) (value = Math.round(value));
 
         // Ensures there was no overflow
         if (value > Short.MAX_VALUE) s = Short.MAX_VALUE;
@@ -238,7 +238,7 @@ public class PosEncoder {
         if (index > 7 || index < 0) throw new IndexOutOfBoundsException(index + " is not a valid byte index.");
         byte val = (byte) (1 << index);
         if (value) b |= val;
-        else b &= ~val;
+        else b &= (byte) ~val;
         return b;
     }
 
@@ -253,7 +253,7 @@ public class PosEncoder {
             byte hdr = bytes[offset];
 
             boolean yaw = hdr < 0;
-            if (yaw) hdr += 128;
+            if (yaw) hdr += (byte) 128;
 
             int xlen = hdr & 0b11;
             int ylen = (hdr >> 2) & 0b11;
