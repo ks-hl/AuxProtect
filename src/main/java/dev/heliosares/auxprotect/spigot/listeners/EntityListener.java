@@ -135,7 +135,7 @@ public class EntityListener implements Listener {
             itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
         }
 
-        if (!itemname.equals("")) {
+        if (!itemname.isEmpty()) {
             itemname += ", ";
         }
         itemname += (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP";

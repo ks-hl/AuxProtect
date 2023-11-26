@@ -154,7 +154,7 @@ public class BlobManager {
         }
     }
 
-    static class BlobCache {
+    protected static class BlobCache {
         final long blobid;
         final byte[] ablob;
         final int hash;

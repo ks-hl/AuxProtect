@@ -49,7 +49,7 @@ public class XrayResults {
 
             message.append("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "l[0-All]")
                     .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/ap xray zero " + en.getUserUUID().substring(1)))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("" + ChatColor.COLOR_CHAR + "7Rate all entries from " + en.getUser() + " as 0.")));
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7Rate all entries from " + en.getUser() + " as 0.")));
         }
 
         sender.sendMessage(message.create());

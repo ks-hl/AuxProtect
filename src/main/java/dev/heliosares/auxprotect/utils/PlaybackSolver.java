@@ -65,7 +65,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
         this.protocol = ProtocolLibrary.getProtocolManager();
 
-        if (points.size() == 0) {
+        if (points.isEmpty()) {
             throw new LookupException(Language.L.COMMAND__LOOKUP__NORESULTS);
         }
 

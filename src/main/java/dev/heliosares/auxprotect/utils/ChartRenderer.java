@@ -100,7 +100,7 @@ public class ChartRenderer extends MapRenderer {
                 case 2 -> 'M';
                 default -> ' ';
             };
-            canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + "" + suffix);
+            canvas.drawText(1, yPos - 4, MinecraftFont.Font, doubleToString(number) + suffix);
             setPixelColor(canvas, xShift - 2, yPos, Color.BLACK);
         }
         drawXDivs(view, canvas, player);

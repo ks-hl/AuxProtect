@@ -27,8 +27,9 @@ public class CommandListener implements Listener {
             String[] args = new String[args1.length - 1];
             System.arraycopy(args1, 1, args, 0, args.length);
             if (auxprotect) {
+                //noinspection DataFlowIssue
                 plugin.getApcommand().onCommand(e.getPlayer(), null, label, args);
-            } else if (claiminv) {
+            } else {
                 plugin.getClaiminvcommand().onCommand(e.getPlayer(), null, label, args);
             }
             e.setCancelled(true);
