@@ -100,8 +100,12 @@ public class Results {
                     .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getUser()));
             message.append(" " + ChatColor.COLOR_CHAR + "f" + entry.getAction().getText(entry.getState())).event((HoverEvent) null)
                     .event((ClickEvent) null);
-            message.append(" " + ChatColor.COLOR_CHAR + "9" + entry.getTarget()).event(clickToCopy)
-                    .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
+            if (entry.getTarget() != null && !entry.getTarget().isEmpty()) {
+                message.append(" " + ChatColor.COLOR_CHAR + "9" + entry.getTarget()).event(clickToCopy)
+                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, entry.getTarget()));
+            } else {
+                message.event((ClickEvent) null).event((HoverEvent) null);
+            }
 
             XrayEntry xray;
             if (entry instanceof XrayEntry) {
@@ -125,7 +129,6 @@ public class Results {
                 message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hover)));
             }
 
-            String data = entry.getData();
             if (entry.hasBlob()) {
                 if (APPermission.INV.hasPermission(player)) {
                     message.append(" " + ChatColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW + "]")
@@ -146,6 +149,7 @@ public class Results {
             if (entry instanceof SingleItemEntry sientry) {
                 message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7x" + sientry.getQty() + (sientry.getDamage() > 0 ? ", " + sientry.getDamage() + " damage" : "") + ChatColor.COLOR_CHAR + "8]").event((HoverEvent) null).event((ClickEvent) null);
             }
+            String data = entry.getData();
             if (plugin.getAPConfig().doSkipV6Migration()) {
                 if (data.contains(InvSerialization.ITEM_SEPARATOR)) {
                     data = data.substring(0, data.indexOf(InvSerialization.ITEM_SEPARATOR));
