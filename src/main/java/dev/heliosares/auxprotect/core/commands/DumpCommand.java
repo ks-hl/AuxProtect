@@ -158,7 +158,7 @@ public class DumpCommand extends Command {
 
     private static String dumpContents(IAuxProtect plugin, String parent, int depth) {
         StringBuilder build = new StringBuilder();
-        if (parent.length() > 0) {
+        if (!parent.isEmpty()) {
             build.append(" ".repeat(Math.max(0, depth)));
             build.append(parent.substring(parent.lastIndexOf(".") + 1)).append(": ");
         }
@@ -169,10 +169,10 @@ public class DumpCommand extends Command {
         if (plugin.getAPConfig().getConfig().isSection(parent)) {
             build.append("\n");
             for (String key : plugin.getAPConfig().getConfig().getKeys(parent, false)) {
-                if (key.length() == 0) {
+                if (key.isEmpty()) {
                     continue;
                 }
-                build.append(dumpContents(plugin, parent + (parent.length() > 0 ? "." : "") + key, depth + 2));
+                build.append(dumpContents(plugin, parent + (!parent.isEmpty() ? "." : "") + key, depth + 2));
             }
         } else {
             build.append(plugin.getAPConfig().getConfig().get(parent)).append("\n");
@@ -194,9 +194,7 @@ public class DumpCommand extends Command {
                     case "simple" -> simple = true;
 //                        case "file" -> file = true;
                     case "config" -> config = true;
-                    default -> {
-                        throw new SyntaxException();
-                    }
+                    default -> throw new SyntaxException();
                 }
             }
             sender.sendMessageRaw("&aBuilding trace...");

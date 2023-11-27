@@ -38,7 +38,7 @@ public class SQLCommand extends Command {
                 ResultMap results = plugin.getSqlManager().executeGetMap(stmt);
                 StringBuilder line = new StringBuilder();
                 for (String label : results.getLabels()) {
-                    if (line.length() > 0) {
+                    if (!line.isEmpty()) {
                         line.append(" | ");
                     }
                     line.append(label);
@@ -47,7 +47,7 @@ public class SQLCommand extends Command {
                 for (ResultMap.Result result : results.getResults()) {
                     line = new StringBuilder();
                     for (Object part : result.getValues()) {
-                        if (line.length() > 0) {
+                        if (!line.isEmpty()) {
                             line.append(", ");
                         }
                         line.append(part);

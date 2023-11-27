@@ -233,7 +233,7 @@ public class Language {
             String message = null;
             try {
                 String name = this.name;
-                if (subcategory != null && subcategory.length() > 0) {
+                if (subcategory != null && !subcategory.isEmpty()) {
                     name += "." + subcategory.toLowerCase();
                 }
                 if (lang != null && !lang.isNull()) {

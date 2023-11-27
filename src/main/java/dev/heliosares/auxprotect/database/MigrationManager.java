@@ -535,7 +535,7 @@ public class MigrationManager {
                 }
             }
             if (!sql.isMySQL() && needBackup) {
-                String path = sql.backup(connection);
+                String path = sql.backup();
                 if (path != null) plugin.info("Pre-migration database backup created: " + path);
             }
         }

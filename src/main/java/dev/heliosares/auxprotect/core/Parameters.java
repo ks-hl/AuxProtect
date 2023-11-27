@@ -185,7 +185,7 @@ public class Parameters implements Cloneable {
         parameters.target(targetstr);
         parameters.data(datastr);
 
-        if (parameters.actions.size() == 0 || parameters.table == null) {
+        if (parameters.actions.isEmpty() || parameters.table == null) {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_MAIN
                         && !APPermission.LOOKUP_ACTION.dot(action.toString().toLowerCase()).hasPermission(sender)) {
@@ -206,7 +206,7 @@ public class Parameters implements Cloneable {
         if (parameters.flags.contains(Flag.ACTIVITY) || parameters.flags.contains(Flag.PLAYTIME)) {
             if (parameters.users.size() > 1) {
                 throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
-            } else if (parameters.uids.size() == 0) {
+            } else if (parameters.uids.isEmpty()) {
                 throw new ParseException(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
             }
         }
@@ -233,7 +233,7 @@ public class Parameters implements Cloneable {
             parameters.actions.add(EntryAction.MONEY.id);
             parameters.actions.add(EntryAction.MONEY.idPos);
         }
-        if (parameters.ratings.size() > 0) {
+        if (!parameters.ratings.isEmpty()) {
             if (!parameters.actions.isEmpty()) {
                 for (int id : parameters.actions) {
                     if (id != EntryAction.VEIN.id) {
@@ -282,7 +282,7 @@ public class Parameters implements Cloneable {
         if (escape) {
             build.append('\\');
         }
-        if (build.length() > 0) {
+        if (!build.isEmpty()) {
             values.add(build.toString());
         }
         return values;
@@ -844,7 +844,7 @@ public class Parameters implements Cloneable {
         if (!exactTime.isEmpty()) {
             StringBuilder stmt = new StringBuilder();
             for (Long exact : exactTime) {
-                if (stmt.length() > 0) {
+                if (!stmt.isEmpty()) {
                     stmt.append(" OR ");
                 }
                 stmt.append("time = ").append(exact);
@@ -913,10 +913,10 @@ public class Parameters implements Cloneable {
 
         StringBuilder outsql = new StringBuilder();
         for (String stmt : stmts) {
-            if (stmt == null || stmt.length() == 0) {
+            if (stmt == null || stmt.isEmpty()) {
                 continue;
             }
-            if (outsql.length() > 0) {
+            if (!outsql.isEmpty()) {
                 outsql.append(" AND ");
             }
             outsql.append("(").append(stmt).append(")");
@@ -971,7 +971,7 @@ public class Parameters implements Cloneable {
         for (String data : datas) {
             StringBuilder node = new StringBuilder();
             for (String part : data.split("[*\\-]")) {
-                if (node.length() > 0) {
+                if (!node.isEmpty()) {
                     node.append(".*");
                 }
                 node.append(Pattern.quote(part));

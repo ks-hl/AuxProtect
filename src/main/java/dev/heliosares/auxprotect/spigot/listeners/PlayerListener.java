@@ -168,7 +168,7 @@ public class PlayerListener implements Listener {
     public void onConsume(PlayerItemConsumeEvent e) {
         String sup = "";
         if (e.getItem().getType() == Material.POTION && e.getItem().getItemMeta() instanceof PotionMeta pm) {
-            sup = pm.getBasePotionData().getType().toString().toLowerCase();
+            sup = pm.getBasePotionType().toString().toLowerCase();
         }
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
                 e.getPlayer().getLocation(), e.getItem().getType().toString().toLowerCase(), sup);

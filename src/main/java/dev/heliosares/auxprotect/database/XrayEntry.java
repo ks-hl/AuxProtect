@@ -55,7 +55,7 @@ public class XrayEntry extends DbEntry {
     public void setRating(short rating, @Nullable String rater) {
         if (rater != null) {
             String data = getData();
-            if (data.length() > 0) {
+            if (!data.isEmpty()) {
                 data += "; ";
             }
             String ratedBy = LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": " + rater + " rated " + rating;

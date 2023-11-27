@@ -18,7 +18,7 @@ public class StackUtil {
 
             if (!check.test(thread)) continue;
 
-            if (trace.length() > 0) {
+            if (!trace.isEmpty()) {
                 trace.append("\n\n");
             }
             trace.append(thread);

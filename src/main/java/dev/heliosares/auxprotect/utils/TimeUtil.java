@@ -113,7 +113,7 @@ public class TimeUtil {
             time += Double.parseDouble(builder.toString()) * modifier;
             builder = new StringBuilder();
         }
-        if (builder.length() > 0) {
+        if (!builder.isEmpty()) {
             time += Double.parseDouble(builder.toString());
         }
         return time;

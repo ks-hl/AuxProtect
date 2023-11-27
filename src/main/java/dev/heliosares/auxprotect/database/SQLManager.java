@@ -180,7 +180,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     @Nullable
-    public String backup(Connection connection) throws SQLException {
+    public String backup() {
         if (isMySQL()) return null;
 
         File backup = new File(sqliteFile.getParentFile(), "backups/backup-v" + migrationmanager.getVersion() + "-" + System.currentTimeMillis() + ".db");

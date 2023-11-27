@@ -93,7 +93,7 @@ public class InvSerialization {
         if (i.hasItemMeta()) {
             return true;
         }
-        return i.getEnchantments().size() > 0;
+        return !i.getEnchantments().isEmpty();
     }
 
 

@@ -189,7 +189,7 @@ public class APCommand extends Command {
                 plugin.runAsync(() -> {
                     String backup;
                     try {
-                        backup = plugin.getSqlManager().executeReturn(connection -> plugin.getSqlManager().backup(connection), 30000L, String.class);
+                        backup = plugin.getSqlManager().executeReturn(connection -> plugin.getSqlManager().backup(), 30000L, String.class);
                     } catch (Exception e) {
                         plugin.print(e);
                         return;
