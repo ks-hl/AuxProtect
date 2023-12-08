@@ -3,7 +3,11 @@ package dev.heliosares.auxprotect.bungee;
 import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APConfig;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -12,6 +16,7 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
+import net.md_5.bungee.api.connection.PendingConnection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
@@ -55,8 +60,11 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
         if (o instanceof UUID) {
             return "$" + o;
         }
-        if (o instanceof ProxiedPlayer) {
-            return "$" + ((ProxiedPlayer) o).getUniqueId().toString();
+        if (o instanceof ProxiedPlayer proxiedPlayer) {
+            return "$" + proxiedPlayer.getUniqueId().toString();
+        }
+        if (o instanceof PendingConnection pendingConnection) {
+            return "$" + pendingConnection.getUniqueId().toString();
         }
         return "#null";
     }

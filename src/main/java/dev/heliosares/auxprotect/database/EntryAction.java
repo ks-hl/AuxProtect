@@ -7,7 +7,11 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 public class EntryAction {
     private static final HashMap<String, EntryAction> values = new HashMap<>();
@@ -251,7 +255,8 @@ public class EntryAction {
                     equals(USERNAME) ||
                     equals(SESSION) ||
                     equals(CONNECT) ||
-                    equals(PLUGINLOAD);
+                    equals(PLUGINLOAD) ||
+                    equals(KICK);
         } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
             return !equals(MSG) && !equals(CONNECT);
         }
