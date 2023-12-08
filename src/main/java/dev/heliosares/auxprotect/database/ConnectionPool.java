@@ -12,7 +12,14 @@ import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Supplier;
@@ -125,44 +132,6 @@ public class ConnectionPool {
         timeConnected = System.currentTimeMillis();
     }
 
-    public long getLockedSince() {
-        return lockedSince;
-    }
-
-    public long getTimeConnected() {
-        return timeConnected;
-    }
-
-    public StackTraceElement[] getWhoHasLock() {
-        return whoHasLock;
-    }
-
-    private void checkDriver() throws ClassNotFoundException {
-        try {
-            Class.forName("org.sqlite.JDBC");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        try {
-            Class.forName("com.mysql.jdbc.Driver");
-            return;
-        } catch (ClassNotFoundException ignored) {
-        }
-        throw new ClassNotFoundException("SQL Driver not found");
-    }
-
-    private void checkAsync() throws IllegalStateException {
-        if (skipAsyncCheck) return;
-        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
-            throw new IllegalStateException("Synchronous call to database.");
-        }
-    }
-
     @OverridingMethodsMustInvokeSuper
     public void close() {
         if (closed) {
@@ -254,10 +223,6 @@ public class ConnectionPool {
         }
     }
 
-    public boolean isMySQL() {
-        return mysql;
-    }
-
     /**
      * @see PreparedStatement#execute()
      */
@@ -337,7 +302,6 @@ public class ConnectionPool {
         plugin.debug(stmt, 5);
     }
 
-
     public void setBlob(Connection connection, PreparedStatement statement, int index, byte[] bytes) throws SQLException {
         if (isMySQL()) {
             Blob ablob = connection.createBlob();
@@ -416,6 +380,48 @@ public class ConnectionPool {
                 throw new IllegalArgumentException(o.toString());
             }
         }
+    }
+
+    private void checkDriver() throws ClassNotFoundException {
+        try {
+            Class.forName("org.sqlite.JDBC");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        try {
+            Class.forName("com.mysql.jdbc.Driver");
+            return;
+        } catch (ClassNotFoundException ignored) {
+        }
+        throw new ClassNotFoundException("SQL Driver not found");
+    }
+
+    private void checkAsync() throws IllegalStateException {
+        if (skipAsyncCheck) return;
+        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
+            throw new IllegalStateException("Synchronous call to database.");
+        }
+    }
+
+    public long getLockedSince() {
+        return lockedSince;
+    }
+
+    public long getTimeConnected() {
+        return timeConnected;
+    }
+
+    public StackTraceElement[] getWhoHasLock() {
+        return whoHasLock;
+    }
+
+    public boolean isMySQL() {
+        return mysql;
     }
 
     private boolean isConnectionValid() {

@@ -1,14 +1,23 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class APCommand extends Command {
@@ -196,15 +205,6 @@ public class APCommand extends Command {
         }
     }
 
-    private void sendInfo(SenderAdapter sender) {
-        sender.sendMessageRaw("&9AuxProtect"
-                + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
-        sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
-        if (APPermission.ADMIN.hasPermission(sender)) {
-            sender.sendMessageRaw("&7&ohttps://www.spigotmc.org/resources/auxprotect.99147/");
-        }
-    }
-
     @Override
     public boolean exists() {
         return true;
@@ -245,5 +245,14 @@ public class APCommand extends Command {
         }
         final String currentArg_ = currentArg.toLowerCase();
         return out.stream().filter((s) -> s.toLowerCase().startsWith(currentArg_)).collect(Collectors.toList());
+    }
+
+    private void sendInfo(SenderAdapter sender) {
+        sender.sendMessageRaw("&9AuxProtect"
+                + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
+        sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
+        if (APPermission.ADMIN.hasPermission(sender)) {
+            sender.sendMessageRaw("&7&ohttps://www.spigotmc.org/resources/auxprotect.99147/");
+        }
     }
 }

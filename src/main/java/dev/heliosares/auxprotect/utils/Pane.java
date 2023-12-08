@@ -35,17 +35,6 @@ public class Pane implements InventoryHolder {
         });
     }
 
-    @Nonnull
-    @Override
-    public Inventory getInventory() {
-        return inventory;
-    }
-
-    public void setInventory(Inventory inventory) {
-        this.inventory = inventory;
-        buttons = new ArrayList<>();
-    }
-
     public void addButton(int slot, Material type, Runnable action, String name) {
         addButton(slot, type, action, name, null);
     }
@@ -103,18 +92,29 @@ public class Pane implements InventoryHolder {
         cancelled = true;
     }
 
+    public enum Type {
+        CLAIM, SHOW
+    }
+
+    private record Button(Runnable run, int index) {
+    }
+
+    @Nonnull
+    @Override
+    public Inventory getInventory() {
+        return inventory;
+    }
+
+    public void setInventory(Inventory inventory) {
+        this.inventory = inventory;
+        buttons = new ArrayList<>();
+    }
+
     public boolean isCancelled() {
         return cancelled;
     }
 
     public Player getPlayer() {
         return player;
-    }
-
-    public enum Type {
-        CLAIM, SHOW
-    }
-
-    private record Button(Runnable run, int index) {
     }
 }

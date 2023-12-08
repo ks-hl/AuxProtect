@@ -29,6 +29,19 @@ public class XrayEntry extends DbEntry {
         return this.add(entry, new ArrayList<>());
     }
 
+    public void setRating(short rating, @Nullable String rater) {
+        if (rater != null) {
+            String data = getData();
+            if (data.length() > 0) {
+                data += "; ";
+            }
+            String ratedBy = LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": " + rater + " rated " + rating;
+            data += ratedBy;
+            setData(data);
+        }
+        this.rating = rating;
+    }
+
     private boolean add(XrayEntry other, ArrayList<XrayEntry> visited) {
         if (!visited.add(this)) {
             return false;
@@ -50,18 +63,5 @@ public class XrayEntry extends DbEntry {
 
     public short getRating() {
         return rating;
-    }
-
-    public void setRating(short rating, @Nullable String rater) {
-        if (rater != null) {
-            String data = getData();
-            if (data.length() > 0) {
-                data += "; ";
-            }
-            String ratedBy = LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": " + rater + " rated " + rating;
-            data += ratedBy;
-            setData(data);
-        }
-        this.rating = rating;
     }
 }

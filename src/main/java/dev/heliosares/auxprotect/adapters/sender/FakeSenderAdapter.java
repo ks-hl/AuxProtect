@@ -21,30 +21,6 @@ public class FakeSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public Object getSender() {
-        return null;
-    }
-
-    @Override
-    public String getName() {
-        if (name == null)
-            return "null";
-        return name;
-    }
-
-    @Override
-    public UUID getUniqueId() {
-        if (uuid == null)
-            return UUID.fromString("00000000-0000-0000-0000-000000000001");
-        return uuid;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return platform == null ? PlatformType.NONE : platform;
-    }
-
-    @Override
     public void sendMessage(BaseComponent... message) {
         StringBuilder line = new StringBuilder();
         for (BaseComponent part : message) {
@@ -69,17 +45,41 @@ public class FakeSenderAdapter extends SenderAdapter {
     }
 
     @Override
+    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
+            throws NullPointerException, UnsupportedOperationException {
+    }
+
+    @Override
+    public Object getSender() {
+        return null;
+    }
+
+    @Override
+    public String getName() {
+        if (name == null)
+            return "null";
+        return name;
+    }
+
+    @Override
+    public UUID getUniqueId() {
+        if (uuid == null)
+            return UUID.fromString("00000000-0000-0000-0000-000000000001");
+        return uuid;
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return platform == null ? PlatformType.NONE : platform;
+    }
+
+    @Override
     public boolean isConsole() {
         return false;
     }
 
     public String getConsoleLog() {
         return console;
-    }
-
-    @Override
-    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
-            throws NullPointerException, UnsupportedOperationException {
     }
 
 }

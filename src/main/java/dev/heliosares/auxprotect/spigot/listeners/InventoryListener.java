@@ -14,7 +14,12 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -36,29 +41,6 @@ public class InventoryListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryCloseEvent(InventoryCloseEvent e) {
         log(e.getPlayer(), e.getInventory(), false);
-    }
-
-    private void log(HumanEntity player, Inventory inv, boolean state) {
-        int count = 0;
-        for (ItemStack item : inv.getContents()) {
-            if (item == null)
-                continue;
-            count += item.getAmount();
-        }
-        String label = AuxProtectSpigot.getLabel(inv.getHolder());
-        if (label.equals("#null")) {
-            if (inv.getLocation() != null) {
-                Block block = inv.getLocation().getBlock();
-                label = "#" + block.getType().toString().toLowerCase();
-            }
-        }
-        Location location = inv.getLocation();
-        if (location == null) {
-            location = player.getLocation();
-        }
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
-                count + " items in inventory.");
-        plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -160,6 +142,29 @@ public class InventoryListener implements Listener {
             }
         }
 
+        plugin.add(entry);
+    }
+
+    private void log(HumanEntity player, Inventory inv, boolean state) {
+        int count = 0;
+        for (ItemStack item : inv.getContents()) {
+            if (item == null)
+                continue;
+            count += item.getAmount();
+        }
+        String label = AuxProtectSpigot.getLabel(inv.getHolder());
+        if (label.equals("#null")) {
+            if (inv.getLocation() != null) {
+                Block block = inv.getLocation().getBlock();
+                label = "#" + block.getType().toString().toLowerCase();
+            }
+        }
+        Location location = inv.getLocation();
+        if (location == null) {
+            location = player.getLocation();
+        }
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
+                count + " items in inventory.");
         plugin.add(entry);
     }
 

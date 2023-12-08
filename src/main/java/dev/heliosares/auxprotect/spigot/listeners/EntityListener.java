@@ -11,12 +11,28 @@ import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.entity.*;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Item;
+import org.bukkit.entity.ItemFrame;
+import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Monster;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.TNTPrimed;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.*;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
+import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDropItemEvent;
+import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityPickupItemEvent;
+import org.bukkit.event.entity.EntityResurrectEvent;
+import org.bukkit.event.entity.EntityTameEvent;
+import org.bukkit.event.entity.ItemDespawnEvent;
+import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.inventory.EntityEquipment;
 import org.bukkit.inventory.EquipmentSlot;
@@ -44,12 +60,6 @@ public class EntityListener implements Listener {
         blacklistedDamageCauses.add(DamageCause.ENTITY_SWEEP_ATTACK);
     }
 
-    protected static void itemBreak(IAuxProtect plugin, String cause, ItemStack item, Location location) {
-        DbEntry entry = new SingleItemEntry(cause, EntryAction.BREAKITEM, false, location,
-                AuxProtectSpigot.getLabel(item.getType()), "", item);
-        plugin.add(entry);
-    }
-
     public static boolean isChartMap(ItemStack item) {
         if (item.getType() == Material.FILLED_MAP && item.hasItemMeta()) {
             if (item.getItemMeta() instanceof MapMeta meta) {
@@ -61,6 +71,12 @@ public class EntityListener implements Listener {
             }
         }
         return false;
+    }
+
+    protected static void itemBreak(IAuxProtect plugin, String cause, ItemStack item, Location location) {
+        DbEntry entry = new SingleItemEntry(cause, EntryAction.BREAKITEM, false, location,
+                AuxProtectSpigot.getLabel(item.getType()), "", item);
+        plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -262,6 +278,13 @@ public class EntityListener implements Listener {
 
     }
 
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
+    public void onTame(EntityTameEvent e) {
+        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
+                e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
+        plugin.add(entry);
+    }
+
     private void drop(Entity entity, Location loc, ItemStack item, boolean drop) {
         DbEntry entry;
         if (InvSerialization.isCustom(item)) {
@@ -271,13 +294,6 @@ public class EntityListener implements Listener {
             entry = new PickupEntry(AuxProtectSpigot.getLabel(entity), drop ? EntryAction.DROP : EntryAction.PICKUP,
                     false, loc, item.getType().toString().toLowerCase(), item.getAmount());
         }
-        plugin.add(entry);
-    }
-
-    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
-    public void onTame(EntityTameEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
-                e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }
 }

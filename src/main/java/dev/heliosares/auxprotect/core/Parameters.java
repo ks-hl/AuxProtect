@@ -3,7 +3,11 @@ package dev.heliosares.auxprotect.core;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Language.L;
-import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
@@ -14,7 +18,12 @@ import org.bukkit.World;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
@@ -58,13 +67,13 @@ public class Parameters implements Cloneable {
     // ------------------- CONSTRUCTORS -------------------
     // ----------------------------------------------------
 
-    private Parameters() {
-        plugin = AuxProtectAPI.getInstance();
-    }
-
     public Parameters(Table table) {
         this();
         this.table = table;
+    }
+
+    private Parameters() {
+        plugin = AuxProtectAPI.getInstance();
     }
 
     // -----------------------------------------------
@@ -682,101 +691,10 @@ public class Parameters implements Cloneable {
     // ------------------- GETTERS -------------------
     // -----------------------------------------------
 
-    public long getAfter() {
-        return after;
-    }
-
-    public long getBefore() {
-        return before;
-    }
-
-    public Set<Long> getExactTime() {
-        return exactTime;
-    }
-
-    public boolean isNegateUser() {
-        return negateUser;
-    }
-
-    /**
-     * This is only used in a select few places. Parameters#getUIDS matters more
-     *
-     * @return the list of users
-     */
-    public Set<String> getUsers() {
-        return users;
-    }
-
-    public Set<String> getUIDs() {
-        return uids;
-    }
-
-    public Set<Integer> getActions() {
-        return actions;
-    }
-
-    public boolean isNegateTarget() {
-        return negateTarget;
-    }
-
-    public Set<String> getTargets() {
-        return targets;
-    }
-
-    public boolean isNegateData() {
-        return negateData;
-    }
-
-    public Set<String> getDatas() {
-        return datas;
-    }
-
-    public Table getTable() {
-        return table;
-    }
-
-    public HashMap<Integer, Boolean> getRadius() {
-        return radius;
-    }
-
-    public Location getLocation() {
-        return location;
-    }
-
-    public Parameters setLocation(Location location) {
-        this.location = location;
-        return this;
-    }
-
-    public boolean isNegateWorld() {
-        return negateWorld;
-    }
-
-    public Parameters setNegateWorld(boolean negateWorld) {
-        this.negateWorld = negateWorld;
-        return this;
-    }
-
-    public Set<String> getWorld() {
-        return worlds;
-    }
-
-    public Set<Flag> getFlags() {
-        return flags;
-    }
-
-    public Set<Short> getRatings() {
-        return ratings;
-    }
-
     public boolean hasFlag(Flag flag) {
         if (!flag.isEnabled()) return false;
         return flags.contains(flag);
     }
-
-    // -----------------------------------------------
-    // ------------------- PRIVATE -------------------
-    // -----------------------------------------------
 
     public String[] toSQL(IAuxProtect plugin) {
         if (table == null) {
@@ -973,52 +891,6 @@ public class Parameters implements Cloneable {
         return true;
     }
 
-    private Parameters time(String param, boolean before) throws ParseException {
-        try {
-            long time = TimeUtil.stringToMillis(param);
-            if (time < 0) {
-                throw new ParseException(Language.L.INVALID_PARAMETER, param);
-            }
-            if (!param.endsWith("e")) {
-                time = System.currentTimeMillis() - time;
-            }
-            if (before) {
-                this.before = time;
-            } else {
-                this.after = time;
-            }
-        } catch (NumberFormatException e) {
-            throw new ParseException(Language.L.INVALID_PARAMETER, param);
-        }
-        return this;
-    }
-
-    private int distance(DbEntry entry) {
-        if (location == null) {
-            return -1;
-        }
-        assert location.getWorld() != null;
-        if (!entry.getWorld().equals(location.getWorld().getName())) {
-            return Integer.MAX_VALUE;
-        }
-        return Math.max(Math.max(Math.abs(entry.getX() - location.getBlockX()), Math.abs(entry.getY() - location.getBlockY())),
-                Math.abs(entry.getZ() - location.getBlockZ()));
-    }
-
-    private String toGroup(Set<?> set) {
-        StringBuilder stmt = new StringBuilder("(");
-        boolean first = true;
-        for (Object id : set) {
-            if (first) {
-                first = false;
-            } else {
-                stmt.append(",");
-            }
-            stmt.append(id);
-        }
-        return stmt + ")";
-    }
-
     @Override
     public Parameters clone() {
         try {
@@ -1067,6 +939,52 @@ public class Parameters implements Cloneable {
         }
     }
 
+    private Parameters time(String param, boolean before) throws ParseException {
+        try {
+            long time = TimeUtil.stringToMillis(param);
+            if (time < 0) {
+                throw new ParseException(Language.L.INVALID_PARAMETER, param);
+            }
+            if (!param.endsWith("e")) {
+                time = System.currentTimeMillis() - time;
+            }
+            if (before) {
+                this.before = time;
+            } else {
+                this.after = time;
+            }
+        } catch (NumberFormatException e) {
+            throw new ParseException(Language.L.INVALID_PARAMETER, param);
+        }
+        return this;
+    }
+
+    private int distance(DbEntry entry) {
+        if (location == null) {
+            return -1;
+        }
+        assert location.getWorld() != null;
+        if (!entry.getWorld().equals(location.getWorld().getName())) {
+            return Integer.MAX_VALUE;
+        }
+        return Math.max(Math.max(Math.abs(entry.getX() - location.getBlockX()), Math.abs(entry.getY() - location.getBlockY())),
+                Math.abs(entry.getZ() - location.getBlockZ()));
+    }
+
+    private String toGroup(Set<?> set) {
+        StringBuilder stmt = new StringBuilder("(");
+        boolean first = true;
+        for (Object id : set) {
+            if (first) {
+                first = false;
+            } else {
+                stmt.append(",");
+            }
+            stmt.append(id);
+        }
+        return stmt + ")";
+    }
+
     public enum Flag {
         COUNT(null), COUNT_ONLY(null), PLAYTIME(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), COMBINE_USER_TARGET(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
@@ -1091,6 +1009,97 @@ public class Parameters implements Cloneable {
             }
             return true;
         }
+    }
+
+    public long getAfter() {
+        return after;
+    }
+
+    public long getBefore() {
+        return before;
+    }
+
+    public Set<Long> getExactTime() {
+        return exactTime;
+    }
+
+    public boolean isNegateUser() {
+        return negateUser;
+    }
+
+    /**
+     * This is only used in a select few places. Parameters#getUIDS matters more
+     *
+     * @return the list of users
+     */
+    public Set<String> getUsers() {
+        return users;
+    }
+
+    public Set<String> getUIDs() {
+        return uids;
+    }
+
+    public Set<Integer> getActions() {
+        return actions;
+    }
+
+    public boolean isNegateTarget() {
+        return negateTarget;
+    }
+
+    public Set<String> getTargets() {
+        return targets;
+    }
+
+    public boolean isNegateData() {
+        return negateData;
+    }
+
+    public Set<String> getDatas() {
+        return datas;
+    }
+
+    public Table getTable() {
+        return table;
+    }
+
+    public HashMap<Integer, Boolean> getRadius() {
+        return radius;
+    }
+
+    // -----------------------------------------------
+    // ------------------- PRIVATE -------------------
+    // -----------------------------------------------
+
+    public Location getLocation() {
+        return location;
+    }
+
+    public Parameters setLocation(Location location) {
+        this.location = location;
+        return this;
+    }
+
+    public boolean isNegateWorld() {
+        return negateWorld;
+    }
+
+    public Parameters setNegateWorld(boolean negateWorld) {
+        this.negateWorld = negateWorld;
+        return this;
+    }
+
+    public Set<String> getWorld() {
+        return worlds;
+    }
+
+    public Set<Flag> getFlags() {
+        return flags;
+    }
+
+    public Set<Short> getRatings() {
+        return ratings;
     }
 
 }

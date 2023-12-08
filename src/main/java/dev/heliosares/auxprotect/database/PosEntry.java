@@ -19,14 +19,6 @@ public class PosEntry extends DbEntry {
         this.z = Math.round(location.getZ() * 8D) / 8D;
     }
 
-    protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
-        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
-        double[] dInc = byteToFractions(increment);
-        this.x = x + dInc[0];
-        this.y = y + dInc[1];
-        this.z = z + dInc[2];
-    }
-
     public PosEntry(long time, int uid, Location location) {
         super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
                 (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
@@ -34,6 +26,14 @@ public class PosEntry extends DbEntry {
         this.x = location.getX();
         this.y = location.getY();
         this.z = location.getZ();
+    }
+
+    protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
+        super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data);
+        double[] dInc = byteToFractions(increment);
+        this.x = x + dInc[0];
+        this.y = y + dInc[1];
+        this.z = z + dInc[2];
     }
 
     /**

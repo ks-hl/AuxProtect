@@ -1,18 +1,41 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
-import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.ActivityResults;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.PosEntry;
+import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.*;
+import dev.heliosares.auxprotect.utils.MoneySolver;
+import dev.heliosares.auxprotect.utils.PlayTimeSolver;
+import dev.heliosares.auxprotect.utils.PlaybackSolver;
+import dev.heliosares.auxprotect.utils.RetentionSolver;
+import dev.heliosares.auxprotect.utils.XraySolver;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 

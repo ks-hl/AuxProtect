@@ -8,8 +8,12 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.Statistic;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.UUID;
 
 public class RetentionSolver {
 

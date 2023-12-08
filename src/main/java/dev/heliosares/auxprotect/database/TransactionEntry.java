@@ -6,11 +6,11 @@ import javax.annotation.Nullable;
 import java.sql.SQLException;
 
 public class TransactionEntry extends DbEntry {
-    private int item_type_id;
-    private String itemType;
     private final int quantity;
     private final double cost;
     private final double balance;
+    private int item_type_id;
+    private String itemType;
 
     public TransactionEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel, String data, String material, int quantity, double cost, double balance) throws NullPointerException {
         super(userLabel, action, state, location, targetLabel, data);
@@ -26,6 +26,21 @@ public class TransactionEntry extends DbEntry {
         this.quantity = quantity;
         this.cost = cost / 100D;
         this.balance = balance / 100D;
+    }
+
+    public String getItemType(boolean resolve) throws SQLException {
+        if (itemType != null || !resolve) {
+            return itemType;
+        }
+        if (item_type_id > 0) {
+            itemType = SQLManager.getInstance().getUserManager().getUUIDFromUID(item_type_id, false);
+        } else if (item_type_id == 0) {
+            return itemType = "";
+        }
+        if (itemType == null) {
+            itemType = "#null";
+        }
+        return itemType;
     }
 
     public int getQuantity() {
@@ -50,20 +65,5 @@ public class TransactionEntry extends DbEntry {
 
     public int getItemTypeID() {
         return item_type_id;
-    }
-
-    public String getItemType(boolean resolve) throws SQLException {
-        if (itemType != null || !resolve) {
-            return itemType;
-        }
-        if (item_type_id > 0) {
-            itemType = SQLManager.getInstance().getUserManager().getUUIDFromUID(item_type_id, false);
-        } else if (item_type_id == 0) {
-            return itemType = "";
-        }
-        if (itemType == null) {
-            itemType = "#null";
-        }
-        return itemType;
     }
 }

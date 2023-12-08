@@ -88,6 +88,21 @@ public class MoneySolver extends ChartRenderer {
                 .collect(Collectors.toList());
     }
 
+    public static void showMoney(IAuxProtect plugin, Player player, List<DbEntry> results, int time,
+                                 String users) {
+        if (!(plugin instanceof AuxProtectSpigot)) {
+            return;
+        }
+        plugin.runSync(() -> {
+            try {
+                MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
+                player.getInventory().addItem(solver.asItem(player));
+            } catch (IllegalArgumentException e) {
+                player.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__NORESULTS));
+            }
+        });
+    }
+
     @SuppressWarnings("SameParameterValue")
     private static double sigDigRounder(double value, int nSigDig, int dir) {
         double d1 = Math.pow(10, Math.floor(Math.log10(Math.abs(value))) - (nSigDig - 1));
@@ -102,21 +117,6 @@ public class MoneySolver extends ChartRenderer {
 
         return (intermediate * d1);
 
-    }
-
-    public static void showMoney(IAuxProtect plugin, Player player, List<DbEntry> results, int time,
-                                 String users) {
-        if (!(plugin instanceof AuxProtectSpigot)) {
-            return;
-        }
-        plugin.runSync(() -> {
-            try {
-                MoneySolver solver = new MoneySolver((AuxProtectSpigot) plugin, player, results, time, users);
-                player.getInventory().addItem(solver.asItem(player));
-            } catch (IllegalArgumentException e) {
-                player.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__NORESULTS));
-            }
-        });
     }
 
     @Override

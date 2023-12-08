@@ -12,8 +12,6 @@ import java.util.function.Consumer;
 
 public interface IAuxProtect {
 
-    File getDataFolder();
-
     InputStream getResource(String string);
 
     void info(String msg);
@@ -26,17 +24,34 @@ public interface IAuxProtect {
 
     void print(Throwable t);
 
-    PlatformType getPlatform();
-
-    SQLManager getSqlManager();
-
-    APConfig getAPConfig();
-
     void add(DbEntry dbEntry);
 
     void runAsync(Runnable run);
 
     void runSync(Runnable runnable);
+
+    @Nullable
+    SenderAdapter getSenderAdapter(String name);
+
+    boolean isHooked(String name);
+
+    APPlayer getAPPlayer(SenderAdapter sender);
+
+    int queueSize();
+
+    Set<String> listPlayers();
+
+    void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add);
+
+    void broadcast(String msg, APPermission node);
+
+    File getDataFolder();
+
+    PlatformType getPlatform();
+
+    SQLManager getSqlManager();
+
+    APConfig getAPConfig();
 
     String getCommandPrefix();
 
@@ -44,12 +59,7 @@ public interface IAuxProtect {
 
     SenderAdapter getConsoleSender();
 
-    @Nullable
-    SenderAdapter getSenderAdapter(String name);
-
     boolean isShuttingDown();
-
-    boolean isHooked(String name);
 
     File getRootDirectory();
 
@@ -57,17 +67,7 @@ public interface IAuxProtect {
 
     String getPluginVersion();
 
-    APPlayer getAPPlayer(SenderAdapter sender);
-
-    int queueSize();
-
     String getStackLog();
 
-    Set<String> listPlayers();
-
     boolean isEnabled();
-
-    void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add);
-
-    void broadcast(String msg, APPermission node);
 }

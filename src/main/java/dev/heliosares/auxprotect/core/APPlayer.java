@@ -16,9 +16,9 @@ import java.util.List;
 
 public class APPlayer {
     public final Player player;
+    public final double[] activity = new double[30];
     private final IAuxProtect plugin;
     private final List<Byte> posBlob = new ArrayList<>();
-    public final double[] activity = new double[30];
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
@@ -57,31 +57,6 @@ public class APPlayer {
             plugin.print(e);
         }
         return -1;
-    }
-
-    private List<ItemStack> getInventory() {
-        List<ItemStack> contents = new ArrayList<>();
-        ItemStack[] array = player.getInventory().getStorageContents();
-        for (int i = 9; i < array.length; i++) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        for (int i = 0; i < 9; i++) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        array = player.getInventory().getArmorContents();
-        for (int i = array.length - 1; i >= 0; i--) {
-            ItemStack item = array[i];
-            contents.add(item == null ? null : item.clone());
-        }
-        for (ItemStack item : player.getInventory().getExtraContents()) {
-            contents.add(item == null ? null : item.clone());
-        }
-        for (ItemStack item : player.getEnderChest().getContents()) {
-            contents.add(item == null ? null : item.clone());
-        }
-        return contents;
     }
 
     public long logInventory(String reason, Location loc, byte[] inventory) {
@@ -183,5 +158,30 @@ public class APPlayer {
 
         plugin.add(entry);
 
+    }
+
+    private List<ItemStack> getInventory() {
+        List<ItemStack> contents = new ArrayList<>();
+        ItemStack[] array = player.getInventory().getStorageContents();
+        for (int i = 9; i < array.length; i++) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        for (int i = 0; i < 9; i++) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        array = player.getInventory().getArmorContents();
+        for (int i = array.length - 1; i >= 0; i--) {
+            ItemStack item = array[i];
+            contents.add(item == null ? null : item.clone());
+        }
+        for (ItemStack item : player.getInventory().getExtraContents()) {
+            contents.add(item == null ? null : item.clone());
+        }
+        for (ItemStack item : player.getEnderChest().getContents()) {
+            contents.add(item == null ? null : item.clone());
+        }
+        return contents;
     }
 }

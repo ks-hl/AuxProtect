@@ -28,22 +28,6 @@ public class DbEntry {
     private long blobid = -1;
     private byte[] blob;
 
-    private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
-                    int yaw, String targetLabel, String data) {
-        this.time = DatabaseRunnable.getTime(action.getTable());
-        this.userLabel = userLabel;
-        this.action = action;
-        this.state = state;
-        this.world = world;
-        this.x = x;
-        this.y = y;
-        this.z = z;
-        this.pitch = pitch;
-        this.yaw = yaw;
-        this.targetLabel = targetLabel;
-        this.data = data;
-    }
-
     /**
      *
      */
@@ -89,6 +73,87 @@ public class DbEntry {
         this.data = data;
     }
 
+    private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
+                    int yaw, String targetLabel, String data) {
+        this.time = DatabaseRunnable.getTime(action.getTable());
+        this.userLabel = userLabel;
+        this.action = action;
+        this.state = state;
+        this.world = world;
+        this.x = x;
+        this.y = y;
+        this.z = z;
+        this.pitch = pitch;
+        this.yaw = yaw;
+        this.targetLabel = targetLabel;
+        this.data = data;
+    }
+
+    public String getUser(boolean resolve) throws SQLException {
+        if (user != null || !resolve) return user;
+
+        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+            return user = getUserUUID();
+        }
+        user = SQLManager.getInstance().getUserManager().getUsernameFromUID(getUid(), false);
+        if (user == null) {
+            user = getUserUUID();
+        }
+        return user;
+    }
+
+    public String getTarget(boolean resolve) throws SQLException {
+        if (target != null || !resolve) return target;
+
+        if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
+            return target = getTargetUUID();
+        }
+        target = SQLManager.getInstance().getUserManager().getUsernameFromUID(getTargetId(), false);
+        if (target == null) {
+            target = getTargetUUID();
+        }
+        return target;
+    }
+
+    public double getBoxDistance(DbEntry entry) {
+        if (!entry.getWorld().equals(getWorld())) {
+            return -1;
+        }
+        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
+    }
+
+    public double getDistance(DbEntry entry) {
+        return Math.sqrt(getDistanceSq(entry));
+    }
+
+    public double getDistanceSq(DbEntry entry) {
+        return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
+    }
+
+    public boolean hasBlob() {
+        return blob != null || blobid >= 0;
+    }
+
+    @Override
+    public String toString() {
+        String out;
+        try {
+            out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
+                    getAction().getId(getState()), getTarget());
+        } catch (SQLException e) {
+            out = "ERROR ";
+        }
+        if (getData() != null && getData().length() > 0) {
+            String data = getData();
+            if (data.length() > 64) {
+                data = data.substring(0, 64) + "...";
+            }
+            out += "(" + data + ")";
+
+        }
+        return out;
+    }
+
     public long getTime() {
         return time;
     }
@@ -130,34 +195,8 @@ public class DbEntry {
         return getUser(true);
     }
 
-    public String getUser(boolean resolve) throws SQLException {
-        if (user != null || !resolve) return user;
-
-        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
-            return user = getUserUUID();
-        }
-        user = SQLManager.getInstance().getUserManager().getUsernameFromUID(getUid(), false);
-        if (user == null) {
-            user = getUserUUID();
-        }
-        return user;
-    }
-
     public String getTarget() throws SQLException {
         return getTarget(true);
-    }
-
-    public String getTarget(boolean resolve) throws SQLException {
-        if (target != null || !resolve) return target;
-
-        if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
-            return target = getTargetUUID();
-        }
-        target = SQLManager.getInstance().getUserManager().getUsernameFromUID(getTargetId(), false);
-        if (target == null) {
-            target = getTargetUUID();
-        }
-        return target;
     }
 
     public String getTargetUUID() throws SQLException {
@@ -190,21 +229,6 @@ public class DbEntry {
         return userLabel;
     }
 
-    public double getBoxDistance(DbEntry entry) {
-        if (!entry.getWorld().equals(getWorld())) {
-            return -1;
-        }
-        return Math.max(Math.max(Math.abs(entry.getX() - getX()), Math.abs(entry.getY() - getY())), Math.abs(entry.getZ() - getZ()));
-    }
-
-    public double getDistance(DbEntry entry) {
-        return Math.sqrt(getDistanceSq(entry));
-    }
-
-    public double getDistanceSq(DbEntry entry) {
-        return Math.pow(getX() - entry.getX(), 2) + Math.pow(getY() - entry.getY(), 2) + Math.pow(getZ() - entry.getZ(), 2);
-    }
-
     public byte[] getBlob() throws SQLException {
         if (blob == null) blob = SQLManager.getInstance().getBlob(this);
         return blob;
@@ -214,36 +238,12 @@ public class DbEntry {
         this.blob = blob;
     }
 
-    public boolean hasBlob() {
-        return blob != null || blobid >= 0;
-    }
-
     public long getBlobID() {
         return blobid;
     }
 
     protected void setBlobID(long blobid) {
         this.blobid = blobid;
-    }
-
-    @Override
-    public String toString() {
-        String out;
-        try {
-            out = String.format("%s %s(%d) %s ", getUser(), getAction().getText(getState()),
-                    getAction().getId(getState()), getTarget());
-        } catch (SQLException e) {
-            out = "ERROR ";
-        }
-        if (getData() != null && getData().length() > 0) {
-            String data = getData();
-            if (data.length() > 64) {
-                data = data.substring(0, 64) + "...";
-            }
-            out += "(" + data + ")";
-
-        }
-        return out;
     }
 
     public String getWorld() {

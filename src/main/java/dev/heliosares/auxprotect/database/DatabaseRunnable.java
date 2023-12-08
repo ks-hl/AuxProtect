@@ -5,7 +5,12 @@ import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Consumer;
 
@@ -19,6 +24,7 @@ public class DatabaseRunnable implements Runnable {
     private final IAuxProtect plugin;
     private final ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
     private final ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
+    private final Set<Consumer<DbEntry>> listeners = new HashSet<>();
     private long lastWarn = 0;
     private long lockedSince;
 
@@ -97,6 +103,13 @@ public class DatabaseRunnable implements Runnable {
         }
     }
 
+    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
+        synchronized (listeners) {
+            if (add) listeners.add(consumer);
+            else listeners.remove(consumer);
+        }
+    }
+
     private void checkCache(boolean force) {
         synchronized (pickups) {
             Iterator<PickupEntry> itr = pickups.iterator();
@@ -148,15 +161,6 @@ public class DatabaseRunnable implements Runnable {
                 if (next.add(entry)) return;
             }
             jobsentries.add(entry);
-        }
-    }
-
-    private final Set<Consumer<DbEntry>> listeners = new HashSet<>();
-
-    public void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add) {
-        synchronized (listeners) {
-            if (add) listeners.add(consumer);
-            else listeners.remove(consumer);
         }
     }
 

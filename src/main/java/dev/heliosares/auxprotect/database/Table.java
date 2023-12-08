@@ -37,10 +37,6 @@ public enum Table {
         return SQLManager.getInstance().getTablePrefix() + super.toString().toLowerCase();
     }
 
-    public String getName() {
-        return super.toString().toLowerCase();
-    }
-
     public boolean exists(IAuxProtect plugin) {
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
             return switch (this) {
@@ -127,7 +123,7 @@ public enum Table {
         } else if (this == Table.AUXPROTECT_XRAY) {
             return "(time, uid, world_id, x, y, z, target_id, rating, data)";
         } else if (this == AUXPROTECT_TRANSACTIONS) {
-			// not the best, don't really need dedicated item_type, could just use target for this?
+            // not the best, don't really need dedicated item_type, could just use target for this?
             return "(time, uid, action_id, world_id, x, y, z, target_id, item_type, quantity, value, balance)";
         }
         return null;
@@ -239,6 +235,14 @@ public enum Table {
         return this == AUXPROTECT_TRANSACT;
     }
 
+    public boolean hasItemMeta() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+    }
+
+    public String getName() {
+        return super.toString().toLowerCase();
+    }
+
     /**
      * @return The table's associated blob, or null
      */
@@ -251,6 +255,10 @@ public enum Table {
         };
     }
 
+    public BlobManager getBlobManager() {
+        return blobManager;
+    }
+
     void setBlobManager(BlobManager blobManager) {
         Table blobTable = getBlobTable();
         if (blobTable == null) {
@@ -258,10 +266,6 @@ public enum Table {
         }
         this.blobManager = blobManager;
         blobTable.blobManager = blobManager;
-    }
-
-    public BlobManager getBlobManager() {
-        return blobManager;
     }
 
     public long getAutoPurgeInterval() {
@@ -276,9 +280,5 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
-    }
-
-    public boolean hasItemMeta() {
-        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 }

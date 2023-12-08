@@ -1,9 +1,21 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
-import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.database.XrayResults;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -255,6 +267,17 @@ public class XrayCommand extends Command {
         }
     }
 
+    @Override
+    public boolean exists() {
+        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
+    }
+
+    @Override
+    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+        // TODO This whole thing...
+        return null;
+    }
+
     private void nextEntry(AuxProtectSpigot plugin, SenderAdapter player, boolean auto) {
         XrayEntry en = plugin.getVeinManager().next(player.getUniqueId());
         if (en == null) {
@@ -270,16 +293,5 @@ public class XrayCommand extends Command {
         } catch (SQLException e) {
             player.sendLang(Language.L.ERROR);
         }
-    }
-
-    @Override
-    public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
-    }
-
-    @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
-        // TODO This whole thing...
-        return null;
     }
 }

@@ -26,14 +26,27 @@ public class DbEntry2 extends DbEntry {
         this.uid2 = uid2;
     }
 
-    public int getUid2() throws SQLException, BusyException {
+    public String getUser2(boolean resolve) throws SQLException {
+        if (user2 != null || !resolve) return user2;
+
+        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
+            return user2 = getUserUUID();
+        }
+        user2 = sql.getUserManager().getUsernameFromUID(getUid(), false);
+        if (user2 == null) {
+            user2 = getUserUUID();
+        }
+        return user2;
+    }
+
+    public int getUid2() throws SQLException {
         if (uid2 > 0) {
             return uid2;
         }
         return uid2 = sql.getUserManager().getUIDFromUUID(getUserUUID2(), true, true);
     }
 
-    public String getUserUUID2() throws SQLException, BusyException {
+    public String getUserUUID2() throws SQLException {
         if (userLabel2 != null) {
             return userLabel2;
         }
@@ -48,20 +61,7 @@ public class DbEntry2 extends DbEntry {
         return userLabel2;
     }
 
-    public String getUser2() throws SQLException, BusyException {
+    public String getUser2() throws SQLException {
         return getUser(true);
-    }
-
-    public String getUser2(boolean resolve) throws SQLException, BusyException {
-        if (user2 != null || !resolve) return user2;
-
-        if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
-            return user2 = getUserUUID();
-        }
-        user2 = sql.getUserManager().getUsernameFromUID(getUid(), false);
-        if (user2 == null) {
-            user2 = getUserUUID();
-        }
-        return user2;
     }
 }

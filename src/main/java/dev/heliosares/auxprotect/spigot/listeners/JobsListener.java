@@ -73,17 +73,17 @@ public class JobsListener implements Listener {
             this.type = type;
         }
 
-        @Override
-        public String getData() {
-            return type + "" + Math.round(value * 100f) / 100f;
-        }
-
         public boolean add(JobsEntry other) {
             if (userLabel.equals(other.userLabel) && type == other.type) {
                 this.value += other.value;
                 return true;
             }
             return false;
+        }
+
+        @Override
+        public String getData() {
+            return type + "" + Math.round(value * 100f) / 100f;
         }
     }
 }

@@ -35,37 +35,11 @@ public class SpigotSenderAdapter extends SenderAdapter {
         return sender.hasPermission(node);
     }
 
-    public String getName() {
-        return sender.getName();
-    }
-
-    public UUID getUniqueId() {
-        if (sender instanceof Player player) {
-            return player.getUniqueId();
-        }
-        return UUID.fromString("00000000-0000-0000-0000-000000000000");
-    }
-
-    @Override
-    public Object getSender() {
-        return sender;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.SPIGOT;
-    }
-
     @Override
     public void executeCommand(String command) {
         plugin.runSync(() -> {
             plugin.getServer().dispatchCommand(sender, command);
         });
-    }
-
-    @Override
-    public boolean isConsole() {
-        return sender.equals(plugin.getServer().getConsoleSender());
     }
 
     @Override
@@ -93,5 +67,31 @@ public class SpigotSenderAdapter extends SenderAdapter {
         } else {
             throw new UnsupportedOperationException();
         }
+    }
+
+    public String getName() {
+        return sender.getName();
+    }
+
+    public UUID getUniqueId() {
+        if (sender instanceof Player player) {
+            return player.getUniqueId();
+        }
+        return UUID.fromString("00000000-0000-0000-0000-000000000000");
+    }
+
+    @Override
+    public Object getSender() {
+        return sender;
+    }
+
+    @Override
+    public PlatformType getPlatform() {
+        return PlatformType.SPIGOT;
+    }
+
+    @Override
+    public boolean isConsole() {
+        return sender.equals(plugin.getServer().getConsoleSender());
     }
 }

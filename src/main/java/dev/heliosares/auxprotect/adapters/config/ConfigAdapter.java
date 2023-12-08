@@ -43,11 +43,6 @@ public abstract class ConfigAdapter {
         this.in = in;
     }
 
-    public File getFile() {
-        if (file == null) return null;
-        return file.get();
-    }
-
     public abstract String getString(String key);
 
     public abstract String getString(String key, String def);
@@ -71,8 +66,6 @@ public abstract class ConfigAdapter {
     public abstract void set(String key, Object value);
 
     public abstract boolean isSection(String key);
-
-    public abstract PlatformType getPlatform();
 
     public abstract Set<String> getKeys(boolean recur);
 
@@ -123,6 +116,17 @@ public abstract class ConfigAdapter {
         }
     }
 
+    public abstract List<String> getStringList(String key);
+
+    protected abstract ConfigAdapter fromInputStream(InputStream stream);
+
+    public File getFile() {
+        if (file == null) return null;
+        return file.get();
+    }
+
+    public abstract PlatformType getPlatform();
+
     public ConfigAdapter getDefaults() throws IOException {
         if (defaults == null) return null;
         try (InputStream in = defaults.apply(path)) {
@@ -135,8 +139,4 @@ public abstract class ConfigAdapter {
 
     @SuppressWarnings("BooleanMethodIsAlwaysInverted")
     public abstract boolean isNull();
-
-    public abstract List<String> getStringList(String key);
-
-    protected abstract ConfigAdapter fromInputStream(InputStream stream);
 }

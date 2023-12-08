@@ -3,7 +3,14 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.*;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.Pair;
+import com.comphenix.protocol.wrappers.PlayerInfoData;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.comphenix.protocol.wrappers.WrappedDataValue;
+import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import com.comphenix.protocol.wrappers.WrappedSignedProperty;
 import com.google.common.collect.Lists;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -196,13 +203,13 @@ public class FakePlayer {
         packet.getIntegers().write(0, id);
     }
 
-    public long getLastMoved() {
-        return lastMoved;
-    }
-
     public record Skin(UUID uuid, String skin, String signature) {
         public WrappedSignedProperty wrap() {
             return new WrappedSignedProperty("textures", skin, signature);
         }
+    }
+
+    public long getLastMoved() {
+        return lastMoved;
     }
 }

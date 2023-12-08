@@ -23,6 +23,24 @@ public abstract class LocationAdapter {
         this(world, x, y, z, 0, 0);
     }
 
+    public LocationAdapter add(double x, double y, double z) {
+        this.x += x;
+        this.y += y;
+        this.z += z;
+        return this;
+    }
+
+    public double distance(LocationAdapter other) {
+        return Math.sqrt(distanceSq(other));
+    }
+
+    public double distanceSq(LocationAdapter other) {
+        if (other == null || !other.getWorld().equals(world)) {
+            throw new IllegalArgumentException();
+        }
+        return Math.pow(x - other.x, 2) + Math.pow(y - other.y, 2) + Math.pow(z - other.z, 2);
+    }
+
     public String getWorld() {
         return world;
     }
@@ -75,24 +93,6 @@ public abstract class LocationAdapter {
     public LocationAdapter setYaw(float yaw) {
         this.yaw = yaw;
         return this;
-    }
-
-    public LocationAdapter add(double x, double y, double z) {
-        this.x += x;
-        this.y += y;
-        this.z += z;
-        return this;
-    }
-
-    public double distance(LocationAdapter other) {
-        return Math.sqrt(distanceSq(other));
-    }
-
-    public double distanceSq(LocationAdapter other) {
-        if (other == null || !other.getWorld().equals(world)) {
-            throw new IllegalArgumentException();
-        }
-        return Math.pow(x - other.x, 2) + Math.pow(y - other.y, 2) + Math.pow(z - other.z, 2);
     }
 
     public abstract int getBlockX();
