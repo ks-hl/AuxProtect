@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -29,7 +30,7 @@ public class EssentialsListener implements Listener {
         }
 
         IUser target = e.getTarget();
-        String amount = plugin.formatMoney(e.getAmount().doubleValue());
+        String amount = AuxProtectAPI.formatMoney(e.getAmount().doubleValue());
         if (loc == null) {
             plugin.add(new DbEntry(label, EntryAction.PAY, false, AuxProtectSpigot.getLabel(target.getBase()), amount));
         } else {

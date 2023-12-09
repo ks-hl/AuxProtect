@@ -1,5 +1,11 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Location;
 
 import java.util.Objects;
@@ -96,5 +102,20 @@ public class PosEntry extends DbEntry {
 
     public byte getIncrement() {
         return getFractionalByte(x, y, z);
+    }
+
+    @Override
+    public void appendCoordinates(ComponentBuilder message) {
+        String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
+        tpCommand += String.format("%s %s %s ", getDoubleX(), getDoubleY(), getDoubleZ());
+        tpCommand += getWorld();
+        tpCommand += String.format(" %d %d", getPitch(), getYaw());
+
+        message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
+        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()))
+                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+
+        message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", getPitch(), getYaw()));
     }
 }

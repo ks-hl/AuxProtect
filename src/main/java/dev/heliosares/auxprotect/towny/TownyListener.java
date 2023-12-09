@@ -12,6 +12,7 @@ import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.WorldCoord;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -160,8 +161,8 @@ public class TownyListener implements Listener {
             case ADD, DEPOSIT -> true;
             default -> false;
         };
-        String data = plugin.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
-                + plugin.formatMoney(e.getAccount().getHoldingBalance());
+        String data = AuxProtectAPI.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
+                + AuxProtectAPI.formatMoney(e.getAccount().getHoldingBalance());
         plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));
     }
 

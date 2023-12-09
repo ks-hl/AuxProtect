@@ -1,14 +1,30 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
-import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.InvDiffManager;
+import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.NotPlayerException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.*;
+import dev.heliosares.auxprotect.utils.Experience;
+import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
+import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
+import dev.heliosares.auxprotect.utils.TimeUtil;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -27,6 +43,8 @@ import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class InvCommand extends Command {
     public InvCommand(IAuxProtect plugin) {
@@ -53,11 +71,11 @@ public class InvCommand extends Command {
             Inventory mainInv = Bukkit.getServer().createInventory(pane, 54,
                     L.INV_RECOVER_MENU__MAIN_HEADER.translate(targetName, Language.getOptionalS(targetName), TimeUtil.millisToString(System.currentTimeMillis() - when)));
             pane.setInventory(mainInv);
-            Container<Boolean> closed = new Container<>(false);
+            AtomicBoolean closed = new AtomicBoolean();
 
             if (APPermission.INV_RECOVER.hasPermission(player)) {
                 if (targetO != null) {
-                    Container<Long> lastClick = new Container<>(0L);
+                    AtomicLong lastClick = new AtomicLong();
                     pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
                         if (System.currentTimeMillis() - lastClick.get() > 500) {
                             lastClick.set(System.currentTimeMillis());

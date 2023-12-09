@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -77,7 +78,7 @@ public class PlayerListener implements Listener {
         plugin.getAPPlayer(player).lastLoggedMoney = System.currentTimeMillis();
         try {
             plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
-                    reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
+                    reason, AuxProtectAPI.formatMoney(plugin.getEconomy().getBalance(player))));
         } catch (NullPointerException ignored) {
             // CMI producing a NullPointerException for an unknown reason, irrelevant to this plugin.
         }

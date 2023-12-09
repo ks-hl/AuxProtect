@@ -26,7 +26,9 @@ public class EntryAction {
     public static final EntryAction LEASH = new EntryAction("leash", 2, 3);
     public static final EntryAction SESSION = new EntryAction("session", 4, 5);
     public static final EntryAction KICK = new EntryAction("kick", 6);
-    public static final EntryAction SHOP = new EntryAction("shop", 8, 9);
+
+    @Deprecated
+    public static final EntryAction SHOP_OLD = new EntryAction("shop_old", 8, 9);
     // SKIPPED 10/11
     public static final EntryAction MOUNT = new EntryAction("mount", 12, 13);
     public static final EntryAction PLUGINLOAD = new EntryAction("pluginload", 14, 15);
@@ -84,7 +86,6 @@ public class EntryAction {
     public static final EntryAction PICKUP = new EntryAction("pickup", 1028);
     public static final EntryAction AUCTIONLIST = new EntryAction("auctionlist", 1029);
     public static final EntryAction AUCTIONBUY = new EntryAction("auctionbuy", 1030);
-    //	public static final EntryAction AUCTIONBID = new EntryAction("auctionbid", 1031);
     public static final EntryAction BREAKITEM = new EntryAction("breakitem", 1032);
 
     public static final EntryAction ITEMFRAME = new EntryAction("itemframe", 1152, 1153);
@@ -132,6 +133,15 @@ public class EntryAction {
     public static final EntryAction NATIONBANK = new EntryAction("nationbank", 1405, 1406);
     public static final EntryAction NATIONBALANCE = new EntryAction("nationbalance", 1407);
     // END TOWNY (1499)
+
+    // START TRANSACTION (1500)
+
+    public static final EntryAction SHOP_SGP = new EntryAction("shop_sgp", 1500, 1501);
+    public static final EntryAction SHOP_ESG = new EntryAction("shop_esg", 1502, 1503);
+    public static final EntryAction SHOP_DS = new EntryAction("shop_ds", 1504, 1505);
+    public static final EntryAction SHOP_CS = new EntryAction("shop_cs", 1506, 1507);
+
+    // END TRANSACTION (1799)
 
     public final boolean hasDual;
     public final int id;
@@ -204,6 +214,9 @@ public class EntryAction {
         if (idPos > 0 && !usedids.add(idPos)) {
             throw new IllegalArgumentException("Duplicate entry id: " + idPos + " from action: " + name);
         }
+        if (idPos > 0 && idPos != id + 1) {
+            throw new IllegalArgumentException("idPos is not id+1: id=" + id + ", idPos=" + idPos + " for action: " + name);
+        }
         if (!usednames.add(name)) {
             throw new IllegalArgumentException("Duplicate action name: " + name);
         }
@@ -274,6 +287,7 @@ public class EntryAction {
         if (id < 1300) return Table.AUXPROTECT_POSITION;
         if (id < 1310) return Table.AUXPROTECT_XRAY;
         if (id < 1500) return Table.AUXPROTECT_TOWNY;
+        if (id < 1800) return Table.AUXPROTECT_TRANSACTIONS;
         if (id > 1000000) return Table.AUXPROTECT_API;
 
         throw new IllegalArgumentException("Action with unknown table: " + this + ", id=" + id);
@@ -287,9 +301,8 @@ public class EntryAction {
     }
 
     public boolean isEnabled() {
-        if (!exists()) {
-            return false;
-        }
+        if (!exists()) return false;
+        if (super.toString().endsWith("_old")) return false;
         return enabled;
     }
 

@@ -3,13 +3,41 @@ package dev.heliosares.auxprotect.spigot;
 import dev.heliosares.auxprotect.adapters.config.SpigotConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APConfig;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
-import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.database.DatabaseRunnable;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.spigot.listeners.*;
+import dev.heliosares.auxprotect.spigot.listeners.AuctionHouseListener;
+import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
+import dev.heliosares.auxprotect.spigot.listeners.CommandListener;
+import dev.heliosares.auxprotect.spigot.listeners.DynamicShopListener;
+import dev.heliosares.auxprotect.spigot.listeners.EconomyShopGUIListener;
+import dev.heliosares.auxprotect.spigot.listeners.EntityListener;
+import dev.heliosares.auxprotect.spigot.listeners.EssentialsListener;
+import dev.heliosares.auxprotect.spigot.listeners.InventoryListener;
+import dev.heliosares.auxprotect.spigot.listeners.JobsListener;
+import dev.heliosares.auxprotect.spigot.listeners.PaneListener;
+import dev.heliosares.auxprotect.spigot.listeners.PlayerAuctionsListener;
+import dev.heliosares.auxprotect.spigot.listeners.PlayerListener;
+import dev.heliosares.auxprotect.spigot.listeners.ProjectileListener;
+import dev.heliosares.auxprotect.spigot.listeners.ShopGUIPlusListener;
+import dev.heliosares.auxprotect.spigot.listeners.VeinListener;
+import dev.heliosares.auxprotect.spigot.listeners.WorldListener;
 import dev.heliosares.auxprotect.towny.TownyListener;
-import dev.heliosares.auxprotect.utils.*;
+import dev.heliosares.auxprotect.utils.Pane;
+import dev.heliosares.auxprotect.utils.PlaybackSolver;
+import dev.heliosares.auxprotect.utils.StackUtil;
+import dev.heliosares.auxprotect.utils.Telemetry;
+import dev.heliosares.auxprotect.utils.UpdateChecker;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -32,7 +60,13 @@ import java.io.IOException;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -242,13 +276,11 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         // this feels cursed to run setupEconomy() like this...
         Telemetry.reportHook(this, "Vault", setupEconomy());
 
-        boolean shop = hook(() -> new ShopGUIPlusListener(this), "ShopGuiPlus");
-        shop = hook(() -> new EconomyShopGUIListener(this), "EconomyShopGUI", "EconomyShopGUI-Premium") || shop;
-        shop = hook(() -> new DynamicShopListener(this), "DynamicShop") || shop;
-        shop = hook(() -> new ChestShopListener(this), "ChestShop") || shop;
-        if (!shop) {
-            EntryAction.SHOP.setEnabled(false);
-        }
+        EntryAction.SHOP_SGP.setEnabled(hook(() -> new ShopGUIPlusListener(this), "ShopGuiPlus"));
+        EntryAction.SHOP_ESG.setEnabled(hook(() -> new EconomyShopGUIListener(this), "EconomyShopGUI", "EconomyShopGUI-Premium"));
+        EntryAction.SHOP_DS.setEnabled(hook(() -> new DynamicShopListener(this), "DynamicShop"));
+        EntryAction.SHOP_CS.setEnabled(hook(() -> new ChestShopListener(this), "ChestShop"));
+
         boolean auctionHook = hook(() -> new AuctionHouseListener(this), "AuctionHouse");
         if (hook(() -> new PlayerAuctionsListener(this), "PlayerAuctions")) auctionHook = true;
         if (!auctionHook) {
@@ -639,19 +671,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     public Economy getEconomy() {
         return econ;
-    }
-
-    public String formatMoney(double d) {
-        if (!Double.isFinite(d) || Double.isNaN(d)) {
-            return "NaN";
-        }
-        if (d <= 0) {
-            return "$0";
-        }
-        if (econ == null) {
-            return "$" + (Math.round(d * 100) / 100.0);
-        }
-        return econ.format(d);
     }
 
     @Override

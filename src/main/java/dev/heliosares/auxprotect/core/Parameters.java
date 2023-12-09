@@ -3,7 +3,11 @@ package dev.heliosares.auxprotect.core;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Language.L;
-import dev.heliosares.auxprotect.database.*;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
@@ -11,7 +15,12 @@ import dev.heliosares.auxprotect.utils.TimeUtil;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
@@ -816,7 +825,13 @@ public class Parameters implements Cloneable {
 
         if (!uids.isEmpty()) {
             String stmt = "uid " + (negateUser ? "NOT " : "") + "IN ";
-            stmt += toGroup(uids);
+            String uidGroup = toGroup(uids);
+            stmt += uidGroup;
+
+            if (table == Table.AUXPROTECT_TRANSACTIONS) {
+                stmt += " OR target_id2 IN " + uidGroup;
+            }
+
             stmts.add(stmt);
         }
         if (!targets.isEmpty()) {

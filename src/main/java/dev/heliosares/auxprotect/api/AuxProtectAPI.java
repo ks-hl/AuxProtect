@@ -84,6 +84,17 @@ public final class AuxProtectAPI {
         getInstance().addRemoveEntryListener(consumer, false);
     }
 
+    public static String formatMoney(double d) {
+        if (!Double.isFinite(d) || Double.isNaN(d)) {
+            return "$NaN";
+        }
+        if (Math.abs(d) <= 1E-6) {
+            return "$0";
+        }
+
+        return "$" + (Math.round(d * 100) / 100.0);
+    }
+
 
     /**
      * Creates a new action and stores it in the database for future use. Use

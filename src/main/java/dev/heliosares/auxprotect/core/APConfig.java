@@ -22,7 +22,6 @@ public class APConfig {
     private long townBankInterval;
     private long nationBankInterval;
     private boolean overrideCommands;
-    private boolean skipV6Migration;
     private boolean logIncrementalPosition;
     private boolean disableVacuum;
     private boolean sessionLogIP;
@@ -63,7 +62,6 @@ public class APConfig {
             disableVacuum = config.getBoolean("disablevacuum", false);
         }
         if (config.getPlatform() == PlatformType.SPIGOT) {
-            skipV6Migration = config.getBoolean("skipv6migration");
             overrideCommands = config.getBoolean("OverrideCommands");
             inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
             posInterval = config.getLong("Actions.pos.Interval", 10000);
@@ -209,10 +207,6 @@ public class APConfig {
 
     public boolean isOverrideCommands() {
         return overrideCommands;
-    }
-
-    public boolean doSkipV6Migration() {
-        return skipV6Migration;
     }
 
     public ConfigAdapter getConfig() {

@@ -239,7 +239,7 @@ public class Language {
                 if (lang != null && !lang.isNull()) {
                     message = lang.getString(name);
                 }
-                if (message == null) throw new IllegalArgumentException("Message not found");
+                if (message == null) throw new IllegalArgumentException("Message not found: " + name);
                 message = convert(message);
 
 

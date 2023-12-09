@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import com.olziedev.playerauctions.api.events.auction.PlayerAuctionBuyEvent;
 import com.olziedev.playerauctions.api.events.auction.PlayerAuctionSellEvent;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
@@ -20,7 +21,7 @@ public class PlayerAuctionsListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onListItemEvent(PlayerAuctionSellEvent e) {
         DbEntry entry = new SingleItemEntry("$" + e.getSeller().getUniqueId(), EntryAction.AUCTIONLIST, false, e.getSeller().getLocation(),
-                e.getPlayerAuction().getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPlayerAuction().getPrice()), e.getPlayerAuction().getItem());
+                e.getPlayerAuction().getItem().getType().toString().toLowerCase(), AuxProtectAPI.formatMoney(e.getPlayerAuction().getPrice()), e.getPlayerAuction().getItem());
         plugin.add(entry);
     }
 
@@ -28,7 +29,7 @@ public class PlayerAuctionsListener implements Listener {
     public void onPurchaseItemEvent(PlayerAuctionBuyEvent e) {
         DbEntry entry = new SingleItemEntry("$" + e.getBuyer().getUniqueId(), EntryAction.AUCTIONBUY, false, e.getBuyer().getLocation(),
                 e.getPlayerAuction().getItem().getType().toString().toLowerCase(),
-                "From " + e.getPlayerAuction().getAuctionPlayer().getName() + " for " + plugin.formatMoney(e.getPrice()), e.getPlayerAuction().getItem());
+                "From " + e.getPlayerAuction().getAuctionPlayer().getName() + " for " + AuxProtectAPI.formatMoney(e.getPrice()), e.getPlayerAuction().getItem());
         plugin.add(entry);
     }
 }

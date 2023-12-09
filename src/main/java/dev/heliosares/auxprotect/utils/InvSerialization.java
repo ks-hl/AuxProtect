@@ -9,16 +9,12 @@ import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class InvSerialization {
-
-    @Deprecated
-    public static final String ITEM_SEPARATOR = ",ITEM,";
 
     public static byte[] toByteArray(ItemStack... array) throws IOException {
         if (array == null || array.length == 0) {
@@ -90,9 +86,7 @@ public class InvSerialization {
                 || i.getType() == Material.WRITABLE_BOOK) {
             return true;
         }
-        if (i.hasItemMeta()) {
-            return true;
-        }
+        if (i.hasItemMeta()) return true;
         return !i.getEnchantments().isEmpty();
     }
 
@@ -205,28 +199,6 @@ public class InvSerialization {
             exp = stream.readInt();
         }
         return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3], exp);
-    }
-
-    public static PlayerInventoryRecord toPlayer(String base64) throws IOException, ClassNotFoundException {
-        String[] parts = base64.split(",");
-        ItemStack[][] contents = new ItemStack[4][];
-        for (int i = 0; i < contents.length; i++) {
-            contents[i] = InvSerialization.toItemStackArray(parts[i]);
-        }
-
-        return new PlayerInventoryRecord(contents[0], contents[1], contents[2], contents[3],
-                Integer.parseInt(parts[4]));
-    }
-
-    @Deprecated
-    public static Inventory toInventory(String base64, InventoryHolder holder, String title)
-            throws IOException, ClassNotFoundException {
-        return toInventory(Base64Coder.decodeLines(base64), holder, title);
-    }
-
-    @Deprecated
-    public static ItemStack[] toItemStackArray(String base64) throws IOException, ClassNotFoundException {
-        return toItemStackArray(Base64Coder.decodeLines(base64));
     }
 
     public record PlayerInventoryRecord(ItemStack[] storage, ItemStack[] armor, ItemStack[] extra,

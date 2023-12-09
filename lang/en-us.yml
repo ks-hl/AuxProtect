@@ -262,9 +262,21 @@ actions:
   session:
     p: logged in
     n: logged out
-  shop:
+  shop_old:
     p: bought
     n: sold
+  shop_cs:
+    p: bought from ChestShop
+    n: sold in ChestShop
+  shop_ds:
+    p: bought (DS)
+    n: sold (DS)
+  shop_sgp:
+    p: bought (SGP)
+    n: sold (SGP)
+  shop_esg:
+    p: bought (ESG+)
+    n: sold (ESG+)
   smith: upgraded to netherite
   tame: tamed
   totem: used totem

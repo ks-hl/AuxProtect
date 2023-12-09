@@ -4,6 +4,7 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -192,7 +193,7 @@ public class TownyManager implements Runnable {
                     double balance = town.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) continue;
                     lastBalances.put(town.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", AuxProtectAPI.formatMoney(balance)));
                 }
             }
         }
@@ -205,7 +206,7 @@ public class TownyManager implements Runnable {
                     double balance = nation.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
                     lastBalances.put(nation.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", AuxProtectAPI.formatMoney(balance)));
                 }
             }
         }

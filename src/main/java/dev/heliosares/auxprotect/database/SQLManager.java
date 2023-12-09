@@ -15,7 +15,12 @@ import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -28,10 +33,11 @@ public class SQLManager extends ConnectionPool {
     private final IAuxProtect plugin;
     private final HashMap<String, Integer> worlds = new HashMap<>();
     private final File sqliteFile;
-    private final LookupManager lookupmanager;
-    private final InvDiffManager invdiffmanager;
-    private final BlobManager invblobmanager;
-    private final TownyManager townymanager;
+    private final LookupManager lookupManager;
+    private final InvDiffManager invDiffManager;
+    private final BlobManager invBlobManager;
+    private final BlobManager transactionBlobManager;
+    private final TownyManager townyManager;
     private final SQLUserManager usermanager;
     private final String tablePrefix;
     int rowcount;
@@ -46,9 +52,10 @@ public class SQLManager extends ConnectionPool {
         instance = this;
         this.plugin = plugin;
         this.usermanager = new SQLUserManager(plugin, this);
-        this.lookupmanager = new LookupManager(this, plugin);
-        this.invdiffmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
-        this.invblobmanager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
+        this.lookupManager = new LookupManager(this, plugin);
+        this.invDiffManager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
+        this.invBlobManager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
+        this.transactionBlobManager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_TRANSACTIONS_BLOB, this, plugin) : null;
         if (prefix == null || prefix.isEmpty()) {
             tablePrefix = "";
         } else {
@@ -65,7 +72,7 @@ public class SQLManager extends ConnectionPool {
             } catch (NoClassDefFoundError | IllegalStateException ignored) {
             }
         }
-        this.townymanager = tm;
+        this.townyManager = tm;
         this.sqliteFile = sqliteFile;
     }
 
@@ -82,15 +89,15 @@ public class SQLManager extends ConnectionPool {
     }
 
     public LookupManager getLookupManager() {
-        return lookupmanager;
+        return lookupManager;
     }
 
     public InvDiffManager getInvDiffManager() {
-        return invdiffmanager;
+        return invDiffManager;
     }
 
     public TownyManager getTownyManager() {
-        return townymanager;
+        return townyManager;
     }
 
     public int getCount() {
@@ -168,7 +175,7 @@ public class SQLManager extends ConnectionPool {
 
         count();
 
-        if (townymanager != null) townymanager.init();
+        if (townyManager != null) townyManager.init();
 
         plugin.info("Init done. There are currently " + rowcount + " rows.");
         isConnectedAndInitDone = true;
@@ -208,12 +215,16 @@ public class SQLManager extends ConnectionPool {
             this.migrationmanager = new MigrationManager(this, connection, plugin);
             migrationmanager.preTables();
 
-            if (invdiffmanager != null) {
-                invdiffmanager.createTable(connection);
+            if (invDiffManager != null) {
+                invDiffManager.createTable(connection);
             }
 
-            if (invblobmanager != null) {
-                invblobmanager.createTable(connection);
+            if (invBlobManager != null) {
+                invBlobManager.createTable(connection);
+            }
+
+            if (transactionBlobManager != null) {
+                transactionBlobManager.createTable(connection);
             }
 
             for (Table table : Table.values()) {
@@ -282,12 +293,16 @@ public class SQLManager extends ConnectionPool {
 
             migrationmanager.postTables();
 
-            if (invdiffmanager != null) {
-                invdiffmanager.init(connection);
+            if (invDiffManager != null) {
+                invDiffManager.init(connection);
             }
 
-            if (invblobmanager != null) {
-                invblobmanager.init(connection);
+            if (invBlobManager != null) {
+                invBlobManager.init(connection);
+            }
+
+            if (transactionBlobManager != null) {
+                transactionBlobManager.init(connection);
             }
 
             if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
@@ -371,19 +386,21 @@ public class SQLManager extends ConnectionPool {
     }
 
 
-    protected void put(Connection connection, Table table) throws SQLException, BusyException {
+    protected void put(Connection connection, Table table, @Nullable List<DbEntry> entries) throws SQLException, BusyException {
         long start = System.nanoTime();
-        int count;
-        List<DbEntry> entries = new ArrayList<>();
+        if (entries == null || entries.isEmpty()) {
+            entries = new ArrayList<>();
 
-        DbEntry entry;
-        while ((entry = table.queue.poll()) != null) {
-            entries.add(entry);
+            DbEntry entry;
+            while ((entry = table.queue.poll()) != null) {
+                entries.add(entry);
+            }
         }
-        count = entries.size();
-        if (count == 0) {
+
+        if (entries.isEmpty()) {
             return;
         }
+
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
@@ -447,7 +464,7 @@ public class SQLManager extends ConnectionPool {
                     } else statement.setNull(i++, Types.NULL);
                 } else if (table.hasBlobID()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        long blobid = invblobmanager.getBlobId(connection, dbEntry.getBlob());
+                        long blobid = getBlobManager(table).getBlobId(connection, dbEntry.getBlob());
                         statement.setLong(i++, blobid);
                     } else statement.setNull(i++, Types.NULL);
                     if (table.hasItemMeta()) {
@@ -459,6 +476,11 @@ public class SQLManager extends ConnectionPool {
                             statement.setNull(i++, Types.NULL);
                         }
                     }
+                }
+                if (dbEntry instanceof TransactionEntry transactionEntry) {
+                    statement.setShort(i++, transactionEntry.getQuantity());
+                    statement.setDouble(i++, transactionEntry.getQuantity());
+                    statement.setDouble(i++, transactionEntry.getQuantity());
                 }
                 if (i - prior != numColumns) {
                     plugin.warning("Incorrect number of columns provided inserting action "
@@ -472,8 +494,8 @@ public class SQLManager extends ConnectionPool {
             statement.executeUpdate();
         }
 
-        rowcount += entries.size();
-
+        int count = entries.size();
+        rowcount += count;
         double elapsed = (System.nanoTime() - start) / 1000000.0;
         plugin.debug(table + ": Logged " + count + " entrie(s) in " + (Math.round(elapsed * 10.0) / 10.0) + "ms. ("
                 + (Math.round(elapsed / count * 10.0) / 10.0) + "ms each)", 3);
@@ -567,7 +589,7 @@ public class SQLManager extends ConnectionPool {
             stmt += " AND time>" + since;
         }
         try {
-            return lookupmanager.lookup(Table.AUXPROTECT_XRAY, stmt, null);
+            return lookupManager.lookup(Table.AUXPROTECT_XRAY, stmt, null);
         } catch (LookupException e) {
             plugin.print(e);
         }
@@ -603,6 +625,15 @@ public class SQLManager extends ConnectionPool {
         return action;
     }
 
+    private BlobManager getBlobManager(Table table) {
+        return switch (table) {
+            case AUXPROTECT_INVENTORY -> invBlobManager;
+            case AUXPROTECT_TRANSACTIONS -> transactionBlobManager;
+            default ->
+                    throw new IllegalArgumentException("Table " + table + " does not have an associated blob manager.");
+        };
+    }
+
     private void count() {
         int total = 0;
         plugin.debug("Counting rows..");
@@ -620,7 +651,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     public int count(Table table) throws SQLException, BusyException {
-        return executeReturn(connection -> count(connection, table.toString()), 30000L, Integer.class);
+        return executeReturn(connection -> count(connection, table.toString(), null), 30000L, Integer.class);
     }
 
     public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
@@ -635,9 +666,8 @@ public class SQLManager extends ConnectionPool {
                 }
                 return null;
             }, 30000L, byte[].class);
-        if (entry.getAction().getTable() == Table.AUXPROTECT_INVENTORY)
-            return invblobmanager.getBlob(entry);
-        return null;
+
+        return getBlobManager(entry.getAction().getTable()).getBlob(entry);
     }
 
     public void getMultipleBlobs(DbEntry... entries) throws SQLException, BusyException {
@@ -670,11 +700,11 @@ public class SQLManager extends ConnectionPool {
 
     public void cleanup() {
         usermanager.cleanup();
-        if (townymanager != null) {
-            townymanager.cleanup();
+        if (townyManager != null) {
+            townyManager.cleanup();
         }
-        if (invdiffmanager != null) {
-            invdiffmanager.cleanup();
+        if (invDiffManager != null) {
+            invDiffManager.cleanup();
         }
     }
 
@@ -684,15 +714,15 @@ public class SQLManager extends ConnectionPool {
             execute(connection -> {
                 Arrays.asList(Table.values()).forEach(t -> {
                     try {
-                        put(connection, t);
+                        put(connection, t, null);
                     } catch (BusyException ignored) {
                         // Only thrown by UID lookups. Shouldn't happen because this thread already has the lock
                     } catch (SQLException e) {
                         plugin.print(e);
                     }
                 });
-                if (invdiffmanager != null) {
-                    invdiffmanager.put(connection);
+                if (invDiffManager != null) {
+                    invDiffManager.put(connection);
                 }
             }, 0L);
         } catch (BusyException ignored) {

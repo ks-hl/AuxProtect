@@ -13,7 +13,14 @@ import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.io.InputStream;
-import java.sql.*;
+import java.sql.Blob;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Types;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -118,8 +125,13 @@ public class ConnectionPool {
     public void init(SQLConsumer initializationTask) throws SQLException, BusyException {
         connection = newConnectionSupplier.get();
         if (ready) throw new IllegalStateException("Already initialized");
-        initializationTask.accept(connection);
-        ready = true;
+        lock(10000);
+        try {
+            ready = true;
+            initializationTask.accept(connection);
+        } finally {
+            lock.unlock();
+        }
         timeConnected = System.currentTimeMillis();
     }
 
@@ -167,6 +179,14 @@ public class ConnectionPool {
             return;
         }
         closed = true;
+        if (!isMySQL()) {
+            try {
+                execute("PRAGMA optimize", connection);
+            } catch (SQLException e) {
+                plugin.warning("Failed to optimize SQLite database - this doesn't really matter");
+                plugin.print(e);
+            }
+        }
         try {
             connection.close();
         } catch (SQLException ignored) {
@@ -220,15 +240,7 @@ public class ConnectionPool {
     public <T> T executeReturnException(SQLFunctionWithException<T> task, long wait, Class<T> type) throws Exception {
         if (closed || connection == null) throw new IllegalStateException("closed");
         if (!ready) throw new IllegalStateException("Not yet initialized");
-        checkAsync();
-        boolean havelock = false;
-        try {
-            havelock = lock.tryLock(wait, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException ignored) {
-        }
-        if (!havelock) {
-            throw new BusyException(whoHasLock, whoHasLockID);
-        }
+        lock(wait);
         if (lock.getHoldCount() == 1) {
             lockedSince = System.currentTimeMillis();
             whoHasLock = Thread.currentThread().getStackTrace().clone();
@@ -252,6 +264,15 @@ public class ConnectionPool {
             lockedSince = 0;
             lock.unlock();
         }
+    }
+
+    private void lock(long wait) throws BusyException {
+        checkAsync();
+        try {
+            if (lock.tryLock(wait, TimeUnit.MILLISECONDS)) return;
+        } catch (InterruptedException ignored) {
+        }
+        throw new BusyException(whoHasLock, whoHasLockID);
     }
 
     public boolean isMySQL() {
@@ -372,8 +393,9 @@ public class ConnectionPool {
         }
     }
 
-    protected int count(Connection connection, String table) throws SQLException {
+    protected int count(Connection connection, String table, @Nullable String where) throws SQLException {
         String stmtStr = getCountStmt(table);
+        if (where != null) stmtStr += " WHERE " + where;
         plugin.debug(stmtStr, 5);
 
         try (PreparedStatement pstmt = connection.prepareStatement(stmtStr)) {

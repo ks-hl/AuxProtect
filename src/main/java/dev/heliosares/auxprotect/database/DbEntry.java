@@ -1,10 +1,19 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.utils.TimeUtil;
+import net.md_5.bungee.api.ChatColor;
+import net.md_5.bungee.api.chat.ClickEvent;
+import net.md_5.bungee.api.chat.ComponentBuilder;
+import net.md_5.bungee.api.chat.HoverEvent;
+import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
+import java.util.TimeZone;
 
 public class DbEntry {
 
@@ -133,16 +142,6 @@ public class DbEntry {
         return uid = sql.getUserManager().getUIDFromUUID(getUserUUID(), true, true);
     }
 
-    public int getTargetId() throws SQLException, BusyException {
-        if (action.getTable().hasStringTarget()) {
-            return -1;
-        }
-        if (target_id > 0) {
-            return target_id;
-        }
-        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
-    }
-
     public String getUser() throws SQLException, BusyException {
         return getUser(true);
     }
@@ -158,6 +157,16 @@ public class DbEntry {
             user = getUserUUID();
         }
         return user;
+    }
+
+    public int getTargetId() throws SQLException, BusyException {
+        if (action.getTable().hasStringTarget()) {
+            return -1;
+        }
+        if (target_id > 0) {
+            return target_id;
+        }
+        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
     }
 
     public String getTarget() throws SQLException, BusyException {
@@ -285,5 +294,39 @@ public class DbEntry {
 
     public int getYaw() {
         return yaw;
+    }
+
+    public void appendTime(ComponentBuilder message, TimeZone timeZone) {
+        String msg;
+        if (System.currentTimeMillis() - getTime() < 55) {
+            msg = Language.L.RESULTS__TIME_NOW.translate();
+        } else {
+            msg = Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - getTime()));
+        }
+        message.append(msg).event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
+                        new Text(TimeUtil.format(getTime(), TimeUtil.entryTimeFormat, timeZone.toZoneId())
+                                + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(getTime()))))
+                .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTime() + "e"));
+    }
+
+    public void appendCoordinates(ComponentBuilder message) {
+        String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
+
+        tpCommand += String.format("%d.5 %d %d.5 ", getX(), getY(), getZ());
+
+        tpCommand += getWorld();
+        if (getAction().getTable().hasLook()) {
+            // TODO is this necessary since PosEntry overrides?
+            tpCommand += String.format(" %d %d", getPitch(), getYaw());
+        }
+        message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
+        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()))
+                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+
+        if (getAction().getTable().hasLook()) {
+            // TODO is this necessary since PosEntry overrides?
+            message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", getPitch(), getYaw()));
+        }
     }
 }

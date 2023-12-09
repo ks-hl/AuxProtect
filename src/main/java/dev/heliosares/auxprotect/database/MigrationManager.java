@@ -3,15 +3,24 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.utils.InvSerialization;
-import org.yaml.snakeyaml.external.biz.base64Coder.Base64Coder;
+import dev.heliosares.auxprotect.exceptions.LookupException;
 
 import javax.annotation.Nullable;
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 14;
+    public static final int TARGET_DB_VERSION = 15;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -23,6 +32,7 @@ public class MigrationManager {
     private int total;
     private int migratingToVersion;
 
+    @SuppressWarnings("deprecation")
     MigrationManager(SQLManager sql, Connection connection, IAuxProtect plugin) {
         this.sql = sql;
         this.plugin = plugin;
@@ -30,273 +40,16 @@ public class MigrationManager {
         HashMap<Integer, MigrationAction> migrationActions = new HashMap<>();
 
         //
-        // 2
-        //
-
-        migrationActions.put(2, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
-            plugin.info("Migrating database to v2");
-            tryExecute("ALTER TABLE worlds RENAME TO auxprotect_worlds;");
-        }, null));
-
-        //
-        // 3
-        //
-
-        final Table[][] migrateTablesV3 = {new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_SPAM, Table.AUXPROTECT_LONGTERM, Table.AUXPROTECT_INVENTORY}};
-        migrationActions.put(3, new MigrationAction(true, () -> {
-            if (plugin.getPlatform() == PlatformType.BUNGEE) {
-                migrateTablesV3[0] = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM};
-            }
-            plugin.info("Migrating database to v3. DO NOT INTERRUPT");
-            for (Table table : migrateTablesV3[0]) {
-                tryExecute("ALTER TABLE " + table.toString() + " RENAME TO " + table + "_temp;");
-                plugin.info(".");
-            }
-            plugin.info("Tables renamed");
-        }, () -> {
-            for (Table table : migrateTablesV3[0]) {
-                total += sql.count(connection, table + "_temp");
-            }
-            if (plugin.getPlatform() == PlatformType.BUNGEE) {
-                migrateTablesV3[0] = new Table[]{Table.AUXPROTECT_MAIN, Table.AUXPROTECT_LONGTERM};
-            }
-            plugin.info("Merging data into new tables...");
-
-            for (Table table : migrateTablesV3[0]) {
-                ArrayList<Object[]> output = new ArrayList<>();
-                ArrayList<Object[]> commands = new ArrayList<>();
-                final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
-                final boolean hasData = table.hasData();
-                final boolean hasStringTarget = table.hasStringTarget();
-                plugin.info("Merging table: " + table);
-                String stmt = "SELECT * FROM " + table + "_temp;";
-                plugin.debug(stmt, 3);
-                try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                    pstmt.setFetchSize(500);
-                    try (ResultSet results = pstmt.executeQuery()) {
-                        while (results.next()) {
-                            ArrayList<Object> entry = new ArrayList<>();
-                            entry.add(results.getLong("time"));
-                            entry.add(sql.getUserManager().getUIDFromUUID(results.getString("user"), true));
-                            int action_id = results.getInt("action_id");
-                            if (action_id != 260) {
-                                entry.add(action_id);
-                            }
-                            if (hasLocation) {
-                                entry.add(results.getInt("world_id"));
-                                entry.add(results.getInt("x"));
-                                entry.add(results.getInt("y"));
-                                entry.add(results.getInt("z"));
-                            }
-                            String target = results.getString("target");
-                            if (hasStringTarget || action_id == 260) {
-                                entry.add(target);
-                            } else {
-                                entry.add(sql.getUserManager().getUIDFromUUID(target, true));
-                            }
-                            if (hasData) {
-                                entry.add(results.getString("data"));
-                            }
-
-                            if (action_id == 260) {
-                                commands.add(entry.toArray(new Object[0]));
-                            } else {
-                                output.add(entry.toArray(new Object[0]));
-                            }
-                            if (output.size() >= 5000) {
-                                putRaw(table, output);
-                                output.clear();
-                            }
-                            if (commands.size() >= 5000) {
-                                putRaw(Table.AUXPROTECT_COMMANDS, commands);
-                                commands.clear();
-                            }
-                            complete++;
-                        }
-                    }
-                }
-                if (!output.isEmpty()) putRaw(table, output);
-                if (!commands.isEmpty()) putRaw(Table.AUXPROTECT_COMMANDS, commands);
-            }
-        }));
-
-        //
-        // 4
-        //
-
-        migrationActions.put(4, new MigrationAction(true, null, () -> {
-            plugin.info("Migrating database to v4. DO NOT INTERRUPT");
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
-                ArrayList<Object[]> output = new ArrayList<>();
-                String stmt = "SELECT * FROM " + Table.AUXPROTECT_SPAM + " WHERE action_id = 256;";
-                plugin.debug(stmt, 3);
-                try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                    pstmt.setFetchSize(500);
-                    try (ResultSet results = pstmt.executeQuery()) {
-                        while (results.next()) {
-                            ArrayList<Object> entry = new ArrayList<>();
-                            entry.add(results.getLong("time"));
-                            entry.add(results.getInt("uid"));
-                            entry.add(EntryAction.POS.id);
-                            entry.add(results.getInt("world_id"));
-                            entry.add(results.getInt("x"));
-                            entry.add(results.getInt("y"));
-                            entry.add(results.getInt("z"));
-                            String data = results.getString("data");
-
-                            try {
-                                String[] parts = data.split("[^\\d-]+");
-                                entry.add(Integer.parseInt(parts[2]));
-                                entry.add(Integer.parseInt(parts[1]));
-                            } catch (Exception e) {
-                                plugin.print(e);
-                            }
-
-                            entry.add(results.getInt("target_id"));
-                            output.add(entry.toArray(new Object[0]));
-
-                            if (output.size() >= 5000) {
-                                putRaw(Table.AUXPROTECT_POSITION, output);
-                                output.clear();
-                            }
-                        }
-                    }
-                }
-                if (!output.isEmpty()) putRaw(Table.AUXPROTECT_POSITION, output);
-
-                plugin.info("Deleting old entries.");
-                sql.execute("DELETE FROM " + Table.AUXPROTECT_SPAM + " WHERE action_id = 256;", connection);
-            }
-        }));
-
-        //
-        // 5
-        //
-
-        migrationActions.put(5, new MigrationAction(true, () -> tryExecute("ALTER TABLE " + sql.getTablePrefix() + "auxprotect RENAME TO "
-                + Table.AUXPROTECT_MAIN), null));
-
-        //
-        // 6
-        //
-
-        migrationActions.put(6, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN hasblob BOOL");
-
-            if (!plugin.getAPConfig().doSkipV6Migration()) {
-                plugin.info("Skipping v6 migration, will migrate in place");
-
-                total = sql.count(connection, Table.AUXPROTECT_INVENTORY.toString());
-
-                String stmt = "SELECT time, action_id, data FROM " + Table.AUXPROTECT_INVENTORY
-                        + " WHERE (action_id=1024 OR data LIKE '%,ITEM,%') AND (hasblob!=TRUE OR hasblob IS NULL) LIMIT ";
-
-                plugin.debug(stmt, 3);
-
-                boolean any = true;
-                int limit = 1;
-                while (any) {
-                    any = false;
-                    HashMap<Long, byte[]> blobs = new HashMap<>();
-                    try (PreparedStatement pstmt = connection.prepareStatement(stmt + limit)) {
-                        if (limit < 50)
-                            limit++; // Slowly ramps up the speed to allow multiple attempts if large blobs are an
-                        // issue
-                        pstmt.setFetchSize(500);
-                        try (ResultSet results = pstmt.executeQuery()) {
-                            while (results.next()) {
-                                any = true;
-                                complete++;
-                                long time = results.getLong("time");
-                                String data = results.getString("data");
-                                int action_id = results.getInt("action_id");
-                                boolean hasblob = false;
-                                if (data.contains(",ITEM,")) {
-                                    data = data.substring(data.indexOf(",ITEM,")
-                                            + ",ITEM,".length());
-                                    hasblob = true;
-                                }
-                                byte[] blob = null;
-                                try {
-                                    if (action_id == EntryAction.INVENTORY.id) {
-                                        try {
-                                            blob = InvSerialization.playerToByteArray(InvSerialization.toPlayer(data));
-                                        } catch (Exception e) {
-                                            plugin.warning("THIS IS PROBABLY FINE. Failed to migrate inventory log at "
-                                                    + time
-                                                    + "e. This can be ignored, but this entry will no longer be available.");
-                                        }
-                                    } else {
-                                        if (!hasblob) {
-                                            continue;
-                                        }
-                                        blob = Base64Coder.decodeLines(data);
-                                    }
-                                } catch (IllegalArgumentException e) {
-                                    plugin.info("Error while decoding: " + data);
-                                    continue;
-                                }
-                                if (blob == null || blob.length == 0) {
-                                    continue;
-                                }
-
-                                blobs.put(time, blob);
-                            }
-                        }
-                    }
-                    plugin.debug("Logging " + blobs.size() + " blobs");
-                    HashMap<Long, byte[]> subBlobs = new HashMap<>();
-                    int size = 0;
-                    for (Map.Entry<Long, byte[]> entry : blobs.entrySet()) {
-                        if (entry.getValue() == null || entry.getValue().length == 0) {
-                            continue;
-                        }
-                        if (size + entry.getValue().length > 16777215 || subBlobs.size() >= 1000) {
-                            if (subBlobs.isEmpty()) {
-                                plugin.warning("Blob too big. Skipping. " + entry.getKey() + "e");
-                                continue;
-                            }
-                            plugin.debug("Logging " + subBlobs.size() + " blobs, " + SQLManager.getBlobSize(size));
-                            putBlobsV6_insert(subBlobs);
-                            subBlobs.clear();
-                            size = 0;
-                        }
-                        size += entry.getValue().length;
-                        subBlobs.put(entry.getKey(), entry.getValue());
-                    }
-                    if (!subBlobs.isEmpty()) {
-                        plugin.debug("Logging " + subBlobs.size() + " blobs, " + SQLManager.getBlobSize(size));
-                        putBlobsV6_insert(subBlobs);
-                    }
-
-                    StringBuilder where = new StringBuilder();
-                    if (!blobs.isEmpty()) {
-                        where.append(" WHERE time IN (");
-                        for (Long time : blobs.keySet()) {
-                            where.append(time).append(",");
-                        }
-                        where = new StringBuilder(where.substring(0, where.length() - 1) + ")");
-                    }
-                    sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=1" + where, connection);
-                }
-                plugin.info("Done migrating blobs, purging unneeded data");
-                sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data = '' where hasblob=true;", connection
-                );
-            }
-        }));
-
-        //
         // 7
         //
 
         migrationActions.put(7, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, null, () -> {
 
-            total = sql.count(connection, Table.AUXPROTECT_INVDIFFBLOB.toString());
+            total = sql.count(connection, Table.AUXPROTECT_INVDIFFBLOB.toString(), null);
 
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVDIFFBLOB + " ADD COLUMN hash INT");
 
-            String stmt = "SELECT blobid, ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB
-                    + " WHERE (hash IS NULL) LIMIT ";
+            String stmt = "SELECT blobid, ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE (hash IS NULL) LIMIT ";
 
             plugin.debug(stmt, 3);
 
@@ -356,14 +109,13 @@ public class MigrationManager {
         // 10
         //
 
-        migrationActions.put(10, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT,
-                () -> {
-                    try {
-                        sql.execute("ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name", connection);
-                    } catch (SQLException ignored) {
-                        // This may error if migrating from a version where the `lasts` table has not yet been created, as this is executed pre-tables
-                    }
-                }, () -> {
+        migrationActions.put(10, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+            try {
+                sql.execute("ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name", connection);
+            } catch (SQLException ignored) {
+                // This may error if migrating from a version where the `lasts` table has not yet been created, as this is executed pre-tables
+            }
+        }, () -> {
         })); //This was a poor naming choice as it conflicts with the phrase `KEY`
 
 
@@ -447,6 +199,96 @@ public class MigrationManager {
             }
         }));
 
+
+        //
+        // 15
+        //
+
+        migrationActions.put(15, new MigrationAction(plugin.getPlatform() == PlatformType.SPIGOT, () -> {
+        }, () -> {
+            final String where = "action_id IN (" + EntryAction.SHOP_OLD.id + "," + EntryAction.SHOP_OLD.idPos + ")";
+            Table tableOld = EntryAction.SHOP_OLD.getTable();
+            Table tableNew = EntryAction.SHOP_SGP.getTable();
+            this.total = sql.count(connection, tableOld.toString(), where);
+            plugin.info("Migrating " + total + " entries...");
+            this.complete = 0;
+            ArrayList<DbEntry> input = new ArrayList<>();
+            Set<Long> seen = new HashSet<>();
+            do {
+                input.clear();
+                try {
+                    sql.getLookupManager().lookup(connection, input, tableOld, //
+                            "SELECT * FROM " + tableOld + //
+                                    " WHERE " + where + //
+                                    " ORDER BY time ASC LIMIT 10000", new ArrayList<>());
+                } catch (LookupException e) {
+                    throw new SQLException(e);
+                }
+
+                ArrayList<DbEntry> output = new ArrayList<>();
+                for (DbEntry entry : input) {
+                    String[] parts = entry.getData().split(", ");
+                    double cost = 0, balance = 0;
+                    short quantity;
+                    EntryAction action;
+                    int target_id2 = 0;
+                    try {
+                        action = switch (parts[0]) {
+                            case "SGP" -> EntryAction.SHOP_SGP;
+                            case "CS" -> EntryAction.SHOP_CS;
+                            case "DS" -> EntryAction.SHOP_DS;
+                            case "ESG" -> EntryAction.SHOP_ESG;
+                            default -> throw new IllegalArgumentException();
+                        };
+                        if (parts.length >= 3) {
+                            quantity = Short.parseShort(parts[2].split(" ")[1]);
+
+                            String valueStr = parts[1];
+                            double value;
+                            if (!valueStr.contains(" each")) {
+                                valueStr = valueStr.replaceAll(" each", "");
+                                value = Double.parseDouble(valueStr.replaceAll("[$,]", ""));
+                            } else {
+                                double each = Double.parseDouble(valueStr.split(" ")[0].replaceAll("[$,]", ""));
+                                value = each * quantity;
+                            }
+                            if (value > 0) {
+                                if (entry.getState()) value *= -1;
+                                cost = value;
+                            }
+                            int balanceIndex = action == EntryAction.SHOP_CS ? 4 : 3;
+                            if (parts.length > balanceIndex) {
+                                balance = Double.parseDouble(parts[balanceIndex].split(" ")[1].replaceAll("[$,]", ""));
+                            }
+                            if (action == EntryAction.SHOP_CS) {
+                                String target2 = parts[3].split(" ")[1];
+                                target_id2 = sql.getUserManager().getUIDFromUsername(target2, true);
+                                if (target_id2 < 0)
+                                    target_id2 = sql.getUserManager().getUIDFromUUID(target2, false, true);
+                            }
+                        } else {
+                            throw new IllegalArgumentException();
+                        }
+                    } catch (IllegalArgumentException e) {
+                        plugin.warning("Failed to parse entry during migration (" + e.getMessage() + "), it will be lost: " + entry);
+                        if (plugin.getAPConfig().getDebug() > 0) {
+                            plugin.print(e);
+                        }
+                        continue;
+                    }
+                    if (!seen.add(entry.getTime())) {
+                        throw new IllegalArgumentException("Failed to delete entry " + entry);
+                    }
+
+                    output.add(new TransactionEntry(entry.getTime(), entry.getUid(), action, entry.getState(), entry.getWorld(), entry.getX(), entry.getY(), entry.getZ(), 0, 0, entry.getTargetId(), "", quantity, cost, balance, target_id2, sql));
+                    this.complete++;
+                }
+                sql.put(connection, tableNew, output);
+
+                sql.execute("DELETE FROM " + tableOld + " WHERE time IN (" + input.stream().map(entry -> String.valueOf(entry.getTime())).reduce((a, b) -> a + "," + b).orElse(null) + ")", connection);
+            } while (!input.isEmpty());
+        }));
+
         //
         // Finalizing
         //
@@ -483,8 +325,7 @@ public class MigrationManager {
     }
 
     private void setVersion(int version) throws SQLException {
-        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES ("
-                + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
+        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (" + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
         plugin.info("Done migrating to version " + version);
     }
 
@@ -493,27 +334,14 @@ public class MigrationManager {
     }
 
     void preTables() throws SQLException, BusyException {
+
         sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);", connection);
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION;
+        String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time DESC LIMIT 1";
         plugin.debug(stmt, 3);
         try (Statement statement = connection.createStatement()) {
             try (ResultSet results = statement.executeQuery(stmt)) {
-                long newestVersionTime = 0;
-                long oldestVersionTime = Long.MAX_VALUE;
-                while (results.next()) {
-                    long versionTime_ = results.getLong("time");
-                    int version_ = results.getInt("version");
-                    if (versionTime_ > newestVersionTime) {
-                        version = version_;
-                        newestVersionTime = versionTime_;
-                    }
-                    if (versionTime_ < oldestVersionTime) {
-                        originalVersion = version_;
-                        oldestVersionTime = versionTime_;
-                    }
-                    plugin.debug("Version at " + versionTime_ + " was v" + version_ + ".", 1);
-                }
+                if (results.next()) version = results.getInt("version");
             }
         }
 
@@ -521,9 +349,13 @@ public class MigrationManager {
             setVersion(TARGET_DB_VERSION);
         }
 
+        if (version < 6) {
+            plugin.warning("This database version is no longer supported. Please download AuxProtect 1.2.7 and run it first to upgrade your database, wait for migration to complete, then run this version again. https://www.spigotmc.org/resources/auxprotect.99147/download?version=509785");
+            throw new SQLException();
+        }
+
         if (sql.getVersion() < TARGET_DB_VERSION) {
-            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + TARGET_DB_VERSION
-                    + "...");
+            plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + TARGET_DB_VERSION + "...");
             plugin.info("This may take a while. Please do not interrupt.");
             isMigrating = true;
             boolean needBackup = false;
@@ -593,8 +425,7 @@ public class MigrationManager {
         isMigrating = false;
     }
 
-    void putRaw(Table table, ArrayList<Object[]> datas)
-            throws SQLException, ClassCastException, IndexOutOfBoundsException {
+    void putRaw(Table table, ArrayList<Object[]> datas) throws SQLException, ClassCastException, IndexOutOfBoundsException {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table.toString() + " ");
         final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();

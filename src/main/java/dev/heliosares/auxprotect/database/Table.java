@@ -3,16 +3,47 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 
+import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-public enum Table {
-    AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY,
-    AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_TOWNY,
+import static dev.heliosares.auxprotect.database.Table.Characteristic.ACTION_ID;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.AP_ENTRIES;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.BLOB;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.BLOB_ID;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.DATA;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.LOCATION;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.PRIVATE;
+import static dev.heliosares.auxprotect.database.Table.Characteristic.STRING_TARGET;
 
-    AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS,
-    AUXPROTECT_INVDIFF, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV;
+public enum Table {
+    AUXPROTECT_MAIN(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+    AUXPROTECT_SPAM(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+    AUXPROTECT_LONGTERM(AP_ENTRIES, ACTION_ID, STRING_TARGET), //
+    AUXPROTECT_ABANDONED(AP_ENTRIES, LOCATION, ACTION_ID, PRIVATE), //
+    AUXPROTECT_XRAY(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+    AUXPROTECT_INVENTORY(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
+    AUXPROTECT_COMMANDS(AP_ENTRIES, LOCATION, STRING_TARGET), //
+    AUXPROTECT_CHAT(AP_ENTRIES, LOCATION, STRING_TARGET), //
+    AUXPROTECT_POSITION(AP_ENTRIES, LOCATION, ACTION_ID, BLOB), //
+    AUXPROTECT_TOWNY(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+    AUXPROTECT_TRANSACTIONS(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
+    AUXPROTECT_API(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+
+    // Utility tables
+    AUXPROTECT_INVDIFF(BLOB_ID), AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV, AUXPROTECT_TRANSACTIONS_BLOB;
 
     public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
+
+    Table(Characteristic... characteristics) {
+        this.characteristics = Set.of(characteristics);
+    }
+
+    public enum Characteristic {
+        AP_ENTRIES, DATA, LOCATION, LOOK, ACTION_ID, STRING_TARGET, BLOB_ID, BLOB, PRIVATE
+    }
+
+    private final Set<Characteristic> characteristics;
+
     final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
     private long autopurgeinterval;
 
@@ -33,6 +64,7 @@ public enum Table {
 
     @Override
     public String toString() {
+        if (SQLManager.getInstance() == null) return super.toString().toLowerCase();
         return SQLManager.getInstance().getTablePrefix() + super.toString().toLowerCase();
     }
 
@@ -43,42 +75,24 @@ public enum Table {
     public boolean exists(IAuxProtect plugin) {
         if (plugin.getPlatform() == PlatformType.BUNGEE) {
             return switch (this) {
-                case AUXPROTECT_MAIN,
-                        AUXPROTECT_COMMANDS,
-                        AUXPROTECT_CHAT,
-                        AUXPROTECT_LONGTERM,
-                        AUXPROTECT_API,
-                        AUXPROTECT_UIDS,
-                        AUXPROTECT_API_ACTIONS,
-                        AUXPROTECT_VERSION -> true;
+                case AUXPROTECT_MAIN, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_LONGTERM, AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION ->
+                        true;
                 default -> false;
             };
         }
-        return plugin.getAPConfig().isPrivate() || this != AUXPROTECT_ABANDONED;
+        return plugin.getAPConfig().isPrivate() || !characteristics.contains(PRIVATE);
     }
 
     public boolean hasAPEntries() {
-        return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_LONGTERM, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
-                    true;
-            default -> false;
-        };
+        return characteristics.contains(AP_ENTRIES);
     }
 
     public boolean hasData() {
-        return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY ->
-                    true;
-            default -> false;
-        };
+        return characteristics.contains(DATA);
     }
 
     public boolean hasLocation() {
-        return switch (this) {
-            case AUXPROTECT_MAIN, AUXPROTECT_ABANDONED, AUXPROTECT_XRAY, AUXPROTECT_INVENTORY, AUXPROTECT_SPAM, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_POSITION, AUXPROTECT_API, AUXPROTECT_TOWNY ->
-                    true;
-            default -> false;
-        };
+        return characteristics.contains(LOCATION);
     }
 
     public boolean hasLook() {
@@ -86,23 +100,15 @@ public enum Table {
     }
 
     public boolean hasActionId() {
-        return switch (this) {
-            case AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_XRAY -> false;
-            default -> true;
-        };
+        return characteristics.contains(ACTION_ID);
     }
 
     public boolean hasStringTarget() {
-        return switch (this) {
-            case AUXPROTECT_COMMANDS, AUXPROTECT_LONGTERM, AUXPROTECT_CHAT -> true;
-            default -> false;
-        };
+        return characteristics.contains(STRING_TARGET);
     }
 
     public boolean canPurge() {
-        if (this == Table.AUXPROTECT_LONGTERM) {
-            return false;
-        }
+        if (this == Table.AUXPROTECT_LONGTERM) return false;
         return this.hasAPEntries();
     }
 
@@ -116,9 +122,10 @@ public enum Table {
             return "(time, uid, world_id, x, y, z, target)";
         } else if (platform == PlatformType.BUNGEE) {
             return "(time, uid, action_id, target_id, data)";
-        } else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API
-                || this == Table.AUXPROTECT_TOWNY) {
+        } else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API || this == Table.AUXPROTECT_TOWNY) {
             return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
+        } else if (this == Table.AUXPROTECT_TRANSACTIONS) {
+            return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, quantity, cost, balance, target_id2)";
         } else if (this == Table.AUXPROTECT_INVENTORY) {
             return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, qty, damage)";
         } else if (this == Table.AUXPROTECT_ABANDONED) {
@@ -141,14 +148,13 @@ public enum Table {
             }
             return 7;
         }
-        if (platform == PlatformType.BUNGEE) {
-            return 5;
-        }
+        if (platform == PlatformType.BUNGEE) return 5;
 
         return switch (this) {
             case AUXPROTECT_ABANDONED -> 8;
             case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
             case AUXPROTECT_POSITION, AUXPROTECT_INVENTORY -> 12;
+            case AUXPROTECT_TRANSACTIONS -> 14;
             default -> -1;
         };
     }
@@ -161,52 +167,60 @@ public enum Table {
         if (!this.hasAPEntries()) {
             return null;
         }
-        String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (\n";
-        stmt += "    time BIGINT";
-        stmt += ",\n    uid integer";
+        String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (";
+        stmt += "time BIGINT";
+        stmt += ",uid integer";
         if (hasActionId()) {
-            stmt += ",\n    action_id SMALLINT";
+            stmt += ",action_id SMALLINT";
         }
         if (plugin.getPlatform() == PlatformType.SPIGOT && hasLocation()) {
-            stmt += ",\n    world_id SMALLINT";
-            stmt += ",\n    x INTEGER";
-            stmt += ",\n    y SMALLINT";
-            stmt += ",\n    z INTEGER";
+            stmt += ",world_id SMALLINT";
+            stmt += ",x INTEGER";
+            stmt += ",y SMALLINT";
+            stmt += ",z INTEGER";
         }
         if (this == AUXPROTECT_POSITION) {
-            stmt += ",\n    increment TINYINT";
+            stmt += ",increment TINYINT";
         }
         if (hasLook()) {
-            stmt += ",\n    pitch SMALLINT";
-            stmt += ",\n    yaw SMALLINT";
+            stmt += ",pitch SMALLINT";
+            stmt += ",yaw SMALLINT";
         }
         if (hasStringTarget()) {
-            stmt += ",\n    target ";
+            stmt += ",target ";
             if (this == AUXPROTECT_COMMANDS || this == AUXPROTECT_CHAT) {
                 stmt += "LONGTEXT";
             } else {
                 stmt += "varchar(255)";
             }
             if (this == AUXPROTECT_LONGTERM) {
-                stmt += ",\n    target_hash INT";
+                stmt += ",target_hash INT";
             }
         } else {
-            stmt += ",\n    target_id integer";
+            stmt += ",target_id integer";
         }
         if (this == AUXPROTECT_XRAY) {
-            stmt += ",\n    rating SMALLINT";
+            stmt += ",rating SMALLINT";
         }
         if (hasData()) {
-            stmt += ",\n    data LONGTEXT";
+            stmt += ",data LONGTEXT";
         }
 
-        if (hasBlob()) stmt += ",\n    ablob BLOB";
-        else if (hasBlobID()) stmt += ",\n    blobid BIGINT";
+        if (hasBlob()) stmt += ",ablob BLOB";
+        else if (hasBlobID()) stmt += ",blobid BIGINT";
 
         if (hasItemMeta()) {
-            stmt += ",\n    qty INTEGER";
-            stmt += ",\n    damage INTEGER";
+            stmt += ",qty INTEGER";
+            stmt += ",damage INTEGER";
         }
+
+        if (this == AUXPROTECT_TRANSACTIONS) {
+            stmt += ",quantity SMALLINT";
+            stmt += ",cost DECIMAL(12,3)";
+            stmt += ",balance DECIMAL(15,3)";
+            stmt += ",target_id2 INTEGER";
+        }
+
         stmt += "\n)";
 
         if (plugin.getSqlManager().isMySQL() && (hasStringTarget() || hasData())) {
@@ -218,11 +232,11 @@ public enum Table {
     }
 
     public boolean hasBlobID() {
-        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+        return characteristics.contains(BLOB_ID);
     }
 
     public boolean hasBlob() {
-        return this == AUXPROTECT_POSITION;
+        return characteristics.contains(BLOB);
     }
 
     public long getAutoPurgeInterval() {

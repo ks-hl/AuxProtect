@@ -1,19 +1,48 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
-import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.*;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import dev.heliosares.auxprotect.utils.*;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.ActivityResults;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.LookupManager;
+import dev.heliosares.auxprotect.database.PosEntry;
+import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.TransactionEntry;
+import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.ParseException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.heliosares.auxprotect.utils.MoneySolver;
+import dev.heliosares.auxprotect.utils.PlayTimeSolver;
+import dev.heliosares.auxprotect.utils.PlaybackSolver;
+import dev.heliosares.auxprotect.utils.RetentionSolver;
+import dev.heliosares.auxprotect.utils.XraySolver;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -215,16 +244,16 @@ public class LookupCommand extends Command {
                             return;
                         }
                         if (perpage == -1) {
-                            perpage = result.perPage;
+                            perpage = result.getPerPage();
                         }
                         if (first) {
                             page = 1;
                         } else if (last) {
-                            page = result.getNumPages(result.perPage);
+                            page = result.getNumPages(result.getPerPage());
                         } else if (next) {
-                            page = result.prevPage + 1;
+                            page = result.getCurrentPage() + 1;
                         } else if (prev) {
-                            page = result.prevPage - 1;
+                            page = result.getCurrentPage() - 1;
                         }
                         if (perpage > 0) {
                             if (perpage > 100) {
@@ -280,34 +309,7 @@ public class LookupCommand extends Command {
                 int pickupcount = 0;
                 Set<Integer> usersForJobsCount = new HashSet<>();
                 for (DbEntry entry : rs) {
-                    if (entry.getAction().equals(EntryAction.SHOP)) {
-                        String[] parts = entry.getData().split(", ");
-                        if (parts.length >= 3) {
-                            try {
-                                String valueStr = parts[1];
-                                double value = -1;
-                                if (!valueStr.contains(" each")
-                                        || entry.getTime() < 1648304226492L) { /* Fix for malformed entries */
-                                    valueStr = valueStr.replaceAll(" each", "");
-                                    value = Double.parseDouble(valueStr.substring(1));
-                                } else {
-                                    double each = Double.parseDouble(valueStr.split(" ")[0].substring(1));
-                                    int qty = Integer.parseInt(parts[2].split(" ")[1]);
-                                    value = each * qty;
-                                }
-                                if (value > 0) {
-                                    if (entry.getState()) {
-                                        value *= -1;
-                                    }
-                                    totalMoney += value;
-                                }
-                            } catch (Exception e) {
-                                if (plugin.getAPConfig().getDebug() > 0) {
-                                    plugin.print(e);
-                                }
-                            }
-                        }
-                    } else if (entry.getAction().equals(EntryAction.JOBS)) {
+                    if (entry.getAction().equals(EntryAction.JOBS)) {
                         char type = entry.getData().charAt(0);
                         double value = Double.parseDouble(entry.getData().substring(1));
                         if (type == 'x') {
@@ -337,14 +339,16 @@ public class LookupCommand extends Command {
                                 pickupcount += quantity;
                             }
                         }
+                    } else if (entry instanceof TransactionEntry transactionEntry) {
+                        totalMoney += transactionEntry.getCost() * (transactionEntry.getState() ? -1 : 1);
                     }
                 }
                 if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
-                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney));
+                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + AuxProtectAPI.formatMoney(totalMoney));
                     if (!usersForJobsCount.isEmpty()) {
-                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + ((AuxProtectSpigot) plugin).formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
+                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + AuxProtectAPI.formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
                     }
                 }
                 if (totalExp != 0) {
