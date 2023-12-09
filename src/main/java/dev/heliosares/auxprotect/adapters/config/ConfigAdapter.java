@@ -94,14 +94,14 @@ public abstract class ConfigAdapter {
                 try (InputStream in = defaults.apply(path)) {
                     if (in != null) {
                         Files.copy(in, file.toPath());
-                        AuxProtectAPI.getInstance().info("Generated default " + path);
+                        AuxProtectAPI.info("Generated default " + path);
                         return;
                     }
                 }
             }
             if (createBlank) {
                 file.createNewFile();
-                AuxProtectAPI.getInstance().info("Created " + path);
+                AuxProtectAPI.info("Created " + path);
             } else {
                 throw new FileNotFoundException(file.getAbsolutePath());
             }
@@ -117,7 +117,7 @@ public abstract class ConfigAdapter {
             try (InputStream in = defaults.apply(path)) {
                 if (in != null) {
                     Files.copy(in, file.toPath());
-                    AuxProtectAPI.getInstance().info("Generated default " + path);
+                    AuxProtectAPI.info("Generated default " + path);
                 }
             }
         }

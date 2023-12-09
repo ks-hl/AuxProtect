@@ -34,7 +34,7 @@ public class Language {
         int fileVersion = lang.getInt("version");
 
         if (resourceVersion > 0 && resourceVersion > fileVersion) {
-            AuxProtectAPI.getInstance().info("Resetting language file from v" + fileVersion + " to v" + resourceVersion);
+            AuxProtectAPI.info("Resetting language file from v" + fileVersion + " to v" + resourceVersion);
             File newFile;
             int i = 0;
             do {
@@ -256,7 +256,7 @@ public class Language {
                 }
                 return message.replace("\\n", "\n");
             } catch (IllegalArgumentException e) {
-                plugin.print(e);
+                if (plugin != null) plugin.warning("Failed to find lang `" + name + "`");
                 StringBuilder out = new StringBuilder("[lang:" + name);
                 if (format != null) {
                     for (Object part : format) {

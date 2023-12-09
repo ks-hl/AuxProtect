@@ -43,7 +43,7 @@ public class TransactionEntry extends DbEntry {
         try {
             setBlob(InvSerialization.toByteArray(itemStack));
         } catch (IOException e) {
-            AuxProtectAPI.getInstance().warning("Failed to serialize " + itemStack);
+            AuxProtectAPI.warning("Failed to serialize " + itemStack);
             AuxProtectAPI.getInstance().print(e);
         }
     }

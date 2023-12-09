@@ -155,7 +155,7 @@ public class InventoryListener implements Listener {
             try {
                 entry.setBlob(InvSerialization.toByteArray(entryItems));
             } catch (IOException ex) {
-                AuxProtectAPI.getInstance().warning("Failed to serialize item: " + e.getCurrentItem() + " at " + entry.getTime() + "e");
+                AuxProtectAPI.warning("Failed to serialize item: " + e.getCurrentItem() + " at " + entry.getTime() + "e");
                 AuxProtectAPI.getInstance().print(ex);
             }
         }

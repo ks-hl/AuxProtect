@@ -136,7 +136,7 @@ public class BungeeConfigAdapter extends ConfigAdapter {
         try {
             config = ConfigurationProvider.getProvider(YamlConfiguration.class).load(file.get(), def);
         } catch (Exception e) {
-            AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
+            AuxProtectAPI.warning("Error while loading " + path + ":");
             throw e;
         }
     }

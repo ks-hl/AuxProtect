@@ -13,6 +13,8 @@ import dev.heliosares.auxprotect.utils.SQLConsumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -28,18 +30,19 @@ public final class AuxProtectAPI {
      */
     @Nonnull
     public static IAuxProtect getInstance() {
-        if (instance != null) {
-            return instance;
-        }
-        try {
-            if ((instance = AuxProtectSpigot.getInstance()) != null) return instance;
-        } catch (Throwable ignored) {
-        }
-        try {
-            if ((instance = AuxProtectBungee.getInstance()) != null) return instance;
-        } catch (Throwable ignored) {
-        }
+        if (instance != null) return instance;
+
         throw new RuntimeException("AuxProtect not initialized");
+    }
+
+    public static void setInstance(IAuxProtect plugin) {
+        if (instance != null) {
+            throw new IllegalStateException("Instance already set");
+        }
+        if(!plugin.getClass().getPackageName().startsWith("dev.heliosares.auxprotect.")) {
+            throw new IllegalArgumentException("Can not set instance of plugin with non-AuxProtect instance");
+        }
+        instance = plugin;
     }
 
     /**
@@ -95,6 +98,52 @@ public final class AuxProtectAPI {
         return "$" + (Math.round(d * 100) / 100.0);
     }
 
+    public static void info(String msg) {
+        try {
+            getInstance().info(msg);
+            return;
+        } catch (RuntimeException ignored) {
+        }
+        System.out.println(msg);
+    }
+
+    public static void debug(String msg) {
+        try {
+            getInstance().debug(msg);
+            return;
+        } catch (RuntimeException ignored) {
+        }
+        System.out.println(msg);
+    }
+
+    public static void debug(String msg, int verb) {
+        try {
+            getInstance().debug(msg, verb);
+            return;
+        } catch (RuntimeException ignored) {
+        }
+        System.out.println("[DEBUG " + verb + "] " + msg);
+    }
+
+    public static void warning(String msg) {
+        try {
+            getInstance().warning(msg);
+            return;
+        } catch (RuntimeException ignored) {
+        }
+        System.err.println(msg);
+    }
+
+    public static void print(Throwable throwable) {
+        try {
+            getInstance().print(throwable);
+            return;
+        } catch (RuntimeException ignored) {
+        }
+        //noinspection CallToPrintStackTrace
+        throwable.printStackTrace();
+    }
+
 
     /**
      * Creates a new action and stores it in the database for future use. Use
@@ -120,7 +169,7 @@ public final class AuxProtectAPI {
      * @throws BusyException            if the database is busy
      */
 
-    public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException, BusyException {
+    public static synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException, BusyException {
         return getSQLManager().createAction(plugin, key, ntext, ptext);
     }
 }

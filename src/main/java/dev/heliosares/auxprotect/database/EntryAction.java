@@ -201,7 +201,11 @@ public class EntryAction {
     }
 
     private void validateID(Table table, String name, int id, int idPos) throws IllegalArgumentException {
-        if (table != null) table.validateID(name, id, idPos);
+        if (table != null) {
+            if (!table.hasAPEntries())
+                throw new IllegalArgumentException("Table `" + table + "` does not have AP entries");
+            table.validateID(name, id, idPos);
+        }
         if (!usednames.add(name)) {
             throw new IllegalArgumentException("Duplicate action name: " + name);
         }
@@ -241,7 +245,7 @@ public class EntryAction {
                 return false;
             }
         }
-        if (!getTable().exists(plugin)) return false;
+        if (getTable() == null || !getTable().exists(plugin)) return false;
         if (!plugin.getAPConfig().isPrivate()) {
             if (equals(IGNOREABANDONED) || equals(VEIN)) {
                 return false;

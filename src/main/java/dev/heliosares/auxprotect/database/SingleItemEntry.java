@@ -43,7 +43,7 @@ public class SingleItemEntry extends DbEntry {
             try {
                 setBlob(InvSerialization.toByteArray(item));
             } catch (IOException e) {
-                AuxProtectAPI.getInstance().warning("Failed to serialize item: " + item.getType() + " at " + getTime() + "e");
+                AuxProtectAPI.warning("Failed to serialize item: " + item.getType() + " at " + getTime() + "e");
                 AuxProtectAPI.getInstance().print(e);
             }
         } else {

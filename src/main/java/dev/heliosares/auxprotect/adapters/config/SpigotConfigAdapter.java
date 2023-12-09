@@ -129,7 +129,7 @@ public class SpigotConfigAdapter extends ConfigAdapter {
                 }
             }
         } catch (Exception e) {
-            AuxProtectAPI.getInstance().warning("Error while loading " + path + ":");
+            AuxProtectAPI.warning("Error while loading " + path + ":");
             throw e;
         }
         if (defaults != null) {

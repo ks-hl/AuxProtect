@@ -45,7 +45,7 @@ public class SQLManager extends ConnectionPool {
     private boolean isConnected;
     private boolean isConnectedAndInitDone;
     private int nextWid;
-    private int nextActionId = 1000001;
+    private int nextActionId = 1;
 
     public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
         super(plugin, target, mysql, user, pass);
@@ -69,7 +69,7 @@ public class SQLManager extends ConnectionPool {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             try {
                 tm = new TownyManager((dev.heliosares.auxprotect.spigot.AuxProtectSpigot) plugin, this);
-            } catch (NoClassDefFoundError | IllegalStateException ignored) {
+            } catch (NoClassDefFoundError | IllegalStateException | ClassCastException ignored) {
             }
         }
         this.townyManager = tm;
@@ -270,7 +270,7 @@ public class SQLManager extends ConnectionPool {
             }
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
-                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255));";
+                    + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255), owner varchar(255), created BIGINT);";
             execute(stmt, connection);
 
             stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
@@ -601,9 +601,10 @@ public class SQLManager extends ConnectionPool {
      */
     @SuppressWarnings("unused")
     public synchronized EntryAction createAction(@Nonnull String plugin, @Nonnull String key, @Nonnull String ntext, @Nullable String ptext) throws AlreadyExistsException, SQLException, BusyException {
-        if (plugin.isEmpty() || key.isEmpty() || ntext.isEmpty()) {
-            throw new IllegalArgumentException("Arguments cannot be empty.");
-        }
+        if (plugin.isEmpty()) throw new IllegalArgumentException("plugin cannot be empty.");
+        if (key.isEmpty()) throw new IllegalArgumentException("key cannot be empty.");
+        if (ntext.isEmpty()) throw new IllegalArgumentException("ntext cannot be empty.");
+
         EntryAction preexisting = EntryAction.getAction(key);
         if (preexisting != null) throw new AlreadyExistsException(preexisting);
 
@@ -613,11 +614,11 @@ public class SQLManager extends ConnectionPool {
         if (ptext == null) {
             nid = nextActionId++;
             pid = -1;
-            action = new EntryAction(key, nid, ntext, Table.AUXPROTECT_API_ACTIONS);
+            action = new EntryAction(key, nid, ntext, Table.AUXPROTECT_API);
         } else {
             nid = nextActionId++;
             pid = nextActionId++;
-            action = new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API_ACTIONS);
+            action = new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API);
         }
 
 

@@ -1,4 +1,5 @@
 /target/
+/test_run/
 .idea*
 auxprotect.iml
 AuxProtect.iml

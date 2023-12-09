@@ -21,6 +21,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -168,7 +169,8 @@ public class ConnectionPool {
 
     private void checkAsync() throws IllegalStateException {
         if (skipAsyncCheck) return;
-        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.isPrimaryThread()) {
+        //noinspection ConstantValue
+        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.getServer() != null && Bukkit.isPrimaryThread()) {
             throw new IllegalStateException("Synchronous call to database.");
         }
     }
@@ -342,7 +344,7 @@ public class ConnectionPool {
         final String originalStmt = stmt;
         try {
             for (Object arg : args) {
-                stmt = stmt.replaceFirst("\\?", arg.toString().replace("\\", "\\\\"));
+                stmt = stmt.replaceFirst("\\?", String.valueOf(arg).replace("\\", "\\\\"));
             }
         } catch (Exception e) {
             stmt = originalStmt + ": ";
