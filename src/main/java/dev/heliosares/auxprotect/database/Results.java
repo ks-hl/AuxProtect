@@ -27,6 +27,7 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.TimeZone;
 
 public class Results {
 
@@ -69,13 +70,13 @@ public class Results {
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 
         APPlayer<?> apPlayer = plugin.getAPPlayer(player);
-
+        TimeZone timeZone = time ? (apPlayer == null ? TimeZone.getDefault() : apPlayer.getTimeZone()) : null;
         if (entry instanceof DbEntryGroup group) {
             if (time) {
                 message.append(Language.L.RESULTS__TIME.translate(TimeUtil.millisToString(System.currentTimeMillis() - group.getFirstTime()) +
                                 "-" + TimeUtil.millisToString(System.currentTimeMillis() - group.getLastTime())))
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                new Text(TimeUtil.format(group.getFirstTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId()) + " -\n" + TimeUtil.format(group.getLastTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId())
+                                new Text(TimeUtil.format(group.getFirstTime(), TimeUtil.entryTimeFormat, timeZone.toZoneId()) + " -\n" + TimeUtil.format(group.getLastTime(), TimeUtil.entryTimeFormat, apPlayer.getTimeZone().toZoneId())
                                         + "\n" + Language.L.RESULTS__CLICK_TO_COPY_TIME.translate(entry.getTime()))))
                         .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, group.getFormattedEpoch()));
             }
@@ -83,7 +84,7 @@ public class Results {
             message.append(Language.L.RESULTS__GROUPING_OF.translate(group.getNumEntries())).event(new ClickEvent(
                     ClickEvent.Action.RUN_COMMAND, commandPrefix + " lookup " + group.hash() + "g"));
         } else {
-            if (time) entry.appendTime(message, apPlayer.getTimeZone());
+            if (time) entry.appendTime(message, timeZone);
 
             String actionColor = ChatColor.COLOR_CHAR + "7-";
             if (entry.getAction().hasDual) {

@@ -345,8 +345,17 @@ public class MigrationManager {
             }
         }
 
+        stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time ASC LIMIT 1";
+        plugin.debug(stmt, 3);
+        try (Statement statement = connection.createStatement()) {
+            try (ResultSet results = statement.executeQuery(stmt)) {
+                if (results.next()) originalVersion = results.getInt("version");
+            }
+        }
+
         if (sql.getVersion() < 1) {
             setVersion(TARGET_DB_VERSION);
+            originalVersion = TARGET_DB_VERSION;
         }
 
         if (version < 6) {

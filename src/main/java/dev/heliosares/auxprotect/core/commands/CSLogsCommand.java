@@ -36,7 +36,7 @@ public class CSLogsCommand implements CommandExecutor {
     public boolean onCommand(@Nonnull CommandSender sender, @Nonnull Command command, @Nonnull String commandLabel, @Nonnull String[] args) {
         SenderAdapter senderAdapter = new SpigotSenderAdapter(plugin, sender);
         if (!APPermission.CSLOGS.hasPermission(senderAdapter)) {
-            senderAdapter.sendLang(Language.L.ACTION_DISABLED);
+            senderAdapter.sendLang(Language.L.NO_PERMISSION);
             return true;
         }
         if (!EntryAction.SHOP_CS.isEnabled()) {

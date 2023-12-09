@@ -747,7 +747,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
-    public SenderAdapter getConsoleSender() {
+    public SpigotSenderAdapter getConsoleSender() {
         return new SpigotSenderAdapter(this, this.getServer().getConsoleSender());
     }
 
@@ -776,7 +776,8 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public APPlayerSpigot getAPPlayer(SenderAdapter sender) {
-        return getAPPlayer((Player) sender.getSender());
+        if(!(sender.getSender() instanceof Player player)) return null;
+        return getAPPlayer(player);
     }
 
     @Override

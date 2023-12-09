@@ -26,4 +26,13 @@ public class CSLogResults extends Results {
             default -> throw new IllegalArgumentException();
         };
     }
+
+    @Override
+    public void sendHeader() {
+        String headerColor = "&7";
+        StringBuilder line = new StringBuilder("&m");
+        line.append(String.valueOf((char) 65293).repeat(6));
+        line.append("&7");
+        player.sendMessageRaw(headerColor + line + "  &9ChestShop Logs&7  " + line);
+    }
 }
