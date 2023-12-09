@@ -252,10 +252,8 @@ public class MigrationManager {
                                 double each = Double.parseDouble(valueStr.split(" ")[0].replaceAll("[$,]", ""));
                                 value = each * quantity;
                             }
-                            if (value > 0) {
-                                if (entry.getState()) value *= -1;
-                                cost = value;
-                            }
+                            if (value > 0) cost = value;
+
                             int balanceIndex = action == EntryAction.SHOP_CS ? 4 : 3;
                             if (parts.length > balanceIndex) {
                                 balance = Double.parseDouble(parts[balanceIndex].split(" ")[1].replaceAll("[$,]", ""));
