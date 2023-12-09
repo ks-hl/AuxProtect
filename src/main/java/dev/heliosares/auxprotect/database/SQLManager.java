@@ -314,10 +314,13 @@ public class SQLManager extends ConnectionPool {
             plugin.warning("An error occurred during initialization. Rolling back changes.");
             execute("ROLLBACK", connection);
             throw t;
+        } finally {
+            connection.setAutoCommit(true);
         }
     }
 
     private void startTransaction(Connection connection) throws SQLException {
+        connection.setAutoCommit(false);
         execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
     }
 
@@ -350,6 +353,8 @@ public class SQLManager extends ConnectionPool {
             } catch (Throwable t) {
                 execute("ROLLBACK", connection);
                 throw t;
+            } finally {
+                connection.setAutoCommit(true);
             }
         }, 30000L, Integer.class);
 
