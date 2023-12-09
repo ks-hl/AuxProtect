@@ -3,7 +3,7 @@
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
 
-version: 8
+version: 9
 
 color:
   p: '9'
