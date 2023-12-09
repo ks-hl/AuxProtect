@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -20,7 +21,7 @@ public enum Table {
     AUXPROTECT_SPAM(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
     AUXPROTECT_LONGTERM(AP_ENTRIES, ACTION_ID, STRING_TARGET), //
     AUXPROTECT_ABANDONED(AP_ENTRIES, LOCATION, ACTION_ID, PRIVATE), //
-    AUXPROTECT_XRAY(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
+    AUXPROTECT_XRAY(AP_ENTRIES, DATA, LOCATION, ACTION_ID, PRIVATE), //
     AUXPROTECT_INVENTORY(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
     AUXPROTECT_COMMANDS(AP_ENTRIES, LOCATION, STRING_TARGET), //
     AUXPROTECT_CHAT(AP_ENTRIES, LOCATION, STRING_TARGET), //
@@ -33,19 +34,13 @@ public enum Table {
     AUXPROTECT_INVDIFF(BLOB_ID), AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV, AUXPROTECT_TRANSACTIONS_BLOB;
 
     public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
-
+    final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
+    private final Set<Characteristic> characteristics;
+    private final Set<Integer> usedids = new HashSet<>();
+    private long autopurgeinterval;
     Table(Characteristic... characteristics) {
         this.characteristics = Set.of(characteristics);
     }
-
-    public enum Characteristic {
-        AP_ENTRIES, DATA, LOCATION, LOOK, ACTION_ID, STRING_TARGET, BLOB_ID, BLOB, PRIVATE
-    }
-
-    private final Set<Characteristic> characteristics;
-
-    final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
-    private long autopurgeinterval;
 
     public static String getValuesTemplate(int numColumns) {
         if (numColumns <= 0) {
@@ -66,10 +61,6 @@ public enum Table {
     public String toString() {
         if (SQLManager.getInstance() == null) return super.toString().toLowerCase();
         return SQLManager.getInstance().getTablePrefix() + super.toString().toLowerCase();
-    }
-
-    public String getName() {
-        return super.toString().toLowerCase();
     }
 
     public boolean exists(IAuxProtect plugin) {
@@ -239,6 +230,30 @@ public enum Table {
         return characteristics.contains(BLOB);
     }
 
+    public boolean hasItemMeta() {
+        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
+    }
+
+    void validateID(String name, int id, int idPos) throws IllegalArgumentException {
+        if (!usedids.add(id)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + id + " from action: " + name);
+        }
+        if (idPos > 0 && !usedids.add(idPos)) {
+            throw new IllegalArgumentException("Duplicate entry id: " + idPos + " from action: " + name);
+        }
+        if (idPos > 0 && idPos != id + 1) {
+            throw new IllegalArgumentException("idPos is not id+1: id=" + id + ", idPos=" + idPos + " for action: " + name);
+        }
+    }
+
+    public enum Characteristic {
+        AP_ENTRIES, DATA, LOCATION, LOOK, ACTION_ID, STRING_TARGET, BLOB_ID, BLOB, PRIVATE
+    }
+
+    public String getName() {
+        return super.toString().toLowerCase();
+    }
+
     public long getAutoPurgeInterval() {
         if (!canPurge()) {
             throw new UnsupportedOperationException();
@@ -251,9 +266,5 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
-    }
-
-    public boolean hasItemMeta() {
-        return this == AUXPROTECT_INVENTORY || this == AUXPROTECT_INVDIFF;
     }
 }

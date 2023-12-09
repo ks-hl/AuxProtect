@@ -207,7 +207,7 @@ public class LookupManager {
                         if (hasData) {
                             data = rs.getString("data");
                         }
-                        EntryAction entryAction = EntryAction.getAction(action_id);
+                        EntryAction entryAction = EntryAction.getAction(table, action_id);
                         if (entryAction == null) {
                             plugin.debug("Unknown action_id: " + action_id, 1);
                             continue;

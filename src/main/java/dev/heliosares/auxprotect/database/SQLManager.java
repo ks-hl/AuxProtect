@@ -284,7 +284,7 @@ public class SQLManager extends ConnectionPool {
                         String ntext = results.getString("ntext");
                         String ptext = results.getString("ptext");
                         nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
-                        new EntryAction(key, nid, pid, ntext, ptext);
+                        new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API_ACTIONS);
                     }
                 }
             }
@@ -613,11 +613,11 @@ public class SQLManager extends ConnectionPool {
         if (ptext == null) {
             nid = nextActionId++;
             pid = -1;
-            action = new EntryAction(key, nid, ntext);
+            action = new EntryAction(key, nid, ntext, Table.AUXPROTECT_API_ACTIONS);
         } else {
             nid = nextActionId++;
             pid = nextActionId++;
-            action = new EntryAction(key, nid, pid, ntext, ptext);
+            action = new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API_ACTIONS);
         }
 
 
