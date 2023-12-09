@@ -1,6 +1,8 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.APPermission;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -105,16 +107,19 @@ public class PosEntry extends DbEntry {
     }
 
     @Override
-    public void appendCoordinates(ComponentBuilder message) {
+    public void appendCoordinates(SenderAdapter senderAdapter, ComponentBuilder message) {
         String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
         tpCommand += String.format("%s %s %s ", getDoubleX(), getDoubleY(), getDoubleZ());
         tpCommand += getWorld();
         tpCommand += String.format(" %d %d", getPitch(), getYaw());
 
         message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
-        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()))
-                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
-                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()));
+
+        if (senderAdapter == null || APPermission.TP.hasPermission(senderAdapter)) {
+            message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+        }
 
         message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", getPitch(), getYaw()));
     }

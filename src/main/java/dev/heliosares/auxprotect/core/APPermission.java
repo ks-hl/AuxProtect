@@ -32,6 +32,7 @@ public class APPermission {
     public static final APPermission INV_RECOVER = INV.dot("recover");
     public static final APPermission INV_NOTIFY = INV.dot("notify");
     public static final APPermission WATCH = ROOT.dot("watch");
+    public static final APPermission CSLOGS = ROOT.dot("cslogs");
 
     public final String node;
 

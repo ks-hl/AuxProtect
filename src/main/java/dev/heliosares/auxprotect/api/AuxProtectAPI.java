@@ -36,7 +36,7 @@ public final class AuxProtectAPI {
     }
 
     public static void setInstance(IAuxProtect plugin) {
-        if (instance != null) {
+        if (instance != null && !(plugin instanceof AuxProtectSpigot) && !(plugin instanceof AuxProtectBungee)) {
             throw new IllegalStateException("Instance already set");
         }
         if(!plugin.getClass().getPackageName().startsWith("dev.heliosares.auxprotect.")) {

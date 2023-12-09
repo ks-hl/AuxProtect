@@ -1,6 +1,8 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
@@ -309,7 +311,7 @@ public class DbEntry {
                 .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTime() + "e"));
     }
 
-    public void appendCoordinates(ComponentBuilder message) {
+    public void appendCoordinates(SenderAdapter senderAdapter, ComponentBuilder message) {
         String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
 
         tpCommand += String.format("%d.5 %d %d.5 ", getX(), getY(), getZ());
@@ -320,9 +322,12 @@ public class DbEntry {
             tpCommand += String.format(" %d %d", getPitch(), getYaw());
         }
         message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
-        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()))
-                .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
-                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()));
+
+        if (senderAdapter == null || APPermission.TP.hasPermission(senderAdapter)) {
+            message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
+                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+        }
 
         if (getAction().getTable().hasLook()) {
             // TODO is this necessary since PosEntry overrides?

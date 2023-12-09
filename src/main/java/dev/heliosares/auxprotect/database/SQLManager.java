@@ -479,8 +479,9 @@ public class SQLManager extends ConnectionPool {
                 }
                 if (dbEntry instanceof TransactionEntry transactionEntry) {
                     statement.setShort(i++, transactionEntry.getQuantity());
-                    statement.setDouble(i++, transactionEntry.getQuantity());
-                    statement.setDouble(i++, transactionEntry.getQuantity());
+                    statement.setDouble(i++, transactionEntry.getCost());
+                    statement.setDouble(i++, transactionEntry.getBalance());
+                    statement.setInt(i++, transactionEntry.getTargetId2());
                 }
                 if (i - prior != numColumns) {
                     plugin.warning("Incorrect number of columns provided inserting action "
@@ -548,7 +549,7 @@ public class SQLManager extends ConnectionPool {
 
         if (executeReturnRows(stmt, entry.getRating(), sanitize(entry.getData()), entry.getTime(), entry.getUid(), entry.getTargetId()) > 1) {
             plugin.warning("Updated multiple entries when updating the following entry:");
-            Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true);
+            Results.sendEntry(plugin, plugin.getConsoleSender(), entry, 0, true, true, true);
         }
     }
 

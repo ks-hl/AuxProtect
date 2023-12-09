@@ -59,9 +59,7 @@ public class SpigotSenderAdapter extends SenderAdapter {
 
     @Override
     public void executeCommand(String command) {
-        plugin.runSync(() -> {
-            plugin.getServer().dispatchCommand(sender, command);
-        });
+        plugin.runSync(() -> plugin.getServer().dispatchCommand(sender, command));
     }
 
     @Override

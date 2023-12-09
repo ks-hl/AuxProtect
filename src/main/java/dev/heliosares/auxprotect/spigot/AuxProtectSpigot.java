@@ -3,11 +3,13 @@ package dev.heliosares.auxprotect.spigot;
 import dev.heliosares.auxprotect.adapters.config.SpigotConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.commands.CSLogsCommand;
 import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
@@ -72,7 +74,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
+public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public static final char LEFT_ARROW = 9668;
     public static final char RIGHT_ARROW = 9658;
     public static final char BLOCK = 9608;
@@ -84,7 +86,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private final HashMap<UUID, APPlayerSpigot> apPlayers = new HashMap<>();
     final Set<Integer> stackHashHistory = new HashSet<>();
     public String update;
-    protected DatabaseRunnable dbRunnable;
+    private DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
     private Economy econ;
     private VeinManager veinManager;
@@ -137,7 +139,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public void onEnable() {
-        instance = this;
+        AuxProtectAPI.setInstance(instance = this);
         this.saveDefaultConfig();
         super.reloadConfig();
         this.getConfig().options().copyDefaults(true);
@@ -303,6 +305,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
+        Objects.requireNonNull(this.getCommand("cslogs")).setExecutor(new CSLogsCommand(this));
         Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = new APSCommand(this)));
         Objects.requireNonNull(this.getCommand("auxprotect")).setTabCompleter(apcommand);
 

@@ -32,3 +32,6 @@ commands:
   claiminv:
     usage: /claiminv
     description: Claim a recovered inventory
+  cslogs:
+    usage: /cslogs
+    description: View your recent ChestShop logs

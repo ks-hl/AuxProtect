@@ -111,6 +111,9 @@ public class Parameters implements Cloneable {
                     if (!flag.isEnabled()) {
                         throw new ParseException(Language.L.ACTION_DISABLED);
                     }
+                    if (flag == Flag.ONLY_USER2 && parameters.table != Table.AUXPROTECT_TRANSACTIONS) {
+                        throw new ParseException(Language.L.COMMAND__LOOKUP__WRONG_FLAG, flag.toString().toLowerCase(), parameters.table);
+                    }
                     parameters.flags.add(flag);
                     continue;
                 }
@@ -851,11 +854,12 @@ public class Parameters implements Cloneable {
         List<String> out = new ArrayList<>();
 
         if (!uids.isEmpty()) {
-            String stmt = "uid " + (negateUser ? "NOT " : "") + "IN ";
+            boolean onlyUser2 = table == Table.AUXPROTECT_TRANSACTIONS && hasFlag(Flag.ONLY_USER2);
+            String stmt = (onlyUser2 ? "target_id2 " : "uid ") + (negateUser ? "NOT " : "") + "IN ";
             String uidGroup = toGroup(uids);
             stmt += uidGroup;
 
-            if (table == Table.AUXPROTECT_TRANSACTIONS) {
+            if (table == Table.AUXPROTECT_TRANSACTIONS && !onlyUser2) {
                 stmt += " OR target_id2 IN " + uidGroup;
             }
 
@@ -1120,7 +1124,7 @@ public class Parameters implements Cloneable {
     public enum Flag {
         COUNT(null), COUNT_ONLY(null), PLAYTIME(APPermission.LOOKUP_PLAYTIME), XRAY(APPermission.LOOKUP_XRAY), COMBINE_USER_TARGET(null),
         MONEY(APPermission.LOOKUP_MONEY), ACTIVITY(APPermission.LOOKUP_ACTIVITY), PLAYBACK(APPermission.LOOKUP_PLAYBACK), INCREMENTAL_POS(APPermission.LOOKUP_PLAYBACK),
-        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null), RADIUS_HORIZONTAL_ONLY(null);
+        RETENTION(APPermission.LOOKUP_RETENTION), HIDE_COORDS(null), RADIUS_HORIZONTAL_ONLY(null), ONLY_USER2(null), HIDE_DATA(null);
 
         private final APPermission perm;
 

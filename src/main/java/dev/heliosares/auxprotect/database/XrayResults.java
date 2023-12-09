@@ -22,7 +22,7 @@ public class XrayResults {
     public static void sendEntry(AuxProtectSpigot plugin, SenderAdapter sender, XrayEntry en, boolean auto) throws SQLException, BusyException {
         sendHeader(sender);
 
-        Results.sendEntry(plugin, sender, en, -1, true, true);
+        Results.sendEntry(plugin, sender, en, -1, true, true, true);
 
         ComponentBuilder message = new ComponentBuilder();
         String xraycmd = "/ap xray rate %de %d";

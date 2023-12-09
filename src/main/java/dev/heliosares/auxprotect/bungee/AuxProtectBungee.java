@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.bungee;
 import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
@@ -37,13 +38,13 @@ import java.util.function.Consumer;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public class AuxProtectBungee extends Plugin implements IAuxProtect {
+public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectBungee instance;
     private final APConfig config = new APConfig();
     private final HashMap<UUID, APPlayerBungee> apPlayers = new HashMap<>();
     final Set<Integer> stackHashHistory = new HashSet<>();
-    protected DatabaseRunnable dbRunnable;
+    private DatabaseRunnable dbRunnable;
     SQLManager sqlManager;
     private boolean isShuttingDown;
     private String stackLog = "";
@@ -71,7 +72,7 @@ public class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public void onEnable() {
-        instance = this;
+        AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
             config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,

@@ -86,6 +86,7 @@ command:
       toomanyusers: '&cToo many users specified'
       toolong: '&cMax time range for playtime is <days> days.'
     invalid-time-parameter: 'Invalid time specifier: <specifier>'
+    wrong-flag: '&cYou can''t use #<flag> with the table <table>'
   help:
     nohelp: '&cThis command does not have a help page.'
     header: '&t----- &pAuxProtect Help &t- &p/$prefix <command> &t-----'

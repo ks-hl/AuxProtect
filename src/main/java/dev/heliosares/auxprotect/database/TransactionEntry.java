@@ -93,12 +93,12 @@ public class TransactionEntry extends DbEntry {
     public String getTarget2(boolean resolve) throws SQLException, BusyException {
         if (target2 != null || !resolve) return target2;
 
-        if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
-            return target2 = getTargetUUID();
+        if (!getTargetUUID2().startsWith("$") || getTargetUUID2().length() != 37) {
+            return target2 = getTargetUUID2();
         }
-        target2 = sql.getUserManager().getUsernameFromUID(getTargetId(), false);
+        target2 = sql.getUserManager().getUsernameFromUID(getTargetId2(), false);
         if (target2 == null) {
-            target2 = getTargetUUID();
+            target2 = getTargetUUID2();
         }
         return target2;
     }

@@ -142,6 +142,7 @@ public class Language {
         COMMAND__LOOKUP__RATING_WRONG,
         COMMAND__LOOKUP__TOOMANY("count", "max"),
         COMMAND__LOOKUP__UNKNOWN_WORLD("world"),
+        COMMAND__LOOKUP__WRONG_FLAG("flag", "table"),
         COMMAND__PURGE__COMPLETE_COUNT("rows"),
         COMMAND__PURGE__ERROR,
         COMMAND__PURGE__NOPURGE,
