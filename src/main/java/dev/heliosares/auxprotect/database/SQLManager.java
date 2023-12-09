@@ -228,7 +228,7 @@ public class SQLManager extends ConnectionPool {
             }
 
             for (Table table : Table.values()) {
-                if (table.hasAPEntries()) {
+                if (table.hasAPEntries() && table.exists(plugin)) {
                     execute(table.getSQLCreateString(plugin), connection);
                 }
             }
