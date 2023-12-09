@@ -227,6 +227,7 @@ public class EntryAction {
     }
 
     private String getLang(boolean state) {
+        if (super.toString().endsWith("_OLD")) return super.toString().toLowerCase();
         if (hasDual) {
             return toString().toLowerCase() + "." + (state ? "p" : "n");
         }
