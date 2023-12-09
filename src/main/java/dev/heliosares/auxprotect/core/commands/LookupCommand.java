@@ -267,6 +267,13 @@ public class LookupCommand extends Command {
                     }
                 }
             }
+//            Map<EntryAction, Integer> actions = null;
+//            for (String arg : args) {
+//                String[] parts = arg.split(":");
+//                if (parts.length != 2) continue;
+//                if (!parts[0].equalsIgnoreCase("a") && !parts[0].equalsIgnoreCase("action")) continue;
+//                actions = Parameters.parseEntryActions(parts[1].toLowerCase());
+//            }
             if (params_ == null) params_ = Parameters.parse(sender, args);
             final Parameters params = params_;
 

@@ -144,13 +144,12 @@ public class LookupManager {
      *
      * @param table       The table being utilized. This is not user in the
      *                    statement and is merely provided for entry parsing
+     * @param output      The List which the entries will be entered into
      * @param stmt        The statement to be executed
      * @param writeParams An in-order array of parameters to be inserted into ? of
      *                    stmt
-     * @return An ArrayList of the DbEntry's meeting the provided conditions
      * @see LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters)
      */
-    @SuppressWarnings("deprecation")
     protected void lookup(Connection connection, ArrayList<DbEntry> output, Table table, String stmt, ArrayList<String> writeParams) throws LookupException {
         final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
         final boolean hasData = table.hasData();

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -417,9 +418,25 @@ public class Parameters implements Cloneable {
      * @param param  The action
      */
     public Parameters action(@Nullable SenderAdapter sender, String param) throws ParseException {
+        for (Map.Entry<EntryAction, Integer> entry : parseEntryActions(param).entrySet()) {
+            addAction(sender, entry.getKey(), entry.getValue());
+        }
+        return this;
+    }
+
+    /**
+     * Parses the provided string into a Map of actions
+     *
+     * @param param The command string to parse (Excluding `action:`)
+     * @return A Map with the keys being each entry and the values being the states of each action. 1 for + only, -1 for - only, and 0 for either.
+     * @throws ParseException For unknown actions or attempt to negate actions
+     */
+    public static Map<EntryAction, Integer> parseEntryActions(String param) throws ParseException {
         if (param.startsWith("!")) {
             throw new ParseException(Language.L.COMMAND__LOOKUP__ACTION_NEGATE);
         }
+
+        Map<EntryAction, Integer> out = new HashMap<>();
         for (String actionStr : param.split(",")) {
             int state = 0;
             boolean pos = actionStr.startsWith("+");
@@ -431,9 +448,19 @@ public class Parameters implements Cloneable {
             if (action == null) {
                 throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
             }
-            addAction(sender, action, state);
+            if (state != 0 && !action.hasDual) {
+                // The action exists, but does not have states
+                // TODO should this error be more specific?
+                throw new ParseException(Language.L.LOOKUP_UNKNOWNACTION, param);
+            }
+            Integer current = out.get(action);
+            if (current != null) {
+                if (current == state || current == 0) continue;
+                state = 0; // Param string specified both +ACTION and -ACTION, combine them to null
+            }
+            out.put(action, state);
         }
-        return this;
+        return out;
     }
 
     /**
