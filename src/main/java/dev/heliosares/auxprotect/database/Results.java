@@ -105,7 +105,8 @@ public class Results {
             if (entry instanceof TransactionEntry transaction) {
                 String target2 = transaction.getTarget2();
                 if (target2 != null && !target2.isEmpty()) {
-                    message.append(ChatColor.COLOR_CHAR + "f from ").event((ClickEvent) null).event((HoverEvent) null);
+                    String fromTo = entry.getState() ? "from" : "to";
+                    message.append(ChatColor.COLOR_CHAR + "f " + fromTo + " ").event((ClickEvent) null).event((HoverEvent) null);
                     message.append(ChatColor.COLOR_CHAR + "9" + target2).event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, target2));
                 }
                 message.append(ChatColor.COLOR_CHAR + "f for ").event((ClickEvent) null).event((HoverEvent) null);
