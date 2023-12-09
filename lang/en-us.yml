@@ -262,9 +262,6 @@ actions:
   session:
     p: logged in
     n: logged out
-  shop_old:
-    p: bought
-    n: sold
   shop_cs:
     p: bought from ChestShop
     n: sold in ChestShop
