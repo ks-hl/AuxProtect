@@ -776,8 +776,22 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public APPlayerSpigot getAPPlayer(SenderAdapter sender) {
-        if(!(sender.getSender() instanceof Player player)) return null;
+        if (!(sender.getSender() instanceof Player player)) return null;
         return getAPPlayer(player);
+    }
+
+    @Override
+    public String formatMoney(double amount) {
+        if (econ != null) return econ.format(amount);
+
+        if (!Double.isFinite(amount) || Double.isNaN(amount)) {
+            return "$NaN";
+        }
+        if (Math.abs(amount) <= 1E-6) {
+            return "$0";
+        }
+
+        return "$" + (Math.round(amount * 100) / 100.0);
     }
 
     @Override

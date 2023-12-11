@@ -363,4 +363,15 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     public void broadcast(String msg, APPermission node) {
         getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
     }
+
+    public String formatMoney(double d) {
+        if (!Double.isFinite(d) || Double.isNaN(d)) {
+            return "$NaN";
+        }
+        if (Math.abs(d) <= 1E-6) {
+            return "$0";
+        }
+
+        return "$" + (Math.round(d * 100) / 100.0);
+    }
 }

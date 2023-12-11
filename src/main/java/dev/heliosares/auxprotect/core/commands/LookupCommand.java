@@ -353,9 +353,9 @@ public class LookupCommand extends Command {
                 if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
-                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + AuxProtectAPI.formatMoney(totalMoney));
+                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + plugin.formatMoney(totalMoney));
                     if (!usersForJobsCount.isEmpty()) {
-                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + AuxProtectAPI.formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
+                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + plugin.formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
                     }
                 }
                 if (totalExp != 0) {

@@ -95,7 +95,7 @@ public class PlayerListener implements Listener {
         plugin.getAPPlayer(player).lastLoggedMoney = System.currentTimeMillis();
         try {
             plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
-                    reason, AuxProtectAPI.formatMoney(plugin.getEconomy().getBalance(player))));
+                    reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
         } catch (NullPointerException ignored) {
             // CMI producing a NullPointerException for an unknown reason, irrelevant to this plugin.
         }

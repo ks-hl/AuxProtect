@@ -60,6 +60,7 @@ public interface IAuxProtect {
     @Nullable
     APPlayer<?> getAPPlayer(SenderAdapter sender);
 
+    String formatMoney(double amount);
     int queueSize();
 
     String getStackLog();

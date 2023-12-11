@@ -34,7 +34,7 @@ public class AuctionHouseListener implements Listener {
             }
         }
         DbEntry entry = new SingleItemEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
-                e.getItem().getType().toString().toLowerCase(), AuxProtectAPI.formatMoney(e.getPrice()), e.getItem());
+                e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()), e.getItem());
         plugin.add(entry);
     }
 
@@ -54,7 +54,7 @@ public class AuctionHouseListener implements Listener {
 
         DbEntry entry = new SingleItemEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
                 e.getItem().getType().toString().toLowerCase(),
-                "From " + e.getSeller().getName() + " for " + AuxProtectAPI.formatMoney(e.getPrice()), e.getItem());
+                "From " + e.getSeller().getName() + " for " + plugin.formatMoney(e.getPrice()), e.getItem());
         plugin.add(entry);
     }
 }

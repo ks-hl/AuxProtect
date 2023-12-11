@@ -130,12 +130,12 @@ public class Results {
                     message.append(ChatColor.COLOR_CHAR + "9" + target2).event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, target2));
                 }
                 message.append(ChatColor.COLOR_CHAR + "f for ").event((ClickEvent) null).event((HoverEvent) null);
-                String cost = AuxProtectAPI.formatMoney(transaction.getCost());
+                String cost = plugin.formatMoney(transaction.getCost());
                 message.append(ChatColor.COLOR_CHAR + "9" + cost).event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, cost));
 
                 if (showData) {
                     message.append(" " + ChatColor.DARK_GRAY + "[").event((ClickEvent) null).event((HoverEvent) null);
-                    String balance = AuxProtectAPI.formatMoney(transaction.getBalance());
+                    String balance = plugin.formatMoney(transaction.getBalance());
                     message.append(ChatColor.GRAY + "Balance: " + balance).event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, balance));
                     message.append(ChatColor.DARK_GRAY + "]").event((ClickEvent) null).event((HoverEvent) null);
                 }

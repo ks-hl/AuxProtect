@@ -87,17 +87,6 @@ public final class AuxProtectAPI {
         getInstance().addRemoveEntryListener(consumer, false);
     }
 
-    public static String formatMoney(double d) {
-        if (!Double.isFinite(d) || Double.isNaN(d)) {
-            return "$NaN";
-        }
-        if (Math.abs(d) <= 1E-6) {
-            return "$0";
-        }
-
-        return "$" + (Math.round(d * 100) / 100.0);
-    }
-
     public static void info(String msg) {
         try {
             getInstance().info(msg);

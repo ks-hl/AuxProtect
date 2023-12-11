@@ -161,8 +161,8 @@ public class TownyListener implements Listener {
             case ADD, DEPOSIT -> true;
             default -> false;
         };
-        String data = AuxProtectAPI.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
-                + AuxProtectAPI.formatMoney(e.getAccount().getHoldingBalance());
+        String data = plugin.formatMoney(e.getTransaction().getAmount()) + ", Bal: "
+                + plugin.formatMoney(e.getAccount().getHoldingBalance());
         plugin.add(new TownyEntry(user, action, state, loc, TownyManager.getLabel(g), data));
     }
 

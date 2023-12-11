@@ -193,7 +193,7 @@ public class TownyManager implements Runnable {
                     double balance = town.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) continue;
                     lastBalances.put(town.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", AuxProtectAPI.formatMoney(balance)));
+                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
                 }
             }
         }
@@ -206,7 +206,7 @@ public class TownyManager implements Runnable {
                     double balance = nation.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
                     lastBalances.put(nation.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", AuxProtectAPI.formatMoney(balance)));
+                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
                 }
             }
         }

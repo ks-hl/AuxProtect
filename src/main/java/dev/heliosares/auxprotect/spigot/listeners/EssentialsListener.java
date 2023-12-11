@@ -30,7 +30,7 @@ public class EssentialsListener implements Listener {
         }
 
         IUser target = e.getTarget();
-        String amount = AuxProtectAPI.formatMoney(e.getAmount().doubleValue());
+        String amount = plugin.formatMoney(e.getAmount().doubleValue());
         if (loc == null) {
             plugin.add(new DbEntry(label, EntryAction.PAY, false, AuxProtectSpigot.getLabel(target.getBase()), amount));
         } else {
