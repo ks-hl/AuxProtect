@@ -318,11 +318,12 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
 
     @Override
     public APPlayerBungee getAPPlayer(SenderAdapter sender) {
+        if (!(sender.getSender() instanceof ProxiedPlayer proxiedPlayer)) return null;
         synchronized (apPlayers) {
             if (apPlayers.containsKey(sender.getUniqueId())) {
                 return apPlayers.get(sender.getUniqueId());
             }
-            APPlayerBungee apPlayer = new APPlayerBungee(this, (ProxiedPlayer) sender.getSender());
+            APPlayerBungee apPlayer = new APPlayerBungee(this, proxiedPlayer);
             apPlayers.put(sender.getUniqueId(), apPlayer);
             return apPlayer;
         }
