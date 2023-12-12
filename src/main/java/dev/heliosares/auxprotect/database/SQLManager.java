@@ -210,7 +210,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     private void init(Connection connection) throws SQLException, BusyException {
-        startTransaction(connection);
+        connection.setAutoCommit(false);
         try {
             this.migrationmanager = new MigrationManager(this, connection, plugin);
             migrationmanager.preTables();
@@ -308,25 +308,20 @@ public class SQLManager extends ConnectionPool {
             if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
                 setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
 
-            execute("COMMIT", connection);
+            connection.commit();
             plugin.debug("init done.");
         } catch (Throwable t) {
             plugin.warning("An error occurred during initialization. Rolling back changes.");
-            execute("ROLLBACK", connection);
+            connection.rollback();
             throw t;
         } finally {
             connection.setAutoCommit(true);
         }
     }
 
-    private void startTransaction(Connection connection) throws SQLException {
-        connection.setAutoCommit(false);
-        execute((isMySQL() ? "START" : "BEGIN") + " TRANSACTION", connection);
-    }
-
     public int purgeUIDs() throws SQLException, BusyException {
         int count = executeReturn(connection -> {
-            startTransaction(connection);
+            connection.setAutoCommit(false);
             try {
                 // Step 1: Create a Temporary Table
                 execute("CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)", connection);
@@ -347,14 +342,12 @@ public class SQLManager extends ConnectionPool {
                 // Step 4: Drop the Temporary Table
                 execute("DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids", connection);
 
-                execute("COMMIT", connection);
+                connection.commit();
 
                 return count_;
             } catch (Throwable t) {
-                execute("ROLLBACK", connection);
+                connection.rollback();
                 throw t;
-            } finally {
-                connection.setAutoCommit(true);
             }
         }, 30000L, Integer.class);
 
@@ -377,7 +370,7 @@ public class SQLManager extends ConnectionPool {
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
         try {
-            execute("VACUUM;", connection);
+            execute("VACUUM", connection);
         } catch (SQLException e) {
             if (e.getErrorCode() == 13) {
                 plugin.info("Your machine has insufficient space in the temporary partition to condense the database. " +
