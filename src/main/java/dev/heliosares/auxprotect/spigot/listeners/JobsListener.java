@@ -32,9 +32,9 @@ public class JobsListener implements Listener {
     }
 
     private void logGain(OfflinePlayer oplayer, Job job, CurrencyType type, double value) {
-        if (value < 1E-4) {
-            return;
-        }
+        if (!EntryAction.JOBS.isEnabled()) return;
+        if (value < 1E-4 || job == null) return;
+
         Location location = null;
 //		double boost = 1;
         if (oplayer instanceof Player player) {
