@@ -117,6 +117,7 @@ public class Language {
         COMMAND__INV__NOTIFY_PLAYER("admin", "time"),
         COMMAND__INV__NOTIFY_PLAYER_CLAIM_BUTTON,
         COMMAND__INV__NOTIFY_PLAYER_CLAIM_HOVER,
+        COMMAND__INV__NOTIFY_PLAYER_CLAIM_ALT,
         COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM,
         COMMAND__INV__NOTIFY_PLAYER_WAITING,
         COMMAND__INV__RECOVERED("admin", "target", "optional_s", "time"),

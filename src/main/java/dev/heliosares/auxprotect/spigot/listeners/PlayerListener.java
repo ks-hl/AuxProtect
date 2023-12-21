@@ -236,8 +236,12 @@ public class PlayerListener implements Listener {
             senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM);
             ComponentBuilder message = new ComponentBuilder();
             message.append(ChatColor.COLOR_CHAR + "f\n         ");
+            if (e.getPlayer().getUniqueId().getMostSignificantBits() == 0) { // bedrock player
+                message.append(Language.L.COMMAND__INV__NOTIFY_PLAYER_CLAIM_ALT.translate());
+            } else {
                 message.append(Language.L.COMMAND__INV__NOTIFY_PLAYER_CLAIM_BUTTON.translate()).event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
+            }
             message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
             e.getPlayer().spigot().sendMessage(message.create());
             e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
