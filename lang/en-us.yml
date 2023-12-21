@@ -37,7 +37,10 @@ command:
     force-recovered: '&p<admin> &sforce recovered &p<target>''<optional_s> &sinventory from &p<time> &sago.'
     success: '&sYou recovered &p<target>''<optional_s> &sinventory.'
     notify-player: '&p<admin> &srecovered your inventory from &p<time> &sago.'
-    notify-player-ensure-room: '&tEnsure you have room in your inventory before claming!'
+    notify-player-claim-button: '&a[Claim]'
+    notify-player-claim-hover: '&aClick to claim your recovered inventory'
+    notify-player-ensure-room: '&tEnsure you have room in your inventory before claiming!'
+    notify-player-waiting: '&aYou have a restored inventory waiting to be claimed!'
     item-viewer: 'Item Viewer'
   claiminv:
     cancelled-other: '&aYou cancelled <target>''<optional_s> claimable inventory.'

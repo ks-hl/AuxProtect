@@ -1,7 +1,8 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
@@ -230,13 +231,13 @@ public class PlayerListener implements Listener {
             } catch (SQLException | BusyException e1) {
                 return;
             }
-            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "aYou have an inventory waiting to be claimed!");
-            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "7Ensure you have room in your inventory before claiming!");
+            SpigotSenderAdapter senderAdapter = new SpigotSenderAdapter(plugin, e.getPlayer());
+            senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_WAITING);
+            senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM);
             ComponentBuilder message = new ComponentBuilder();
             message.append(ChatColor.COLOR_CHAR + "f\n         ");
-            message.append(ChatColor.COLOR_CHAR + "a[Claim]").event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                            new Text(ChatColor.COLOR_CHAR + "aClick to claim your recovered inventory")));
+                message.append(Language.L.COMMAND__INV__NOTIFY_PLAYER_CLAIM_BUTTON.translate()).event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
+                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
             message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
             e.getPlayer().spigot().sendMessage(message.create());
             e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
