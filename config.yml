@@ -34,7 +34,11 @@ SanitizeUnicode: false
 # Minimum: 2w
 AutoPurge:
   Enabled: false
+  # When a purge is performed, how long should entries be retained?
   default: 180d
+  # How many days should the plugin wait between purges? i.e. how often should a purge be performed?
+  # Note: regardless of this setting, the plugin will only perform purges during startup
+  periodicity: 3d
   Table:
     # Set any table to "off" to disable.
     # Set any table to "default" to use the 'default' setting. It is recommended to leave these as default unless you want more control.

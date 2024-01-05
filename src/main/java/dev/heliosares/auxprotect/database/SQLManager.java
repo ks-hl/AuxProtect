@@ -135,9 +135,9 @@ public class SQLManager extends ConnectionPool {
 
         // Auto Purge
         out:
-        if (plugin.getAPConfig().doAutoPurge()) {
+        if (plugin.getAPConfig().getAutoPurgePeriodicity() > 0) {
             long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE);
-            if (timeSincePurge < 12L * 3600000L) {
+            if (timeSincePurge < plugin.getAPConfig().getAutoPurgePeriodicity()) {
                 plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
                 break out;
             }

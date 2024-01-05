@@ -36,7 +36,7 @@ public class APConfig {
     private String pass;
     private String database;
     private String tablePrefix;
-    private boolean autopurge;
+    private long autoPurgePeriodicity;
     private boolean demoMode;
     private boolean sanitizeUnicode;
 
@@ -93,13 +93,14 @@ public class APConfig {
             config.set("Actions." + action.toString().toLowerCase() + ".Enabled", enabled);
         }
 
-        autopurge = config.getBoolean("AutoPurge.Enabled");
-        config.set("AutoPurge.Enabled", autopurge);
+        if (config.getBoolean("AutoPurge.Enabled")) {
+            autoPurgePeriodicity = TimeUtil.stringToMillis(config.getString("AutoPurge.periodicity"));
+        }
         long autopurgeinterval = getAutoPurgeInterval("default", -1);
         for (Table table : Table.values()) {
             if (table.exists(plugin) && table.canPurge()) {
                 long purge = getAutoPurgeInterval("Table." + table.getName(), autopurgeinterval);
-                if (autopurge) { // Checking here instead of at the beginning allows defaults to be set at first
+                if (getAutoPurgePeriodicity() > 0) { // Checking here instead of at the beginning allows defaults to be set at first
                     // run
                     table.setAutoPurgeInterval(purge);
                 }
@@ -256,8 +257,8 @@ public class APConfig {
         return tablePrefix;
     }
 
-    public boolean doAutoPurge() {
-        return autopurge;
+    public long getAutoPurgePeriodicity() {
+        return autoPurgePeriodicity;
     }
 
     public boolean doLogIncrementalPosition() {

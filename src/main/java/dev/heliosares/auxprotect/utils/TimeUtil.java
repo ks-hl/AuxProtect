@@ -110,11 +110,11 @@ public class TimeUtil {
                 default:
                     throw new NumberFormatException(Language.L.COMMAND__LOOKUP__INVALID_TIME_PARAMETER.translate(c));
             }
-            time += Double.parseDouble(builder.toString()) * modifier;
+            time += (long) (Double.parseDouble(builder.toString()) * modifier);
             builder = new StringBuilder();
         }
         if (!builder.isEmpty()) {
-            time += Double.parseDouble(builder.toString());
+            time += (long) Double.parseDouble(builder.toString());
         }
         return time;
     }
