@@ -42,6 +42,7 @@ import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
@@ -653,6 +654,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public void info(String string) {
+        string = ChatColor.stripColor(string);
         this.getLogger().info(string);
         logToStackLog("[INFO] " + string);
     }

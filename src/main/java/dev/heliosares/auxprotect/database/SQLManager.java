@@ -307,13 +307,13 @@ public class SQLManager extends ConnectionPool {
                 setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
 
             connection.commit();
-            plugin.debug("init done.");
+            plugin.debug("table init done.");
         } catch (Throwable t) {
             plugin.warning("An error occurred during initialization. Rolling back changes.");
             connection.rollback();
             throw t;
         } finally {
-            connection.setAutoCommit(true);
+            if (!connection.getAutoCommit()) connection.setAutoCommit(true);
         }
     }
 
@@ -335,7 +335,7 @@ public class SQLManager extends ConnectionPool {
                 }
 
                 // Step 3: Delete the UIDs
-                int count_ = executeReturnRows("DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
+                int count_ = executeReturnRows(connection, "DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
 
                 // Step 4: Drop the Temporary Table
                 execute("DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids", connection);
@@ -346,6 +346,8 @@ public class SQLManager extends ConnectionPool {
             } catch (Throwable t) {
                 connection.rollback();
                 throw t;
+            } finally {
+                if (!connection.getAutoCommit()) connection.setAutoCommit(true);
             }
         }, 30000L, Integer.class);
 

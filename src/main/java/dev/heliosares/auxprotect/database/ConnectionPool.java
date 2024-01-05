@@ -21,7 +21,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Types;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -252,7 +251,15 @@ public class ConnectionPool {
             connection = newConnectionSupplier.get();
         }
         try {
-            return task.apply(connection);
+            var out = task.apply(connection);
+            if (!connection.getAutoCommit() && lock.getHoldCount() == 1) {
+                if (plugin.getAPConfig().getDebug() > 0) {
+                    plugin.warning("Auto-commit not re-enabled following transaction.");
+                    Thread.dumpStack();
+                }
+                connection.setAutoCommit(true);
+            }
+            return out;
         } finally {
             if (lock.getHoldCount() == 1) {
                 writeTimeIndex++;
@@ -303,13 +310,18 @@ public class ConnectionPool {
      * @see PreparedStatement#executeUpdate()
      */
     public int executeReturnRows(String stmt, Object... args) throws SQLException, BusyException {
+        return executeReturn(connection -> executeReturnRows(connection, stmt, args), 30000L, Integer.class);
+    }
+
+    /**
+     * @see PreparedStatement#executeUpdate()
+     */
+    public int executeReturnRows(Connection connection, String stmt, Object... args) throws SQLException {
         debugSQLStatement(stmt, args);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                prepare(connection, pstmt, args);
-                return pstmt.executeUpdate();
-            }
-        }, 30000L, Integer.class);
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
+            prepare(connection, pstmt, args);
+            return pstmt.executeUpdate();
+        }
     }
 
     public int executeReturnGenerated(String stmt, Object... args) throws SQLException, BusyException {
