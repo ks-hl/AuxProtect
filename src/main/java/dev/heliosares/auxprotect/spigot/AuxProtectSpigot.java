@@ -307,7 +307,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
-        Objects.requireNonNull(this.getCommand("cslogs")).setExecutor(new CSLogsCommand(this));
+        if (config.isPrivate()) Objects.requireNonNull(this.getCommand("cslogs")).setExecutor(new CSLogsCommand(this));
         Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = new APSCommand(this)));
         Objects.requireNonNull(this.getCommand("auxprotect")).setTabCompleter(apcommand);
 
