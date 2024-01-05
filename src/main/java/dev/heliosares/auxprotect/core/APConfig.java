@@ -25,6 +25,7 @@ public class APConfig {
     private boolean logIncrementalPosition;
     private boolean disableVacuum;
     private boolean sessionLogIP;
+    private boolean skipRowCount;
     private KeyUtil key;
     private ConfigAdapter config;
     private int debug;
@@ -74,6 +75,7 @@ public class APConfig {
         }
         sanitizeUnicode = config.getBoolean("SanitizeUnicode");
         sessionLogIP = config.getBoolean("Actions.session.LogIP", true);
+        skipRowCount = config.getBoolean("SkipRowCount", false);
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
                 action.setEnabled(false);
@@ -276,5 +278,9 @@ public class APConfig {
 
     public boolean isSanitizeUnicode() {
         return sanitizeUnicode;
+    }
+
+    public boolean isSkipRowCount() {
+        return skipRowCount;
     }
 }
