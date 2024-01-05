@@ -173,11 +173,9 @@ public class SQLManager extends ConnectionPool {
             }
         }
 
-        count();
-
         if (townyManager != null) townyManager.init();
 
-        plugin.info("Init done. There are currently " + rowcount + " rows.");
+        plugin.info("Init done.");
         isConnectedAndInitDone = true;
     }
 
@@ -634,24 +632,28 @@ public class SQLManager extends ConnectionPool {
         };
     }
 
-    private void count() {
+    public void count() {
         int total = 0;
-        plugin.debug("Counting rows..");
+        plugin.info("Counting rows..");
         for (Table table : Table.values()) {
             if (!table.exists(plugin) || !table.hasAPEntries()) {
                 continue;
             }
             try {
                 total += count(table);
-            } catch (SQLException | BusyException ignored) {
+            } catch (BusyException e) {
+                plugin.warning("Database busy, unable to count rows of " + table);
+            } catch (SQLException e) {
+                plugin.warning("An error occurred counting rows of " + table);
+                plugin.print(e);
             }
         }
-        plugin.debug("Counted all tables. " + total + " rows.");
+        plugin.info("Count complete. There are " + total + " rows.");
         rowcount = total;
     }
 
     public int count(Table table) throws SQLException, BusyException {
-        return executeReturn(connection -> count(connection, table.toString(), null), 30000L, Integer.class);
+        return executeReturn(connection -> count(connection, table.toString(), null), 5000L, Integer.class);
     }
 
     public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {

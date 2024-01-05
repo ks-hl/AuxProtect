@@ -144,6 +144,7 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         runAsync(() -> {
             try {
                 sqlManager.connect();
+                if (!config.isSkipRowCount()) sqlManager.count();
             } catch (Exception e) {
                 print(e);
                 getLogger().severe("Failed to connect to SQL database. Disabling.");
