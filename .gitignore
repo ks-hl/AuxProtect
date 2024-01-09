@@ -7,3 +7,4 @@ AuxProtect.iml
 .project
 *.bat
 test_run/
+dependency-reduced-pom.xml
