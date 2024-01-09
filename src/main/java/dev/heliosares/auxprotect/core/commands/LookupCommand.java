@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
@@ -43,12 +42,13 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class LookupCommand extends Command {
 
-    static final HashMap<String, Results> results = new HashMap<>();
+    static final HashMap<UUID, Results> results = new HashMap<>();
 
     public LookupCommand(IAuxProtect plugin) {
         super(plugin, "lookup", APPermission.LOOKUP, true, "l");
@@ -235,9 +235,8 @@ public class LookupCommand extends Command {
                     }
                     if (isPageLookup || first || last || next || prev) {
                         Results result = null;
-                        String uuid = sender.getUniqueId().toString();
-                        if (results.containsKey(uuid)) {
-                            result = results.get(uuid);
+                        if (results.containsKey(sender.getUniqueId())) {
+                            result = results.get(sender.getUniqueId());
                         }
                         if (result == null) {
                             sender.sendLang(Language.L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
@@ -398,10 +397,9 @@ public class LookupCommand extends Command {
                 }
                 return;
             } else if (params_.hasFlag(Flag.ACTIVITY)) {
-                String uuid = sender.getUniqueId().toString();
                 Results result = new ActivityResults(plugin, rs, sender, params_);
                 result.showPage(result.getNumPages(4), 4);
-                results.put(uuid, result);
+                results.put(sender.getUniqueId(), result);
                 return;
             } else if (params_.hasFlag(Flag.XRAY)) {
                 Set<Integer> users = new HashSet<>();
@@ -473,10 +471,9 @@ public class LookupCommand extends Command {
                 new PlaybackSolver(plugin, sender, rs, params_.getAfter(), actions);
                 return;
             }
-            String uuid = sender.getUniqueId().toString();
             Results result = new Results(plugin, rs, sender, params_);
             result.showPage(1, 4);
-            results.put(uuid, result);
+            results.put(sender.getUniqueId(), result);
 
             if (params_.hasFlag(Flag.XRAY)) {
                 sender.sendMessage(XraySolver.solve(rs));
