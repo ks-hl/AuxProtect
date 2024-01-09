@@ -224,14 +224,14 @@ public class InvCommand extends Command {
         if (index < 0) {
             throw new SyntaxException();
         }
-        Results results = LookupCommand.results.get(player.getUniqueId().toString());
+        Results results = LookupCommand.results.get(player.getUniqueId());
         if (results == null || index >= results.getSize()) {
-            throw new SyntaxException();
+            throw new CommandException(L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
         }
 
         DbEntry entry = results.get(index);
         if (entry == null) {
-            throw new SyntaxException();
+            throw new CommandException(L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
         }
         if (entry.getAction().equals(EntryAction.INVENTORY)) {
             PlayerInventoryRecord inv_;
