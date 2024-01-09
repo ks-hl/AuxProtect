@@ -24,6 +24,7 @@ public class APConfig {
     private boolean overrideCommands;
     private boolean logIncrementalPosition;
     private boolean disableVacuum;
+    private boolean consoleSQL;
     private boolean sessionLogIP;
     private boolean skipRowCount;
     private KeyUtil key;
@@ -62,6 +63,7 @@ public class APConfig {
         } else {
             disableVacuum = config.getBoolean("disablevacuum", false);
         }
+        consoleSQL = config.getBoolean("ConsoleSQLCommands", false);
         if (config.getPlatform() == PlatformType.SPIGOT) {
             overrideCommands = config.getBoolean("OverrideCommands");
             inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
@@ -283,5 +285,9 @@ public class APConfig {
 
     public boolean isSkipRowCount() {
         return skipRowCount;
+    }
+
+    public boolean isConsoleSQL() {
+        return consoleSQL;
     }
 }

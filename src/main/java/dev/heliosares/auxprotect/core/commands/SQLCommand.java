@@ -23,6 +23,10 @@ public class SQLCommand extends Command {
 
     @Override
     public void onCommand(SenderAdapter sender, String commandLabel, String[] args) {
+        if (!plugin.getAPConfig().isConsoleSQL()) {
+            sender.sendMessageRaw("&cThis command must be enabled in the config by setting 'ConsoleSQLCommands: true'");
+            return;
+        }
         StringBuilder msg = new StringBuilder();
         for (int i = 1; i < args.length; i++) {
             msg.append(args[i]).append(" ");
