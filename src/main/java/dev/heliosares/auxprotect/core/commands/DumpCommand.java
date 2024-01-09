@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.sql.SQLException;
+import java.time.DateTimeException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -33,9 +34,20 @@ public class DumpCommand extends Command {
                               boolean stats) throws Exception {
         StringBuilder trace = new StringBuilder();
         if (!stats) {
-            trace.append("Generated: ").append(LocalDateTime.now().format(TimeUtil.entryTimeFormat)).append(" (").append(System.currentTimeMillis()).append(")\n");
-            trace.append("Connected: ").append(LocalDateTime.ofInstant(Instant.ofEpochMilli(plugin.getSqlManager().getTimeConnected()), ZoneId.systemDefault())
-                    .format(TimeUtil.entryTimeFormat)).append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
+            trace.append("Generated: ");
+            try {
+                trace.append(LocalDateTime.now().format(TimeUtil.entryTimeFormat));
+            } catch (DateTimeException e) {
+                trace.append("[ERR:").append(e.getMessage()).append("]");
+            }
+            trace.append(" (").append(System.currentTimeMillis()).append(")\n");
+            trace.append("Connected: ");
+            try {
+                trace.append(LocalDateTime.ofInstant(Instant.ofEpochMilli(plugin.getSqlManager().getTimeConnected()), ZoneId.systemDefault()).format(TimeUtil.entryTimeFormat));
+            } catch (DateTimeException e) {
+                trace.append("[ERR:").append(e.getMessage()).append("]");
+            }
+            trace.append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
         }
         trace.append("Plugin version: ").append(plugin.getPluginVersion()).append("\n");
         trace.append("Key: ");
