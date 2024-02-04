@@ -1140,7 +1140,7 @@ public class Parameters implements Cloneable {
         }
 
         public boolean isEnabled() {
-            if (this == PLAYBACK || this == INCREMENTAL_POS || this == XRAY || this == RETENTION || this == ACTIVITY) {
+            if (this == PLAYBACK || this == INCREMENTAL_POS || this == XRAY || this == RETENTION) {
                 return AuxProtectAPI.getInstance().getAPConfig().isPrivate();
             }
             return true;

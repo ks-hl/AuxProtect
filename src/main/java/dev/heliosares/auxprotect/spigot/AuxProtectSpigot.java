@@ -347,7 +347,6 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             EntryAction.CENSOR.setEnabled(false);
             EntryAction.IGNOREABANDONED.setEnabled(false);
             EntryAction.VEIN.setEnabled(false);
-            EntryAction.ACTIVITY.setEnabled(false);
         }
 
         // This is a patch for when reloading the plugin, online players will receive
