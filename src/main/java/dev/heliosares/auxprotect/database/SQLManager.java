@@ -326,7 +326,7 @@ public class SQLManager extends ConnectionPool {
 
                 // Step 2: Insert Data into the Temporary Table
                 for (Table table : Table.values()) {
-                    if (table.hasAPEntries()) {
+                    if (table.hasAPEntries() && table.exists(plugin)) {
                         execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT uid FROM " + table, connection);
                         if (!table.hasStringTarget()) {
                             execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT target_id FROM " + table, connection);
