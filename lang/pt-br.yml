@@ -1,0 +1,293 @@
+# Este número da versão é específico da linguagem.
+# Se exixstir um arquivo de linguagem incluído para essa linguagem, e a versão incluída for maior,
+# o arquivo na pasta será substituído pelo arquivo incluído.
+# Se você não quiser que seu arquivo de linguagem seja substituído pelas novas versões, mude o número de versão para 99999
+
+# Tradução para português é uma cortesia de @joaorihan
+
+version: 1
+
+color:
+  p: '9'
+  s: 'f'
+  t: '7'
+update: '&tExiste uma nova versão do &pAuxProtect&t disponível!\n&tVersão atual: &p<current_version> &tNova versão: &p<new_version>\n&thttps://www.spigotmc.org/resources/auxprotect.99147/'
+no-permission: '&cVocê não possui permissão para isso.'
+no-permission-node: '&cVocê não possui permissão para isso: &t<node>'
+no-permission-flag: '&cVocê não possui permissão para esta flag'
+invalid-parameter: '&cParâmetro inválido: <invalid_parameter>'
+invalid-syntax: '&cSintaxe inválida.'
+invalid-notenough: '&cArgumentos insuficientes.'
+error: '&cOcorreu um erro.'
+action-disabled: '&cEsta ação está desabilitada.'
+notplayererror: 'Este comando só pode ser utilizado no jogo'
+backup-sqliteonly: 'Backups só funcionam no SQLite'
+unknown-subcommand: 'Subcomando desconhecido. Use ''/ap help'' para mais informações.'
+command:
+  ap:
+    help: '&tUse &p/ap help&t para mais informações.'
+    developed-by: 'Desenvolvido por'
+    backup-created: 'Backup criado: <file>'
+    config-reloaded: '&pConfiguração recarregada.'
+    lang-reloaded: '&pLinguagem recarregada: <locale>'
+    lang-not-found: '&pArquivo de linguagem não encontrado: <file>'
+  saveinv:
+    success: '&tO inventário de &p<target> &tfoi salvo manualmente. &otime:<time>'
+    toosoon: '&cO inventário deste jogador já foi salvo recentemente.'
+  inv:
+    recovered: '&p<admin> &srecuperou o inventário de &p<target> &sde &p<time> &satrás.'
+    force-recovered: '&p<admin> &sforçou a recuperação do inventário de &p<target> &sde &p<time> &satrás.'
+    success: '&sVocê recuperou o inventário de &p<target>&s.'
+    notify-player: '&p<admin> &srecuperou o seu inventário &sde &p<time> &satrás.'
+    notify-player-ensure-room: '&tGaranta que tenha espaço em seu inventário antes de receber itens!'
+    item-viewer: 'Item Viewer'
+  claiminv:
+    cancelled-other: '&aVocê cancelou o inventário recuperável de <target>.'
+    cancelled: '&cSeu inventário recuperável foi cancelado.'
+    youhavenone: '&cVocê não possui um inventário para recuperar.'
+    otherhasnone: '&cEste jogador não possui um inventário recuperável para cancelar.'
+    header: 'Recuperação de Inventário'
+    claim-button:
+      label: 'Recuperar'
+      hover: '&sClique para recuperar seu inventário!'
+  purge:
+    purging: '&pPurge em ''<table>''...'
+    uids: '&pRemovendo UIDs não utilizados...'
+    notvacuum: '&cPulando o condensamento do arquivo SQLite. Feito por último <time> atrás. Para forçar isso, use ''ap sqli vacuum'' do console.'
+    vacuum: '&pCondensando arquivo SQLite...'
+    complete-count: '&pPurge completo. Removidas <rows> rows.'
+    error: '&cOcorreu um erro durante o purge.'
+    time: '&cEste purge é muito curto. Tente um intervalo maior de tempo.'
+    table: '&cEsta tabela é inválida, ou não existe.'
+    nopurge: '&cEsta tabela não pode sofrer um purge diretamente.'
+    skipauto: '&pPulando o auto-purge, já que somente há <time> desde o último.'
+  lookup:
+    unknown-world: '&cMundo desconhecido: <world>'
+    looking: '&pProcurando na database...'
+    noresults: '&cNenhum resultado encontrado.'
+    count: '&p<results> &sresultados encontrados.'
+    page-footer: '&tPágina (&p<page_number>/<page_count>&t) &p<entry_count> &tentradas totais.'
+    page-footer-groups: '&tPágina (&p<page_number>/<page_count>&t) &p<entry_count> &tgrupos totais.'
+    no-results-selected: '&cVocê não possui um lookup para checar a página.'
+    nopage: '&cEsta página não existe.'
+    toomany: '&cMuitas entradas. Tente diminuir sua busca. (<count> entradas, maior que <max>)'
+    incompatible-tables: '&cEstas ações são incompatíveis.'
+    action-negate: '&cVocê não pode negar ações.'
+    action-perm: '&cVocê não tem permissão para procurar por esta ação. &t''<node>'''
+    action-none: '&cVocê deve especificar uma ação.'
+    rating-wrong: '&cVocê só pode especificar ''rating'' para a:vein.'
+    nodata: '&cEsta tabela não tem dados registrados.'
+    playback:
+      starting: '&pPlayback iniciado...'
+      stopped: '&pPlayback interrompido.'
+      toolong: '&cImpossível realizar um playback maior do que <limit>.'
+    playtime:
+      header: '&pTempo de jogo de <target>'
+      hover: '&p<time>\n&p<minutes> &8online'
+      nouser: '&cNenhum usuário especificado'
+      toomanyusers: '&cMuitos usuários especificados'
+      toolong: '&cAlcance máximo de tempo de jogo é de <days> dias.'
+    invalid-time-parameter: 'Especificador de tempo inválido: <specifier>'
+  help:
+    nohelp: '&cEste comando não possui uma página de ajuda'
+    header: '&t----- &pAuxProtect Ajuda &t- &p/$prefix <command> &t-----'
+    # Nota, os símbolos <> nas listas de ajuda, são literais, e não se referem às traduções
+    help:
+    - '&p/$prefix lookup <params> &s- Performa uma busca'
+    - '&p/$prefix purge <params> &s- Performa um purge no banco de dados'
+    - '&p/$prefix info &s- Informações sobre versão, e créditos'
+    - '&p/$prefix help [command] &s- Mostra esta mensagem, ou mais informações sobre um comando'
+    - '&s'
+    - '&tVeja a wiki para mais: https://github.com/Heliosares/AuxProtect/wiki'
+    inventory:
+      - '&s/$prefix &pinventory &s<name> [tempo]'
+    lookup:
+    - '&s/$prefix &plookup &s<params>'
+    - '&pParams:'
+    - '&pTempo: &sEm segundos, minutos, horas, dias, ou semanas (weeks), representado pela primeira letra (ex ''s'' para segundos).'
+    - '&pBefore/After: &sUsado para delimitar um alcance para uma busca.'
+    - '&pAction: &sTipo de interação do log, use o tab-complete para mais informações.'
+    - '&pTarget: &sEspecifica um parâmetro a que uma ação foi performada. Você pode usar um asteristico como curinga e um traço como espaço nesse parâmetro.'
+    - '&pRadius: &sEspecifica o raio quadrado de blocos para uma busca.'
+    - '&sTodos os parâmetros podem ser invertidos utilizando &p''!'' &s(ex radius:5,!2 procuraria dentro de 5 blocos do jogador, mas NÃO dentro de 2 blocos.)'
+    playtime:
+      - '&s/$prefix &pplaytime &s<name> [time]'
+    purge:
+    - '&s/$prefix &ppurge &s<table | all> <time>'
+    - '&sUse o tab-complete para uma lista de todas as tabelas.'
+    - '&sO tempo mínimo é de 2 semanas.'
+  time:
+    server-time: '&pHorário do servidor:'
+playernotfound: '&cJogador não encontrado.'
+lookup-playernotfound: '&cJogador <target> não encontrado.'
+lookup-unknownaction: '&cAção desconhecida: <action>.'
+xray-rate-nochange: '&cEsta já é a classificação dessa ação.'
+xray-rate-written: '&aClassificação escrita com sucesso.'
+xray-done: '&aNão existem mais xray checks!'
+xray-notfound: '&cNenhum resultado encontrado neste tempo'
+xray-toomany: '&cResultados demais encontrados'
+xray-already-rated: '&cEsta entrada já foi classificada. Você deseja a classificar mesmo assim?'
+xray-click-to-change: '&aClique para classificar'
+inactive-alert: '&8[&4Server&8] &e<user> &tpode estar inativo. &e<inactive_minutes> &tde &e<total_minutes> &tminutos inativo.'
+yes: 'Sim'
+no: 'Não'
+database-busy: '&cO banco de dados está ocupado. Tente novamente mais tarde, ou cheque o console para mais informações.'
+protocollib-not-loaded: '&cProtocolLib é necessário para esta ação, e não está instalado.'
+
+results:
+  click-to-copy: 'Clique para copiar à área de transferência'
+  click-to-copy-time: '&tClique para copiar o tempo. (<time>ms)'
+  click-to-view: 'Clique para visualizar!'
+  grouping-of: '&fGrupo de &p<entry_count> &fentradas'
+  header: '&pAuxProtect Resultados'
+  page:
+    first: '&pPular para Primeira Página'
+    previous: '&pPágina Anterior'
+    next: '&pPróxima Página'
+    last: '&pPular para Última Página'
+  redacted: 'PROTEGIDO'
+  time: '&t<time> atrás'
+  time-now: '&tAgora mesmo'
+  view: 'View'
+  view-inv: 'Ver Inv'
+
+inv-recover-menu:
+  main-header: 'Inventário de <target> - <time> atrás'
+  ender-header: 'Baú do Fim de <target> - <time> atrás'
+  xp-error: '&cNão foi possível recuperar o XP.'
+  button:
+    force:
+      label: '&2&lForçar Recuperação de Inventário'
+      hover:
+      - ''
+      - '&a&lClique Duplo'
+      - ''
+      - '&tIsto irá &c&lsubstituir &7o inventário'
+      - '&7atual do jogador e XP com'
+      - '&7com o que está na visualização acima.'
+    force-unavailable:
+      label: '&8&lForçar Recuperação de Inventário Indisponível'
+      hover:
+      - '&cO jogador deve estar online para'
+      - '&cforçar a recuperação de seu inventário'
+    recover:
+      label: '&a&lRecuperar Inventário'
+      hover:
+      - ''
+      - '&tIsto dará o jogador uma'
+      - '&topção de recuperar este inventário'
+      - '&t como se ele estivesse abrindo um baú com'
+      - '&t os conteúdos acima. Ele também receberá'
+      - '&to XP salvo aqui.'
+      - ''
+      - '&cIsto não substituirá nada, e talvez'
+      - '&cduplique itens, caso eles não tenham'
+      - '&trealmente sido originalmente perdidos.'
+    close: '&c&lFechar'
+    ender-chest: '&8&lVer Baú do Fim'
+    xp:
+      had: '&2Jogador possuía <xp> XP'
+      error: '&8Sem dados de XP'
+
+actions:
+  activity: atividade
+  alert: talvez esteja trapaceando
+  anvil: anvilled
+  auctionbuy: comprado do leilão
+  auctionlist: listado para leilão
+  breakitem: quebrou item
+  bucket:
+    p: pegou peixe
+    n: soltou peixe
+  censor: foi censurado
+  chat: disse
+  command: executou
+  connect: conectou a
+  consume: consumiu
+  craft: craftou
+  drop: largou
+  elytra:
+    p: começou a voar
+    n: parou de voar
+  enchant: encantou
+  entity:
+    p: colocou entidade
+    n: destruiu entidade
+  explode: causou explosão de
+  gamemode: mudou o modo de jogo para
+  grab: agarrou
+  hurt: atacou
+  ignoreabandoned: ignorou aviso de abandonado
+  inv:
+    p: abriu
+    n: fechou
+  inventory: inventário
+  ip: IP Único
+  itemframe:
+    p: adicionou itemframe
+    n: removeu itemframe
+  jobs: ganhou do trabalho
+  kick: foi kickado
+  kill: matou
+  land: projétil acertou
+  launch: lançou
+  leash:
+    p: laçou
+    n: deslaçou
+  lightning: raio caiu
+  money: dinheiro
+  mount:
+    p: montou
+    n: desmontou
+  msg: enviou mensagem
+  nametag: etiquetou
+  nationbalance: dinheiro da nação
+  nationbank:
+    p: depositou
+    n: sacou
+  nationcreate: criou nação
+  nationdelete: deletou nação
+  nationjoin:
+    p: entrou em nação
+    n: saiu de nação
+  nationrename: renomeou nação
+  pay: pagou
+  pickup: pegou
+  pluginload:
+    p: plugin carregado
+    n: plugin descarregado
+  pos: posição
+  raidtrigger: acionou raid
+  raidspawn: sumonou raider
+  recover: recuperou inventário de
+  respawn: renasceu
+  session:
+    p: entrou
+    n: saiu
+  shop:
+    p: comprou
+    n: vendeu
+  smith: melhorou para netherita
+  tame: domou
+  totem: usou totem
+  townbalance: dinheiro da cidade
+  townbank:
+    p: depositou
+    n: sacou
+  townclaim:
+    p: reivindicou
+    n: desreivindicou
+  towncreate: criou cidade
+  towndelete: deletou cidade
+  townjoin:
+    p: entrou em cidade
+    n: saiu de cidade
+  townmayor: se tornou prefeito de
+  townmerge: mesclou em
+  townrename: renomeou cidade para
+  townyname: nomeou
+  tp:
+    p: teleportou para
+    n: teleportou de
+  username: username
+  vein: minerou veia
