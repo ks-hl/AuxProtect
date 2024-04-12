@@ -13,8 +13,6 @@ import dev.heliosares.auxprotect.utils.SQLConsumer;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -39,7 +37,7 @@ public final class AuxProtectAPI {
         if (instance != null && !(plugin instanceof AuxProtectSpigot) && !(plugin instanceof AuxProtectBungee)) {
             throw new IllegalStateException("Instance already set");
         }
-        if(!plugin.getClass().getPackageName().startsWith("dev.heliosares.auxprotect.")) {
+        if (!plugin.getClass().getPackageName().startsWith("dev.heliosares.auxprotect.")) {
             throw new IllegalArgumentException("Can not set instance of plugin with non-AuxProtect instance");
         }
         instance = plugin;
