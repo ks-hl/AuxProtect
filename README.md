@@ -14,6 +14,7 @@ Wiki: https://github.com/Heliosares/AuxProtect/wiki
       <groupId>com.github.Heliosares</groupId>
       <artifactId>AuxProtect</artifactId>
       <version>1.2</version>
+      <scope>provided</scope>
   </dependency>
 ```
 ### Gradle
