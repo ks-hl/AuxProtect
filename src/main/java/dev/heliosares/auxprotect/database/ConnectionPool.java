@@ -169,7 +169,7 @@ public class ConnectionPool {
     private void checkAsync() throws IllegalStateException {
         if (skipAsyncCheck) return;
         //noinspection ConstantValue
-        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.getServer() != null && Bukkit.isPrimaryThread()) {
+        if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && Bukkit.getServer() != null && Bukkit.isPrimaryThread()) {
             throw new IllegalStateException("Synchronous call to database.");
         }
     }

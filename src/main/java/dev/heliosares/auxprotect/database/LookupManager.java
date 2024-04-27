@@ -151,7 +151,7 @@ public class LookupManager {
      * @see LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters)
      */
     protected void lookup(Connection connection, ArrayList<DbEntry> output, Table table, String stmt, ArrayList<String> writeParams) throws LookupException {
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

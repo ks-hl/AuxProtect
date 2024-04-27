@@ -31,7 +31,7 @@ public class MoneyCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override

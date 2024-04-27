@@ -11,23 +11,20 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class SpigotSenderAdapter extends SenderAdapter {
-
-    private final AuxProtectSpigot plugin;
-    private final CommandSender sender;
+public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtectSpigot> implements PositionedSender {
 
     public SpigotSenderAdapter(AuxProtectSpigot plugin, CommandSender sender) {
-        this.plugin = plugin;
-        this.sender = sender;
+        super(sender, plugin);
     }
 
     public void sendMessageRaw(String message) {
         sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
     }
 
+    @SuppressWarnings("deprecation")
+    @Override
     public void sendMessage(BaseComponent... message) {
         sender.spigot().sendMessage(message);
     }
@@ -45,16 +42,6 @@ public class SpigotSenderAdapter extends SenderAdapter {
             return player.getUniqueId();
         }
         return UUID.fromString("00000000-0000-0000-0000-000000000000");
-    }
-
-    @Override
-    public Object getSender() {
-        return sender;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.SPIGOT;
     }
 
     @Override

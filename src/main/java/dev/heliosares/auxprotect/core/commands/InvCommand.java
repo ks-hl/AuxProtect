@@ -212,7 +212,7 @@ public class InvCommand extends Command {
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         if (args.length < 2) throw new SyntaxException();
-        if (sender.getPlatform() != PlatformType.SPIGOT) throw new PlatformException();
+        if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new PlatformException();
         if (!(sender.getSender() instanceof Player player)) throw new NotPlayerException();
 
         int index = -1;
@@ -276,7 +276,7 @@ public class InvCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override

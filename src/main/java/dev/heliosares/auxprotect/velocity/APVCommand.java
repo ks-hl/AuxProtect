@@ -1,28 +1,27 @@
 package dev.heliosares.auxprotect.velocity;
 
-import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
+import com.velocitypowered.api.command.SimpleCommand;
+import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.core.commands.APCommand;
 
-public class APVCommand extends Command implements TabExecutor {
+import java.util.List;
 
+public class APVCommand implements SimpleCommand {
     private final AuxProtectVelocity plugin;
     private final APCommand apcommand;
-    private final String label;
 
-    public APVCommand(AuxProtectVelocity plugin, String label) {
-        super(label);
+    public APVCommand(AuxProtectVelocity plugin, String label, String... aliases) {
         this.plugin = plugin;
-        this.label = label;
-        this.apcommand = new APCommand(plugin, label);
+        this.apcommand = new APCommand(plugin, label, aliases);
     }
 
     @Override
-    public void execute(CommandSender sender, String[] args) {
-        apcommand.onCommand(new BungeeSenderAdapter(plugin, sender), label, args);
+    public void execute(Invocation invocation) {
+        apcommand.onCommand(new VelocitySenderAdapter(plugin, invocation.source()), invocation.alias(), invocation.arguments());
     }
 
     @Override
-    public Iterable<String> onTabComplete(CommandSender sender, String[] args) {
-        return apcommand.onTabComplete(new BungeeSenderAdapter(plugin, sender), label, args);
+    public List<String> suggest(Invocation invocation) {
+        return apcommand.onTabComplete(new VelocitySenderAdapter(plugin, invocation.source()), invocation.alias(), invocation.arguments());
     }
 }

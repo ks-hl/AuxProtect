@@ -44,9 +44,11 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>
+                                    <include>dev.kshl:KshLib</include>
+                                    <include>org.xerial:sqlite-jdbc</include>
                                 </includes>
                             </artifactSet>
-                            <minimizeJar>true</minimizeJar>
+                            <minimizeJar>false</minimizeJar>
                         </configuration>
                     </execution>
                 </executions>
@@ -267,6 +269,11 @@
             <artifactId>playerauctions-api</artifactId>
             <version>1.27.3</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.kshl</groupId>
+            <artifactId>KshLib</artifactId>
+            <version>LATEST</version>
         </dependency>
     </dependencies>
     <properties>

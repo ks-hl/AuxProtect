@@ -34,7 +34,7 @@ public class APCommand extends Command {
         commands.add(new TimeCommand(plugin));
         commands.add(new DumpCommand(plugin));
         commands.add(new PlaytimeCommand(plugin));
-        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+        if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
             commands.add(new TpCommand(plugin).setTabComplete(false));
             commands.add(new InvCommand(plugin).setTabComplete(false));
             commands.add(new InventoryCommand(plugin));
@@ -84,7 +84,7 @@ public class APCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
+    public void onCommand(SenderAdapter<?,?> sender, String label, String[] args) {
         if (args.length > 0) {
             boolean match = false;
             for (Command c : commands) {

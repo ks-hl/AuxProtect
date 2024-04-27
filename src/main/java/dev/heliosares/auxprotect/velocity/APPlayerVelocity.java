@@ -5,7 +5,6 @@ import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
 import javax.annotation.Nullable;
-import java.net.InetSocketAddress;
 
 public class APPlayerVelocity extends APPlayer<Player> {
     public APPlayerVelocity(IAuxProtect plugin, Player player) {

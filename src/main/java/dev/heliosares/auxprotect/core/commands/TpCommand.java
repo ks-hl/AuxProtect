@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.core.commands;
 
+import dev.heliosares.auxprotect.adapters.sender.PositionedSender;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
@@ -23,7 +24,7 @@ public class TpCommand extends Command {
         if (args.length < 5) {
             throw new SyntaxException();
         }
-        if (sender.getPlatform() != PlatformType.SPIGOT) {
+        if (!(sender instanceof PositionedSender positionedSender)) {
             throw new PlatformException();
         }
         try {
@@ -35,7 +36,7 @@ public class TpCommand extends Command {
                 pitch = Integer.parseInt(args[5]);
                 yaw = Integer.parseInt(args[6]);
             }
-            sender.teleport(args[4], x, y, z, pitch, yaw);
+            positionedSender.teleport(args[4], x, y, z, pitch, yaw);
         } catch (NumberFormatException | NullPointerException e) {
             throw new SyntaxException();
         } catch (UnsupportedOperationException e) {
@@ -45,7 +46,7 @@ public class TpCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override

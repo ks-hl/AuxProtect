@@ -42,10 +42,10 @@ public interface IAuxProtect {
 
     String getCommandAlias();
 
-    SenderAdapter getConsoleSender();
+    SenderAdapter<?,?> getConsoleSender();
 
     @Nullable
-    SenderAdapter getSenderAdapter(String name);
+    SenderAdapter<?,?> getSenderAdapter(String name);
 
     boolean isShuttingDown();
 
@@ -58,7 +58,7 @@ public interface IAuxProtect {
     String getPluginVersion();
 
     @Nullable
-    APPlayer<?> getAPPlayer(SenderAdapter sender);
+    APPlayer<?> getAPPlayer(SenderAdapter<?,?> sender);
 
     String formatMoney(double amount);
     int queueSize();

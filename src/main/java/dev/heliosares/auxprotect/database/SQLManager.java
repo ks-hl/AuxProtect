@@ -53,9 +53,9 @@ public class SQLManager extends ConnectionPool {
         this.plugin = plugin;
         this.usermanager = new SQLUserManager(plugin, this);
         this.lookupManager = new LookupManager(this, plugin);
-        this.invDiffManager = plugin.getPlatform() == PlatformType.SPIGOT ? new InvDiffManager(this, plugin) : null;
-        this.invBlobManager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
-        this.transactionBlobManager = plugin.getPlatform() == PlatformType.SPIGOT ? new BlobManager(Table.AUXPROTECT_TRANSACTIONS_BLOB, this, plugin) : null;
+        this.invDiffManager = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER ? new InvDiffManager(this, plugin) : null;
+        this.invBlobManager = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER ? new BlobManager(Table.AUXPROTECT_INVBLOB, this, plugin) : null;
+        this.transactionBlobManager = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER ? new BlobManager(Table.AUXPROTECT_TRANSACTIONS_BLOB, this, plugin) : null;
         if (prefix == null || prefix.isEmpty()) {
             tablePrefix = "";
         } else {
@@ -66,7 +66,7 @@ public class SQLManager extends ConnectionPool {
             tablePrefix = prefix;
         }
         TownyManager tm = null;
-        if (plugin.getPlatform() == PlatformType.SPIGOT) {
+        if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
             try {
                 tm = new TownyManager((dev.heliosares.auxprotect.spigot.AuxProtectSpigot) plugin, this);
             } catch (NoClassDefFoundError | IllegalStateException | ClassCastException ignored) {
@@ -231,7 +231,7 @@ public class SQLManager extends ConnectionPool {
                 }
             }
             String stmt;
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                 stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
                 stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
                 execute(stmt, connection);
@@ -402,7 +402,7 @@ public class SQLManager extends ConnectionPool {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

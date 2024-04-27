@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
-import dev.heliosares.auxprotect.core.PlatformType;
+import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -10,20 +10,18 @@ import net.md_5.bungee.api.connection.ProxiedPlayer;
 
 import java.util.UUID;
 
-public class BungeeSenderAdapter extends SenderAdapter {
-
-    private final CommandSender sender;
-    private final AuxProtectBungee plugin;
+public class BungeeSenderAdapter extends SenderAdapter<CommandSender, AuxProtectBungee> {
 
     public BungeeSenderAdapter(AuxProtectBungee plugin, CommandSender sender) {
-        this.sender = sender;
-        this.plugin = plugin;
+        super(sender, plugin);
     }
 
     public void sendMessageRaw(String message) {
         sender.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
     }
 
+    @SuppressWarnings("deprecation")
+    @Override
     public void sendMessage(BaseComponent... message) {
         sender.sendMessage(message);
     }
@@ -44,16 +42,6 @@ public class BungeeSenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public Object getSender() {
-        return sender;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.BUNGEE;
-    }
-
-    @Override
     public void executeCommand(String command) {
         plugin.getProxy().getPluginManager().dispatchCommand(sender, command);
     }
@@ -61,11 +49,5 @@ public class BungeeSenderAdapter extends SenderAdapter {
     @Override
     public boolean isConsole() {
         return sender.equals(plugin.getProxy().getConsole());
-    }
-
-    @Override
-    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
-            throws NullPointerException, UnsupportedOperationException {
-        throw new UnsupportedOperationException();
     }
 }

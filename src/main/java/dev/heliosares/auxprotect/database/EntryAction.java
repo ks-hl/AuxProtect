@@ -251,7 +251,7 @@ public class EntryAction {
                 return false;
             }
         }
-        if (plugin.getPlatform() == PlatformType.BUNGEE) {
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.PROXY) {
             return equals(MSG) ||
                     equals(COMMAND) ||
                     equals(CHAT) ||
@@ -261,10 +261,10 @@ public class EntryAction {
                     equals(CONNECT) ||
                     equals(PLUGINLOAD) ||
                     equals(KICK);
-        } else if (plugin.getPlatform() == PlatformType.SPIGOT) {
+        } else if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
             return !equals(MSG) && !equals(CONNECT);
         }
-        throw new UnsupportedOperationException("Unknown platform " + plugin.getPlatform());
+        throw new UnsupportedOperationException("Unknown level " + plugin.getPlatform().getLevel() + " for platform " + plugin.getPlatform());
     }
 
     public Table getTable() {

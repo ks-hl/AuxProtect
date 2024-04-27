@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 
 import javax.annotation.Nullable;
+import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

@@ -1,12 +1,16 @@
 package dev.heliosares.auxprotect.velocity;
 
 import com.google.inject.Inject;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.proxy.ProxyInitializeEvent;
+import com.velocitypowered.api.event.proxy.ProxyShutdownEvent;
 import com.velocitypowered.api.plugin.Plugin;
+import com.velocitypowered.api.plugin.PluginContainer;
 import com.velocitypowered.api.plugin.annotation.DataDirectory;
+import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
-import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
+import dev.heliosares.auxprotect.adapters.config.VelocityConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -34,6 +38,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +47,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-@Plugin(id="auxprotect", name="AuxProtect", version="CHANGEME", url="https://github.com/ks-hl/AuxProtect")
+@Plugin(id = "auxprotect", name = "AuxProtect", version = "CHANGEME", url = "https://github.com/ks-hl/AuxProtect")
 public final class AuxProtectVelocity implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectVelocity instance;
@@ -64,23 +69,21 @@ public final class AuxProtectVelocity implements IAuxProtect {
         this.logger = logger;
         this.dataDirectory = dataDirectory;
     }
+
     public static IAuxProtect getInstance() {
         return instance;
     }
 
     public static String getLabel(Object o) {
-        if (o == null) {
-            return "#null";
-        }
         if (o instanceof UUID) {
             return "$" + o;
         }
-        if (o instanceof Player proxiedPlayer) {
-            return "$" + proxiedPlayer.getUniqueId().toString();
+        if (o instanceof Player player) {
+            return getLabel(player.getUniqueId());
         }
-//        if (o instanceof  pendingConnection) { TODO Velocity equivalent?
-//            return "$" + pendingConnection.getUniqueId().toString();
-//        }
+        if (o instanceof ConsoleCommandSource) {
+            return "#console";
+        }
         return "#null";
     }
 
@@ -88,13 +91,14 @@ public final class AuxProtectVelocity implements IAuxProtect {
         return logger;
     }
 
-    @Override
-    public void onEnable() {
+
+    @Subscribe
+    public void onProxyInitialization(ProxyInitializeEvent event) {
+
         AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
-            config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
-                    this::getResource, false));
+            config.load(this, new VelocityConfigAdapter(this.getDataFolder(), "config.yml", this::getResource, false));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
@@ -102,9 +106,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
         // TODO reloadable
         try {
             Language.load(this,
-                    () -> new BungeeConfigAdapter(getDataFolder(),
-                            "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            this::getResource, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
+                    () -> new VelocityConfigAdapter(getDataFolder(),
+                            "lang/" + config.getConfig().getString("lang") + ".yml",
+                            this::getResource, false), () -> new VelocityConfigAdapter(getResource("lang/en-us.yml")));
 
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
@@ -113,12 +117,11 @@ public final class AuxProtectVelocity implements IAuxProtect {
             print(e1);
         }
 
-        server.getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandPrefix()));
-        server.getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandAlias()));
-        server.getPluginManager().registerListener(this, new APVListener(this));
+        server.getCommandManager().register(getCommandPrefix(), new APVCommand(this, this.getCommandPrefix()), getCommandAlias());
+        server.getEventManager().register(this, new APVListener(this));
 
         File sqliteFile = null;
-        String uri = "";
+        String uri;
         if (getAPConfig().isMySQL()) {
             uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
                     getAPConfig().getDatabase());
@@ -127,7 +130,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
             if (!sqliteFile.getParentFile().exists()) {
                 if (!sqliteFile.getParentFile().mkdirs()) {
                     this.getLogger().severe("Failed to create database directory.");
-                    this.onDisable();
+                    onProxyShutdown(null);
                     return;
                 }
             }
@@ -138,7 +141,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
                     }
                 } catch (IOException e) {
                     this.getLogger().severe("Failed to create database file.");
-                    this.onDisable();
+                    onProxyShutdown(null);
                     return;
                 }
             }
@@ -155,7 +158,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
             sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
         } catch (ClassNotFoundException e) {
             warning("No driver for SQL found. Disabling");
-            onDisable();
+            onProxyShutdown(null);
             throw new RuntimeException(e);
         }
 
@@ -166,34 +169,23 @@ public final class AuxProtectVelocity implements IAuxProtect {
             } catch (Exception e) {
                 print(e);
                 getLogger().severe("Failed to connect to SQL database. Disabling.");
-                onDisable();
+                onProxyShutdown(null);
             }
-
-            /*
-             * for (Object command : config.getList("purge-cmds")) { String cmd = (String)
-             * command; String[] argsOld = cmd.split(" "); String[] args = new
-             * String[argsOld.length + 1]; args[0] = "purge"; for (int i = 0; i <
-             * argsOld.length; i++) { args[i + 1] = argsOld[i]; }
-             * PurgeCommand.purge(AuxProtectBungee.this, new
-             * MySender(getProxy().getConsole()), args); } sqlManager.purgeUIDs();
-             *
-             * try { sqlManager.vacuum(); } catch (SQLException e) { print(e); }
-             */
         });
 
         dbRunnable = new DatabaseRunnable(this, sqlManager);
 
-        server.getScheduler().buildTask().schedule(this, dbRunnable, 250, 250, TimeUnit.MILLISECONDS);
+        server.getScheduler().buildTask(this, dbRunnable).repeat(250, TimeUnit.MILLISECONDS);
 
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
-    @Override
-    public void onDisable() {
+    @Subscribe
+    public void onProxyShutdown(ProxyShutdownEvent event) {
         enabled = false;
         isShuttingDown = true;
-        server.getPluginManager().unregisterListeners(this);
-        server.getPluginManager().unregisterCommands(this);
+        server.getEventManager().unregisterListeners(this);
+//        server.getCommandManager().unregisterCommands(this); TODO necessary?
         if (dbRunnable != null) {
             dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
@@ -222,12 +214,12 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public File getDataFolder() {
-
+        return dataDirectory.toFile();
     }
 
     @Override
     public InputStream getResource(String string) {
-        return getResourceAsStream(string);
+        return getClass().getClassLoader().getResourceAsStream(string);
     }
 
     public SQLManager getSqlManager() {
@@ -278,7 +270,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public PlatformType getPlatform() {
-        return PlatformType.BUNGEE;
+        return PlatformType.VELOCITY;
     }
 
     @Override
@@ -307,14 +299,19 @@ public final class AuxProtectVelocity implements IAuxProtect {
     }
 
     @Override
-    public SenderAdapter getConsoleSender() {
+    public String getCommandAlias() {
+        return "apv";
+    }
+
+    @Override
+    public VelocitySenderAdapter getConsoleSender() {
         return new VelocitySenderAdapter(this, this.getProxy().getConsoleCommandSource());
     }
 
     @Nullable
     @Override
-    public SenderAdapter getSenderAdapter(String name) {
-        return server.getPlayer(name).map(player->new VelocitySenderAdapter(this, player)).orElse(null);
+    public VelocitySenderAdapter getSenderAdapter(String name) {
+        return server.getPlayer(name).map(player -> new VelocitySenderAdapter(this, player)).orElse(null);
     }
 
     @Override
@@ -335,11 +332,15 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public String getPluginVersion() {
-        return this.getDescription().getVersion();
+        return getPlugin().map(plugin -> plugin.getDescription().getVersion().orElse("!blank")).orElse("!plugin not found");
+    }
+
+    public Optional<PluginContainer> getPlugin() {
+        return this.server.getPluginManager().getPlugin("auxprotect");
     }
 
     @Override
-    public APPlayerVelocity getAPPlayer(SenderAdapter sender) {
+    public APPlayerVelocity getAPPlayer(SenderAdapter<?, ?> sender) {
         if (!(sender.getSender() instanceof Player proxiedPlayer)) return null;
         synchronized (apPlayers) {
             if (apPlayers.containsKey(sender.getUniqueId())) {
@@ -351,9 +352,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
         }
     }
 
-    public void removeAPPlayer(SenderAdapter sender) {
+    public void removeAPPlayer(UUID uuid) {
         synchronized (apPlayers) {
-            apPlayers.remove(sender.getUniqueId());
+            apPlayers.remove(uuid);
         }
     }
 
@@ -370,11 +371,6 @@ public final class AuxProtectVelocity implements IAuxProtect {
     @Override
     public boolean isEnabled() {
         return enabled;
-    }
-
-    @Override
-    public String getCommandAlias() {
-        return "apb";
     }
 
     @Override

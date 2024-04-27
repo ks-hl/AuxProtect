@@ -133,7 +133,7 @@ public class LookupCommand extends Command {
 
             possible.addAll(APCommand.allPlayers(plugin, true).stream().map(name -> user + name).toList());
 
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                 for (org.bukkit.entity.EntityType et : org.bukkit.entity.EntityType.values()) {
                     possible.add(user + "#" + et.toString().toLowerCase());
                 }
@@ -349,7 +349,7 @@ public class LookupCommand extends Command {
                         totalMoney += transactionEntry.getCost() * (transactionEntry.getState() ? -1 : 1);
                     }
                 }
-                if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
+                if (totalMoney != 0 && plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
                     sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + plugin.formatMoney(totalMoney));
@@ -417,7 +417,7 @@ public class LookupCommand extends Command {
                         it.remove();
                     }
                 }
-            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                 Set<String> users = params_.getUsers();
                 if (users.isEmpty()) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
@@ -435,7 +435,7 @@ public class LookupCommand extends Command {
             } else if (params_.hasFlag(Flag.RETENTION)) {
                 RetentionSolver.showRetention(plugin, sender, rs, params_.getAfter(), params_.getBefore());
                 return;
-            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                 List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
                 List<DbEntry> newResults = new ArrayList<>();
                 for (PlaybackSolver.PosPoint point : points) {
@@ -443,7 +443,7 @@ public class LookupCommand extends Command {
                 }
                 Collections.reverse(newResults);
                 rs = newResults;
-            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
                 List<PlaybackSolver.BlockAction> actions = null;
                 try {
                     Class.forName("net.coreprotect.CoreProtectAPI");

@@ -22,9 +22,9 @@ public abstract class Command {
         this.aliases = aliases;
     }
 
-    public abstract void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException;
+    public abstract void onCommand(SenderAdapter<?,?> sender, String label, String[] args) throws CommandException;
 
-    public abstract @Nullable List<String> onTabComplete(SenderAdapter sender, String label, String[] args);
+    public abstract @Nullable List<String> onTabComplete(SenderAdapter<?,?> sender, String label, String[] args);
 
     public String getLabel() {
         return label;
@@ -34,7 +34,7 @@ public abstract class Command {
         return aliases;
     }
 
-    public boolean hasPermission(SenderAdapter sender) {
+    public boolean hasPermission(SenderAdapter<?,?> sender) {
         return permission.hasPermission(sender);
     }
 

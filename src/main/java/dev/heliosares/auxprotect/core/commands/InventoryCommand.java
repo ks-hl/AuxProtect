@@ -1,10 +1,18 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
-import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.NotPlayerException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -25,7 +33,7 @@ public class InventoryCommand extends Command {
     @Override
     public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) throw new SyntaxException();
-        if (plugin.getPlatform() != PlatformType.SPIGOT) throw new PlatformException();
+        if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new PlatformException();
         if (!(sender.getSender() instanceof Player player)) throw new NotPlayerException();
 
         String target = args[1];
@@ -110,7 +118,7 @@ public class InventoryCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override

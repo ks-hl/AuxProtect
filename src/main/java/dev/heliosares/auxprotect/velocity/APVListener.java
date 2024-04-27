@@ -1,35 +1,45 @@
 package dev.heliosares.auxprotect.velocity;
 
+import com.velocitypowered.api.event.PostOrder;
+import com.velocitypowered.api.event.Subscribe;
+import com.velocitypowered.api.event.command.CommandExecuteEvent;
+import com.velocitypowered.api.event.connection.DisconnectEvent;
+import com.velocitypowered.api.event.connection.LoginEvent;
+import com.velocitypowered.api.event.player.KickedFromServerEvent;
+import com.velocitypowered.api.event.player.PlayerChatEvent;
+import com.velocitypowered.api.event.player.ServerConnectedEvent;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 
-import java.net.InetSocketAddress;
 import java.sql.SQLException;
 
-public class APVListener implements Listener {
+public class APVListener {
     private final AuxProtectVelocity plugin;
 
     public APVListener(AuxProtectVelocity plugin) {
         this.plugin = plugin;
     }
 
-    @EventHandler
-    public void onChatEvent(ChatEvent e) {
-        if (e.getSender() instanceof ProxiedPlayer player) {
-            DbEntry entry = new DbEntry(AuxProtectVelocity.getLabel(player), e.isCommand() ? EntryAction.COMMAND : EntryAction.CHAT, false, e.getMessage().trim(), "");
-            plugin.add(entry);
-        }
+    @Subscribe
+    public void onChatEvent(PlayerChatEvent e) {
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getMessage().trim(), ""));
     }
 
-    @EventHandler
-    public void onServerKickEvent(ServerKickEvent e) {
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getKickedFrom().getName(), BaseComponent.toLegacyText(e.getKickReasonComponent())));
+    @Subscribe
+    public void on(CommandExecuteEvent e) {
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getCommandSource()), EntryAction.COMMAND, false, e.getCommand().trim(), ""));
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @Subscribe
+    public void onServerKickEvent(KickedFromServerEvent e) {
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getServer().getServerInfo().getName(), e.getServerKickReason().map(ColorTranslator::toString).orElse("")));
+        plugin.removeAPPlayer(e.getPlayer().getUniqueId());
+    }
+
+    @Subscribe
     public void onLoginEvent(LoginEvent e) {
-        String ip_ = ((InetSocketAddress) e.getConnection().getSocketAddress()).getAddress().toString();
+        String ip_ = e.getPlayer().getRemoteAddress().getAddress().toString();
         if (ip_.startsWith("/")) {
             ip_ = ip_.substring(1);
         }
@@ -38,31 +48,34 @@ public class APVListener implements Listener {
 
         plugin.runAsync(() -> {
             try {
-                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getConnection().getUniqueId(), e.getConnection().getName(), ip);
+                plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(), e.getPlayer().getUsername(), ip);
             } catch (BusyException ex) {
-                plugin.warning("Database Busy: Unable to update username/ip for " + e.getConnection().getName() + ", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
+                plugin.warning("Database Busy: Unable to update username/ip for " + e.getPlayer().getUsername() + ", this may cause issues with lookups but will resolve when they relog and the database is not busy.");
             } catch (SQLException ex) {
                 plugin.print(ex);
             }
         });
         String data = "";
         if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getConnection().getUniqueId()), EntryAction.SESSION, true, e.isCancelled() ? "CANCELLED" : "", data));
 
-        if (e.isCancelled()) {
-            plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getConnection()), EntryAction.KICK, false, "", BaseComponent.toLegacyText(e.getCancelReasonComponents())));
-            plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getConnection()), EntryAction.SESSION, false, "", ""));
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer().getUniqueId()), EntryAction.SESSION, true, e.getResult().isAllowed() ? "" : "CANCELLED", data));
+
+        if (!e.getResult().isAllowed()) {
+            plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, "", e.getResult().getReasonComponent().map(ColorTranslator::toString).orElse("")));
+            plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.SESSION, false, "", ""));
+            plugin.removeAPPlayer(e.getPlayer().getUniqueId());
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST)
+    @Subscribe(order = PostOrder.LATE)
     public void onServerConnectedEvent(ServerConnectedEvent e) {
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.CONNECT, false, e.getServer().getInfo().getName(), ""));
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.CONNECT, false, e.getServer().getServerInfo().getName(), ""));
     }
 
-    @EventHandler
-    public void onPlayerDisconnectEvent(PlayerDisconnectEvent e) {
+    @Subscribe
+    public void onPlayerDisconnectEvent(DisconnectEvent e) {
         plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.SESSION, false, "", ""));
+        plugin.removeAPPlayer(e.getPlayer().getUniqueId());
     }
 
 }

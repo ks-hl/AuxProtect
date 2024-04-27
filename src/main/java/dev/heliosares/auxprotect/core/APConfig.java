@@ -64,7 +64,7 @@ public class APConfig {
             disableVacuum = config.getBoolean("disablevacuum", false);
         }
         consoleSQL = config.getBoolean("ConsoleSQLCommands", false);
-        if (config.getPlatform() == PlatformType.SPIGOT) {
+        if (config.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
             overrideCommands = config.getBoolean("OverrideCommands");
             inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
             posInterval = config.getLong("Actions.pos.Interval", 10000);

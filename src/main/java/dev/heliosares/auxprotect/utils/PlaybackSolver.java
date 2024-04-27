@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -26,7 +25,15 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.ZoneId;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 public class PlaybackSolver extends BukkitRunnable {
@@ -47,7 +54,7 @@ public class PlaybackSolver extends BukkitRunnable {
     private final Set<Location> modified = new HashSet<>();
 
     public PlaybackSolver(IAuxProtect plugin, SenderAdapter sender, List<DbEntry> entries, long startTime, @Nullable List<BlockAction> blockActions) throws SQLException, LookupException, BusyException {
-        if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
+        if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new UnsupportedOperationException();
         this.audience = (Player) sender.getSender();
         this.realReferenceTime = System.currentTimeMillis();
         this.points = getLocations(plugin, entries, startTime).stream()
@@ -138,7 +145,7 @@ public class PlaybackSolver extends BukkitRunnable {
 
 
     public static List<PosPoint> getLocations(IAuxProtect plugin, List<DbEntry> entries, long startTime) throws SQLException, BusyException {
-        if (plugin.getPlatform() != PlatformType.SPIGOT) throw new UnsupportedOperationException();
+        if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new UnsupportedOperationException();
         Map<String, DbEntry> lastEntries = new HashMap<>();
         entries.sort(Comparator.comparingLong(DbEntry::getTime));
         List<PosPoint> points = new ArrayList<>();

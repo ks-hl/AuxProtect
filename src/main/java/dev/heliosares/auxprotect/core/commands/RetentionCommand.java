@@ -27,7 +27,7 @@ public class RetentionCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
+        return plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && plugin.getAPConfig().isPrivate();
     }
 
     @Override

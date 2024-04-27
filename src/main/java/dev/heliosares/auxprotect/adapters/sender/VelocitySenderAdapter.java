@@ -2,29 +2,20 @@ package dev.heliosares.auxprotect.adapters.sender;
 
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
-import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
-import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.velocity.AuxProtectVelocity;
+import dev.heliosares.auxprotect.velocity.ColorTranslator;
 import net.kyori.adventure.text.Component;
 
 import java.util.UUID;
 
-public class VelocitySenderAdapter extends SenderAdapter {
-
-    private final CommandSource sender;
-    private final AuxProtectVelocity plugin;
+public class VelocitySenderAdapter extends SenderAdapter<CommandSource, AuxProtectVelocity> implements KauriSender {
 
     public VelocitySenderAdapter(AuxProtectVelocity plugin, CommandSource sender) {
-        this.sender = sender;
-        this.plugin = plugin;
+        super(sender, plugin);
     }
 
     public void sendMessageRaw(String message) {
-        sender.sendMessage(Component.text(ChatColor.translateAlternateColorCodes('&', message)));
-    }
-
-    public void sendMessage(BaseComponent... message) {
-        sender.sendMessage(message);
+        sender.sendMessage(Component.text(ColorTranslator.translateAlternateColorCodes(message)));
     }
 
     public boolean hasPermission(String node) {
@@ -43,13 +34,8 @@ public class VelocitySenderAdapter extends SenderAdapter {
     }
 
     @Override
-    public Object getSender() {
-        return sender;
-    }
-
-    @Override
-    public PlatformType getPlatform() {
-        return PlatformType.BUNGEE;
+    public void sendMessage(Component message) {
+        getSender().sendMessage(message);
     }
 
     @Override
@@ -62,9 +48,4 @@ public class VelocitySenderAdapter extends SenderAdapter {
         return sender.equals(plugin.getProxy().getConsoleCommandSource());
     }
 
-    @Override
-    public void teleport(String world, double x, double y, double z, int pitch, int yaw)
-            throws NullPointerException, UnsupportedOperationException {
-        throw new UnsupportedOperationException();
-    }
 }
