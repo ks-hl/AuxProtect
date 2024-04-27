@@ -8,6 +8,7 @@ import com.velocitypowered.api.proxy.ProxyServer;
 import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPermission;
@@ -20,6 +21,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
+import net.kyori.adventure.text.Component;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -76,9 +78,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
         if (o instanceof Player proxiedPlayer) {
             return "$" + proxiedPlayer.getUniqueId().toString();
         }
-        if (o instanceof PendingConnection pendingConnection) {
-            return "$" + pendingConnection.getUniqueId().toString();
-        }
+//        if (o instanceof  pendingConnection) { TODO Velocity equivalent?
+//            return "$" + pendingConnection.getUniqueId().toString();
+//        }
         return "#null";
     }
 
@@ -92,7 +94,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
         enabled = true;
         try {
             config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
-                    this::getResourceAsStream, false));
+                    this::getResource, false));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
@@ -102,7 +104,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
             Language.load(this,
                     () -> new BungeeConfigAdapter(getDataFolder(),
                             "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            this::getResourceAsStream, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
+                            this::getResource, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
 
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
@@ -111,9 +113,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
             print(e1);
         }
 
-        getProxy().getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandPrefix()));
-        getProxy().getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandAlias()));
-        getProxy().getPluginManager().registerListener(this, new APVListener(this));
+        server.getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandPrefix()));
+        server.getPluginManager().registerCommand(this, new APVCommand(this, this.getCommandAlias()));
+        server.getPluginManager().registerListener(this, new APVListener(this));
 
         File sqliteFile = null;
         String uri = "";
@@ -181,7 +183,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
         dbRunnable = new DatabaseRunnable(this, sqlManager);
 
-        getProxy().getScheduler().schedule(this, dbRunnable, 250, 250, TimeUnit.MILLISECONDS);
+        server.getScheduler().buildTask().schedule(this, dbRunnable, 250, 250, TimeUnit.MILLISECONDS);
 
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
@@ -190,8 +192,8 @@ public final class AuxProtectVelocity implements IAuxProtect {
     public void onDisable() {
         enabled = false;
         isShuttingDown = true;
-        getProxy().getPluginManager().unregisterListeners(this);
-        getProxy().getPluginManager().unregisterCommands(this);
+        server.getPluginManager().unregisterListeners(this);
+        server.getPluginManager().unregisterCommands(this);
         if (dbRunnable != null) {
             dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
@@ -291,7 +293,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public void runAsync(Runnable run) {
-        getProxy().getScheduler().runAsync(this, run);
+        server.getScheduler().buildTask(this, run).schedule();
     }
 
     @Override
@@ -301,25 +303,23 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public String getCommandPrefix() {
-        return "auxprotectbungee";
+        return "auxprotectvelocity";
     }
 
     @Override
     public SenderAdapter getConsoleSender() {
-        return new BungeeSenderAdapter(this, this.getProxy().getConsole());
+        return new VelocitySenderAdapter(this, this.getProxy().getConsoleCommandSource());
     }
 
     @Nullable
     @Override
     public SenderAdapter getSenderAdapter(String name) {
-        ProxiedPlayer target = getProxy().getPlayer(name);
-        if (target == null) return null;
-        return new BungeeSenderAdapter(this, target);
+        return server.getPlayer(name).map(player->new VelocitySenderAdapter(this, player)).orElse(null);
     }
 
     @Override
     public boolean isHooked(String name) {
-        // TODO zz Future implementation
+        // TODO Future implementation
         return false;
     }
 
@@ -330,7 +330,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public String getPlatformVersion() {
-        return getProxy().getVersion();
+        return getProxy().getVersion().getVersion();
     }
 
     @Override
@@ -340,7 +340,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public APPlayerVelocity getAPPlayer(SenderAdapter sender) {
-        if (!(sender.getSender() instanceof ProxiedPlayer proxiedPlayer)) return null;
+        if (!(sender.getSender() instanceof Player proxiedPlayer)) return null;
         synchronized (apPlayers) {
             if (apPlayers.containsKey(sender.getUniqueId())) {
                 return apPlayers.get(sender.getUniqueId());
@@ -364,7 +364,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public Set<String> listPlayers() {
-        return getProxy().getPlayers().stream().map(CommandSender::getName).collect(Collectors.toUnmodifiableSet());
+        return server.getAllPlayers().stream().map(Player::getUsername).collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
@@ -384,7 +384,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public void broadcast(String msg, APPermission node) {
-        getProxy().getPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(TextComponent.fromLegacyText(msg)));
+        server.getAllPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(Component.text(msg)));
     }
 
     public String formatMoney(double d) {
@@ -396,5 +396,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
         }
 
         return "$" + (Math.round(d * 100) / 100.0);
+    }
+
+    public ProxyServer getProxy() {
+        return server;
     }
 }

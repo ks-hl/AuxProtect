@@ -1,23 +1,24 @@
 package dev.heliosares.auxprotect.velocity;
 
+import com.velocitypowered.api.proxy.Player;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
 import javax.annotation.Nullable;
 import java.net.InetSocketAddress;
 
-public class APPlayerVelocity extends APPlayer<ProxiedPlayer> {
-    public APPlayerVelocity(IAuxProtect plugin, ProxiedPlayer player) {
+public class APPlayerVelocity extends APPlayer<Player> {
+    public APPlayerVelocity(IAuxProtect plugin, Player player) {
         super(plugin, player);
     }
 
     public String getName() {
-        return player.getName();
+        return player.getUsername();
     }
 
     @Nullable
     public String getIPAddress() {
-        String ip_ = ((InetSocketAddress) player.getSocketAddress()).getAddress().toString();
+        String ip_ = player.getRemoteAddress().getAddress().toString();
         if (ip_.startsWith("/")) ip_ = ip_.substring(1);
         return ip_;
     }
