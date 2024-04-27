@@ -116,6 +116,7 @@ public class VelocityConfigAdapter extends ConfigAdapter {
 
     @Override
     public void load() throws IOException {
+        super.load();
         config.load(Objects.requireNonNull(file).get(), defaults == null ? null : defaults.apply(path));
     }
 

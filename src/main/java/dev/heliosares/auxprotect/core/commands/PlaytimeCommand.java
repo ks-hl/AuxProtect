@@ -11,14 +11,14 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.util.List;
 
-public class PlaytimeCommand extends Command {
+public class PlaytimeCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public PlaytimeCommand(IAuxProtect plugin) {
+    public PlaytimeCommand(P plugin) {
         super(plugin, "playtime", APPermission.LOOKUP_PLAYTIME, false, "pt");
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) {
             throw new SyntaxException();
         }
@@ -37,7 +37,7 @@ public class PlaytimeCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return APCommand.tabCompletePlayerAndTime(plugin, sender, args);
     }
 }

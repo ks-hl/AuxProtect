@@ -24,14 +24,14 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
-public class InventoryCommand extends Command {
+public class InventoryCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA>  {
 
-    public InventoryCommand(IAuxProtect plugin) {
+    public InventoryCommand(P plugin) {
         super(plugin, "inventory", APPermission.INV, true);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) throw new SyntaxException();
         if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new PlatformException();
         if (!(sender.getSender() instanceof Player player)) throw new NotPlayerException();
@@ -122,7 +122,7 @@ public class InventoryCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> out = APCommand.tabCompletePlayerAndTime(plugin, sender, args);
         if (out != null && args.length == 3 && plugin.getAPConfig().getInventoryDiffInterval() > 0) {
             out.add("@");

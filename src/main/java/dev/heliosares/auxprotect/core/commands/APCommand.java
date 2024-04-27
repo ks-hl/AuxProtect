@@ -21,38 +21,42 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class APCommand extends Command {
+public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    private final ArrayList<Command> commands;
+    private final ArrayList<Command<S, P, SA>> commands;
 
     {
         commands = new ArrayList<>();
-        commands.add(new LookupCommand(plugin));
-        commands.add(new PurgeCommand(plugin));
-        commands.add(new HelpCommand(plugin, Collections.unmodifiableList(commands)));
-        commands.add(new SQLCommand(plugin));
-        commands.add(new TimeCommand(plugin));
-        commands.add(new DumpCommand(plugin));
-        commands.add(new PlaytimeCommand(plugin));
-        if (plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
-            commands.add(new TpCommand(plugin).setTabComplete(false));
-            commands.add(new InvCommand(plugin).setTabComplete(false));
-            commands.add(new InventoryCommand(plugin));
-            commands.add(new ActivityCommand(plugin));
-            commands.add(new MoneyCommand(plugin));
-            commands.add(new SaveInvCommand(plugin));
+        commands.add(new LookupCommand<>(plugin));
+        commands.add(new PurgeCommand<>(plugin));
+        commands.add(new HelpCommand<>(plugin, Collections.unmodifiableList(commands)));
+        commands.add(new SQLCommand<>(plugin));
+        commands.add(new TimeCommand<>(plugin));
+        commands.add(new DumpCommand<>(plugin));
+        commands.add(new PlaytimeCommand<>(plugin));
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
+            commands.add(new TpCommand<>(plugin) {{
+                setTabComplete(false);
+            }});
+            commands.add(new InvCommand<>(plugin) {{
+                setTabComplete(false);
+            }});
+            commands.add(new InventoryCommand<>(plugin));
+            commands.add(new ActivityCommand<>(plugin));
+            commands.add(new MoneyCommand<>(plugin));
+            commands.add(new SaveInvCommand<>(plugin));
             if (plugin.getAPConfig().isPrivate()) {
-                commands.add(new RetentionCommand(plugin));
-                commands.add(new XrayCommand(plugin));
+                commands.add(new RetentionCommand<>(plugin));
+                commands.add(new XrayCommand<>(plugin));
             }
         }
     }
 
-    public APCommand(IAuxProtect plugin, String label, String... aliases) {
+    public APCommand(P plugin, String label, String... aliases) {
         super(plugin, label, APPermission.NONE, false, aliases);
     }
 
-    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String[] args) {
+    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter<?, ?> sender, String[] args) {
         if (args.length == 2) {
             return new ArrayList<>(allPlayers(plugin, true));
         } else if (args.length == 3) {
@@ -84,10 +88,10 @@ public class APCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter<?,?> sender, String label, String[] args) {
+    public void onCommand(SA sender, String label, String[] args) {
         if (args.length > 0) {
             boolean match = false;
-            for (Command c : commands) {
+            for (Command<S, P, SA> c : commands) {
                 if (!c.exists() || !c.matches(args[0])) {
                     continue;
                 }
@@ -218,7 +222,7 @@ public class APCommand extends Command {
         }
     }
 
-    private void sendInfo(SenderAdapter sender) {
+    private void sendInfo(SA sender) {
         sender.sendMessageRaw("&9AuxProtect"
                 + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
         sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
@@ -233,7 +237,7 @@ public class APCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> out = new ArrayList<>();
         String currentArg = args[args.length - 1];
 
@@ -250,7 +254,7 @@ public class APCommand extends Command {
             }
         }
 
-        for (Command c : commands) {
+        for (Command<S, P, SA> c : commands) {
             if (!c.exists() || (!c.matches(args[0]) && args.length > 1) || !c.doTabComplete()) {
                 continue;
             }

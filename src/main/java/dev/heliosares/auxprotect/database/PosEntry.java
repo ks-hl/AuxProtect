@@ -1,13 +1,11 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Location;
 
 import java.util.Objects;
@@ -35,9 +33,7 @@ public class PosEntry extends DbEntry {
     }
 
     public PosEntry(long time, int uid, Location location) {
-        super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(),
-                (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()),
-                Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "", SQLManager.getInstance());
+        super(time, uid, EntryAction.POS, false, Objects.requireNonNull(location.getWorld()).getName(), (int) Math.round(location.getX()), (int) Math.round(location.getY()), (int) Math.round(location.getZ()), Math.round(location.getPitch()), Math.round(location.getYaw()), "", -1, "", SQLManager.getInstance());
         this.x = location.getX();
         this.y = location.getY();
         this.z = location.getZ();
@@ -107,20 +103,20 @@ public class PosEntry extends DbEntry {
     }
 
     @Override
-    public void appendCoordinates(SenderAdapter senderAdapter, ComponentBuilder message) {
+    public void appendCoordinates(SenderAdapter<?, ?> senderAdapter, GenericBuilder message) {
         String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
         tpCommand += String.format("%s %s %s ", getDoubleX(), getDoubleY(), getDoubleZ());
         tpCommand += getWorld();
         tpCommand += String.format(" %d %d", getPitch(), getYaw());
 
-        message.append("\n" + " ".repeat(17)).event((HoverEvent) null).event((ClickEvent) null);
-        message.append(String.format(ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld()));
+        message.newLine();
+        message.append(" ".repeat(17));
+        message.append(String.format("(x%d/y%d/z%d/%s)", getX(), getY(), getZ(), getWorld())).color(GenericTextColor.GRAY);
 
         if (senderAdapter == null || APPermission.TP.hasPermission(senderAdapter)) {
-            message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand))
-                    .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(ChatColor.COLOR_CHAR + "7" + tpCommand)));
+            message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, tpCommand)).hover(GenericTextColor.GRAY + tpCommand);
         }
 
-        message.append(String.format(ChatColor.COLOR_CHAR + "7 (p%s/y%d)", getPitch(), getYaw()));
+        message.append(String.format(" (p%s/y%d)", getPitch(), getYaw())).color(GenericTextColor.GRAY);
     }
 }

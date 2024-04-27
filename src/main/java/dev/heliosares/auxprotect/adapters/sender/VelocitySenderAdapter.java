@@ -3,12 +3,12 @@ package dev.heliosares.auxprotect.adapters.sender;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.heliosares.auxprotect.velocity.AuxProtectVelocity;
-import dev.heliosares.auxprotect.velocity.ColorTranslator;
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import net.kyori.adventure.text.Component;
 
 import java.util.UUID;
 
-public class VelocitySenderAdapter extends SenderAdapter<CommandSource, AuxProtectVelocity> implements KauriSender {
+public class VelocitySenderAdapter extends SenderAdapter<CommandSource, AuxProtectVelocity> implements KyoriSender {
 
     public VelocitySenderAdapter(AuxProtectVelocity plugin, CommandSource sender) {
         super(sender, plugin);

@@ -1,4 +1,4 @@
-package dev.heliosares.auxprotect.velocity;
+package dev.heliosares.auxprotect.adapters.message;
 
 import com.google.common.base.Preconditions;
 import net.kyori.adventure.text.Component;

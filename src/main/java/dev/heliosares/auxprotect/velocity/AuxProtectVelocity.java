@@ -105,10 +105,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
         }
         // TODO reloadable
         try {
-            Language.load(this,
-                    () -> new VelocityConfigAdapter(getDataFolder(),
-                            "lang/" + config.getConfig().getString("lang") + ".yml",
-                            this::getResource, false), () -> new VelocityConfigAdapter(getResource("lang/en-us.yml")));
+            Language.load(this, () -> new VelocityConfigAdapter(getDataFolder(), "lang/" + config.getConfig().getString("lang") + ".yml", this::getResource, false), () -> new VelocityConfigAdapter(getResource("lang/en-us.yml")));
 
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
@@ -123,8 +120,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
         File sqliteFile = null;
         String uri;
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
-                    getAPConfig().getDatabase());
+            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {

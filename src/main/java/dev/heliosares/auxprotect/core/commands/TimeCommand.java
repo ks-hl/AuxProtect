@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.core.commands;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
@@ -8,10 +10,6 @@ import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.ChatColor;
 
 import java.time.LocalDateTime;
@@ -19,22 +17,22 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class TimeCommand extends Command {
+public class TimeCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA> {
 
-    public TimeCommand(IAuxProtect plugin) {
+    public TimeCommand(P plugin) {
         super(plugin, "time", APPermission.LOOKUP, false, "t");
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMMyy HH:mm.ss");
         boolean now = args.length == 1;
         if (now || args.length == 2) {
             long time;
             boolean add = false;
-            ComponentBuilder builder;
+            final GenericBuilder builder = new GenericBuilder();
             if (now) {
-                builder = new ComponentBuilder(Language.L.COMMAND__TIME__SERVER_TIME.translate());
+                builder.append(Language.L.COMMAND__TIME__SERVER_TIME.translate());
                 time = 0;
             } else {
                 add = args[1].startsWith("+");
@@ -49,13 +47,13 @@ public class TimeCommand extends Command {
                 } catch (NumberFormatException e) {
                     throw new SyntaxException();
                 }
-                builder = new ComponentBuilder(Language.convert("&9" + timeStr + "&f " + (add ? "from now" : "ago") + ":"));
+                builder.append(Language.convert("&9" + timeStr + "&f " + (add ? "from now" : "ago") + ":"));
             }
             Consumer<String> consume = ln -> {
                 ln = Language.convert(ln);
                 builder.append("\n").append(ln) //
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate()))) //
-                        .event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatColor.stripColor(ln)));
+                        .hover(Language.L.RESULTS__CLICK_TO_COPY.translate()) //
+                        .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatColor.stripColor(ln)));
             };
             consume.accept("&7" + LocalDateTime.now().atZone(plugin.getAPPlayer(sender).getTimeZone().toZoneId()).plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
             if (!now) {
@@ -65,7 +63,7 @@ public class TimeCommand extends Command {
             }
             consume.accept("&7" + (System.currentTimeMillis() + (add ? 1 : -1) * time) + "e");
 
-            sender.sendMessage(builder.create());
+            builder.send(sender);
 
             return;
         }
@@ -73,7 +71,7 @@ public class TimeCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         // TODO
         return null;
     }

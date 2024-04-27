@@ -1,5 +1,8 @@
 package dev.heliosares.auxprotect.core.commands;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
@@ -17,11 +20,6 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
@@ -31,17 +29,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-public class XrayCommand extends Command {
+public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
+    public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMyy HHmm");
     HashMap<String, Results> results = new HashMap<>();
 
-    public XrayCommand(IAuxProtect plugin) {
+    public XrayCommand(P plugin) {
         super(plugin, "xray", APPermission.XRAY, true, "x");
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER) {
             throw new PlatformException();
         }
@@ -133,16 +131,16 @@ public class XrayCommand extends Command {
                         }
                         if (entry.getRating() >= 0 && !override) {
                             sender.sendLang(Language.L.XRAY_ALREADY_RATED);
-                            ComponentBuilder message = new ComponentBuilder();
-                            message.append(ChatColor.RED + "" + ChatColor.BOLD + "[Overwrite]");
+                            GenericBuilder message = new GenericBuilder();
+                            message.append("[Overwrite]").color(GenericTextColor.RED).bold(true);
                             StringBuilder thiscmd = new StringBuilder("/" + label);
                             for (String arg : args) {
                                 thiscmd.append(" ").append(arg);
                             }
-                            message.event(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, thiscmd + " -i"));
-                            message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
-                            player.spigot().sendMessage(message.create());
-                            sender.sendMessageRaw("");
+                            message.click(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, thiscmd + " -i"));
+                            message.hover("Click to overwrite");
+                            message.builderBreak();
+                            message.send(sender);
 
                             return;
                         }
@@ -222,16 +220,18 @@ public class XrayCommand extends Command {
                                     });
                                     sender.sendMessageRaw("&aDone!");
                                 } else {
-                                    ComponentBuilder message = new ComponentBuilder(ChatColor.COLOR_CHAR + "cAre you sure you want to rate all entries from " + name + " as 0?\n\n");
-                                    message.append(ChatColor.COLOR_CHAR + "c" + ChatColor.COLOR_CHAR + "l[Yes]");
+                                    GenericBuilder message = new GenericBuilder().append("Are you sure you want to rate all entries from " + name + " as 0?").color(GenericTextColor.RED);
+                                    message.newLine();
+                                    message.newLine();
+                                    message.append("[Yes]").color(GenericTextColor.RED).bold(true);
                                     StringBuilder thiscmd = new StringBuilder("/" + label);
                                     for (String arg : args) {
                                         thiscmd.append(" ").append(arg);
                                     }
                                     message.event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, thiscmd + " -i"));
-                                    message.event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text("Click to overwrite")));
-                                    player.spigot().sendMessage(message.create());
-                                    sender.sendMessageRaw("");
+                                    message.hover("Click to overwrite");
+                                    message.newLine();
+                                    message.send(sender);
                                 }
                             }, 3000L);
                         } catch (BusyException e) {
@@ -268,7 +268,7 @@ public class XrayCommand extends Command {
         }
     }
 
-    private void nextEntry(AuxProtectSpigot plugin, SenderAdapter player, boolean auto) {
+    private void nextEntry(AuxProtectSpigot plugin, SA player, boolean auto) {
         XrayEntry en = plugin.getVeinManager().next(player.getUniqueId());
         if (en == null) {
             player.sendLang(Language.L.XRAY_DONE);
@@ -291,7 +291,7 @@ public class XrayCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         // TODO This whole thing...
         return null;
     }

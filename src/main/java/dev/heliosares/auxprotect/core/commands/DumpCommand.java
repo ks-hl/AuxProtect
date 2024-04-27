@@ -24,9 +24,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
-public class DumpCommand extends Command {
+public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public DumpCommand(IAuxProtect plugin) {
+    public DumpCommand(P plugin) {
         super(plugin, "dump", APPermission.ADMIN, true, "stats");
     }
 
@@ -193,7 +193,7 @@ public class DumpCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         boolean simple = false;
         boolean chat = false;
         boolean file = false;
@@ -228,7 +228,7 @@ public class DumpCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> out = new ArrayList<>();
         out.add("simple");
         out.add("chat");

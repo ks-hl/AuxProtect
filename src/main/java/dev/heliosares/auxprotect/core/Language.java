@@ -1,8 +1,8 @@
 package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.utils.ColorTranslate;
 
 import javax.annotation.Nullable;
 import java.io.File;
@@ -90,7 +90,7 @@ public class Language {
         if (c3 != null)
             s = s.replace("&t", c3);
         s = s.replace("$prefix", plugin.getCommandAlias());
-        return ColorTranslate.cc(s);
+        return ColorTranslator.translateAlternateColorCodes(s);
     }
 
     public enum L {

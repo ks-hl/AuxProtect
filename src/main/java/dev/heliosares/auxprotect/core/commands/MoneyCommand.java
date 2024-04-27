@@ -10,14 +10,14 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.util.List;
 
-public class MoneyCommand extends Command {
+public class MoneyCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public MoneyCommand(IAuxProtect plugin) {
+    public MoneyCommand(P plugin) {
         super(plugin, "money", APPermission.LOOKUP_MONEY, false);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) {
             throw new SyntaxException();
         }
@@ -31,11 +31,11 @@ public class MoneyCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return APCommand.tabCompletePlayerAndTime(plugin, sender, args);
     }
 }

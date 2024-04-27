@@ -3,8 +3,6 @@ package dev.heliosares.auxprotect.adapters.sender;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
-import net.kyori.adventure.text.Component;
-import net.md_5.bungee.api.chat.BaseComponent;
 
 import java.util.UUID;
 
@@ -35,11 +33,6 @@ public abstract class SenderAdapter<S, P extends IAuxProtect> {
 
     public void sendLang(Language.L lang, Object... format) {
         sendMessageRaw(lang.translate(format));
-    }
-
-    @Deprecated
-    public void sendMessage(BaseComponent... message) {
-        throw new UnsupportedOperationException();
     }
 
     public abstract void sendMessageRaw(String message);

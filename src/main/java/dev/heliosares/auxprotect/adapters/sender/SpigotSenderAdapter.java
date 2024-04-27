@@ -1,8 +1,7 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
-import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
@@ -13,24 +12,23 @@ import org.bukkit.scheduler.BukkitRunnable;
 
 import java.util.UUID;
 
-public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtectSpigot> implements PositionedSender {
+public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtectSpigot> implements PositionedSender, BungeeComponentSender {
 
     public SpigotSenderAdapter(AuxProtectSpigot plugin, CommandSender sender) {
         super(sender, plugin);
     }
 
     public void sendMessageRaw(String message) {
-        sender.sendMessage(ChatColor.translateAlternateColorCodes('&', message));
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void sendMessage(BaseComponent... message) {
-        sender.spigot().sendMessage(message);
+        sender.sendMessage(ColorTranslator.translateAlternateColorCodes(message));
     }
 
     public boolean hasPermission(String node) {
         return sender.hasPermission(node);
+    }
+
+    @Override
+    public void sendMessage(BaseComponent... component) {
+        getSender().spigot().sendMessage(component);
     }
 
     public String getName() {

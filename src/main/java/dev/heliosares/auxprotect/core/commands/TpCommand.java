@@ -13,14 +13,14 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.util.List;
 
-public class TpCommand extends Command {
+public class TpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public TpCommand(IAuxProtect plugin) {
+    public TpCommand(P plugin) {
         super(plugin, "tp", APPermission.TP, false);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length < 5) {
             throw new SyntaxException();
         }
@@ -50,7 +50,7 @@ public class TpCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return null;
     }
 }

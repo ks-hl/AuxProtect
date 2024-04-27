@@ -5,7 +5,6 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.utils.ActivitySolver;
-import net.md_5.bungee.api.chat.BaseComponent;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -41,9 +40,7 @@ public class ActivityResults extends Results {
         // long thisRangeStart = rangeStart + (page - 1) * millisperpage;
         long thisRangeEnd = rangeEnd - (getNumPages(perPage_) - page) * millisperpage;
 
-        for (BaseComponent[] baseComponent : ActivitySolver.solveActivity(getEntries(), Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd)) {
-            player.sendMessage(baseComponent);
-        }
+        ActivitySolver.solveActivity(getEntries(), Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd).send(player);
 
         super.sendArrowKeys(page);
     }

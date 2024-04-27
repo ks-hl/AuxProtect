@@ -11,17 +11,17 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
-public class HelpCommand extends Command {
-    private final List<Command> commands;
+public class HelpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
+    private final List<Command<S, P, SA>> commands;
 
-    public HelpCommand(IAuxProtect plugin, List<Command> commands) {
+    public HelpCommand(P plugin, List<Command<S, P, SA>> commands) {
         super(plugin, "help", APPermission.HELP, false);
         this.commands = commands;
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
-        Command helpOn;
+    public void onCommand(SA sender, String label, String[] args) {
+        Command<S, P, SA> helpOn;
         if (args.length < 2) {
             helpOn = this;
         } else {
@@ -53,7 +53,7 @@ public class HelpCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return commands.stream().filter(
                         c -> c.hasPermission(sender) && Language.L.COMMAND__HELP.translateSubcategoryList(c.getLabel()) != null)
                 .map(c -> c.getLabel().toLowerCase()).collect(Collectors.toList());

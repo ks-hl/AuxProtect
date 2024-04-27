@@ -9,14 +9,14 @@ import net.md_5.bungee.api.plugin.TabExecutor;
 public class APBCommand extends Command implements TabExecutor {
 
     private final AuxProtectBungee plugin;
-    private final APCommand apcommand;
+    private final APCommand<CommandSender, AuxProtectBungee, BungeeSenderAdapter> apcommand;
     private final String label;
 
     public APBCommand(AuxProtectBungee plugin, String label) {
         super(label);
         this.plugin = plugin;
         this.label = label;
-        this.apcommand = new APCommand(plugin, label);
+        this.apcommand = new APCommand<>(plugin, label);
     }
 
     @Override

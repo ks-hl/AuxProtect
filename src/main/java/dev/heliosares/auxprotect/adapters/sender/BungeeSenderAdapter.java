@@ -1,10 +1,8 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
-import net.kyori.adventure.text.Component;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;
-import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
@@ -18,12 +16,6 @@ public class BungeeSenderAdapter extends SenderAdapter<CommandSender, AuxProtect
 
     public void sendMessageRaw(String message) {
         sender.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
-    }
-
-    @SuppressWarnings("deprecation")
-    @Override
-    public void sendMessage(BaseComponent... message) {
-        sender.sendMessage(message);
     }
 
     public boolean hasPermission(String node) {

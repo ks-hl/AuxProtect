@@ -13,11 +13,11 @@ import java.util.List;
 public class APSCommand implements CommandExecutor, TabExecutor {
 
     private final AuxProtectSpigot plugin;
-    private final APCommand apcommand;
+    private final APCommand<CommandSender, AuxProtectSpigot, SpigotSenderAdapter> apcommand;
 
     public APSCommand(AuxProtectSpigot plugin) {
         this.plugin = plugin;
-        this.apcommand = new APCommand(plugin, plugin.getCommandPrefix());
+        this.apcommand = new APCommand<>(plugin, plugin.getCommandPrefix());
     }
 
     @Override
