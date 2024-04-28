@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.adapters.sender;
 import com.velocitypowered.api.command.CommandSource;
 import com.velocitypowered.api.proxy.Player;
 import dev.heliosares.auxprotect.velocity.AuxProtectVelocity;
-import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import net.kyori.adventure.text.Component;
 
 import java.util.UUID;
@@ -14,8 +13,8 @@ public class VelocitySenderAdapter extends SenderAdapter<CommandSource, AuxProte
         super(sender, plugin);
     }
 
-    public void sendMessageRaw(String message) {
-        sender.sendMessage(Component.text(ColorTranslator.translateAlternateColorCodes(message)));
+    public void sendMessageRaw_(String message) {
+        sender.sendMessage(Component.text(message));
     }
 
     public boolean hasPermission(String node) {

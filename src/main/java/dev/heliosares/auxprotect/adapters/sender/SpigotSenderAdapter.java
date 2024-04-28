@@ -18,8 +18,8 @@ public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtect
         super(sender, plugin);
     }
 
-    public void sendMessageRaw(String message) {
-        sender.sendMessage(ColorTranslator.translateAlternateColorCodes(message));
+    public void sendMessageRaw_(String message) {
+        sender.sendMessage(message);
     }
 
     public boolean hasPermission(String node) {

@@ -75,19 +75,14 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
-            config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
-                    this::getResourceAsStream, false));
+            config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null, this::getResourceAsStream));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
         }
         // TODO reloadable
         try {
-            Language.load(this,
-                    () -> new BungeeConfigAdapter(getDataFolder(),
-                            "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            this::getResourceAsStream, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
-
+            Language.load(this, () -> new BungeeConfigAdapter(getDataFolder(), "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResourceAsStream), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
@@ -102,8 +97,7 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         File sqliteFile = null;
         String uri = "";
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
-                    getAPConfig().getDatabase());
+            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {

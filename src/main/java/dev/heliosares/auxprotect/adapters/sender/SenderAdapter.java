@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -35,7 +36,11 @@ public abstract class SenderAdapter<S, P extends IAuxProtect> {
         sendMessageRaw(lang.translate(format));
     }
 
-    public abstract void sendMessageRaw(String message);
+    public final void sendMessageRaw(String message) {
+        sendMessageRaw_(stripColorIfConsole(ColorTranslator.translateAlternateColorCodes(message)));
+    }
+
+    protected abstract void sendMessageRaw_(String message);
 
     public abstract boolean hasPermission(String node);
 
@@ -43,4 +48,8 @@ public abstract class SenderAdapter<S, P extends IAuxProtect> {
 
     public abstract boolean isConsole();
 
+    protected final String stripColorIfConsole(String text) {
+        if (!isConsole()) return text;
+        return ColorTranslator.stripColor(text);
+    }
 }

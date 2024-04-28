@@ -18,9 +18,8 @@ import java.util.stream.Collectors;
 public class BungeeConfigAdapter extends ConfigAdapter {
     private Configuration config;
 
-    public BungeeConfigAdapter(File parent, String path, @Nullable Configuration config,
-                               @Nullable Function<String, InputStream> defaults, boolean createBlank) {
-        super(parent, path, defaults, createBlank);
+    public BungeeConfigAdapter(File parent, String path, @Nullable Configuration config, @Nullable Function<String, InputStream> defaults) {
+        super(parent, path, defaults);
         this.config = config;
     }
 

@@ -20,9 +20,8 @@ import java.util.stream.Collectors;
 public class SpigotConfigAdapter extends ConfigAdapter {
     private FileConfiguration config;
 
-    public SpigotConfigAdapter(File parent, String path, FileConfiguration config,
-                               @Nullable Function<String, InputStream> defaults, boolean createBlank) {
-        super(parent, path, defaults, createBlank);
+    public SpigotConfigAdapter(File parent, String path, FileConfiguration config, @Nullable Function<String, InputStream> defaults) {
+        super(parent, path, defaults);
         this.config = config;
     }
 

@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.adapters.config;
 
+import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.kshl.kshlib.yaml.YamlConfig;
 
@@ -8,20 +9,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-public class VelocityConfigAdapter extends ConfigAdapter {
+public class YamlConfigAdapter extends ConfigAdapter {
     private YamlConfig config;
 
-    public VelocityConfigAdapter(File parent, String path, @Nullable Function<String, InputStream> defaults, boolean createBlank) {
-        super(parent, path, defaults, createBlank);
+    public YamlConfigAdapter(File parent, String path, @Nullable Function<String, InputStream> defaults) {
+        super(parent, path, defaults);
         this.config = new YamlConfig();
     }
 
-    public VelocityConfigAdapter(InputStream in) {
+    public YamlConfigAdapter(InputStream in) {
         super(in);
     }
 
@@ -77,12 +77,12 @@ public class VelocityConfigAdapter extends ConfigAdapter {
 
     @Override
     public Set<String> getKeys(boolean recur) {
-        return config.getKeys().stream().collect(Collectors.toUnmodifiableSet());
+        return config.getKeys(recur).stream().collect(Collectors.toUnmodifiableSet());
     }
 
     @Override
     public Set<String> getKeys(String key, boolean recur) {
-        return config.getSection(key).map(s -> s.getKeys().stream().collect(Collectors.toUnmodifiableSet())).orElse(Set.of());
+        return config.getSection(key).map(s -> s.getKeys(recur).stream().collect(Collectors.toUnmodifiableSet())).orElse(Set.of());
     }
 
     @Override
@@ -117,7 +117,17 @@ public class VelocityConfigAdapter extends ConfigAdapter {
     @Override
     public void load() throws IOException {
         super.load();
-        config.load(Objects.requireNonNull(file).get(), defaults == null ? null : defaults.apply(path));
+        config = new YamlConfig();
+        if (in != null) {
+            config.load(in);
+            return;
+        }
+        var file = getFile();
+        if (file == null) {
+            AuxProtectAPI.warning("File is null");
+            return;
+        }
+        config.load(file, null);
     }
 
     @Override
@@ -131,7 +141,7 @@ public class VelocityConfigAdapter extends ConfigAdapter {
     }
 
     @Override
-    protected VelocityConfigAdapter fromInputStream(InputStream stream) {
-        return new VelocityConfigAdapter(stream);
+    protected YamlConfigAdapter fromInputStream(InputStream stream) {
+        return new YamlConfigAdapter(stream);
     }
 }

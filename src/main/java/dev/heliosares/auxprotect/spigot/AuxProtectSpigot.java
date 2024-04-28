@@ -146,16 +146,14 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         this.getConfig().options().copyDefaults(true);
 
         try {
-            config.load(this, new SpigotConfigAdapter(this.getRootDirectory(), "config.yml", this.getConfig(),
-                    this::getResource, false));
+            config.load(this, new SpigotConfigAdapter(this.getRootDirectory(), "config.yml", this.getConfig(), this::getResource));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
         }
 
         try {
-            Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(),
-                    "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource, false), () -> new SpigotConfigAdapter(getResource("lang/en-us.yml")));
+            Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(), "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource), () -> new SpigotConfigAdapter(getResource("lang/en-us.yml")));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
@@ -176,8 +174,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         File sqliteFile = null;
         String uri;
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
-                    getAPConfig().getDatabase());
+            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {
@@ -232,8 +229,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
                 if (EntryAction.VEIN.isEnabled()) {
                     try {
-                        ArrayList<DbEntry> veins = sqlManager
-                                .getAllUnratedXrayRecords(System.currentTimeMillis() - (3600000L * 24L * 7L));
+                        ArrayList<DbEntry> veins = sqlManager.getAllUnratedXrayRecords(System.currentTimeMillis() - (3600000L * 24L * 7L));
                         if (veins != null) {
                             for (DbEntry vein : veins) {
                                 veinManager.add((XrayEntry) vein);
@@ -251,11 +247,9 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
                 long delay = 15 * 20;
                 if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
-                    debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                            3);
+                    debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
                 } else {
-                    debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED",
-                            3);
+                    debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
                     delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
                 }
 
@@ -377,8 +371,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         }
 
                         if (config.getInventoryInterval() > 0) {
-                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config
-                                    .getInventoryInterval()) {
+                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config.getInventoryInterval()) {
                                 apPlayer.logInventory("periodic");
                             }
                         }
@@ -390,8 +383,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         }
 
                         if (config.getPosInterval() > 0) {
-                            if (apPlayer.lastMoved > apPlayer.lastLoggedPos
-                                    && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
+                            if (apPlayer.lastMoved > apPlayer.lastLoggedPos && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
                                 apPlayer.logPos(apPlayer.getPlayer().getLocation());
                             } else if (config.doLogIncrementalPosition()) {
                                 apPlayer.tickDiffPos();
@@ -403,10 +395,8 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         }
 
                         if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-                            if (apPlayer.lastLocation != null
-                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.getPlayer().getWorld())) {
-                                apPlayer.movedAmountThisMinute += Math
-                                        .min(apPlayer.lastLocation.distance(apPlayer.getPlayer().getLocation()), 10);
+                            if (apPlayer.lastLocation != null && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.getPlayer().getWorld())) {
+                                apPlayer.movedAmountThisMinute += Math.min(apPlayer.lastLocation.distance(apPlayer.getPlayer().getLocation()), 10);
                             }
                             apPlayer.lastLocation = apPlayer.getPlayer().getLocation();
                             apPlayer.lastCheckedMovement = System.currentTimeMillis();
@@ -427,9 +417,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                 apPlayer.hasMovedThisMinute = false;
                             }
 
-                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false,
-                                    apPlayer.getPlayer().getLocation(), "",
-                                    (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
+                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false, apPlayer.getPlayer().getLocation(), "", (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
                             apPlayer.lastLoggedActivity = System.currentTimeMillis();
 
                             int tallied = 0;
@@ -443,20 +431,17 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                     inactive++;
                                 }
                             }
-                            if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getPlayer())) {
+                            if (tallied >= 15 && (double) inactive / (double) tallied > 0.75 && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getPlayer())) {
                                 if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
                                     apPlayer.lastNotifyInactive = System.currentTimeMillis();
-                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.getPlayer().getName(),
-                                            inactive, tallied);
+                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.getPlayer().getName(), inactive, tallied);
                                     for (Player player : Bukkit.getOnlinePlayers()) {
                                         if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
                                             player.sendMessage(msg);
                                         }
                                     }
                                     info(msg);
-                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false,
-                                            apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
+                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false, apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
                                 }
                             }
 
@@ -511,8 +496,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
             @Override
             public void run() {
-                if (config.shouldCheckForUpdates()
-                        && System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
+                if (config.shouldCheckForUpdates() && System.currentTimeMillis() - lastCheckedForUpdate > 1000 * 60 * 60) {
                     lastCheckedForUpdate = System.currentTimeMillis();
                     debug("Checking for updates...", 1);
                     String newVersion;
@@ -522,11 +506,9 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         print(e);
                         return;
                     }
-                    debug("New Version: " + newVersion + " Current Version: "
-                            + AuxProtectSpigot.this.getDescription().getVersion(), 1);
+                    debug("New Version: " + newVersion + " Current Version: " + AuxProtectSpigot.this.getDescription().getVersion(), 1);
                     if (newVersion != null) {
-                        int compare = UpdateChecker.compareVersions(AuxProtectSpigot.this.getDescription().getVersion(),
-                                newVersion);
+                        int compare = UpdateChecker.compareVersions(AuxProtectSpigot.this.getDescription().getVersion(), newVersion);
                         if (compare <= 0) {
                             update = null;
                         } else {
@@ -604,8 +586,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     public void tellAboutUpdate(CommandSender sender) {
-        new SpigotSenderAdapter(this, sender).sendLang(Language.L.UPDATE,
-                AuxProtectSpigot.this.getDescription().getVersion(), update);
+        new SpigotSenderAdapter(this, sender).sendLang(Language.L.UPDATE, AuxProtectSpigot.this.getDescription().getVersion(), update);
     }
 
     @Override

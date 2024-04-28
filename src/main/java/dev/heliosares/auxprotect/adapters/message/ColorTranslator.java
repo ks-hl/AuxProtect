@@ -1,12 +1,8 @@
 package dev.heliosares.auxprotect.adapters.message;
 
-import com.google.common.base.Preconditions;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.TextComponent;
-import net.kyori.adventure.text.format.Style;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 import org.bukkit.ChatColor;
-import org.checkerframework.checker.units.qual.C;
 import org.jetbrains.annotations.NotNull;
 
 public class ColorTranslator {
@@ -21,6 +17,12 @@ public class ColorTranslator {
         }
         return new String(b);
     }
+
+    @NotNull
+    public static String stripColor(@NotNull String text) {
+        return text.replaceAll("[§&][0-9a-flmnorA-FLMNOR]", "");
+    }
+
     public static String toString(Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
     }

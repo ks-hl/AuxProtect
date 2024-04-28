@@ -4,7 +4,6 @@ import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 
 import javax.annotation.Nullable;
-import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -23,24 +22,22 @@ public abstract class ConfigAdapter {
     protected final String path;
     @Nullable
     protected final Function<String, InputStream> defaults;
-    protected final boolean createBlank;
 
     @Nullable
     protected final InputStream in;
 
-    public ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults, boolean createBlank) {
-        this(Objects.requireNonNull(parent), Objects.requireNonNull(path), defaults, createBlank, null);
+    public ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults) {
+        this(Objects.requireNonNull(parent), Objects.requireNonNull(path), defaults, null);
     }
 
     public ConfigAdapter(InputStream in) {
-        this(null, null, null, false, in);
+        this(null, null, null, in);
     }
 
-    private ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults, boolean createBlank, @Nullable InputStream in) {
+    private ConfigAdapter(@Nullable File parent, @Nullable String path, @Nullable Function<String, InputStream> defaults, @Nullable InputStream in) {
         this.file = parent == null || path == null ? null : () -> new File(parent, path);
         this.path = path;
         this.defaults = defaults;
-        this.createBlank = createBlank;
         this.in = in;
     }
 
@@ -100,12 +97,7 @@ public abstract class ConfigAdapter {
                     }
                 }
             }
-            if (createBlank) {
-                file.createNewFile();
-                AuxProtectAPI.info("Created " + path);
-            } else {
-                throw new FileNotFoundException(file.getAbsolutePath());
-            }
+            throw new FileNotFoundException(file.getAbsolutePath());
         }
     }
 

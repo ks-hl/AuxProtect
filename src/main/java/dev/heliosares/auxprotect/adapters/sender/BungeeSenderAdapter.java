@@ -14,8 +14,8 @@ public class BungeeSenderAdapter extends SenderAdapter<CommandSender, AuxProtect
         super(sender, plugin);
     }
 
-    public void sendMessageRaw(String message) {
-        sender.sendMessage(TextComponent.fromLegacyText(ChatColor.translateAlternateColorCodes('&', message)));
+    public void sendMessageRaw_(String message) {
+        sender.sendMessage(TextComponent.fromLegacyText(message));
     }
 
     public boolean hasPermission(String node) {

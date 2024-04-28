@@ -16,13 +16,13 @@ public class JSONConfigAdapter extends ConfigAdapter {
     JSONObject config;
 
     public JSONConfigAdapter(File parent, String path) {
-        super(parent, path, null, true);
+        super(parent, path, null);
     }
 
     @Override
     public void load() throws IOException {
         super.load();
-
+        getFile().createNewFile();
 
         StringBuilder content = new StringBuilder();
         try (Scanner scanner = new Scanner(getFile())) {

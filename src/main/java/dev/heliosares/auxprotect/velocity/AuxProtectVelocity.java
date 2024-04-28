@@ -10,7 +10,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
-import dev.heliosares.auxprotect.adapters.config.VelocityConfigAdapter;
+import dev.heliosares.auxprotect.adapters.config.YamlConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -98,23 +98,22 @@ public final class AuxProtectVelocity implements IAuxProtect {
         AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
-            config.load(this, new VelocityConfigAdapter(this.getDataFolder(), "config.yml", this::getResource, false));
-        } catch (IOException e1) {
+            config.load(this, new YamlConfigAdapter(this.getDataFolder(), "config.yml", this::getResource));
+        } catch (Exception e1) {
             warning("Failed to load config");
             print(e1);
         }
         // TODO reloadable
         try {
-            Language.load(this, () -> new VelocityConfigAdapter(getDataFolder(), "lang/" + config.getConfig().getString("lang") + ".yml", this::getResource, false), () -> new VelocityConfigAdapter(getResource("lang/en-us.yml")));
-
+            Language.load(this, () -> new YamlConfigAdapter(getDataFolder(), "lang/" + config.getConfig().getString("lang") + ".yml", this::getResource), () -> new YamlConfigAdapter(getResource("lang/en-us.yml")));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
-        } catch (IOException e1) {
+        } catch (Exception e1) {
             warning("Failed to load lang");
             print(e1);
         }
 
-        server.getCommandManager().register(getCommandPrefix(), new APVCommand(this, this.getCommandPrefix()), getCommandAlias());
+        server.getCommandManager().register(getCommandPrefix(), new APVCommand(this, this.getCommandPrefix()), getCommandAlias(), "apb");
         server.getEventManager().register(this, new APVListener(this));
 
         File sqliteFile = null;

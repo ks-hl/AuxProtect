@@ -141,7 +141,11 @@ public class GenericBuilder {
         if (to instanceof BungeeComponentSender bungeeComponentSender) {
             ComponentBuilder builder = new ComponentBuilder();
             for (GenericComponent component : line) {
-                builder.append(component.text)
+                String text = component.text;
+                if (to.isConsole()) {
+                    text = ColorTranslator.stripColor(text);
+                }
+                builder.append(text)
                         .bold(component.bold)
                         .italic(component.italics)
                         .underlined(component.underlined)
@@ -169,16 +173,14 @@ public class GenericBuilder {
                     builder.event((net.md_5.bungee.api.chat.HoverEvent) null);
                 } else {
                     switch (component.hoverEvent.action) {
-                        case SHOW_TEXT -> {
-                            builder.event(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new Text(component.hoverEvent.value)));
-                        }
-                        case SHOW_ITEM -> {
-                            builder.event(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_ITEM, new Item( //
-                                    component.hoverEvent.itemKey, //
-                                    component.hoverEvent.quantity, //
-                                    ItemTag.ofNbt(component.hoverEvent.nbt) //
-                            )));
-                        }
+                        case SHOW_TEXT ->
+                                builder.event(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_TEXT, new Text(component.hoverEvent.value)));
+                        case SHOW_ITEM ->
+                                builder.event(new net.md_5.bungee.api.chat.HoverEvent(net.md_5.bungee.api.chat.HoverEvent.Action.SHOW_ITEM, new Item( //
+                                        component.hoverEvent.itemKey, //
+                                        component.hoverEvent.quantity, //
+                                        ItemTag.ofNbt(component.hoverEvent.nbt) //
+                                )));
                     }
                 }
             }
@@ -186,7 +188,11 @@ public class GenericBuilder {
         } else if (to instanceof KyoriSender kyoriSender) {
             TextComponent.Builder builder = Component.text();
             for (GenericComponent component : line) {
-                Component component1 = Component.text(component.text);
+                String text = component.text;
+                if (to.isConsole()) {
+                    text = ColorTranslator.stripColor(text);
+                }
+                Component component1 = Component.text(text);
                 if (component.bold) component1 = component1.decorate(TextDecoration.BOLD);
                 if (component.italics) component1 = component1.decorate(TextDecoration.ITALIC);
                 if (component.underlined) component1 = component1.decorate(TextDecoration.UNDERLINED);
@@ -246,7 +252,11 @@ public class GenericBuilder {
         } else {
             StringBuilder out = new StringBuilder();
             for (GenericComponent component : line) {
-                out.append(component.text);
+                String text = component.text;
+                if (to.isConsole()) {
+                    text = ColorTranslator.stripColor(text);
+                }
+                out.append(text);
             }
             to.sendMessageRaw(out.toString());
         }
