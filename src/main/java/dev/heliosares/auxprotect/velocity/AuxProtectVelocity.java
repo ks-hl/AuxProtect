@@ -10,6 +10,7 @@ import com.velocitypowered.api.plugin.annotation.DataDirectory;
 import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
+import dev.heliosares.auxprotect.AuxProtectVersion;
 import dev.heliosares.auxprotect.adapters.config.YamlConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
@@ -47,7 +48,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
-@Plugin(id = "auxprotect", name = "AuxProtect", version = "CHANGEME", url = "https://github.com/ks-hl/AuxProtect")
+@Plugin(id = "auxprotect", name = "AuxProtect", version = AuxProtectVersion.VERSION, url = "https://github.com/ks-hl/AuxProtect")
 public final class AuxProtectVelocity implements IAuxProtect {
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectVelocity instance;
@@ -170,7 +171,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
         dbRunnable = new DatabaseRunnable(this, sqlManager);
 
-        server.getScheduler().buildTask(this, dbRunnable).repeat(250, TimeUnit.MILLISECONDS);
+        server.getScheduler().buildTask(this, dbRunnable).repeat(250, TimeUnit.MILLISECONDS).schedule();
 
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
