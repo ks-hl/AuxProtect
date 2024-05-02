@@ -72,7 +72,7 @@ public class DatabaseRunnable implements Runnable {
         }
         if (lockedSince > 0) {
             long locked = System.currentTimeMillis() - lockedSince;
-            if (locked > 20000 && System.currentTimeMillis() - lastWarn > 60000) {
+            if (locked > 120000 && System.currentTimeMillis() - lastWarn > 600000) {
                 lastWarn = System.currentTimeMillis();
                 plugin.warning("Overlapping logging windows by " + locked + " ms.");
             }
