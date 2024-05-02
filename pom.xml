@@ -1,7 +1,7 @@
 <project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>AuxProtect</groupId>
+    <groupId>dev.heliosares</groupId>
     <artifactId>AuxProtect</artifactId>
     <version>1.4-pre1</version>
     <name>AuxProtect</name>
@@ -58,7 +58,6 @@
                                 <includes>
                                     <include>org.json:json</include>
                                     <include>dev.kshl:KshLib</include>
-                                    <include>org.xerial:sqlite-jdbc</include>
                                 </includes>
                             </artifactSet>
                             <minimizeJar>false</minimizeJar>
