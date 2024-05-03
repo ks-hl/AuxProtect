@@ -178,9 +178,9 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
             build.append("REDACTED\n");
             return build.toString();
         }
-        if (plugin.getAPConfig().getConfig().isSection(parent)) {
+        if (plugin.getAPConfig().getConfig().getSection(parent).isPresent()) {
             build.append("\n");
-            for (String key : plugin.getAPConfig().getConfig().getKeys(parent, false)) {
+            for (String key : plugin.getAPConfig().getConfig().getSection(parent).get().getKeys(false)) {
                 if (key.isEmpty()) {
                     continue;
                 }

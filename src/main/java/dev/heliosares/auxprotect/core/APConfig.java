@@ -1,14 +1,16 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.KeyUtil;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import dev.kshl.kshlib.yaml.YamlConfig;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Scanner;
+import java.util.function.Supplier;
 
 public class APConfig {
 
@@ -28,7 +30,7 @@ public class APConfig {
     private boolean sessionLogIP;
     private boolean skipRowCount;
     private KeyUtil key;
-    private ConfigAdapter config;
+    private YamlConfig config;
     private int debug;
     private boolean mysql;
     private String host;
@@ -41,43 +43,43 @@ public class APConfig {
     private boolean demoMode;
     private boolean sanitizeUnicode;
 
-    public void load(IAuxProtect plugin, ConfigAdapter config) throws IOException {
+    public void load(IAuxProtect plugin, File file, Supplier<InputStream> streamSupplier) throws IOException {
         this.plugin = plugin;
-        this.config = config;
+        this.config = new YamlConfig(file, streamSupplier);
         reload();
     }
 
     public void reload() throws IOException {
         config.load();
         loadKey(plugin);
-        this.debug = config.getInt("debug", 0);
-        checkforupdates = config.getBoolean("checkforupdates", true);
-        mysql = config.getBoolean("MySQL.use", false);
+        this.debug = config.getInt("debug").orElse(0);
+        checkforupdates = config.getBoolean("checkforupdates").orElse(true);
+        mysql = config.getBoolean("MySQL.use").orElse(false);
         if (mysql) {
-            user = config.getString("MySQL.username", "");
-            pass = config.getString("MySQL.password", "");
-            host = config.getString("MySQL.host", "localhost");
-            port = config.getString("MySQL.port", "3306");
-            database = config.getString("MySQL.database", "database");
-            tablePrefix = config.getString("MySQL.table-prefix");
+            user = config.getString("MySQL.username").orElse("");
+            pass = config.getString("MySQL.password").orElse("");
+            host = config.getString("MySQL.host").orElse("localhost");
+            port = config.getString("MySQL.port").orElse("3306");
+            database = config.getString("MySQL.database").orElse("database");
+            tablePrefix = config.getString("MySQL.table-prefix").orElse("");
         } else {
-            disableVacuum = config.getBoolean("disablevacuum", false);
+            disableVacuum = config.getBoolean("disablevacuum").orElse(false);
         }
-        consoleSQL = config.getBoolean("ConsoleSQLCommands", false);
-        if (config.getPlatform() .getLevel() == PlatformType.Level.SERVER) {
-            overrideCommands = config.getBoolean("OverrideCommands");
-            inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange", false);
-            posInterval = config.getLong("Actions.pos.Interval", 10000);
-            inventoryInterval = config.getLong("Actions.inventory.Interval", 3600000);
-            inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval", 0);
-            moneyInterval = config.getLong("Actions.money.Interval", 60000);
-            townBankInterval = config.getLong("Actions.townbank.Interval", 5000);
-            nationBankInterval = config.getLong("Actions.nationbank.Interval", 5000);
-            logIncrementalPosition = config.getBoolean("Actions.pos.Incremental", false);
+        consoleSQL = config.getBoolean("ConsoleSQLCommands").orElse(false);
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
+            overrideCommands = config.getBoolean("OverrideCommands").orElse(false);
+            inventoryOnWorldChange = config.getBoolean("Actions.inventory.WorldChange").orElse(false);
+            posInterval = config.getLong("Actions.pos.Interval").orElse(10000L);
+            inventoryInterval = config.getLong("Actions.inventory.Interval").orElse(3600000L);
+            inventoryDiffInterval = config.getLong("Actions.inventory.Diff-Interval").orElse(0L);
+            moneyInterval = config.getLong("Actions.money.Interval").orElse(60000L);
+            townBankInterval = config.getLong("Actions.townbank.Interval").orElse(5000L);
+            nationBankInterval = config.getLong("Actions.nationbank.Interval").orElse(5000L);
+            logIncrementalPosition = config.getBoolean("Actions.pos.Incremental").orElse(false);
         }
-        sanitizeUnicode = config.getBoolean("SanitizeUnicode");
-        sessionLogIP = config.getBoolean("Actions.session.LogIP", true);
-        skipRowCount = config.getBoolean("SkipRowCount", false);
+        sanitizeUnicode = config.getBoolean("SanitizeUnicode").orElse(false);
+        sessionLogIP = config.getBoolean("Actions.session.LogIP").orElse(true);
+        skipRowCount = config.getBoolean("SkipRowCount").orElse(false);
         for (EntryAction action : EntryAction.values()) {
             if (!action.exists()) {
                 action.setEnabled(false);
@@ -87,16 +89,15 @@ public class APConfig {
                 action.setEnabled(true);
                 continue;
             }
-            boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled", true);
-            boolean priority = config.getBoolean("Actions." + action.toString().toLowerCase() + ".LowestPriority",
-                    false);
+            boolean enabled = config.getBoolean("Actions." + action.toString().toLowerCase() + ".Enabled").orElse(true);
+            boolean priority = config.getBoolean("Actions." + action.toString().toLowerCase() + ".LowestPriority").orElse(false);
             action.setEnabled(enabled);
             action.setLowestpriority(priority);
             config.set("Actions." + action.toString().toLowerCase() + ".Enabled", enabled);
         }
 
-        if (config.getBoolean("AutoPurge.Enabled")) {
-            autoPurgePeriodicity = TimeUtil.stringToMillis(config.getString("AutoPurge.periodicity"));
+        if (config.getBoolean("AutoPurge.Enabled").orElse(false)) {
+            autoPurgePeriodicity = TimeUtil.stringToMillis(config.getString("AutoPurge.periodicity").orElse(""));
         }
         long autopurgeinterval = getAutoPurgeInterval("default", -1);
         for (Table table : Table.values()) {
@@ -108,12 +109,12 @@ public class APConfig {
                 }
             }
         }
-        demoMode = config.getBoolean("demomode", false);
+        demoMode = config.getBoolean("demomode").orElse(false);
         config.save();
     }
 
     private long getAutoPurgeInterval(String table, long autopurgeinterval) {
-        String interval = config.getString("AutoPurge." + table);
+        String interval = config.getString("AutoPurge." + table).orElse(null);
         if (interval == null) interval = "default";
         config.set("AutoPurge." + table, interval);
         if (interval.equalsIgnoreCase("off") || interval.equals("-1") || interval.equals("0")) {
@@ -214,7 +215,7 @@ public class APConfig {
         return overrideCommands;
     }
 
-    public ConfigAdapter getConfig() {
+    public YamlConfig getConfig() {
         return config;
     }
 

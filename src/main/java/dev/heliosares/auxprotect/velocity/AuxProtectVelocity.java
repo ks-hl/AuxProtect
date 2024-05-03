@@ -11,7 +11,6 @@ import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.heliosares.auxprotect.AuxProtectVersion;
-import dev.heliosares.auxprotect.adapters.config.YamlConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -26,6 +25,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
+import dev.kshl.kshlib.yaml.YamlConfig;
 import net.kyori.adventure.text.Component;
 
 import javax.annotation.Nullable;
@@ -99,14 +99,15 @@ public final class AuxProtectVelocity implements IAuxProtect {
         AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
-            config.load(this, new YamlConfigAdapter(this.getDataFolder(), "config.yml", this::getResource));
+            config.load(this, new File(this.getDataFolder(), "config.yml"), () -> getResource("config.yml"));
         } catch (Exception e1) {
             warning("Failed to load config");
             print(e1);
         }
         // TODO reloadable
         try {
-            Language.load(this, () -> new YamlConfigAdapter(getDataFolder(), "lang/" + config.getConfig().getString("lang") + ".yml", this::getResource), () -> new YamlConfigAdapter(getResource("lang/en-us.yml")));
+            String langFileName = "lang/" + config.getConfig().getString("lang").orElse("") + ".yml";
+            Language.load(this, () -> new YamlConfig(new File(getDataFolder(), langFileName), () -> getResource(langFileName)), () -> new YamlConfig(null, () -> getResource(langFileName)));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (Exception e1) {

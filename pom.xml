@@ -54,6 +54,12 @@
                         </goals>
                         <configuration>
                             <shadedArtifactAttached>true</shadedArtifactAttached>
+                            <relocations>
+                                <relocation>
+                                    <pattern>dev.kshl.kshlib</pattern>
+                                    <shadedPattern>dev.heliosares.auxprotect.kshlib</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>

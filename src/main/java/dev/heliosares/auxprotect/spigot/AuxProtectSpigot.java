@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.spigot;
 
-import dev.heliosares.auxprotect.adapters.config.SpigotConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -40,6 +39,7 @@ import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
+import dev.kshl.kshlib.yaml.YamlConfig;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -146,14 +146,18 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         this.getConfig().options().copyDefaults(true);
 
         try {
-            config.load(this, new SpigotConfigAdapter(this.getRootDirectory(), "config.yml", this.getConfig(), this::getResource));
+            config.load(this, new File(this.getRootDirectory(), "config.yml"), () -> getResource("config.yml"));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
         }
 
         try {
-            Language.load(this, () -> new SpigotConfigAdapter(this.getRootDirectory(), "lang/" + config.getConfig().getString("lang") + ".yml", null, this::getResource), () -> new SpigotConfigAdapter(getResource("lang/en-us.yml")));
+            String langFileName = "lang/" + config.getConfig().getString("lang").orElse("") + ".yml";
+            Language.load(this,
+                    () -> new YamlConfig(new File(getDataFolder(), langFileName),
+                            () -> getResource(langFileName)),
+                    () -> new YamlConfig(null, () -> getResource(langFileName)));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
