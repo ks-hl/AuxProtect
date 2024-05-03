@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.adapters.config;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.kshl.kshlib.yaml.YamlConfig;
 
@@ -14,15 +13,16 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class YamlConfigAdapter extends ConfigAdapter {
-    private YamlConfig config;
+    private final YamlConfig config;
 
     public YamlConfigAdapter(File parent, String path, @Nullable Function<String, InputStream> defaults) {
         super(parent, path, defaults);
-        this.config = new YamlConfig();
+        this.config = new YamlConfig(new File(parent, path));
     }
 
     public YamlConfigAdapter(InputStream in) {
         super(in);
+        this.config = new YamlConfig().loadFromStream(in);
     }
 
     @Override
@@ -110,24 +110,14 @@ public class YamlConfigAdapter extends ConfigAdapter {
     @Override
     public void save(File file) throws IOException {
         if (config != null) {
-            config.save(file);
+            config.save();
         }
     }
 
     @Override
     public void load() throws IOException {
         super.load();
-        config = new YamlConfig();
-        if (in != null) {
-            config.load(in);
-            return;
-        }
-        var file = getFile();
-        if (file == null) {
-            AuxProtectAPI.warning("File is null");
-            return;
-        }
-        config.load(file, null);
+        config.load(defaults == null ? null : defaults.apply(path));
     }
 
     @Override
