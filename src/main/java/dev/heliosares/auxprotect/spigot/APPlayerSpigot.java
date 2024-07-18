@@ -64,7 +64,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
             ActivityRecord record = null;
             if (currentActivity != null || movedAmountThisMinute > 1E-6) {
                 if (currentActivity == null) currentActivity = new ArrayList<>();
-                record = new ActivityRecord(currentActivity, movedAmountThisMinute);
+                record = new ActivityRecord(currentActivity, 0, movedAmountThisMinute);
             }
             activityStack.add(record);
             currentActivity = null;

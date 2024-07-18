@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 
-public record ActivityRecord(@Nonnull List<Activity> activities, double distanceMoved) {
+public record ActivityRecord(@Nonnull List<Activity> activities, double andScore, double distanceMoved) {
     @Override
     public String toString() {
         StringBuilder activityString = new StringBuilder(getActivityString());
@@ -26,9 +26,16 @@ public record ActivityRecord(@Nonnull List<Activity> activities, double distance
 
     public String getActivityString() {
         StringBuilder activityString = new StringBuilder();
-
+        double and = 0;
         for (Activity a : activities()) {
-            activityString.append(a.character);
+            if (activityString.length() >= 60) {
+                and += a.score;
+            } else {
+                activityString.append(a.character);
+            }
+        }
+        if (and >= 0.5) {
+            activityString.append("+").append((int) Math.round(and));
         }
 
         return activityString.toString();
@@ -43,6 +50,8 @@ public record ActivityRecord(@Nonnull List<Activity> activities, double distance
             score += activity.score;
         }
 
+        score += andScore;
+
         return score;
     }
 
@@ -52,7 +61,7 @@ public record ActivityRecord(@Nonnull List<Activity> activities, double distance
         if (data.matches("\\d+")) {
             throw new IllegalArgumentException("Legacy activity");
         }
-        if (!data.matches("[^;]*;(\\d+(\\.\\d)?)?")) {
+        if (!data.matches("[^;+]*(\\+\\d+(\\.\\d+)?)?;(\\d+(\\.\\d)?)?")) {
             throw new IllegalArgumentException("Invalid activity string");
         }
         List<Activity> activities = new ArrayList<>();
@@ -64,18 +73,30 @@ public record ActivityRecord(@Nonnull List<Activity> activities, double distance
             throw new IllegalArgumentException("Invalid activity string format");
         }
 
-        for (char c : parts[0].trim().toCharArray()) {
+        String[] scoreParts = parts[0].split("\\+");
+
+        for (char c : scoreParts[0].trim().toCharArray()) {
             activities.add(Activity.getByChar(c));
+        }
+
+        double andScore = 0;
+        if (scoreParts.length == 2) {
+            andScore = Double.parseDouble(scoreParts[1]);
         }
 
         double distance = parts[1].isBlank() ? 0 : Double.parseDouble(parts[1].trim());
 
-        return new ActivityRecord(activities, distance);
+        return new ActivityRecord(activities, andScore, distance);
     }
 
     public String getHoverText() {
         StringBuilder hoverText = new StringBuilder("\n\n");
-        hoverText.append(ChatColor.COLOR_CHAR + "7Activity: " + ChatColor.COLOR_CHAR + "9").append(getActivityString()).append("\n");
+        hoverText.append(ChatColor.COLOR_CHAR + "7Activity: " + ChatColor.COLOR_CHAR + "9").append(getActivityString());
+        if (andScore() > 1E-6) {
+            hoverText.append(ChatColor.COLOR_CHAR + "7... +").append((int) Math.round(andScore())).append(" points");
+        }
+        hoverText.append("\n");
+
         for (Activity activity : new HashSet<>(activities())) {
             hoverText.append(ChatColor.COLOR_CHAR + "7  ").append(activity.character).append(" = ").append(activity.toString().toLowerCase()).append(" (").append(activity.score).append(")\n");
         }
