@@ -29,10 +29,10 @@ public class ProjectileListener implements Listener {
         this.whitelist = new ArrayList<>();
         whitelist.add(EntityType.ENDER_PEARL);
         whitelist.add(EntityType.TRIDENT);
-        whitelist.add(EntityType.FISHING_BOBBER);
+        whitelist.add(EntityType.FISHING_HOOK);
         whitelist.add(EntityType.SNOWBALL);
         whitelist.add(EntityType.EGG);
-        whitelist.add(EntityType.POTION);
+        whitelist.add(EntityType.SPLASH_POTION);
         whitelist.add(EntityType.ARROW);
     }
 

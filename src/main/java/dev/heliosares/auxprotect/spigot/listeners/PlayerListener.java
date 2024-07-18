@@ -351,7 +351,7 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        boolean tether = entity.getLeashHolder().getType() == EntityType.LEASH_KNOT;
+        boolean tether = entity.getLeashHolder().getType() == EntityType.LEASH_HITCH;
 
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, false,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), tether ? "was tethered" : "");
