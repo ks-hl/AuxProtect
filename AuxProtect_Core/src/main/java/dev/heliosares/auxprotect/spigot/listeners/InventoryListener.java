@@ -7,6 +7,8 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.heliosares.auxprotect.utils.InventoryUtil_1_20;
+import dev.heliosares.auxprotect.utils.InventoryUtil_1_21;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -86,7 +88,11 @@ public class InventoryListener implements Listener {
 
         InventoryType type;
 
-        type = e.getWhoClicked().getOpenInventory().getTopInventory().getType();
+        if (plugin.getCompatabilityVersion() < 21) {
+            type = InventoryUtil_1_20.getTopInventory(e.getWhoClicked()).getType();
+        } else {
+            type = InventoryUtil_1_21.getTopInventory(e.getWhoClicked()).getType();
+        }
 
 
         if (e.getSlotType() != InventoryType.SlotType.RESULT) return;

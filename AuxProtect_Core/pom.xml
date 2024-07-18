@@ -51,6 +51,7 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>
+                                    <include>dev.heliosares:*</include>
                                 </includes>
                             </artifactSet>
                             <minimizeJar>true</minimizeJar>
