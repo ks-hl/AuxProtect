@@ -1,6 +1,8 @@
 package dev.heliosares.auxprotect.spigot;
 
 import dev.heliosares.auxprotect.core.APPlayer;
+import dev.heliosares.auxprotect.core.Activity;
+import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -13,11 +15,12 @@ import org.bukkit.inventory.ItemStack;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class APPlayerSpigot extends APPlayer<Player> {
-    public final double[] activity = new double[30];
+    private final List<ActivityRecord> activityStack = new ArrayList<>();
+    private ArrayList<Activity> currentActivity;
     private final Player player;
     private final List<Byte> posBlob = new ArrayList<>();
     public long lastLoggedMoney;
@@ -25,12 +28,10 @@ public class APPlayerSpigot extends APPlayer<Player> {
     public long lastLoggedInventoryDiff;
     public long lastLoggedPos;
     public long lastMoved;
-    public long lastLoggedActivity;
     public Location lastLocation;
     public long lastCheckedMovement;
-    public double movedAmountThisMinute;
+    private double movedAmountThisMinute;
     public boolean hasMovedThisMinute;
-    public int activityIndex;
     public long lastNotifyInactive;
     // hotbar, main, armor, offhand, echest
     private List<ItemStack> invDiffItems;
@@ -41,7 +42,6 @@ public class APPlayerSpigot extends APPlayer<Player> {
         super(plugin, player);
 
         this.player = player;
-        Arrays.fill(activity, -1);
     }
 
     @Override
@@ -49,8 +49,45 @@ public class APPlayerSpigot extends APPlayer<Player> {
         return player.getName();
     }
 
-    public void addActivity(double d) {
-        activity[activityIndex] += d;
+    public void addActivity(Activity a) {
+        synchronized (activityStack) {
+            if (currentActivity == null) currentActivity = new ArrayList<>();
+            currentActivity.add(a);
+        }
+    }
+
+    public String concludeActivityForMinute() {
+        synchronized (activityStack) {
+            while (activityStack.size() >= 30) {
+                activityStack.remove(0);
+            }
+            ActivityRecord record = null;
+            if (currentActivity != null || movedAmountThisMinute > 1E-6) {
+                if (currentActivity == null) currentActivity = new ArrayList<>();
+                record = new ActivityRecord(currentActivity, movedAmountThisMinute);
+            }
+            activityStack.add(record);
+            currentActivity = null;
+            movedAmountThisMinute = 0;
+            hasMovedThisMinute = false;
+
+            if (record == null) return null;
+            return record.toString();
+        }
+    }
+
+    public void move() {
+        synchronized (activityStack) {
+            if (lastLocation != null && Objects.equals(lastLocation.getWorld(), getPlayer().getWorld())) {
+                movedAmountThisMinute += Math.min(lastLocation.distance(getPlayer().getLocation()), 10);
+            }
+            lastLocation = getPlayer().getLocation();
+            lastCheckedMovement = System.currentTimeMillis();
+        }
+    }
+
+    public List<ActivityRecord> getActivityStack() {
+        return activityStack;
     }
 
     public long logInventory(String reason) {

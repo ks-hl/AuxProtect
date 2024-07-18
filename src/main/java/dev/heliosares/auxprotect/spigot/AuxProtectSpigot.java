@@ -6,6 +6,8 @@ import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Activity;
+import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -64,6 +66,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -358,6 +361,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         new BukkitRunnable() {
 
             private boolean running;
+            private int lastLoggedActivityMinute = -1;
 
             @Override
             public void run() {
@@ -370,6 +374,15 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     // Make a new list to not tie up other calls to apPlayers
                     synchronized (apPlayers) {
                         players = new ArrayList<>(apPlayers.values());
+                    }
+                    Calendar calendar = Calendar.getInstance();
+                    int minute = calendar.get(Calendar.MINUTE);
+                    int second = calendar.get(Calendar.SECOND);
+
+                    boolean logActivity = lastLoggedActivityMinute != minute && second >= 30;
+                    // Put in the middle of the minute to make parsing it later easier
+                    if (logActivity) {
+                        lastLoggedActivityMinute = minute;
                     }
                     for (APPlayerSpigot apPlayer : players) {
                         if (!apPlayer.getPlayer().isOnline()) {
@@ -403,43 +416,25 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         }
 
                         if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-                            if (apPlayer.lastLocation != null
-                                    && Objects.equals(apPlayer.lastLocation.getWorld(), apPlayer.getPlayer().getWorld())) {
-                                apPlayer.movedAmountThisMinute += Math
-                                        .min(apPlayer.lastLocation.distance(apPlayer.getPlayer().getLocation()), 10);
-                            }
-                            apPlayer.lastLocation = apPlayer.getPlayer().getLocation();
                             apPlayer.lastCheckedMovement = System.currentTimeMillis();
+                            apPlayer.move();
                         }
 
-                        if (apPlayer.lastLoggedActivity == 0) {
-                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
-                        }
-                        if (System.currentTimeMillis() - apPlayer.lastLoggedActivity > 60000L && config.isPrivate()) {
+                        if (logActivity && config.isPrivate()) {
                             if (apPlayer.getPlayer().getWorld().getName().equals("flat") && config.isPrivate()) {
-                                apPlayer.activity[apPlayer.activityIndex] += 100;
-                            }
-                            apPlayer.addActivity(Math.floor((apPlayer.movedAmountThisMinute + 7) / 10));
-                            apPlayer.movedAmountThisMinute = 0;
-
-                            if (apPlayer.hasMovedThisMinute) {
-                                apPlayer.addActivity(1);
-                                apPlayer.hasMovedThisMinute = false;
+                                apPlayer.addActivity(Activity.IN_SPAWN);
                             }
 
-                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false,
-                                    apPlayer.getPlayer().getLocation(), "",
-                                    (int) Math.round(apPlayer.activity[apPlayer.activityIndex]) + ""));
-                            apPlayer.lastLoggedActivity = System.currentTimeMillis();
+                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false, apPlayer.getPlayer().getLocation(), "", apPlayer.concludeActivityForMinute()));
 
                             int tallied = 0;
                             int inactive = 0;
-                            for (double activity : apPlayer.activity) {
-                                if (activity < 0) {
+                            for (ActivityRecord record : apPlayer.getActivityStack()) {
+                                if (record == null || record.activities().isEmpty()) {
                                     continue;
                                 }
                                 tallied++;
-                                if (activity < 10) {
+                                if (record.countScore() < 10) {
                                     inactive++;
                                 }
                             }
@@ -459,12 +454,6 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                             apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
                                 }
                             }
-
-                            apPlayer.activityIndex++;
-                            if (apPlayer.activityIndex >= apPlayer.activity.length) {
-                                apPlayer.activityIndex = 0;
-                            }
-                            apPlayer.activity[apPlayer.activityIndex] = 0;
                         }
                     }
                 } finally {

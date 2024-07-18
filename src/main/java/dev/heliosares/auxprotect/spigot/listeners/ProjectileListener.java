@@ -29,11 +29,14 @@ public class ProjectileListener implements Listener {
         this.whitelist = new ArrayList<>();
         whitelist.add(EntityType.ENDER_PEARL);
         whitelist.add(EntityType.TRIDENT);
-        whitelist.add(EntityType.FISHING_HOOK);
         whitelist.add(EntityType.SNOWBALL);
         whitelist.add(EntityType.EGG);
-        whitelist.add(EntityType.SPLASH_POTION);
         whitelist.add(EntityType.ARROW);
+        for (EntityType type : EntityType.values()) {
+            if (type.toString().contains("POTION") || type.toString().contains("FISHING_")) {
+                whitelist.add(type);
+            }
+        }
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

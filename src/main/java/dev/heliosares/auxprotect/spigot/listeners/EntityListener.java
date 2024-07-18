@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -26,8 +27,10 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.entity.EntityDismountEvent;
 import org.bukkit.event.entity.EntityDropItemEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
+import org.bukkit.event.entity.EntityMountEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.entity.EntityResurrectEvent;
 import org.bukkit.event.entity.EntityTameEvent;
@@ -41,8 +44,6 @@ import org.bukkit.inventory.meta.MapMeta;
 import org.bukkit.map.MapRenderer;
 import org.bukkit.projectiles.ProjectileSource;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.spigotmc.event.entity.EntityDismountEvent;
-import org.spigotmc.event.entity.EntityMountEvent;
 
 import java.util.ArrayList;
 
@@ -147,7 +148,7 @@ public class EntityListener implements Listener {
         if (e.getCause() == DamageCause.THORNS) {
             itemname += "THORNS";
         } else if (source instanceof Player sourcePl) {
-            plugin.getAPPlayer(sourcePl).addActivity(0.25);
+            plugin.getAPPlayer(sourcePl).addActivity(Activity.DAMAGE);
             itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
         }
 
@@ -252,7 +253,7 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDropEvent(PlayerDropItemEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.DROP);
 
         if (isChartMap(e.getItemDrop().getItemStack())) {
             e.getItemDrop().remove();
@@ -266,7 +267,7 @@ public class EntityListener implements Listener {
     public void onPickupEvent(EntityPickupItemEvent e) {
         if (e.getEntity() instanceof Player player) {
 
-            plugin.getAPPlayer(player).addActivity(1);
+            plugin.getAPPlayer(player).addActivity(Activity.PICKUP);
 
             if (isChartMap(e.getItem().getItemStack()) && !APPermission.LOOKUP_MONEY.hasPermission(player)) {
                 e.setCancelled(true);

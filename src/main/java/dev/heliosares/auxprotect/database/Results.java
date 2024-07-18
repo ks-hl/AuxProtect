@@ -1,9 +1,9 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.APPlayer;
+import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
@@ -24,6 +24,9 @@ import org.bukkit.inventory.ItemStack;
 
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -185,13 +188,31 @@ public class Results {
                 }
                 String data = entry.getData();
                 if (data != null && !data.isEmpty()) {
+                    HoverEvent hoverEvent = clickToCopy;
+                    if (entry.getAction().equals(EntryAction.ACTIVITY)) {
+                        try {
+                            ActivityRecord record = ActivityRecord.parse(data);
+                            if (record != null) {
+                                message.append(" " + org.bukkit.ChatColor.COLOR_CHAR + "a" + record.countScore());
+                                hoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate() + record.getHoverText()));
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                        }
+                    }
                     if (entry.getAction().equals(EntryAction.SESSION) && !APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(player)) {
                         message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + Language.L.RESULTS__REDACTED.translate() + ChatColor.COLOR_CHAR + "8]");
                         message.event((ClickEvent) null).event((HoverEvent) null);
                     } else {
                         message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + data + ChatColor.COLOR_CHAR + "8]");
-                        message.event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
+                        message.event(hoverEvent).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
                     }
+                }
+                if (entry.getAction().equals(EntryAction.ACTIVITY)) {
+                    message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7Copy Minute Range" + ChatColor.COLOR_CHAR + "8]");
+                    ZonedDateTime zonedDateTime = Instant.ofEpochMilli(entry.getTime()).atZone(ZoneId.systemDefault());
+                    ZonedDateTime start = zonedDateTime.withSecond(0).withNano(0);
+                    ZonedDateTime end = start.plusMinutes(1).minusNanos(1000000);
+                    message.event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, start.toInstant().toEpochMilli() + "e-" + end.toInstant().toEpochMilli() + "e"));
                 }
             }
         }

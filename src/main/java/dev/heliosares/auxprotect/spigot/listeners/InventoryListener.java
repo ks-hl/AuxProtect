@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
@@ -10,6 +11,7 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
@@ -35,6 +37,7 @@ public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryOpenEvent(InventoryOpenEvent e) {
+        plugin.getAPPlayer((Player) e.getPlayer()).addActivity(Activity.OPEN_INVENTORY);
         log(e.getPlayer(), e.getInventory(), true);
     }
 
@@ -79,10 +82,11 @@ public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
+        plugin.getAPPlayer((Player) e.getWhoClicked()).addActivity(Activity.CLICK_ITEM);
+
         InventoryType type = e.getWhoClicked().getOpenInventory().getTopInventory().getType();
         if (e.getSlotType() != InventoryType.SlotType.RESULT) return;
         if (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR) return;
-
 
         EntryAction action;
         String data = "";

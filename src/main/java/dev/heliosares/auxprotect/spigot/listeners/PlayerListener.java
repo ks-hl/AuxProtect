@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -27,6 +28,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
+import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
@@ -115,7 +118,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerInteractEntityEvent(PlayerInteractEntityEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.INTERACT_ENTITY);
 
         ItemStack item = e.getPlayer().getInventory().getItem(e.getHand());
 
@@ -156,7 +159,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerInteractEvent(PlayerInteractEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(e.getClickedBlock() == null ? Activity.INTERACT_AIR : Activity.INTERACT_BLOCK);
 
         if (e.useInteractedBlock() == Result.DENY) {
             return;
@@ -351,7 +354,7 @@ public class PlayerListener implements Listener {
             return;
         }
 
-        boolean tether = entity.getLeashHolder().getType() == EntityType.LEASH_HITCH;
+        boolean tether = entity.getLeashHolder().getType().toString().startsWith("LEASH_");
 
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, false,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), tether ? "was tethered" : "");
@@ -366,7 +369,7 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onCommand(PlayerCommandPreprocessEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(5);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.COMMAND);
 
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
                 e.getPlayer().getLocation(), e.getMessage(), ""));
@@ -374,11 +377,21 @@ public class PlayerListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(5);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.CHAT);
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
         if (plugin.getAPConfig().isDemoMode()) {
             e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "cChat is disabled.");
             e.setCancelled(true);
         }
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onBlockPlace(BlockPlaceEvent e) {
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.BLOCK_PLACE);
+    }
+
+    @EventHandler(ignoreCancelled = true, priority = EventPriority.MONITOR)
+    public void onBlockBreak(BlockBreakEvent e) {
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.BLOCK_BREAK);
     }
 }
