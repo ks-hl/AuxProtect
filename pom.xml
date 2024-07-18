@@ -181,11 +181,12 @@
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>3.42.0.0</version>
+            <version>3.46.0.0</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
-            <version>20230227</version>
+            <version>20240303</version>
         </dependency>
         <dependency>
             <groupId>com.acrobot.chestshop</groupId>
@@ -196,7 +197,7 @@
         <dependency>
             <groupId>net.coreprotect</groupId>
             <artifactId>coreprotect</artifactId>
-            <version>21.3</version>
+            <version>22.4</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -213,12 +214,12 @@
         <dependency>
             <groupId>com.github.Gypopo</groupId>
             <artifactId>EconomyShopGUI-API</artifactId>
-            <version>1.5.0</version>
+            <version>1.7.1</version>
         </dependency>
         <dependency>
             <groupId>com.github.7sat</groupId>
             <artifactId>DynamicShop3</artifactId>
-            <version>3.15.1</version>
+            <version>3.16.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -230,13 +231,13 @@
         <dependency>
             <groupId>net.essentialsx</groupId>
             <artifactId>EssentialsX</artifactId>
-            <version>2.19.7</version>
+            <version>2.20.1</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>com.palmergames.bukkit.towny</groupId>
             <artifactId>towny</artifactId>
-            <version>0.100.0.0</version>
+            <version>0.100.3.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
