@@ -47,6 +47,10 @@ public class InventoryListener implements Listener {
     }
 
     private void log(HumanEntity player, Inventory inv, boolean state) {
+        if(inv == null) {
+            return;
+        }
+
         int count = 0;
         for (ItemStack item : inv.getContents()) {
             if (item == null)
