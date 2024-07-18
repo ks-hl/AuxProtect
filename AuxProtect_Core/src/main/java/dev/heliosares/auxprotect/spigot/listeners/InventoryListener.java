@@ -47,7 +47,7 @@ public class InventoryListener implements Listener {
     }
 
     private void log(HumanEntity player, Inventory inv, boolean state) {
-        if(inv == null) {
+        if (inv == null) {
             return;
         }
 
@@ -84,7 +84,11 @@ public class InventoryListener implements Listener {
     public void onInventoryClick(InventoryClickEvent e) {
         plugin.getAPPlayer((Player) e.getWhoClicked()).addActivity(Activity.CLICK_ITEM);
 
-        InventoryType type = e.getWhoClicked().getOpenInventory().getTopInventory().getType();
+        InventoryType type;
+
+        type = e.getWhoClicked().getOpenInventory().getTopInventory().getType();
+
+
         if (e.getSlotType() != InventoryType.SlotType.RESULT) return;
         if (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR) return;
 
