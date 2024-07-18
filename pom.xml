@@ -10,6 +10,8 @@
 
     <modules>
         <module>AuxProtect_1.20</module>
+        <module>AuxProtect_1.21</module>
+
         <module>AuxProtect_Core</module>
     </modules>
 

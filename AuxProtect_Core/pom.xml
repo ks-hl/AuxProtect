@@ -1,13 +1,19 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>dev.heliosares</groupId>
-    <artifactId>AuxProtect</artifactId>
+
+    <parent>
+        <groupId>dev.heliosares</groupId>
+        <artifactId>AuxProtect</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>AuxProtect_Core</artifactId>
     <version>${revision}</version>
-    <packaging>pom</packaging>
-    <name>AuxProtect</name>
+    <name>AuxProtect_Core</name>
+
     <build>
-        <finalName>${project.artifactId}-${project.version}</finalName>
+        <finalName>AuxProtect-${revision}</finalName>
         <resources>
             <resource>
                 <directory>${basedir}</directory>
@@ -42,7 +48,6 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
-                            <shadedArtifactAttached>true</shadedArtifactAttached>
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>
@@ -82,9 +87,8 @@
                             <target if="${fileExistsDeploy}">
                                 <exec executable="cmd.exe" spawn="false">
                                     <arg value="/c"/>
-                                    <arg value="${basedir}/deploy.bat"/>
-                                    <arg value="${basedir}"/>
-                                    <arg value="${project.artifactId}"/>
+                                    <arg value="deploy.bat"/>
+                                    <arg value="AuxProtect"/>
                                     <arg value="${project.version}"/>
                                 </exec>
                             </target>
@@ -261,7 +265,12 @@
         <dependency>
             <groupId>dev.heliosares</groupId>
             <artifactId>AuxProtect_1.20</artifactId>
-            <version>${project.version}</version>
+            <version>${revision}</version>
+        </dependency>
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_1.21</artifactId>
+            <version>${revision}</version>
         </dependency>
     </dependencies>
     <properties>

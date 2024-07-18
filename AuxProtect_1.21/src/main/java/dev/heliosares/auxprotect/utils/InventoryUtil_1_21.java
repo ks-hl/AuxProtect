@@ -1,4 +1,4 @@
 package dev.heliosares.auxprotect.utils;
 
-public class InventoryUtil_1_20 {
+public class InventoryUtil_1_21 {
 }
