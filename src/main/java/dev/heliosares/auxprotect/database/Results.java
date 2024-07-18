@@ -197,7 +197,6 @@ public class Results {
                                 hoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate() + record.getHoverText()));
                             }
                         } catch (IllegalArgumentException ignored) {
-                            message.append(ignored.getMessage());
                         }
                     }
                     if (entry.getAction().equals(EntryAction.SESSION) && !APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(player)) {
