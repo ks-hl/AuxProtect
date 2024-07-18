@@ -421,7 +421,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                         }
 
                         if (logActivity && config.isPrivate()) {
-                            if (apPlayer.getPlayer().getWorld().getName().equals("flat") && config.isPrivate()) {
+                            if (Set.of("flat", "void").contains(apPlayer.getPlayer().getWorld().getName()) && config.isPrivate()) {
                                 apPlayer.addActivity(Activity.IN_SPAWN);
                             }
 
