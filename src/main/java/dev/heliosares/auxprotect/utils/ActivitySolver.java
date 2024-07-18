@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.utils;
 
-import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -21,11 +20,12 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 
 public class ActivitySolver {
     public static BaseComponent[][] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
+        if (entries.isEmpty()) return null;
+
         ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
         LocalDateTime startTime = Instant.ofEpochMilli(rangeStart).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withSecond(0).withNano(0);
@@ -45,6 +45,7 @@ public class ActivitySolver {
         message = new ComponentBuilder();
 
         ActivityRecord[] activityRecords = new ActivityRecord[minutes];
+        long[] times = new long[minutes];
 
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
@@ -91,6 +92,7 @@ public class ActivitySolver {
             }
             counter[minute] += activity;
             locations[minute] = new Location(Bukkit.getWorld(entry.getWorld()), entry.getX(), entry.getY(), entry.getZ());
+            times[minute] = entry.getTime();
 
             lastTime = entry.getTime();
             minute++;
@@ -134,18 +136,18 @@ public class ActivitySolver {
                 }
                 ClickEvent clickevent = null;
                 if (locations[i] != null) {
-                    hovertext += String.format("\n\n" + ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)\n" + ChatColor.COLOR_CHAR + "7Click to teleport", locations[i].getBlockX(),
+                    hovertext += String.format("\n\n" + ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)\n", locations[i].getBlockX(),
                             locations[i].getBlockY(), locations[i].getBlockZ(), locations[i].getWorld().getName());
-                    clickevent = new ClickEvent(ClickEvent.Action.RUN_COMMAND,
-                            String.format("/auxprotect tp %d %d %d %s", locations[i].getBlockX(),
-                                    locations[i].getBlockY(), locations[i].getBlockZ(),
-                                    locations[i].getWorld().getName()));
                 }
 
                 ActivityRecord activityRecord = activityRecords[i];
                 if (activityRecord != null) {
                     hovertext += activityRecord.getHoverText();
                 }
+
+                hovertext += "\n\n";
+                hovertext += ChatColor.COLOR_CHAR + "9Click to view";
+                clickevent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/auxprotect lookup a:activity t:" + times[i] + "e");
 
                 message.append(AuxProtectSpigot.BLOCK + "")
                         .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hovertext))).event(clickevent);
