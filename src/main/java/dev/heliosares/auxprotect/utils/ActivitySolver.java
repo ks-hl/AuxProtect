@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.utils;
 
+import dev.heliosares.auxprotect.core.Activity;
+import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -19,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 
 public class ActivitySolver {
@@ -30,7 +33,7 @@ public class ActivitySolver {
         DateTimeFormatter formatterHour = DateTimeFormatter.ofPattern("Ka");
         final long startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         final int minutes = (int) Math.ceil((rangeEnd - rangeStart) / 1000.0 / 60.0);
-        int[] counter = new int[minutes];
+        double[] counter = new double[minutes];
         Location[] locations = new Location[minutes];
         Arrays.fill(counter, -1);
         StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
@@ -40,6 +43,8 @@ public class ActivitySolver {
         List<BaseComponent[]> components = new ArrayList<>();
         components.add(message.create());
         message = new ComponentBuilder();
+
+        ActivityRecord[] activityRecords = new ActivityRecord[minutes];
 
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
@@ -70,7 +75,20 @@ public class ActivitySolver {
                 counter[minute] = 0;
             }
 
-            int activity = Integer.parseInt(entry.getData());
+
+            double activity = 0;
+            try {
+                ActivityRecord record = ActivityRecord.parse(entry.getData());
+                activityRecords[minute] = record;
+                if (record != null) {
+                    activity = record.countScore();
+                }
+            } catch (IllegalArgumentException e) {
+                try {
+                    activity = Integer.parseInt(entry.getData());
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
             counter[minute] += activity;
             locations[minute] = new Location(Bukkit.getWorld(entry.getWorld()), entry.getX(), entry.getY(), entry.getZ());
 
@@ -103,7 +121,7 @@ public class ActivitySolver {
                 message.color(ChatColor.BLACK);
             } else {
 
-                int activity = counter[i];
+                double activity = counter[i];
 
                 String hovertext = ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
 
@@ -122,6 +140,11 @@ public class ActivitySolver {
                             String.format("/auxprotect tp %d %d %d %s", locations[i].getBlockX(),
                                     locations[i].getBlockY(), locations[i].getBlockZ(),
                                     locations[i].getWorld().getName()));
+                }
+
+                ActivityRecord activityRecord = activityRecords[i];
+                if (activityRecord != null) {
+                    hovertext += activityRecord.getHoverText();
                 }
 
                 message.append(AuxProtectSpigot.BLOCK + "")

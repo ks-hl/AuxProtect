@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
@@ -10,11 +11,17 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.entity.HumanEntity;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.enchantment.EnchantItemEvent;
-import org.bukkit.event.inventory.*;
+import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.CraftItemEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryOpenEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
@@ -30,6 +37,7 @@ public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryOpenEvent(InventoryOpenEvent e) {
+        plugin.getAPPlayer((Player) e.getPlayer()).addActivity(Activity.OPEN_INVENTORY);
         log(e.getPlayer(), e.getInventory(), true);
     }
 
@@ -70,10 +78,11 @@ public class InventoryListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onInventoryClick(InventoryClickEvent e) {
+        plugin.getAPPlayer((Player) e.getWhoClicked()).addActivity(Activity.CLICK_ITEM);
+
         InventoryType type = e.getWhoClicked().getOpenInventory().getTopInventory().getType();
         if (e.getSlotType() != InventoryType.SlotType.RESULT) return;
         if (e.getCurrentItem() == null || e.getCurrentItem().getType() == Material.AIR) return;
-
 
         EntryAction action;
         String data = "";

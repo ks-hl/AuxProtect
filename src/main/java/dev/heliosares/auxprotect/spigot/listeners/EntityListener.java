@@ -1,6 +1,7 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -147,7 +148,7 @@ public class EntityListener implements Listener {
         if (e.getCause() == DamageCause.THORNS) {
             itemname += "THORNS";
         } else if (source instanceof Player sourcePl) {
-            plugin.getAPPlayer(sourcePl).addActivity(0.25);
+            plugin.getAPPlayer(sourcePl).addActivity(Activity.DAMAGE);
             itemname += sourcePl.getInventory().getItemInMainHand().getType().toString().toLowerCase();
         }
 
@@ -252,7 +253,7 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerDropEvent(PlayerDropItemEvent e) {
-        plugin.getAPPlayer(e.getPlayer()).addActivity(1);
+        plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.DROP);
 
         if (isChartMap(e.getItemDrop().getItemStack())) {
             e.getItemDrop().remove();
@@ -266,7 +267,7 @@ public class EntityListener implements Listener {
     public void onPickupEvent(EntityPickupItemEvent e) {
         if (e.getEntity() instanceof Player player) {
 
-            plugin.getAPPlayer(player).addActivity(1);
+            plugin.getAPPlayer(player).addActivity(Activity.PICKUP);
 
             if (isChartMap(e.getItem().getItemStack()) && !APPermission.LOOKUP_MONEY.hasPermission(player)) {
                 e.setCancelled(true);

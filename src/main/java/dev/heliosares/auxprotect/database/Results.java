@@ -1,9 +1,9 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.APPlayer;
+import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
@@ -185,12 +185,24 @@ public class Results {
                 }
                 String data = entry.getData();
                 if (data != null && !data.isEmpty()) {
+                    HoverEvent hoverEvent = clickToCopy;
+                    if (entry.getAction().equals(EntryAction.ACTIVITY)) {
+                        try {
+                            ActivityRecord record = ActivityRecord.parse(data);
+                            if (record != null) {
+                                message.append(" " + org.bukkit.ChatColor.COLOR_CHAR + "a" + record.countScore());
+                                hoverEvent = new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.RESULTS__CLICK_TO_COPY.translate() + record.getHoverText()));
+                            }
+                        } catch (IllegalArgumentException ignored) {
+                            message.append(ignored.getMessage());
+                        }
+                    }
                     if (entry.getAction().equals(EntryAction.SESSION) && !APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(player)) {
                         message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + Language.L.RESULTS__REDACTED.translate() + ChatColor.COLOR_CHAR + "8]");
                         message.event((ClickEvent) null).event((HoverEvent) null);
                     } else {
                         message.append(" " + ChatColor.COLOR_CHAR + "8[" + ChatColor.COLOR_CHAR + "7" + data + ChatColor.COLOR_CHAR + "8]");
-                        message.event(clickToCopy).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
+                        message.event(hoverEvent).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
                     }
                 }
             }
