@@ -52,6 +52,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
+import org.bukkit.potion.PotionType;
 import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.SQLException;
@@ -190,7 +191,15 @@ public class PlayerListener implements Listener {
     public void onConsume(PlayerItemConsumeEvent e) {
         String sup = "";
         if (e.getItem().getType() == Material.POTION && e.getItem().getItemMeta() instanceof PotionMeta pm) {
-            sup = pm.getBasePotionType().toString().toLowerCase();
+            PotionType type = null;
+            try {
+                type = pm.getBasePotionType();
+            } catch (Throwable error) {
+                plugin.debug("Failed to get type of potion due to " + error.getClass().getName());
+            }
+            if (type != null) {
+                sup = type.toString().toLowerCase();
+            }
         }
         DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
                 e.getPlayer().getLocation(), e.getItem().getType().toString().toLowerCase(), sup);
