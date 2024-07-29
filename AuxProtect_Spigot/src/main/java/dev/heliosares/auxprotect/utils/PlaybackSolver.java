@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;

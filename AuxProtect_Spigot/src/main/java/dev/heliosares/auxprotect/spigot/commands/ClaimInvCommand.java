@@ -1,8 +1,9 @@
-package dev.heliosares.auxprotect.core.commands;
+package dev.heliosares.auxprotect.spigot.commands;
 
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
+import dev.heliosares.auxprotect.core.commands.InvCommand;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Pane;

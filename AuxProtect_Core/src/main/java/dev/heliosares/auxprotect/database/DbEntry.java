@@ -11,7 +11,6 @@ import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.HoverEvent;
 import net.md_5.bungee.api.chat.hover.content.Text;
-import org.bukkit.Location;
 
 import javax.annotation.Nullable;
 import java.sql.SQLException;
@@ -54,8 +53,8 @@ public class DbEntry {
     private long blobid = -1;
     private byte[] blob;
 
-    private DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
-                    int yaw, String targetLabel, String data, SQLManager sql) {
+    DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
+            int yaw, String targetLabel, String data, SQLManager sql) {
         this.time = DatabaseRunnable.getTime(action.getTable());
         this.userLabel = userLabel;
         this.action = action;
@@ -76,27 +75,6 @@ public class DbEntry {
      */
     public DbEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
         this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data, SQLManager.getInstance());
-    }
-
-    /**
-     * @param userLabel   The label of the user, provided by
-     *                    AuxProtect#getLabel(Object) and
-     *                    AuxProtectBungee#getLabel(Object) as applicable. This may
-     *                    also be a generic string such as "#env"
-     * @param state       Specifies the state of EntryAction (i.e +mount vs -mount),
-     *                    if applicable, otherwise false.
-     * @param location    May be null
-     * @param targetLabel The label of the target, see userLabel for details.
-     * @param data        Extra data about your entry. This is stored as plain text
-     *                    so use sparingly.
-     */
-    public DbEntry(String userLabel, EntryAction action, boolean state, @Nullable Location location, String targetLabel,
-                   String data) throws NullPointerException {
-        this(userLabel, action, state, location == null ? null : location.getWorld().getName(),
-                location == null ? 0 : location.getBlockX(), location == null ? 0 : location.getBlockY(),
-                location == null ? 0 : location.getBlockZ(),
-                location == null ? 0 : Math.round(location.getPitch()),
-                location == null ? 0 : Math.round(location.getYaw()), targetLabel, data, SQLManager.getInstance());
     }
 
     protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,

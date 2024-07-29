@@ -61,6 +61,7 @@ public interface IAuxProtect {
     APPlayer<?> getAPPlayer(SenderAdapter sender);
 
     String formatMoney(double amount);
+
     int queueSize();
 
     String getStackLog();
@@ -72,4 +73,8 @@ public interface IAuxProtect {
     void addRemoveEntryListener(Consumer<DbEntry> consumer, boolean add);
 
     void broadcast(String msg, APPermission node);
+
+    boolean doesWorldExist(String world);
+
+    boolean isPrimaryThread();
 }

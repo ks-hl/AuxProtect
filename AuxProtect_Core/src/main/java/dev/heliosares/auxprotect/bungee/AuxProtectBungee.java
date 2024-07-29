@@ -203,6 +203,16 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public boolean doesWorldExist(String world) {
+        return false;
+    }
+
+    @Override
+    public boolean isPrimaryThread() {
+        return false;
+    }
+
+    @Override
     public InputStream getResource(String string) {
         return getResourceAsStream(string);
     }

@@ -11,8 +11,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import java.io.IOException;
-
 public class ShopGUIPlusListener implements Listener {
     private final AuxProtectSpigot plugin;
 

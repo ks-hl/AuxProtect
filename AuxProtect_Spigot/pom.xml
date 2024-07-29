@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>dev.heliosares</groupId>
+        <artifactId>AuxProtect</artifactId>
+        <version>1.3.2</version>
+    </parent>
+
+    <artifactId>AuxProtect_Spigot</artifactId>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <repositories>
+        <!--        Spigot-->
+        <repository>
+            <id>spigot-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
+        </repository>
+
+        <!--        ChestShop-->
+        <repository>
+            <id>chestshop-repo</id>
+            <url>https://repo.minebench.de/</url>
+        </repository>
+
+        <!--        JitPack-->
+        <repository>
+            <id>jitpack.io</id>
+            <url>https://jitpack.io</url>
+        </repository>
+
+        <!--        CoreProtect-->
+        <repository>
+            <id>playpro-repo</id>
+            <url>https://maven.playpro.com</url>
+        </repository>
+
+        <!--        Essentials-->
+        <repository>
+            <id>essentials-repo</id>
+            <url>https://repo.essentialsx.net/releases/</url>
+        </repository>
+
+        <!--		Towny-->
+        <repository>
+            <id>glaremasters repo</id>
+            <url>https://repo.glaremasters.me/repository/towny/</url>
+        </repository>
+
+        <!--		ProtocolLib-->
+        <repository>
+            <id>dmulloy2-repo</id>
+            <url>https://repo.dmulloy2.net/repository/public/</url>
+        </repository>
+
+        <!--        Player Auctions-->
+        <repository>
+            <id>olzie-repo</id>
+            <url>https://repo.olziedev.com/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>1.21-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_Core</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_Spigot_20</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_Spigot_21</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <!--Plugin Dependencies-->
+        <dependency>
+            <groupId>com.acrobot.chestshop</groupId>
+            <artifactId>chestshop</artifactId>
+            <version>3.12.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.coreprotect</groupId>
+            <artifactId>coreprotect</artifactId>
+            <version>22.4</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.MilkBowl</groupId>
+            <artifactId>VaultAPI</artifactId>
+            <version>1.7</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.brcdev-minecraft</groupId>
+            <artifactId>shopgui-api</artifactId>
+            <version>3.0.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Gypopo</groupId>
+            <artifactId>EconomyShopGUI-API</artifactId>
+            <version>1.7.1</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.7sat</groupId>
+            <artifactId>DynamicShop3</artifactId>
+            <version>3.16.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Zrips</groupId>
+            <artifactId>Jobs</artifactId>
+            <version>4.17.2</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.essentialsx</groupId>
+            <artifactId>EssentialsX</artifactId>
+            <version>2.20.1</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.palmergames.bukkit.towny</groupId>
+            <artifactId>towny</artifactId>
+            <version>0.100.3.0</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.Heliosares</groupId>
+            <artifactId>AuctionHouseAPI</artifactId>
+            <version>756e099dff</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.comphenix.protocol</groupId>
+            <artifactId>ProtocolLib</artifactId>
+            <version>5.1.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.olziedev</groupId>
+            <artifactId>playerauctions-api</artifactId>
+            <version>1.27.3</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+</project>

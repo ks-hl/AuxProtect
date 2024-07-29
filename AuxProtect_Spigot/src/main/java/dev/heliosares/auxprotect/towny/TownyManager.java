@@ -4,7 +4,6 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -45,8 +44,8 @@ public class TownyManager implements Runnable {
 
     public void init() {
         plugin.info("Checking for new towns/nations...");
-        TownyUniverse.getInstance().getTowns().forEach((town) -> sql.getTownyManager().updateName(town, false));
-        TownyUniverse.getInstance().getNations().forEach((nation) -> sql.getTownyManager().updateName(nation, false));
+        TownyUniverse.getInstance().getTowns().forEach((town) -> updateName(town, false));
+        TownyUniverse.getInstance().getNations().forEach((nation) -> updateName(nation, false));
     }
 
     String getNameFromID(int uid, boolean wait) throws SQLException, BusyException {

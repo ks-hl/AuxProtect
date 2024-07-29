@@ -1,12 +1,14 @@
 package dev.heliosares.auxprotect.spigot;
 
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.ActivityRecord;
-import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PosEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PosEncoder;
 import org.bukkit.Location;
@@ -38,7 +40,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
     private Location lastLocationDiff;
     private PosEncoder.Posture lastPosture;
 
-    public APPlayerSpigot(IAuxProtect plugin, Player player) {
+    public APPlayerSpigot(AuxProtectSpigot plugin, Player player) {
         super(plugin, player);
 
         this.player = player;
@@ -103,7 +105,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
     }
 
     public long logInventory(String reason, Location loc, byte[] inventory) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(getPlayer()), EntryAction.INVENTORY, false, loc, reason, "");
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(getPlayer()), EntryAction.INVENTORY, false, loc, reason, "");
         entry.setBlob(inventory);
         plugin.add(entry);
 
@@ -151,7 +153,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
                 }
             }
             try {
-                plugin.getSqlManager().getInvDiffManager().logInvDiff(getPlayer().getUniqueId(), i, qty, item);
+                getPlugin().getSqlManager().getInvDiffManager().logInvDiff(getPlayer().getUniqueId(), i, qty, item);
             } catch (Exception e) {
                 plugin.print(e);
                 return;
@@ -233,5 +235,15 @@ public class APPlayerSpigot extends APPlayer<Player> {
     public String getIPAddress() {
         if (player.getAddress() != null) return player.getAddress().getHostString();
         return null;
+    }
+
+    @Override
+    public SenderAdapter getSenderAdapter() {
+        return new SpigotSenderAdapter(getPlugin(), player);
+    }
+
+    @Override
+    protected AuxProtectSpigot getPlugin() {
+        return (AuxProtectSpigot) plugin;
     }
 }

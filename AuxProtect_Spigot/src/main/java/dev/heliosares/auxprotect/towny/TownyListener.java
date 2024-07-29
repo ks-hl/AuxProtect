@@ -12,7 +12,6 @@ import com.palmergames.bukkit.towny.object.Coord;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.WorldCoord;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -58,7 +57,7 @@ public class TownyListener implements Listener {
     private void handleDeleted(String name, boolean nation) {
         int uid;
         try {
-            uid = plugin.getSqlManager().getTownyManager().getIDFromName(name, true);
+            uid = plugin.getTownyManager().getIDFromName(name, true);
         } catch (SQLException | BusyException e) {
             plugin.print(e);
             return;

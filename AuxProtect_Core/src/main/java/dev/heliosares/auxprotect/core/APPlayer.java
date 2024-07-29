@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.core;
 
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.utils.IPService;
 
 import javax.annotation.Nonnull;
@@ -34,4 +35,6 @@ public abstract class APPlayer<T> {
     @Nullable
     public abstract String getIPAddress();
 
+    public abstract SenderAdapter getSenderAdapter();
+    protected abstract IAuxProtect getPlugin();
 }

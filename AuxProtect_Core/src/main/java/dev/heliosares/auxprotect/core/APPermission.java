@@ -47,13 +47,6 @@ public class APPermission {
         return player.hasPermission(node);
     }
 
-    public boolean hasPermission(org.bukkit.command.CommandSender player) {
-        if (this.equals(NONE)) {
-            return true;
-        }
-        return player.hasPermission(node);
-    }
-
     public APPermission dot(String node) {
         return new APPermission(this.node + "." + node);
     }

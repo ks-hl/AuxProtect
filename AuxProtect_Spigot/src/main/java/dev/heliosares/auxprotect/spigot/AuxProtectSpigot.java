@@ -11,15 +11,18 @@ import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
-import dev.heliosares.auxprotect.core.commands.CSLogsCommand;
-import dev.heliosares.auxprotect.core.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.SpigotDatabaseRunnable;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
+import dev.heliosares.auxprotect.database.SpigotSQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.spigot.commands.CSLogsCommand;
+import dev.heliosares.auxprotect.spigot.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.spigot.listeners.AuctionHouseListener;
 import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
 import dev.heliosares.auxprotect.spigot.listeners.CommandListener;
@@ -36,11 +39,12 @@ import dev.heliosares.auxprotect.spigot.listeners.ProjectileListener;
 import dev.heliosares.auxprotect.spigot.listeners.ShopGUIPlusListener;
 import dev.heliosares.auxprotect.spigot.listeners.VeinListener;
 import dev.heliosares.auxprotect.spigot.listeners.WorldListener;
+import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.towny.TownyListener;
+import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import dev.heliosares.auxprotect.utils.StackUtil;
-import dev.heliosares.auxprotect.utils.Telemetry;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
@@ -84,7 +88,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public static final char BLOCK = 9608;
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectSpigot instance;
-    private static SQLManager sqlManager;
+    private static SpigotSQLManager sqlManager;
     private final APConfig config = new APConfig();
     private final Set<String> hooks = new HashSet<>();
     private final HashMap<UUID, APPlayerSpigot> apPlayers = new HashMap<>();
@@ -100,7 +104,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private boolean isShuttingDown;
     private String stackLog = "";
 
-    public static IAuxProtect getInstance() {
+    public static AuxProtectSpigot getInstance() {
         return instance;
     }
 
@@ -212,7 +216,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             pass = getAPConfig().getPass();
         }
         try {
-            sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
+            sqlManager = new SpigotSQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
         } catch (ClassNotFoundException e) {
             warning("No driver for SQL found. Disabling");
             setEnabled(false);
@@ -267,7 +271,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             }
         }.runTaskAsynchronously(this);
 
-        dbRunnable = new DatabaseRunnable(this, sqlManager);
+        dbRunnable = new SpigotDatabaseRunnable(this, sqlManager);
 
         getServer().getScheduler().runTaskTimerAsynchronously(this, dbRunnable, 60, 5);
 
@@ -300,7 +304,13 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         if (!hook(() -> new EssentialsListener(this), "Essentials")) {
             EntryAction.PAY.setEnabled(false);
         }
-        if (!hook(() -> new TownyListener(this), "Towny")) {
+        if (hook(() -> new TownyListener(this), "Towny")) {
+            getSqlManager().getLookupManager().addLoader(data -> {
+                if (data.table() != Table.AUXPROTECT_TOWNY && !data.action().equals(EntryAction.TOWNYNAME)) return null;
+                return new TownyEntry(data.time(), data.uid(), data.action(), data.state(), data.world(),
+                        data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data());
+            });
+        } else {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_TOWNY) {
                     action.setEnabled(false);
@@ -411,8 +421,8 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             }
                         }
 
-                        if (getSqlManager().getTownyManager() != null) {
-                            getSqlManager().getTownyManager().run();
+                        if (getTownyManager() != null) {
+                            getTownyManager().run();
                         }
 
                         if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
@@ -425,7 +435,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                 apPlayer.addActivity(Activity.IN_SPAWN);
                             }
 
-                            add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false, apPlayer.getPlayer().getLocation(), "", apPlayer.concludeActivityForMinute()));
+                            add(new SpigotDbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false, apPlayer.getPlayer().getLocation(), "", apPlayer.concludeActivityForMinute()));
 
                             int tallied = 0;
                             int inactive = 0;
@@ -439,18 +449,18 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                                 }
                             }
                             if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getPlayer())) {
+                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getSenderAdapter())) {
                                 if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
                                     apPlayer.lastNotifyInactive = System.currentTimeMillis();
                                     String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.getPlayer().getName(),
                                             inactive, tallied);
                                     for (Player player : Bukkit.getOnlinePlayers()) {
-                                        if (APPermission.NOTIFY_INACTIVE.hasPermission(player)) {
+                                        if (APPermission.NOTIFY_INACTIVE.hasPermission(apPlayer.getSenderAdapter())) {
                                             player.sendMessage(msg);
                                         }
                                     }
                                     info(msg);
-                                    add(new DbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false,
+                                    add(new SpigotDbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false,
                                             apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
                                 }
                             }
@@ -523,7 +533,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                             update = newVersion;
                             if (newUpdate) {
                                 for (Player player : Bukkit.getOnlinePlayers()) {
-                                    if (APPermission.ADMIN.hasPermission(player)) {
+                                    if (APPermission.ADMIN.hasPermission(new SpigotSenderAdapter(AuxProtectSpigot.this, player))) {
                                         AuxProtectSpigot.this.tellAboutUpdate(player);
                                     }
                                 }
@@ -641,6 +651,16 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
+    public boolean doesWorldExist(String world) {
+        return world != null && Bukkit.getWorld(world) != null;
+    }
+
+    @Override
+    public boolean isPrimaryThread() {
+        return Bukkit.isPrimaryThread();
+    }
+
+    @Override
     public void info(String string) {
         string = ChatColor.stripColor(string);
         this.getLogger().info(string);
@@ -659,7 +679,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
     }
 
-    public SQLManager getSqlManager() {
+    public SpigotSQLManager getSqlManager() {
         return sqlManager;
     }
 
@@ -804,4 +824,9 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public String getCommandAlias() {
         return "ap";
     }
+
+    public TownyManager getTownyManager() {
+        return getSqlManager().getTownyManager();
+    }
+
 }

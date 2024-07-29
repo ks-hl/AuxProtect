@@ -12,7 +12,7 @@ import org.bukkit.Location;
 
 import java.util.Objects;
 
-public class PosEntry extends DbEntry {
+public class PosEntry extends SpigotDbEntry {
     private final double x;
     private final double y;
     private final double z;

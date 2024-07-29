@@ -1,5 +1,6 @@
-package dev.heliosares.auxprotect.utils;
+package dev.heliosares.auxprotect.spigot;
 
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.spigot.Metrics;
 
@@ -38,7 +39,7 @@ public class Telemetry {
 
     }
 
-    public static void reportHook(AuxProtectSpigot plugin, String name, boolean state) {
+    public static void reportHook(IAuxProtect plugin, String name, boolean state) {
         if (state) {
             plugin.info(name + " hooked");
         } else {

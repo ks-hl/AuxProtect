@@ -9,8 +9,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
-import java.io.IOException;
-
 public class DynamicShopListener implements Listener {
     private final AuxProtectSpigot plugin;
 

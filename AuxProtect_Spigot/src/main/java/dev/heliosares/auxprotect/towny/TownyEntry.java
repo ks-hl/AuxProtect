@@ -4,6 +4,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 
 import java.sql.SQLException;
@@ -32,7 +33,7 @@ public class TownyEntry extends DbEntry {
         if (!getUserUUID().startsWith("$t") || getUserUUID().length() != 38) {
             return super.getUser();
         }
-        user = SQLManager.getInstance().getTownyManager().getNameFromID(getUid(), false);
+        user = AuxProtectSpigot.getInstance().getTownyManager().getNameFromID(getUid(), false);
         if (user == null) {
             user = super.getUser();
         }
@@ -47,7 +48,7 @@ public class TownyEntry extends DbEntry {
         if (!getTargetUUID().startsWith("$t") || getTargetUUID().length() != 38) {
             return super.getTarget();
         }
-        target = SQLManager.getInstance().getTownyManager().getNameFromID(getTargetId(), false);
+        target = AuxProtectSpigot.getInstance().getTownyManager().getNameFromID(getTargetId(), false);
         if (target == null) {
             target = super.getTarget();
         }

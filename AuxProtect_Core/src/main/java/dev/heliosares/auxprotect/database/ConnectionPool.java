@@ -7,7 +7,6 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.SQLConsumer;
 import dev.heliosares.auxprotect.utils.SQLFunction;
 import dev.heliosares.auxprotect.utils.SQLFunctionWithException;
-import org.bukkit.Bukkit;
 
 import javax.annotation.Nullable;
 import javax.annotation.OverridingMethodsMustInvokeSuper;
@@ -169,7 +168,7 @@ public class ConnectionPool {
     private void checkAsync() throws IllegalStateException {
         if (skipAsyncCheck) return;
         //noinspection ConstantValue
-        if (plugin.getPlatform() == PlatformType.SPIGOT && Bukkit.getServer() != null && Bukkit.isPrimaryThread()) {
+        if (plugin.isPrimaryThread()) {
             throw new IllegalStateException("Synchronous call to database.");
         }
     }

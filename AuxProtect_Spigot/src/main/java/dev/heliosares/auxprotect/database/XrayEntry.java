@@ -8,7 +8,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
 
-public class XrayEntry extends DbEntry {
+public class XrayEntry extends SpigotDbEntry {
 
     private final ArrayList<XrayEntry> children = new ArrayList<>();
     public UUID viewer;

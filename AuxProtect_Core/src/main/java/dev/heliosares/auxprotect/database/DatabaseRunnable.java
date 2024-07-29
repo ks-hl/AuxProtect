@@ -2,7 +2,6 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.spigot.listeners.JobsListener.JobsEntry;
 
 import javax.annotation.Nonnull;
 import java.sql.SQLException;
@@ -13,13 +12,11 @@ import java.util.function.Consumer;
 public class DatabaseRunnable implements Runnable {
     private static final HashMap<Table, Long> lastTimes = new HashMap<>();
     private static final long pickupCacheTime = 1500;
-    private static final long jobsCacheTime = 10000;
     @Nonnull
     private final SQLManager sqlManager;
     @Nonnull
     private final IAuxProtect plugin;
     private final ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
-    private final ConcurrentLinkedQueue<JobsEntry> jobsentries = new ConcurrentLinkedQueue<>();
     private long lastWarn = 0;
     private long lockedSince;
 
@@ -44,10 +41,6 @@ public class DatabaseRunnable implements Runnable {
         }
         if (entry instanceof PickupEntry) {
             this.addPickup((PickupEntry) entry);
-            return;
-        }
-        if (entry instanceof JobsEntry) {
-            this.addJobs((JobsEntry) entry);
             return;
         }
         Table table = entry.getAction().getTable();
@@ -98,23 +91,13 @@ public class DatabaseRunnable implements Runnable {
         }
     }
 
-    private void checkCache(boolean force) {
+    protected void checkCache(boolean force) {
         synchronized (pickups) {
             Iterator<PickupEntry> itr = pickups.iterator();
             while (itr.hasNext()) {
                 PickupEntry next = itr.next();
                 if (force || next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
                     Table.AUXPROTECT_INVENTORY.queue.add(next);
-                    itr.remove();
-                }
-            }
-        }
-        synchronized (jobsentries) {
-            Iterator<JobsEntry> itr = jobsentries.iterator();
-            while (itr.hasNext()) {
-                JobsEntry next = itr.next();
-                if (force || next.getTime() < System.currentTimeMillis() - jobsCacheTime) {
-                    EntryAction.JOBS.getTable().queue.add(next);
                     itr.remove();
                 }
             }
@@ -139,16 +122,6 @@ public class DatabaseRunnable implements Runnable {
                 return;
             }
             pickups.add(entry);
-        }
-    }
-
-    private void addJobs(JobsEntry entry) {
-        synchronized (jobsentries) {
-            for (JobsEntry next : jobsentries) {
-                if (next.getTime() < System.currentTimeMillis() - jobsCacheTime) continue;
-                if (next.add(entry)) return;
-            }
-            jobsentries.add(entry);
         }
     }
 

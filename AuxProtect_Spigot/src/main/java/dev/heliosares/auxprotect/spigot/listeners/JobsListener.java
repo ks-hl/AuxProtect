@@ -4,8 +4,8 @@ import com.gamingmesh.jobs.api.JobsExpGainEvent;
 import com.gamingmesh.jobs.api.JobsPrePaymentEvent;
 import com.gamingmesh.jobs.container.CurrencyType;
 import com.gamingmesh.jobs.container.Job;
-import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.JobsEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
@@ -56,34 +56,4 @@ public class JobsListener implements Listener {
         }
     }
 
-    public static class JobsEntry extends DbEntry {
-
-        public final char type;
-        private double value;
-
-        public JobsEntry(String userLabel, Location location, String jobName, char type, double value) {
-            super(userLabel, EntryAction.JOBS, false, location, jobName, "");
-            this.value = value;
-            this.type = type;
-        }
-
-        public JobsEntry(String userLabel, String jobName, char type, double value) {
-            super(userLabel, EntryAction.JOBS, false, jobName, "");
-            this.value = value;
-            this.type = type;
-        }
-
-        @Override
-        public String getData() {
-            return type + "" + Math.round(value * 100f) / 100f;
-        }
-
-        public boolean add(JobsEntry other) {
-            if (userLabel.equals(other.userLabel) && type == other.type) {
-                this.value += other.value;
-                return true;
-            }
-            return false;
-        }
-    }
 }

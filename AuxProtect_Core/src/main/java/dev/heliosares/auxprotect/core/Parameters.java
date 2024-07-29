@@ -7,7 +7,6 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;

@@ -6,7 +6,6 @@ import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
-import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
 import java.sql.Connection;
@@ -21,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class LookupManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
+    private final List<EntryLoader> loaders = new ArrayList<>();
     private static final BidiMapCache<Long, Parameters> groupParameterCache = new BidiMapCache<>(3 * 3600000L, 3 * 3600000L, true);
 
     public LookupManager(SQLManager sql, IAuxProtect plugin) {
@@ -229,12 +229,16 @@ public class LookupManager {
                             damage = rs.getInt("damage");
                             if (rs.wasNull()) damage = -1;
                         }
+
+                        EntryData entryData = new EntryData(table, time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
+                        for (EntryLoader loader : loaders) {
+                            entry = loader.load(entryData);
+                            if (entry != null) break;
+                        }
+
                         if (table == Table.AUXPROTECT_XRAY) {
                             short rating = rs.getShort("rating");
                             entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
-                        } else if (table == Table.AUXPROTECT_TOWNY || entryAction.equals(EntryAction.TOWNYNAME)) {
-                            entry = new TownyEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target,
-                                    target_id, data);
                         } else if (table == Table.AUXPROTECT_POSITION) {
                             entry = new PosEntry(time, uid, entryAction, state, world, x, y, z, rs.getByte("increment"), pitch, yaw, target, target_id, data);
                         } else if (table == Table.AUXPROTECT_TRANSACTIONS) {
@@ -268,5 +272,9 @@ public class LookupManager {
             plugin.print(e);
             throw new LookupException(Language.L.ERROR);
         }
+    }
+
+    public void addLoader(EntryLoader loader) {
+        loaders.add(loader);
     }
 }
