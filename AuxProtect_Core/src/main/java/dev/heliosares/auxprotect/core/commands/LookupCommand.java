@@ -54,6 +54,10 @@ public class LookupCommand extends Command {
         super(plugin, "lookup", APPermission.LOOKUP, true, "l");
     }
 
+    public static Results getResultsFor(UUID uuid) {
+        return results.get(uuid);
+    }
+
     public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String[] args) {
         List<String> possible = new ArrayList<>();
         String currentArg = args[args.length - 1];

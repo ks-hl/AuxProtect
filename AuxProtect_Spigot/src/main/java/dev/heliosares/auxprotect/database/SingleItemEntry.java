@@ -12,7 +12,7 @@ import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
 
-public class SingleItemEntry extends DbEntry {
+public class SingleItemEntry extends SpigotDbEntry {
 
     private final int qty;
     private final int damage;

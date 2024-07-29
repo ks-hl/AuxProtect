@@ -118,5 +118,11 @@
             <artifactId>AuxProtect_Spigot</artifactId>
             <version>${revision}</version>
         </dependency>
+
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_Bungee</artifactId>
+            <version>${revision}</version>
+        </dependency>
     </dependencies>
 </project>

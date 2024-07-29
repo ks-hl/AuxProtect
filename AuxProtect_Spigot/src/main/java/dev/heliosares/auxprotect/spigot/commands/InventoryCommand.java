@@ -1,10 +1,19 @@
-package dev.heliosares.auxprotect.core.commands;
+package dev.heliosares.auxprotect.spigot.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.commands.APCommand;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
-import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.NotPlayerException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -18,7 +27,7 @@ import java.util.UUID;
 
 public class InventoryCommand extends Command {
 
-    public InventoryCommand(IAuxProtect plugin) {
+    public InventoryCommand(AuxProtectSpigot plugin) {
         super(plugin, "inventory", APPermission.INV, true);
     }
 
@@ -82,7 +91,7 @@ public class InventoryCommand extends Command {
         }
         DiffInventoryRecord inv;
         try {
-            inv = plugin.getSqlManager().getInvDiffManager().getContentsAt(uid, time);
+            inv = getPlugin().getSqlManager().getInvDiffManager().getContentsAt(uid, time);
         } catch (BusyException e) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
@@ -120,5 +129,9 @@ public class InventoryCommand extends Command {
             out.add("@");
         }
         return out;
+    }
+
+    private AuxProtectSpigot getPlugin() {
+        return (AuxProtectSpigot) plugin;
     }
 }

@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import org.bukkit.Location;
 
-public class PickupEntry extends DbEntry {
+public class PickupEntry extends SpigotDbEntry {
     private int quantity;
 
     public PickupEntry(String userUuid, EntryAction action, boolean state, Location location, String target,

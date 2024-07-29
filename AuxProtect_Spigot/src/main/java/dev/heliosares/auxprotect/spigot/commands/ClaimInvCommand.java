@@ -1,9 +1,9 @@
 package dev.heliosares.auxprotect.spigot.commands;
 
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
-import dev.heliosares.auxprotect.core.commands.InvCommand;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.Pane;
@@ -39,7 +39,7 @@ public class ClaimInvCommand implements CommandExecutor {
             boolean other;
             OfflinePlayer target;
             try {
-                other = (args.length == 1) && APPermission.INV_RECOVER.hasPermission(sender);
+                other = (args.length == 1) && APPermission.INV_RECOVER.hasPermission(new SpigotSenderAdapter(plugin, sender));
                 if (other) {
                     uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(args[0], false);
                     if (uid <= 0) {

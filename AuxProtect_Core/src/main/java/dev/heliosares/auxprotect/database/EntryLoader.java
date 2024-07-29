@@ -1,9 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
-import javax.annotation.Nullable;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
-@FunctionalInterface
-public interface EntryLoader {
-    @Nullable
-    DbEntry load(EntryData entryData);
+public record EntryLoader(Predicate<EntryData> applies, Function<EntryData, DbEntry> loader) {
 }

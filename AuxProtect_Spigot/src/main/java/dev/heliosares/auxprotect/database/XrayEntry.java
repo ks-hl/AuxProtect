@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.core.commands.XrayCommand;
+import dev.heliosares.auxprotect.spigot.commands.XrayCommand;
 import org.bukkit.Location;
 
 import javax.annotation.Nullable;

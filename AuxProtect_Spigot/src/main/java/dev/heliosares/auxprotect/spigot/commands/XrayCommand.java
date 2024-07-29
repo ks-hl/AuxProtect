@@ -1,9 +1,20 @@
-package dev.heliosares.auxprotect.core.commands;
+package dev.heliosares.auxprotect.spigot.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.*;
-import dev.heliosares.auxprotect.database.*;
-import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.Command;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.database.DbEntry;
+import dev.heliosares.auxprotect.database.Results;
+import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.XrayEntry;
+import dev.heliosares.auxprotect.database.XrayResults;
+import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.heliosares.auxprotect.exceptions.CommandException;
+import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.PlatformException;
+import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.chat.ClickEvent;
@@ -24,7 +35,7 @@ public class XrayCommand extends Command {
     public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMYY HHmm");
     HashMap<String, Results> results = new HashMap<>();
 
-    public XrayCommand(IAuxProtect plugin) {
+    public XrayCommand(AuxProtectSpigot plugin) {
         super(plugin, "xray", APPermission.XRAY, true, "x");
     }
 
@@ -142,7 +153,7 @@ public class XrayCommand extends Command {
                         entry.setRating(rating, player.getName());
 
                         try {
-                            plugin.getSqlManager().updateXrayEntry(entry);
+                            getPlugin().getSqlManager().updateXrayEntry(entry);
                         } catch (Exception e) {
                             plugin.print(e);
                             sender.sendLang(Language.L.ERROR);
@@ -197,7 +208,7 @@ public class XrayCommand extends Command {
                                                 if (!entry.getUserUUID().equals("$" + target)) return;
                                                 if (entry.getRating() != -1) return;
                                                 entry.setRating((short) 0, player.getName() + " BULK");
-                                                plugin.getSqlManager().updateXrayEntry(entry);
+                                                getPlugin().getSqlManager().updateXrayEntry(entry);
                                                 it.remove();
                                             } catch (BusyException e) {
                                                 sender.sendLang(Language.L.DATABASE_BUSY);
@@ -282,5 +293,9 @@ public class XrayCommand extends Command {
     public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
         // TODO This whole thing...
         return null;
+    }
+
+    private AuxProtectSpigot getPlugin() {
+        return (AuxProtectSpigot) plugin;
     }
 }

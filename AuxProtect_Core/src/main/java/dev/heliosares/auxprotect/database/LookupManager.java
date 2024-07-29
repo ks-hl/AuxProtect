@@ -232,7 +232,8 @@ public class LookupManager {
 
                         EntryData entryData = new EntryData(table, time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
                         for (EntryLoader loader : loaders) {
-                            entry = loader.load(entryData);
+                            if (!loader.applies().test(entryData)) continue;
+                            entry = loader.loader().apply(entryData);
                             if (entry != null) break;
                         }
 

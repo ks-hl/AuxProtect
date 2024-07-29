@@ -1,17 +1,20 @@
-package dev.heliosares.auxprotect.core.commands;
+package dev.heliosares.auxprotect.spigot.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.commands.LookupCommand;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
@@ -73,7 +76,7 @@ public class InvCommand extends Command {
             pane.setInventory(mainInv);
             AtomicBoolean closed = new AtomicBoolean();
 
-            if (APPermission.INV_RECOVER.hasPermission(player)) {
+            if (APPermission.INV_RECOVER.hasPermission(new SpigotSenderAdapter(plugin, player))) {
                 if (targetO != null) {
                     AtomicLong lastClick = new AtomicLong();
                     pane.addButton(49, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
@@ -112,7 +115,7 @@ public class InvCommand extends Command {
                             player.sendMessage(L.COMMAND__INV__SUCCESS.translate(targetName, Language.getOptionalS(targetName)));
                             targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
                             targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-                            plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
+                            plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
                         });
 
                     }), L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
@@ -163,7 +166,7 @@ public class InvCommand extends Command {
                         targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                     }
 
-                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
+                    plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false,
                             player.getLocation(), AuxProtectSpigot.getLabel(target), "regular"));
                 }), L.INV_RECOVER_MENU__BUTTON__RECOVER__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__RECOVER__HOVER.translateList());
             }
@@ -224,7 +227,7 @@ public class InvCommand extends Command {
         if (index < 0) {
             throw new SyntaxException();
         }
-        Results results = LookupCommand.results.get(player.getUniqueId());
+        Results results = LookupCommand.getResultsFor(player.getUniqueId());
         if (results == null || index >= results.getSize()) {
             throw new CommandException(L.COMMAND__LOOKUP__NO_RESULTS_SELECTED);
         }

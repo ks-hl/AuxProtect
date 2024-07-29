@@ -1,10 +1,11 @@
-package dev.heliosares.auxprotect.core.commands;
+package dev.heliosares.auxprotect.spigot.commands;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.core.commands.APCommand;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 

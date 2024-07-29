@@ -23,9 +23,11 @@ import java.util.stream.Collectors;
 
 public class APCommand extends Command {
 
-    private final ArrayList<Command> commands;
+    protected final ArrayList<Command> commands;
 
-    {
+    public APCommand(IAuxProtect plugin, String label, String... aliases) {
+        super(plugin, label, APPermission.NONE, false, aliases);
+
         commands = new ArrayList<>();
         commands.add(new LookupCommand(plugin));
         commands.add(new PurgeCommand(plugin));
@@ -34,22 +36,6 @@ public class APCommand extends Command {
         commands.add(new TimeCommand(plugin));
         commands.add(new DumpCommand(plugin));
         commands.add(new PlaytimeCommand(plugin));
-        if (plugin.getPlatform() == PlatformType.SPIGOT) {
-            commands.add(new TpCommand(plugin).setTabComplete(false));
-            commands.add(new InvCommand(plugin).setTabComplete(false));
-            commands.add(new InventoryCommand(plugin));
-            commands.add(new ActivityCommand(plugin));
-            commands.add(new MoneyCommand(plugin));
-            commands.add(new SaveInvCommand(plugin));
-            if (plugin.getAPConfig().isPrivate()) {
-                commands.add(new RetentionCommand(plugin));
-                commands.add(new XrayCommand(plugin));
-            }
-        }
-    }
-
-    public APCommand(IAuxProtect plugin, String label, String... aliases) {
-        super(plugin, label, APPermission.NONE, false, aliases);
     }
 
     public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String[] args) {

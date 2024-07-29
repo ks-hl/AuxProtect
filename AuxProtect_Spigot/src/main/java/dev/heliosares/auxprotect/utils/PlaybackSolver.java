@@ -7,7 +7,7 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DbEntry;
-import dev.heliosares.auxprotect.database.DbEntryBukkit;
+import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
@@ -15,6 +15,7 @@ import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.TextComponent;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -150,7 +151,7 @@ public class PlaybackSolver extends BukkitRunnable {
                 } else {
                     decoded = PosEncoder.decode(entry.getBlob());
                 }
-                Location lastLoc = DbEntryBukkit.getLocation(lastEntry);
+                Location lastLoc = getLocation(lastEntry);
                 final long incrementBy = (entry.getTime() - lastEntry.getTime()) / (decoded.size() + 1);
                 for (int i = 0; i < decoded.size(); i++) {
                     PosEncoder.PositionIncrement inc = decoded.get(i);
@@ -167,7 +168,7 @@ public class PlaybackSolver extends BukkitRunnable {
                     points.add(point);
                 }
             }
-            Location entryLoc = DbEntryBukkit.getLocation(entry);
+            Location entryLoc = getLocation(entry);
             entryLoc.setYaw(entry.getYaw());
             entryLoc.setPitch(entry.getPitch());
             PosPoint point = new PosPoint(entry.getTime(), UUID.fromString(entry.getUserUUID().substring(1)), entry.getUser(), entry.getUid(), entryLoc, false, null);
@@ -274,5 +275,19 @@ public class PlaybackSolver extends BukkitRunnable {
             audience.sendBlockChange(loc, material.createBlockData());
             return loc;
         }
+    }
+
+    public static Location getLocation(DbEntry entry) {
+        double x, y, z;
+        if (entry instanceof PosEntry posEntry) {
+            x = posEntry.getDoubleX();
+            y = posEntry.getDoubleY();
+            z = posEntry.getDoubleZ();
+        } else {
+            x = entry.getX();
+            y = entry.getY();
+            z = entry.getZ();
+        }
+        return new Location(Bukkit.getWorld(entry.getWorld()), x, y, z, entry.getYaw(), entry.getPitch());
     }
 }

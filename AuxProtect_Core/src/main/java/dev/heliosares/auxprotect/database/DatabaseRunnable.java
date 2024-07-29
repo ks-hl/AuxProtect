@@ -11,12 +11,10 @@ import java.util.function.Consumer;
 
 public class DatabaseRunnable implements Runnable {
     private static final HashMap<Table, Long> lastTimes = new HashMap<>();
-    private static final long pickupCacheTime = 1500;
     @Nonnull
     private final SQLManager sqlManager;
     @Nonnull
     private final IAuxProtect plugin;
-    private final ConcurrentLinkedQueue<PickupEntry> pickups = new ConcurrentLinkedQueue<>();
     private long lastWarn = 0;
     private long lockedSince;
 
@@ -37,10 +35,6 @@ public class DatabaseRunnable implements Runnable {
 
     public void add(DbEntry entry) {
         if (!entry.getAction().isEnabled()) {
-            return;
-        }
-        if (entry instanceof PickupEntry) {
-            this.addPickup((PickupEntry) entry);
             return;
         }
         Table table = entry.getAction().getTable();
@@ -92,37 +86,6 @@ public class DatabaseRunnable implements Runnable {
     }
 
     protected void checkCache(boolean force) {
-        synchronized (pickups) {
-            Iterator<PickupEntry> itr = pickups.iterator();
-            while (itr.hasNext()) {
-                PickupEntry next = itr.next();
-                if (force || next.getTime() < System.currentTimeMillis() - pickupCacheTime) {
-                    Table.AUXPROTECT_INVENTORY.queue.add(next);
-                    itr.remove();
-                }
-            }
-        }
-    }
-
-    private void addPickup(PickupEntry entry) {
-        synchronized (pickups) {
-            for (PickupEntry next : pickups) {
-                if (next.getTime() < System.currentTimeMillis() - pickupCacheTime) continue;
-                if (next.getAction() != entry.getAction()) continue;
-                try {
-                    if (!next.getUserUUID().equals(entry.getUserUUID())) continue;
-                    if (!next.getTargetUUID().equals(entry.getTargetUUID())) continue;
-                } catch (SQLException | BusyException ignored) {
-                    //Unlikely / N/A
-                    continue;
-                }
-                if (!next.getWorld().equals(entry.getWorld())) continue;
-                if (next.getDistance(entry) > 3) continue;
-                next.add(entry);
-                return;
-            }
-            pickups.add(entry);
-        }
     }
 
     private final Set<Consumer<DbEntry>> listeners = new HashSet<>();
