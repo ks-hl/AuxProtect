@@ -13,7 +13,7 @@ Wiki: https://github.com/Heliosares/AuxProtect/wiki
   <dependency>
       <groupId>com.github.Heliosares</groupId>
       <artifactId>AuxProtect</artifactId>
-      <version>1.2</version>
+      <version>1.3.1</version>
       <scope>provided</scope>
   </dependency>
 ```
@@ -21,5 +21,5 @@ Wiki: https://github.com/Heliosares/AuxProtect/wiki
 ```
 maven { url 'https://jitpack.io' }
 
-implementation 'com.github.Heliosares:AuxProtect:1.2'
+implementation 'com.github.Heliosares:AuxProtect:1.3.1'
 ```

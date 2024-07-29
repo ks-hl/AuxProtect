@@ -1,4 +1,4 @@
-/target/
+**/target/
 /test_run/
 .idea*
 auxprotect.iml
