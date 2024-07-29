@@ -21,7 +21,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class APCommand extends Command {
+public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
     protected final ArrayList<Command> commands;
 
@@ -38,7 +38,7 @@ public class APCommand extends Command {
         commands.add(new PlaytimeCommand(plugin));
     }
 
-    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter sender, String[] args) {
+    public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter<?, ?> sender, String[] args) {
         if (args.length == 2) {
             return new ArrayList<>(allPlayers(plugin, true));
         } else if (args.length == 3) {
@@ -70,10 +70,10 @@ public class APCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) {
+    public void onCommand(SA sender, String label, String[] args) {
         if (args.length > 0) {
             boolean match = false;
-            for (Command c : commands) {
+            for (Command<S, P, SA> c : commands) {
                 if (!c.exists() || !c.matches(args[0])) {
                     continue;
                 }
@@ -204,7 +204,7 @@ public class APCommand extends Command {
         }
     }
 
-    private void sendInfo(SenderAdapter sender) {
+    private void sendInfo(SA sender) {
         sender.sendMessageRaw("&9AuxProtect"
                 + (APPermission.ADMIN.hasPermission(sender) ? (" &7v" + plugin.getPluginVersion()) : ""));
         sender.sendMessageRaw("&7" + Language.L.COMMAND__AP__DEVELOPED_BY.translate() + " &9Heliosares");
@@ -219,7 +219,7 @@ public class APCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> out = new ArrayList<>();
         String currentArg = args[args.length - 1];
 
@@ -236,7 +236,7 @@ public class APCommand extends Command {
             }
         }
 
-        for (Command c : commands) {
+        for (Command<S, P, SA> c : commands) {
             if (!c.exists() || (!c.matches(args[0]) && args.length > 1) || !c.doTabComplete()) {
                 continue;
             }

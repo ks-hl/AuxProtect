@@ -11,14 +11,14 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class RetentionCommand extends Command {
+public class RetentionCommand <S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA>  {
 
-    public RetentionCommand(IAuxProtect plugin) {
+    public RetentionCommand(P plugin) {
         super(plugin, "retention", APPermission.LOOKUP_RETENTION, false);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2) {
             throw new SyntaxException();
         }
@@ -27,11 +27,11 @@ public class RetentionCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT && plugin.getAPConfig().isPrivate();
+        return plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && plugin.getAPConfig().isPrivate();
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         String currentArg = args[args.length - 1];
         if (args.length == 2 && currentArg.matches("\\d+")) {
             List<String> out = new ArrayList<>();

@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.spigot.commands;
 
+import dev.heliosares.auxprotect.adapters.sender.PositionedSender;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
@@ -12,18 +13,18 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.util.List;
 
-public class TpCommand extends Command {
+public class TpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public TpCommand(IAuxProtect plugin) {
+    public TpCommand(P plugin) {
         super(plugin, "tp", APPermission.TP, false);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length < 5) {
             throw new SyntaxException();
         }
-        if (sender.getPlatform() != PlatformType.SPIGOT) {
+        if (!(sender instanceof PositionedSender positionedSender)) {
             throw new PlatformException();
         }
         try {
@@ -35,7 +36,7 @@ public class TpCommand extends Command {
                 pitch = Integer.parseInt(args[5]);
                 yaw = Integer.parseInt(args[6]);
             }
-            sender.teleport(args[4], x, y, z, pitch, yaw);
+            positionedSender.teleport(args[4], x, y, z, pitch, yaw);
         } catch (NumberFormatException | NullPointerException e) {
             throw new SyntaxException();
         } catch (UnsupportedOperationException e) {
@@ -45,11 +46,11 @@ public class TpCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return null;
     }
 }

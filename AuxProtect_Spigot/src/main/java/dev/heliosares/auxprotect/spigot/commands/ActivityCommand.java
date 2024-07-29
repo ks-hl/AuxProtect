@@ -11,14 +11,14 @@ import dev.heliosares.auxprotect.exceptions.SyntaxException;
 
 import java.util.List;
 
-public class ActivityCommand extends Command {
+public class ActivityCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    public ActivityCommand(IAuxProtect plugin) {
+    public ActivityCommand(P plugin) {
         super(plugin, "activity", APPermission.LOOKUP_ACTIVITY, false);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) throw new SyntaxException();
 
         String cmd = plugin.getCommandPrefix()
@@ -37,7 +37,7 @@ public class ActivityCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return APCommand.tabCompletePlayerAndTime(plugin, sender, args);
     }
 }

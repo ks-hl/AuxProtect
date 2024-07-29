@@ -1,5 +1,8 @@
 package dev.heliosares.auxprotect.spigot.commands;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
@@ -28,11 +31,6 @@ import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.Pane.Type;
 import dev.heliosares.auxprotect.utils.TimeUtil;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.OfflinePlayer;
@@ -49,8 +47,8 @@ import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-public class InvCommand extends Command {
-    public InvCommand(IAuxProtect plugin) {
+public class InvCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
+    public InvCommand(P plugin) {
         super(plugin, "inv", APPermission.INV, true);
     }
 
@@ -155,14 +153,15 @@ public class InvCommand extends Command {
                     if (targetO != null) {
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM.translate());
-                        ComponentBuilder message = new ComponentBuilder();
-                        message.append(ChatColor.COLOR_CHAR + "f\n         ");
-                        message.append(ChatColor.COLOR_CHAR + "a[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")
+                        GenericBuilder message = new GenericBuilder();
+                        message.newLine();
+                        message.append("         ");
+                        message.append("[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")
+                                .color(GenericTextColor.GREEN)
                                 .event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                                .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                                        new Text(L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
-                        message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
-                        targetO.spigot().sendMessage(message.create());
+                                .hover(L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate());
+                        message.newLine();
+                        message.send(new SpigotSenderAdapter(plugin, targetO));
                         targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                     }
 
@@ -213,9 +212,9 @@ public class InvCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length < 2) throw new SyntaxException();
-        if (sender.getPlatform() != PlatformType.SPIGOT) throw new PlatformException();
+        if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new PlatformException();
         if (!(sender.getSender() instanceof Player player)) throw new NotPlayerException();
 
         int index = -1;
@@ -279,7 +278,7 @@ public class InvCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override

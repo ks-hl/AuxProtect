@@ -392,7 +392,7 @@ public class SQLManager extends ConnectionPool {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
-        final boolean hasLocation = plugin.getPlatform() == PlatformType.SPIGOT && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

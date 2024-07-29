@@ -3,7 +3,14 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.PacketType;
 import com.comphenix.protocol.ProtocolManager;
 import com.comphenix.protocol.events.PacketContainer;
-import com.comphenix.protocol.wrappers.*;
+import com.comphenix.protocol.wrappers.EnumWrappers;
+import com.comphenix.protocol.wrappers.Pair;
+import com.comphenix.protocol.wrappers.PlayerInfoData;
+import com.comphenix.protocol.wrappers.WrappedChatComponent;
+import com.comphenix.protocol.wrappers.WrappedDataValue;
+import com.comphenix.protocol.wrappers.WrappedDataWatcher;
+import com.comphenix.protocol.wrappers.WrappedGameProfile;
+import com.comphenix.protocol.wrappers.WrappedSignedProperty;
 import com.google.common.collect.Lists;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -21,6 +28,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
 
@@ -69,6 +77,7 @@ public class FakePlayer {
 
         PacketContainer packet = new PacketContainer(PacketType.Play.Server.PLAYER_INFO);
         packet.getPlayerInfoActions().modify(0, set -> {
+            if (set == null) set = new HashSet<>();
             set.add(EnumWrappers.PlayerInfoAction.ADD_PLAYER);
             set.add(EnumWrappers.PlayerInfoAction.UPDATE_LISTED);
             return set;
@@ -136,12 +145,12 @@ public class FakePlayer {
             case GLIDING -> 0x80;
         }));
         wrappedDataValueList.add(new WrappedDataValue(6, WrappedDataWatcher.Registry.get(EnumWrappers.getEntityPoseClass()), switch (posture) {
-            case STANDING -> EnumWrappers.EntityPose.STANDING;
-            case SNEAKING -> EnumWrappers.EntityPose.CROUCHING;
-            case SWIMMING, CRAWLING -> EnumWrappers.EntityPose.SWIMMING;
-            case GLIDING -> EnumWrappers.EntityPose.FALL_FLYING;
-            case SITTING -> EnumWrappers.EntityPose.SITTING;
-            case SLEEPING -> EnumWrappers.EntityPose.SLEEPING;
+            case STANDING -> EnumWrappers.EntityPose.STANDING.toNms();
+            case SNEAKING -> EnumWrappers.EntityPose.CROUCHING.toNms();
+            case SWIMMING, CRAWLING -> EnumWrappers.EntityPose.SWIMMING.toNms();
+            case GLIDING -> EnumWrappers.EntityPose.FALL_FLYING.toNms();
+            case SITTING -> EnumWrappers.EntityPose.SITTING.toNms();
+            case SLEEPING -> EnumWrappers.EntityPose.SLEEPING.toNms();
         }));
         packet.getDataValueCollectionModifier().write(0, wrappedDataValueList);
 

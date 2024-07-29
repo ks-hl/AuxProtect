@@ -6,6 +6,7 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.core.commands.APCommand;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
 import dev.heliosares.auxprotect.exceptions.BusyException;
@@ -25,16 +26,16 @@ import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
 
-public class InventoryCommand extends Command {
+public class InventoryCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA>  {
 
-    public InventoryCommand(AuxProtectSpigot plugin) {
+    public InventoryCommand(P plugin) {
         super(plugin, "inventory", APPermission.INV, true);
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 2 && args.length != 3) throw new SyntaxException();
-        if (plugin.getPlatform() != PlatformType.SPIGOT) throw new PlatformException();
+        if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER) throw new PlatformException();
         if (!(sender.getSender() instanceof Player player)) throw new NotPlayerException();
 
         String target = args[1];
@@ -119,11 +120,11 @@ public class InventoryCommand extends Command {
 
     @Override
     public boolean exists() {
-        return plugin.getPlatform() == PlatformType.SPIGOT;
+        return plugin.getPlatform().getLevel() == PlatformType.Level.SERVER;
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> out = APCommand.tabCompletePlayerAndTime(plugin, sender, args);
         if (out != null && args.length == 3 && plugin.getAPConfig().getInventoryDiffInterval() > 0) {
             out.add("@");

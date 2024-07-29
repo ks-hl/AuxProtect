@@ -1,35 +1,30 @@
 package dev.heliosares.auxprotect.utils;
 
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericComponent;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.List;
 
 public class PlayTimeSolver {
-    public static BaseComponent[][] solvePlaytime(List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
-        ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
+    public static GenericBuilder solvePlaytime(List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
+        final GenericBuilder message = new GenericBuilder();
         final int limitDays = 60;
         final int hours = (int) Math.ceil((stopTimeMillis - startTimeMillis) / 3600000D);
         if (hours - 1 > limitDays * 24) {
             message.append(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOLONG.translate(limitDays));
-            return new BaseComponent[][]{message.create()};
+            return message;
         }
-        StringBuilder line = new StringBuilder(ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH);
-        line.append(String.valueOf((char) 65293).repeat(6)).append(ChatColor.RESET);
-        message.append(line + "  " + Language.L.COMMAND__LOOKUP__PLAYTIME__HEADER.translate(player, Language.getOptionalS(player)) + "  " + line);
+        GenericComponent line = new GenericComponent(String.valueOf((char) 65293).repeat(6)).color(GenericTextColor.DARK_GRAY).strikethrough(true);
+        message.append(line).append("  ").append(Language.L.COMMAND__LOOKUP__PLAYTIME__HEADER.translate(player, Language.getOptionalS(player))).append("  ").append(line);
         LocalDateTime startTime = Instant.ofEpochMilli(startTimeMillis).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withMinute(0).withSecond(0).withNano(0);
         long firstTime = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
@@ -100,54 +95,47 @@ public class PlayTimeSolver {
                 newLogin = newLogout = false;
             }
         }
-        List<BaseComponent[]> components = new ArrayList<>();
-        components.add(message.create());
-        message = new ComponentBuilder();
+        message.builderBreak();
 
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("ddMMM");
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh a");
         for (int i = 0; i < startTime.getHour(); i++) {
-            message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK);
+            message.append(new GenericComponent(AuxProtectSpigot.BLOCK).color(GenericTextColor.BLACK));
         }
         double hourCount = 0;
         for (int i = 0; i < counter.length; i++) {
             LocalDateTime time = startTime.plusHours(i);
             double count = counter[i];
-            message.append(AuxProtectSpigot.BLOCK + "").event(new HoverEvent(HoverEvent.Action.SHOW_TEXT,
-                    new Text(Language.L.COMMAND__LOOKUP__PLAYTIME__HOVER.translate(time.format(formatterDateTime), Math.round(count * 60.0)))));
+            message.append(new GenericComponent(AuxProtectSpigot.BLOCK).hover(Language.L.COMMAND__LOOKUP__PLAYTIME__HOVER.translate(time.format(formatterDateTime), Math.round(count * 60.0))));
             if (count > 0.99) {
-                message.color(ChatColor.of("#ffffff"));
+                message.color("#ffffff");
             } else if (count > 0.75) {
-                message.color(ChatColor.of("#00ccff"));
+                message.color("#00ccff");
             } else if (count > 0.5) {
-                message.color(ChatColor.of("#1ecb0d"));
+                message.color("#1ecb0d");
             } else if (count > 0.25) {
-                message.color(ChatColor.of("#f9ff17"));
+                message.color("#f9ff17");
             } else if (count > 0.001) {
-                message.color(ChatColor.of("#c50000"));
+                message.color("#c50000");
             } else {
-                message.color(ChatColor.of("#4e0808"));
+                message.color("#4e0808");
             }
             hourCount += count;
             if (time.getHour() == 23) {
-                message.append(" " + time.format(formatterDate)).color(ChatColor.BLUE).event((HoverEvent) null);
+                message.append(" " + time.format(formatterDate)).color(GenericTextColor.BLUE);
 
-                message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)
-                        .event((HoverEvent) null);
+                message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(GenericTextColor.GRAY);
                 hourCount = 0;
-                components.add(message.create());
-                message = new ComponentBuilder();
+                message.builderBreak();
             }
         }
         for (int i = counter.length; ; i++) {
             LocalDateTime time = startTime.plusHours(i);
             if (time.getHour() == 0) break;
-            message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
+            message.append(AuxProtectSpigot.BLOCK + "").color(GenericTextColor.BLACK);
         }
-        message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(ChatColor.BLUE);
-        message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)
-                .event((HoverEvent) null);
-        components.add(message.create());
-        return components.toArray(new BaseComponent[0][0]);
+        message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(GenericTextColor.BLUE);
+        message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(GenericTextColor.GRAY);
+        return message;
     }
 }

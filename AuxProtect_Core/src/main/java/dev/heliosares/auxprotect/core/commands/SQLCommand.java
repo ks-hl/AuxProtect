@@ -10,19 +10,19 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 
 import java.util.List;
 
-public class SQLCommand extends Command {
+public class SQLCommand <S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA>  {
 
-    public SQLCommand(IAuxProtect plugin) {
+    public SQLCommand(P plugin) {
         super(plugin, "sql", APPermission.ADMIN, true, "sqli", "sqlu");
     }
 
     @Override
-    public boolean hasPermission(SenderAdapter sender) {
+    public boolean hasPermission(SA sender) {
         return super.hasPermission(sender) && sender.isConsole();
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String commandLabel, String[] args) {
+    public void onCommand(SA sender, String commandLabel, String[] args) {
         if (!plugin.getAPConfig().isConsoleSQL()) {
             sender.sendMessageRaw("&cThis command must be enabled in the config by setting 'ConsoleSQLCommands: true'");
             return;
@@ -72,7 +72,7 @@ public class SQLCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return null;
     }
 

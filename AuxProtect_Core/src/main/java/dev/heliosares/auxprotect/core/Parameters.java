@@ -142,7 +142,7 @@ public class Parameters implements Cloneable {
                     case "radius" -> {
                         if (sender == null)
                             throw new ParseException(L.NOTPLAYERERROR);
-                        if (sender.getPlatform() != PlatformType.SPIGOT)
+                        if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER)
                             throw new ParseException(L.INVALID_PARAMETER, line);
                         if (sender.getSender() instanceof org.bukkit.entity.Player player) {
                             parameters.setLocation(player.getWorld().getName(), player.getLocation().getBlockX(), player.getLocation().getBlockY(), player.getLocation().getBlockZ());
@@ -233,7 +233,7 @@ public class Parameters implements Cloneable {
             parameters.actions.add(EntryAction.ACTIVITY.idPos);
         }
         if (parameters.hasFlag(Flag.PLAYBACK)) {
-            if (plugin.getPlatform() != PlatformType.SPIGOT || sender == null)
+            if (plugin.getPlatform().getLevel() != PlatformType.Level.SERVER || sender == null)
                 throw new ParseException(L.INVALID_PARAMETER, "#" + Flag.PLAYBACK.toString().toLowerCase());
             parameters.actions.clear();
             parameters.actions.add(EntryAction.TP.id);

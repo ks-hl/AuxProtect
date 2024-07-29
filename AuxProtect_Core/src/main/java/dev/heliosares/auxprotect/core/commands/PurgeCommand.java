@@ -16,13 +16,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class PurgeCommand extends Command {
+public class PurgeCommand <S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S,P,SA> {
 
-    public PurgeCommand(IAuxProtect plugin) {
+    public PurgeCommand(P plugin) {
         super(plugin, "purge", APPermission.PURGE, true);
     }
 
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length != 3) throw new SyntaxException();
         if (!plugin.getSqlManager().isConnected()) {
             sender.sendLang(Language.L.DATABASE_BUSY);
@@ -84,7 +84,7 @@ public class PurgeCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         List<String> possible = new ArrayList<>();
 
         if (args.length == 2) {

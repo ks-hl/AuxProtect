@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.bungee;
 
-import dev.heliosares.auxprotect.adapters.config.BungeeConfigAdapter;
 import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -15,6 +14,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
+import dev.kshl.kshlib.yaml.YamlConfig;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.PendingConnection;
@@ -75,19 +75,18 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         AuxProtectAPI.setInstance(instance = this);
         enabled = true;
         try {
-            config.load(this, new BungeeConfigAdapter(this.getDataFolder(), "config.yml", null,
-                    this::getResourceAsStream, false));
+            config.load(this, new File(this.getDataFolder(), "config.yml"), () -> getResourceAsStream("config.yml"));
         } catch (IOException e1) {
             warning("Failed to load config");
             print(e1);
         }
         // TODO reloadable
         try {
+            String langFileName = "lang/" + config.getConfig().getString("lang").orElse("") + ".yml";
             Language.load(this,
-                    () -> new BungeeConfigAdapter(getDataFolder(),
-                            "lang/" + config.getConfig().getString("lang") + ".yml", null,
-                            this::getResourceAsStream, false), () -> new BungeeConfigAdapter(getResource("lang/en-us.yml")));
-
+                    () -> new YamlConfig(new File(getDataFolder(), langFileName),
+                            () -> getResource(langFileName)),
+                    () -> new YamlConfig(null, () -> getResource(langFileName)));
         } catch (FileNotFoundException e1) {
             warning("Language file not found");
         } catch (IOException e1) {
@@ -102,8 +101,7 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         File sqliteFile = null;
         String uri = "";
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(),
-                    getAPConfig().getDatabase());
+            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {

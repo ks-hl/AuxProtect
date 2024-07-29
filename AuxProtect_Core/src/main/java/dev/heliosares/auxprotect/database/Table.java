@@ -38,6 +38,7 @@ public enum Table {
     private final Set<Characteristic> characteristics;
     private final Set<Integer> usedids = new HashSet<>();
     private long autopurgeinterval;
+
     Table(Characteristic... characteristics) {
         this.characteristics = Set.of(characteristics);
     }
@@ -64,7 +65,7 @@ public enum Table {
     }
 
     public boolean exists(IAuxProtect plugin) {
-        if (plugin.getPlatform() == PlatformType.BUNGEE) {
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.PROXY) {
             return switch (this) {
                 case AUXPROTECT_MAIN, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_LONGTERM, AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION ->
                         true;
@@ -107,11 +108,11 @@ public enum Table {
         if (this == Table.AUXPROTECT_LONGTERM) {
             return "(time, uid, action_id, target, target_hash)";
         } else if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
-            if (platform == PlatformType.BUNGEE) {
+            if (platform.getLevel() == PlatformType.Level.PROXY) {
                 return "(time, uid, target)";
             }
             return "(time, uid, world_id, x, y, z, target)";
-        } else if (platform == PlatformType.BUNGEE) {
+        } else if (platform.getLevel() == PlatformType.Level.PROXY) {
             return "(time, uid, action_id, target_id, data)";
         } else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API || this == Table.AUXPROTECT_TOWNY) {
             return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
@@ -134,12 +135,12 @@ public enum Table {
             return 5;
         }
         if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
-            if (platform == PlatformType.BUNGEE) {
+            if (platform.getLevel() == PlatformType.Level.PROXY) {
                 return 3;
             }
             return 7;
         }
-        if (platform == PlatformType.BUNGEE) return 5;
+        if (platform.getLevel() == PlatformType.Level.PROXY) return 5;
 
         return switch (this) {
             case AUXPROTECT_ABANDONED -> 8;
@@ -164,7 +165,7 @@ public enum Table {
         if (hasActionId()) {
             stmt += ",action_id SMALLINT";
         }
-        if (plugin.getPlatform() == PlatformType.SPIGOT && hasLocation()) {
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && hasLocation()) {
             stmt += ",world_id SMALLINT";
             stmt += ",x INTEGER";
             stmt += ",y SMALLINT";

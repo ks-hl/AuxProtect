@@ -1,78 +1,69 @@
 package dev.heliosares.auxprotect.core;
 
-import dev.heliosares.auxprotect.adapters.config.ConfigAdapter;
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.utils.ColorTranslate;
+import dev.kshl.kshlib.yaml.YamlConfig;
 
 import javax.annotation.Nullable;
-import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Supplier;
 
 public class Language {
-    private static Supplier<ConfigAdapter> langSupplier;
-    private static Supplier<ConfigAdapter> langDefaultSupplier;
+    private static Supplier<YamlConfig> langSupplier;
+    private static Supplier<YamlConfig> defaultLangSupplier;
     private static IAuxProtect plugin;
-    private static ConfigAdapter lang;
+    private static YamlConfig lang;
     private static String c1;
     private static String c2;
     private static String c3;
 
-    public static void load(IAuxProtect plugin, Supplier<ConfigAdapter> langSupplier, Supplier<ConfigAdapter> englishLangSupplier) throws IOException {
+    public static void load(IAuxProtect plugin, Supplier<YamlConfig> langSupplier, Supplier<YamlConfig> defaultLangSupplier) throws IOException {
         Language.plugin = plugin;
         Language.langSupplier = langSupplier;
-        Language.langDefaultSupplier = englishLangSupplier;
+        Language.defaultLangSupplier = defaultLangSupplier;
         reload();
     }
 
     public static void reload() throws IOException {
+        YamlConfig defaultLang = defaultLangSupplier.get();
         lang = langSupplier.get();
         lang.load();
 
-        int resourceVersion = lang.getDefaults().getInt("version");
-        int fileVersion = lang.getInt("version");
+        int resourceVersion = defaultLang.getInt("version").orElse(0);
+        int fileVersion = lang.getInt("version").orElse(0);
 
         if (resourceVersion > 0 && resourceVersion > fileVersion) {
             AuxProtectAPI.info("Resetting language file from v" + fileVersion + " to v" + resourceVersion);
-            File newFile;
-            int i = 0;
-            do {
-                newFile = new File(lang.getFile().getParentFile(),
-                        "old/" + lang.getFile().getName().replace(".yml", "." + fileVersion + (i++ > 0 ? "." + i : "") + ".yml"));
-            } while (newFile.exists());
-            lang.save(newFile);
-            lang.reset();
+            lang.delete();
             lang.load();
         }
 
         if (lang != null) {
-            c1 = "&" + lang.getString("color.p");
-            c2 = "&" + lang.getString("color.s");
-            c3 = "&" + lang.getString("color.t");
+            c1 = "&" + lang.getString("color.p").orElse("");
+            c2 = "&" + lang.getString("color.s").orElse("");
+            c3 = "&" + lang.getString("color.t").orElse("");
 
-            boolean modified = false;
-            ConfigAdapter englishLang = null;
             for (L l : L.values()) {
-                Object line = lang.get(l.name);
-                if (line == null || line instanceof String str && str.isEmpty()) {
-                    if (englishLang == null) {
-                        englishLang = langDefaultSupplier.get();
-                        englishLang.load();
-                    }
-                    lang.set(l.name, englishLang.get(l.name));
-                    modified = true;
+                if (lang.get(l.name).filter(o ->
+                        o instanceof String str && !str.isEmpty() ||
+                                o instanceof Collection<?> c && !c.isEmpty() ||
+                                o instanceof YamlConfig.DataMap dataMap && !dataMap.isEmpty()
+                ).isEmpty()) {
+                    lang.set(l.name, defaultLang.get(l.name).orElse(null));
                     plugin.warning("Lang file does not contain " + l.name);
                 }
             }
-            if (modified) lang.save();
+            if (lang.hasUnsavedChanges()) lang.save();
         }
 
     }
 
     public static String getLocale() {
         try {
-            return lang.getFile().getName().split("\\.")[0];
+            return Objects.requireNonNull(lang.getFile()).getName().split("\\.")[0];
         } catch (Exception e) {
             return null;
         }
@@ -90,7 +81,7 @@ public class Language {
         if (c3 != null)
             s = s.replace("&t", c3);
         s = s.replace("$prefix", plugin.getCommandAlias());
-        return ColorTranslate.cc(s);
+        return ColorTranslator.translateAlternateColorCodes(s);
     }
 
     public enum L {
@@ -215,7 +206,7 @@ public class Language {
         public final String name;
         private final String[] format;
 
-        L(@Nullable String... format) {
+        L(String... format) {
             this.format = format;
             this.name = super.toString().replace("__", ".").replace("_", "-").toLowerCase();
             if (format != null) for (String line : format) {
@@ -241,8 +232,8 @@ public class Language {
                 if (subcategory != null && !subcategory.isEmpty()) {
                     name += "." + subcategory.toLowerCase();
                 }
-                if (lang != null && !lang.isNull()) {
-                    message = lang.getString(name);
+                if (lang != null) {
+                    message = lang.getString(name).orElse(null);
                 }
                 if (message == null) throw new IllegalArgumentException("Message not found: " + name);
                 message = convert(message);
@@ -282,8 +273,8 @@ public class Language {
             if (subcategory != null && !subcategory.isEmpty()) {
                 name += "." + subcategory.toLowerCase();
             }
-            if (lang != null && !lang.isNull()) {
-                message = lang.getStringList(name);
+            if (lang != null) {
+                message = lang.getStringList(name).orElse(null);
             }
 
             if (message == null || message.isEmpty()) {

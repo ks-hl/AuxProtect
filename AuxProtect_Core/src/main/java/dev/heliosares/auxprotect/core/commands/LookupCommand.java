@@ -30,7 +30,6 @@ import dev.heliosares.auxprotect.utils.RetentionSolver;
 import dev.heliosares.auxprotect.utils.XraySolver;
 import net.coreprotect.CoreProtect;
 import net.coreprotect.CoreProtectAPI;
-import net.md_5.bungee.api.chat.BaseComponent;
 import org.bukkit.Bukkit;
 
 import java.sql.SQLException;
@@ -46,11 +45,11 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class LookupCommand extends Command {
+public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
     static final HashMap<UUID, Results> results = new HashMap<>();
 
-    public LookupCommand(IAuxProtect plugin) {
+    public LookupCommand(P plugin) {
         super(plugin, "lookup", APPermission.LOOKUP, true, "l");
     }
 
@@ -58,7 +57,7 @@ public class LookupCommand extends Command {
         return results.get(uuid);
     }
 
-    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter sender, String[] args) {
+    public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter<?, ?> sender, String[] args) {
         List<String> possible = new ArrayList<>();
         String currentArg = args[args.length - 1];
         boolean lookup = args[0].equalsIgnoreCase("lookup") || args[0].equalsIgnoreCase("l");
@@ -137,7 +136,7 @@ public class LookupCommand extends Command {
 
             possible.addAll(APCommand.allPlayers(plugin, true).stream().map(name -> user + name).toList());
 
-            if (plugin.getPlatform() == PlatformType.SPIGOT) {
+            if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
                 for (org.bukkit.entity.EntityType et : org.bukkit.entity.EntityType.values()) {
                     possible.add(user + "#" + et.toString().toLowerCase());
                 }
@@ -199,7 +198,7 @@ public class LookupCommand extends Command {
     }
 
     @Override
-    public void onCommand(SenderAdapter sender, String label, String[] args) throws CommandException {
+    public void onCommand(SA sender, String label, String[] args) throws CommandException {
         if (args.length < 2) throw new SyntaxException();
 
         if (!plugin.getSqlManager().isConnected()) {
@@ -353,7 +352,7 @@ public class LookupCommand extends Command {
                         totalMoney += transactionEntry.getCost() * (transactionEntry.getState() ? -1 : 1);
                     }
                 }
-                if (totalMoney != 0 && plugin.getPlatform() == PlatformType.SPIGOT) {
+                if (totalMoney != 0 && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
                     boolean negative = totalMoney < 0;
                     totalMoney = Math.abs(totalMoney);
                     sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + plugin.formatMoney(totalMoney));
@@ -392,13 +391,11 @@ public class LookupCommand extends Command {
                     return;
                 }
                 String name = users.stream().findAny().orElse(null);
-                for (BaseComponent[] line : PlayTimeSolver.solvePlaytime(rs,
+                PlayTimeSolver.solvePlaytime(rs,
                         params_.getAfter(),
                         params_.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params_.getBefore(),
                         name,
-                        plugin.getSenderAdapter(name) != null)) {
-                    sender.sendMessage(line);
-                }
+                        plugin.getSenderAdapter(name) != null).send(sender);
                 return;
             } else if (params_.hasFlag(Flag.ACTIVITY)) {
                 Results result = new ActivityResults(plugin, rs, sender, params_);
@@ -411,7 +408,7 @@ public class LookupCommand extends Command {
                     users.add(entry.getUid());
                 }
                 if (users.size() > 1) {
-                    sender.sendMessage(XraySolver.solve(rs));
+                    XraySolver.solve(rs).send(sender);
                     return;
                 }
                 Iterator<DbEntry> it = rs.iterator();
@@ -421,7 +418,7 @@ public class LookupCommand extends Command {
                         it.remove();
                     }
                 }
-            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform().getLevel() == PlatformType.Level.SERVER) {
                 Set<String> users = params_.getUsers();
                 if (users.isEmpty()) {
                     sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
@@ -439,7 +436,7 @@ public class LookupCommand extends Command {
             } else if (params_.hasFlag(Flag.RETENTION)) {
                 RetentionSolver.showRetention(plugin, sender, rs, params_.getAfter(), params_.getBefore());
                 return;
-            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
                 List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
                 List<DbEntry> newResults = new ArrayList<>();
                 for (PlaybackSolver.PosPoint point : points) {
@@ -447,7 +444,7 @@ public class LookupCommand extends Command {
                 }
                 Collections.reverse(newResults);
                 rs = newResults;
-            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform() == PlatformType.SPIGOT) {
+            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
                 List<PlaybackSolver.BlockAction> actions = null;
                 try {
                     Class.forName("net.coreprotect.CoreProtectAPI");
@@ -480,7 +477,7 @@ public class LookupCommand extends Command {
             results.put(sender.getUniqueId(), result);
 
             if (params_.hasFlag(Flag.XRAY)) {
-                sender.sendMessage(XraySolver.solve(rs));
+                XraySolver.solve(rs).send(sender);
             }
         } catch (LookupException | ParseException e) {
             sender.sendMessageRaw(e.getMessage());
@@ -499,7 +496,7 @@ public class LookupCommand extends Command {
     }
 
     @Override
-    public List<String> onTabComplete(SenderAdapter sender, String label, String[] args) {
+    public List<String> onTabComplete(SA sender, String label, String[] args) {
         return onTabCompleteStatic(plugin, sender, args);
     }
 }

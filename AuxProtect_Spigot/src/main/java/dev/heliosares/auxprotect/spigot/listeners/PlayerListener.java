@@ -1,5 +1,8 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Activity;
@@ -12,11 +15,6 @@ import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -246,16 +244,17 @@ public class PlayerListener implements Listener {
             SpigotSenderAdapter senderAdapter = new SpigotSenderAdapter(plugin, e.getPlayer());
             senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_WAITING);
             senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM);
-            ComponentBuilder message = new ComponentBuilder();
-            message.append(ChatColor.COLOR_CHAR + "f\n         ");
+            GenericBuilder message = new GenericBuilder();
+            message.newLine();
+            message.append("         ");
             if (e.getPlayer().getUniqueId().getMostSignificantBits() == 0) { // bedrock player
                 message.append(Language.L.COMMAND__INV__NOTIFY_PLAYER_CLAIM_ALT.translate());
             } else {
                 message.append(Language.L.COMMAND__INV__NOTIFY_PLAYER_CLAIM_BUTTON.translate()).event(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/claiminv"))
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(Language.L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate())));
+                        .hover(Language.L.COMMAND__CLAIMINV__CLAIM_BUTTON__HOVER.translate());
             }
-            message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
-            e.getPlayer().spigot().sendMessage(message.create());
+            message.newLine();
+            message.send(new SpigotSenderAdapter(plugin, e.getPlayer()));
             e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
         }, 40);
 
@@ -389,7 +388,7 @@ public class PlayerListener implements Listener {
         plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.CHAT);
         plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
         if (plugin.getAPConfig().isDemoMode()) {
-            e.getPlayer().sendMessage(ChatColor.COLOR_CHAR + "cChat is disabled.");
+            e.getPlayer().sendMessage(GenericTextColor.RED + "Chat is disabled.");
             e.setCancelled(true);
         }
     }

@@ -1,11 +1,11 @@
 package dev.heliosares.auxprotect.spigot;
 
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import net.md_5.bungee.api.ChatColor;
 
 import java.sql.SQLException;
 import java.util.*;
@@ -28,14 +28,14 @@ public class VeinManager {
         };
     }
 
-    public static String getSeverityColor(int severity) {
-        return ChatColor.COLOR_CHAR + switch (severity) {
-            case -2, -1 -> "5";
-            case 0 -> "a";
-            case 1 -> "e";
-            case 2 -> "c";
-            case 3 -> "4";
-            default -> "";
+    public static GenericTextColor getSeverityColor(int severity) {
+        return switch (severity) {
+            case -2, -1 -> GenericTextColor.DARK_PURPLE;
+            case 0 -> GenericTextColor.GREEN;
+            case 1 -> GenericTextColor.YELLOW;
+            case 2 -> GenericTextColor.RED;
+            case 3 -> GenericTextColor.DARK_RED;
+            default -> GenericTextColor.WHITE;
         };
     }
 
