@@ -213,7 +213,7 @@ public class LookupManager {
                             continue;
                         }
                         boolean state = entryAction.hasDual && entryAction.id != action_id;
-                        DbEntry entry;
+                        DbEntry entry = null;
                         String target = null;
                         int target_id = -1;
                         if (table.hasStringTarget()) {
@@ -229,7 +229,9 @@ public class LookupManager {
                             if (entry != null) break;
                         }
 
-                        entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
+                        if (entry == null) {
+                            entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
+                        }
 
                         if (table.hasBlobID()) {
                             long blobid = rs.getLong("blobid");

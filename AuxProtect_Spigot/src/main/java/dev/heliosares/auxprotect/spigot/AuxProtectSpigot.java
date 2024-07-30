@@ -317,13 +317,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         if (!hook(() -> new EssentialsListener(this), "Essentials")) {
             EntryAction.PAY.setEnabled(false);
         }
-        if (hook(() -> new TownyListener(this), "Towny")) {
-            getSqlManager().getLookupManager().addLoader(new EntryLoader(
-                    data -> data.table() == Table.AUXPROTECT_TOWNY || data.action().equals(EntryAction.TOWNYNAME),
-                    data -> new TownyEntry(data.time(), data.uid(), data.action(), data.state(), data.world(),
-                            data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data())
-            ));
-        } else {
+        if (!hook(() -> new TownyListener(this), "Towny")) {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_TOWNY) {
                     action.setEnabled(false);

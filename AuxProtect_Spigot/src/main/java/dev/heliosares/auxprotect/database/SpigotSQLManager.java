@@ -2,6 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.towny.TownyManager;
 
 import java.io.File;
@@ -18,13 +19,19 @@ public class SpigotSQLManager extends SQLManager {
         super(plugin, target, prefix, sqliteFile, mysql, user, pass);
 
         TownyManager _townyManager = null;
-        if (plugin.isHooked("Towny")) {
-            try {
-                _townyManager = new TownyManager(plugin, this);
-            } catch (Throwable e) {
-                plugin.warning("Failed to initialize TownyManager, Towny will not be logged for this session");
-                plugin.print(e);
-            }
+        try {
+            _townyManager = new TownyManager(plugin, this);
+
+            getLookupManager().addLoader(new EntryLoader(
+                    data -> data.table() == Table.AUXPROTECT_TOWNY || data.action().equals(EntryAction.TOWNYNAME),
+                    data -> new TownyEntry(data.time(), data.uid(), data.action(), data.state(), data.world(),
+                            data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data())
+            ));
+        } catch (ClassNotFoundException e) {
+            plugin.info("Towny not detected");
+        } catch (Throwable e) {
+            plugin.warning("Failed to initialize TownyManager, Towny will not be logged for this session");
+            plugin.print(e);
         }
         this.townyManager = _townyManager;
         this.invDiffManager = new InvDiffManager(this, plugin);
@@ -102,6 +109,9 @@ public class SpigotSQLManager extends SQLManager {
         super.cleanup();
         if (invDiffManager != null) {
             invDiffManager.cleanup();
+        }
+        if (townyManager != null) {
+            townyManager.cleanup();
         }
     }
 

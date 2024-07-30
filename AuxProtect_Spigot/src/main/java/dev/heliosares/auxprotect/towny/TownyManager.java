@@ -32,10 +32,11 @@ public class TownyManager implements Runnable {
     private long lastTownBankUpdate;
     private long lastNationBankUpdate;
 
-    public TownyManager(AuxProtectSpigot plugin, SQLManager sql) {
+    public TownyManager(AuxProtectSpigot plugin, SQLManager sql) throws ClassNotFoundException {
         this.plugin = plugin;
         this.sql = sql;
-        TownyUniverse.getInstance();
+
+        Class.forName("com.palmergames.bukkit.towny.TownyUniverse");
     }
 
     public static String getLabel(@Nullable Government gov) {
