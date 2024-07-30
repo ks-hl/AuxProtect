@@ -10,6 +10,12 @@ public abstract class LocationAdapter {
 
     public abstract double getZ();
 
+    public abstract int getBlockX();
+
+    public abstract int getBlockY();
+
+    public abstract int getBlockZ();
+
     public abstract float getPitch();
 
     public abstract float getYaw();

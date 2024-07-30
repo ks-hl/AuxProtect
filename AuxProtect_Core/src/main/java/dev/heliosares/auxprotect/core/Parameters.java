@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.regex.Pattern;
 
 @SuppressWarnings({"UnusedReturnValue", "unused"})
 public class Parameters implements Cloneable {
@@ -148,7 +147,12 @@ public class Parameters implements Cloneable {
                             throw new ParseException(L.INVALID_PARAMETER, line);
                         if (sender instanceof PositionedSender positionedSender) {
                             try {
-                                parameters.setLocation(positionedSender.getWorldName(), positionedSender.getBlockX(), positionedSender.getBlockY(), positionedSender.getBlockZ());
+                                parameters.setLocation(
+                                        positionedSender.getLocation().getWorld(),
+                                        positionedSender.getLocation().getBlockX(),
+                                        positionedSender.getLocation().getBlockY(),
+                                        positionedSender.getLocation().getBlockZ()
+                                );
                             } catch (NotPlayerException e) {
                                 throw new ParseException(L.NOTPLAYERERROR);
                             }

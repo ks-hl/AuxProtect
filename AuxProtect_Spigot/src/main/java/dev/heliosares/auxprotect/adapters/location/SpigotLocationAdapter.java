@@ -33,6 +33,21 @@ public class SpigotLocationAdapter extends LocationAdapter {
     }
 
     @Override
+    public int getBlockX() {
+        return handle.getBlockX();
+    }
+
+    @Override
+    public int getBlockY() {
+        return handle.getBlockY();
+    }
+
+    @Override
+    public int getBlockZ() {
+        return handle.getBlockZ();
+    }
+
+    @Override
     public float getPitch() {
         return handle.getPitch();
     }
