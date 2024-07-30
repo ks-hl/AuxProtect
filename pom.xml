@@ -18,6 +18,8 @@
 
         <module>AuxProtect_Package</module>
         <module>AuxProtect_Spigot</module>
+        <module>AuxProtect_Bungee</module>
+        <module>AuxProtect_Velocity</module>
     </modules>
 
     <properties>

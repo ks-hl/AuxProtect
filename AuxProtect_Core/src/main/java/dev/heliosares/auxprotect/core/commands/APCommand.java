@@ -5,7 +5,6 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
@@ -16,26 +15,31 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
-    protected final ArrayList<Command> commands;
+    protected final Map<String, Command<S, P, SA>> commands = new HashMap<>();
 
-    public APCommand(IAuxProtect plugin, String label, String... aliases) {
+    public APCommand(P plugin, String label, String... aliases) {
         super(plugin, label, APPermission.NONE, false, aliases);
 
-        commands = new ArrayList<>();
-        commands.add(new LookupCommand(plugin));
-        commands.add(new PurgeCommand(plugin));
-        commands.add(new HelpCommand(plugin, Collections.unmodifiableList(commands)));
-        commands.add(new SQLCommand(plugin));
-        commands.add(new TimeCommand(plugin));
-        commands.add(new DumpCommand(plugin));
-        commands.add(new PlaytimeCommand(plugin));
+        add(new LookupCommand<>(plugin));
+        add(new PurgeCommand<>(plugin));
+        add(new HelpCommand<>(plugin, Collections.unmodifiableCollection(commands.values())));
+        add(new SQLCommand<>(plugin));
+        add(new TimeCommand<>(plugin));
+        add(new DumpCommand<>(plugin));
+        add(new PlaytimeCommand<>(plugin));
+    }
+
+    public void add(Command<S, P, SA> command) {
+        commands.put(command.getLabel(), command);
     }
 
     public static List<String> tabCompletePlayerAndTime(IAuxProtect plugin, SenderAdapter<?, ?> sender, String[] args) {
@@ -73,7 +77,7 @@ public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>>
     public void onCommand(SA sender, String label, String[] args) {
         if (args.length > 0) {
             boolean match = false;
-            for (Command<S, P, SA> c : commands) {
+            for (Command<S, P, SA> c : commands.values()) {
                 if (!c.exists() || !c.matches(args[0])) {
                     continue;
                 }
@@ -236,7 +240,7 @@ public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>>
             }
         }
 
-        for (Command<S, P, SA> c : commands) {
+        for (Command<S, P, SA> c : commands.values()) {
             if (!c.exists() || (!c.matches(args[0]) && args.length > 1) || !c.doTabComplete()) {
                 continue;
             }

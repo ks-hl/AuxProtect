@@ -24,7 +24,7 @@ public class PosEntry extends SpigotDbEntry {
         this.z = Math.round(location.getZ() * 8D) / 8D;
     }
 
-    protected PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
+    public PosEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, byte increment, int pitch, int yaw, String target, int target_id, String data) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data, SQLManager.getInstance());
         double[] dInc = byteToFractions(increment);
         this.x = x + dInc[0];

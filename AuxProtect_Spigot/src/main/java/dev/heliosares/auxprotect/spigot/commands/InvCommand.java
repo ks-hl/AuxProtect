@@ -153,7 +153,7 @@ public class InvCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>
                     if (targetO != null) {
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
                         targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM.translate());
-                        GenericBuilder message = new GenericBuilder();
+                        GenericBuilder message = new GenericBuilder(plugin);
                         message.newLine();
                         message.append("         ");
                         message.append("[" + L.COMMAND__CLAIMINV__CLAIM_BUTTON__LABEL.translate() + "]")

@@ -1,14 +1,18 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import jakarta.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.SkullMeta;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
 
@@ -52,7 +56,7 @@ public class SingleItemEntry extends SpigotDbEntry {
         }
     }
 
-    protected SingleItemEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, String target, int target_id, String data, int qty, int damage) {
+    public SingleItemEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, String target, int target_id, String data, int qty, int damage) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, target, target_id, data, SQLManager.getInstance());
         this.qty = qty;
         this.damage = damage;
@@ -84,5 +88,11 @@ public class SingleItemEntry extends SpigotDbEntry {
 
     public int getDamage() {
         return damage;
+    }
+
+    @Override
+    public void appendData(GenericBuilder message, IAuxProtect plugin, SenderAdapter<?, ?> sender) {
+        message.append(" " + GenericTextColor.COLOR_CHAR + "8[" + GenericTextColor.COLOR_CHAR + "7x" + getQty() + (getDamage() > 0 ? ", " + getDamage() + " damage" : "") + GenericTextColor.COLOR_CHAR + "8]");
+        super.appendData(message, plugin, sender);
     }
 }

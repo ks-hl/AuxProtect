@@ -1,16 +1,25 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.adapters.message.HoverEvent;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import jakarta.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
-import javax.annotation.Nullable;
 import java.io.IOException;
+import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.Objects;
+import java.util.concurrent.atomic.AtomicInteger;
 
-public class TransactionEntry extends DbEntry {
+public class TransactionEntry extends SpigotDbEntry {
     private final short quantity;
     private final double cost;
     private final double balance;
@@ -48,7 +57,7 @@ public class TransactionEntry extends DbEntry {
         }
     }
 
-    protected TransactionEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, int target_id, String data, short quantity, double cost, double balance, int target_id2, SQLManager sql) {
+    public TransactionEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z, int pitch, int yaw, int target_id, String data, short quantity, double cost, double balance, int target_id2, SQLManager sql) {
         super(time, uid, action, state, world, x, y, z, pitch, yaw, null, target_id, data, sql);
         this.quantity = quantity;
         this.cost = cost;
@@ -116,5 +125,45 @@ public class TransactionEntry extends DbEntry {
             targetLabel2 = "#null";
         }
         return targetLabel2;
+    }
+
+    @Override
+    public void appendTarget(GenericBuilder message, IAuxProtect plugin) throws SQLException, BusyException {
+        HoverEvent hoverEvent = null;
+        if (getQuantity() > 0) {
+            message.append(GenericTextColor.BLUE + " " + getQuantity());
+        }
+        if (getBlob() != null && getBlob().length > 0) {
+            try {
+                ItemStack item = InvSerialization.toItemStack(getBlob());
+                if (item.hasItemMeta()) {
+                    hoverEvent = HoverEvent.showItem(item.getType().getKey().getKey(), getQuantity(), Objects.requireNonNull(item.getItemMeta()).getAsString());
+                }
+            } catch (ClassNotFoundException | IOException e) {
+                AuxProtectAPI.warning("Error while deserializing item " + this);
+            }
+        }
+        message.append((hoverEvent == null ? GenericTextColor.BLUE : (GenericTextColor.AQUA + "[")) + getTarget() + (hoverEvent == null ? "" : "]"));
+        message.hover(hoverEvent == null ? Results.clickToCopyHoverEvent : hoverEvent);
+        message.click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTarget() /* Still using the base target here for TransactionEntry because I think it's the most useful. */));
+
+
+        String target2 = getTarget2();
+        if (target2 != null && !target2.isEmpty()) {
+            String fromTo = getState() ? "from" : "to";
+            message.append(GenericTextColor.WHITE + " " + fromTo + " ");
+            message.append(GenericTextColor.BLUE + target2).hover(Results.clickToCopyHoverEvent).click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, target2));
+        }
+        message.append(GenericTextColor.COLOR_CHAR + "f for ");
+        String cost = plugin.formatMoney(getCost());
+        message.append(GenericTextColor.BLUE + cost).hover(Results.clickToCopyHoverEvent).click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, cost));
+    }
+
+    @Override
+    public void appendData(GenericBuilder message, IAuxProtect plugin, SenderAdapter<?, ?> sender) {
+        message.append(" " + GenericTextColor.DARK_GRAY + "[");
+        String balance = plugin.formatMoney(getBalance());
+        message.append(GenericTextColor.GRAY + "Balance: " + balance).hover(Results.clickToCopyHoverEvent).click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, balance));
+        message.append(GenericTextColor.DARK_GRAY + "]");
     }
 }

@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.database;
 
 import org.bukkit.Location;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public class SpigotDbEntry extends DbEntry {
     /**

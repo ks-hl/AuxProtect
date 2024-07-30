@@ -4,7 +4,7 @@ import com.velocitypowered.api.proxy.Player;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 
 public class APPlayerVelocity extends APPlayer<Player> {
     public APPlayerVelocity(IAuxProtect plugin, Player player) {

@@ -3,10 +3,10 @@ package dev.heliosares.auxprotect.utils;
 import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
 import dev.heliosares.auxprotect.adapters.message.GenericComponent;
 import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -15,8 +15,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 public class PlayTimeSolver {
-    public static GenericBuilder solvePlaytime(List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
-        final GenericBuilder message = new GenericBuilder();
+    public static final char BLOCK = 9608;
+    public static GenericBuilder solvePlaytime(IAuxProtect plugin, List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
+        final GenericBuilder message = new GenericBuilder(plugin);
         final int limitDays = 60;
         final int hours = (int) Math.ceil((stopTimeMillis - startTimeMillis) / 3600000D);
         if (hours - 1 > limitDays * 24) {
@@ -100,13 +101,13 @@ public class PlayTimeSolver {
         DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("ddMMM");
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh a");
         for (int i = 0; i < startTime.getHour(); i++) {
-            message.append(new GenericComponent(AuxProtectSpigot.BLOCK).color(GenericTextColor.BLACK));
+            message.append(new GenericComponent(BLOCK).color(GenericTextColor.BLACK));
         }
         double hourCount = 0;
         for (int i = 0; i < counter.length; i++) {
             LocalDateTime time = startTime.plusHours(i);
             double count = counter[i];
-            message.append(new GenericComponent(AuxProtectSpigot.BLOCK).hover(Language.L.COMMAND__LOOKUP__PLAYTIME__HOVER.translate(time.format(formatterDateTime), Math.round(count * 60.0))));
+            message.append(new GenericComponent(BLOCK).hover(Language.L.COMMAND__LOOKUP__PLAYTIME__HOVER.translate(time.format(formatterDateTime), Math.round(count * 60.0))));
             if (count > 0.99) {
                 message.color("#ffffff");
             } else if (count > 0.75) {
@@ -132,7 +133,7 @@ public class PlayTimeSolver {
         for (int i = counter.length; ; i++) {
             LocalDateTime time = startTime.plusHours(i);
             if (time.getHour() == 0) break;
-            message.append(AuxProtectSpigot.BLOCK + "").color(GenericTextColor.BLACK);
+            message.append(BLOCK + "").color(GenericTextColor.BLACK);
         }
         message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(GenericTextColor.BLUE);
         message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(GenericTextColor.GRAY);

@@ -1,7 +1,9 @@
 package dev.heliosares.auxprotect.core.commands;
 
 import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
@@ -29,7 +31,7 @@ public class TimeCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
         if (now || args.length == 2) {
             long time;
             boolean add = false;
-            final GenericBuilder builder = new GenericBuilder();
+            final GenericBuilder builder = new GenericBuilder(plugin);
             if (now) {
                 builder.append(Language.L.COMMAND__TIME__SERVER_TIME.translate());
                 time = 0;
@@ -52,7 +54,7 @@ public class TimeCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                 ln = Language.convert(ln);
                 builder.append("\n").append(ln) //
                         .hover(Language.L.RESULTS__CLICK_TO_COPY.translate()) //
-                        .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ChatColor.stripColor(ln)));
+                        .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, ColorTranslator.stripColor(ln)));
             };
             consume.accept("&7" + LocalDateTime.now().atZone(plugin.getAPPlayer(sender).getTimeZone().toZoneId()).plusSeconds((add ? 1 : -1) * (time / 1000)).format(formatter));
             if (!now) {

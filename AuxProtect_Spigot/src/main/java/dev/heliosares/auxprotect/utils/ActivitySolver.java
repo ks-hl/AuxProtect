@@ -1,16 +1,13 @@
 package dev.heliosares.auxprotect.utils;
 
-import dev.heliosares.auxprotect.core.ActivityRecord;
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericComponent;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.BaseComponent;
-import net.md_5.bungee.api.chat.ClickEvent;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.ComponentBuilder.FormatRetention;
-import net.md_5.bungee.api.chat.HoverEvent;
-import net.md_5.bungee.api.chat.hover.content.Text;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 
@@ -18,34 +15,26 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 public class ActivitySolver {
-    public static BaseComponent[][] solveActivity(List<DbEntry> entries, long rangeStart, long rangeEnd) {
-        if (entries.isEmpty()) return null;
-
-        ComponentBuilder message = new ComponentBuilder().append("", FormatRetention.NONE);
+    public static GenericBuilder solveActivity(IAuxProtect plugin, List<DbEntry> entries, long rangeStart, long rangeEnd) {
+        GenericBuilder message = new GenericBuilder(plugin);
         LocalDateTime startTime = Instant.ofEpochMilli(rangeStart).atZone(ZoneId.systemDefault()).toLocalDateTime()
                 .withSecond(0).withNano(0);
         DateTimeFormatter formatterDateTime = DateTimeFormatter.ofPattern("ddMMM hh:mm a");
         DateTimeFormatter formatterHour = DateTimeFormatter.ofPattern("Ka");
         final long startMillis = startTime.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli();
         final int minutes = (int) Math.ceil((rangeEnd - rangeStart) / 1000.0 / 60.0);
-        double[] counter = new double[minutes];
+        int[] counter = new int[minutes];
         Location[] locations = new Location[minutes];
         Arrays.fill(counter, -1);
-        StringBuilder line = new StringBuilder("" + ChatColor.COLOR_CHAR + "7" + ChatColor.COLOR_CHAR + "m");
-        line.append(String.valueOf((char) 65293).repeat(6));
-        line.append("" + ChatColor.COLOR_CHAR + "7");
+        GenericComponent line = new GenericComponent(String.valueOf((char) 65293).repeat(6));
+        line.color(GenericTextColor.GRAY);
+        line.strikethrough(true);
 
-        List<BaseComponent[]> components = new ArrayList<>();
-        components.add(message.create());
-        message = new ComponentBuilder();
-
-        ActivityRecord[] activityRecords = new ActivityRecord[minutes];
-        long[] times = new long[minutes];
+        message.builderBreak();
 
         long lastTime = startMillis;
         for (int i = entries.size() - 1, minute = 0; i >= 0; i--) {
@@ -76,23 +65,9 @@ public class ActivitySolver {
                 counter[minute] = 0;
             }
 
-
-            double activity = 0;
-            try {
-                ActivityRecord record = ActivityRecord.parse(entry.getData());
-                activityRecords[minute] = record;
-                if (record != null) {
-                    activity = record.countScore();
-                }
-            } catch (IllegalArgumentException e) {
-                try {
-                    activity = Integer.parseInt(entry.getData());
-                } catch (IllegalArgumentException ignored) {
-                }
-            }
+            int activity = Integer.parseInt(entry.getData());
             counter[minute] += activity;
             locations[minute] = new Location(Bukkit.getWorld(entry.getWorld()), entry.getX(), entry.getY(), entry.getZ());
-            times[minute] = entry.getTime();
 
             lastTime = entry.getTime();
             minute++;
@@ -100,7 +75,7 @@ public class ActivitySolver {
         int shiftMinutes = 0;
         // while ((counter.length + shiftMinutes) % 30 != 0) {
         for (int i = 0; i < (startTime.getMinute() % 30); i++) {
-            message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK);
+            message.append(AuxProtectSpigot.BLOCK + "").color(GenericTextColor.BLACK);
             shiftMinutes++;
         }
 
@@ -113,61 +88,52 @@ public class ActivitySolver {
                 break;
             }
             if (time.getMinute() == 0) {
-                message.append(line + String.format("" + ChatColor.COLOR_CHAR + "f %s ", time.format(formatterHour)) + line)
-                        .event((ClickEvent) null).event((HoverEvent) null);
-                components.add(message.create());
-                message = new ComponentBuilder();
+                message.append(line).append(String.format("" + GenericTextColor.COLOR_CHAR + "f %s ", time.format(formatterHour))).append(line);
+                message.builderBreak();
             }
             if (millis < newestEntryAt) {
-                message.append(AuxProtectSpigot.BLOCK + "").event((HoverEvent) null).event((ClickEvent) null);
-                message.color(ChatColor.BLACK);
+                message.append(AuxProtectSpigot.BLOCK).color(GenericTextColor.BLACK);
             } else {
 
-                double activity = counter[i];
+                int activity = counter[i];
 
-                String hovertext = ChatColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
+                String hovertext = GenericTextColor.COLOR_CHAR + "9" + time.format(formatterDateTime) + "\n";
 
                 if (activity < 0) {
-                    hovertext += "" + ChatColor.COLOR_CHAR + "7Offline";
+                    hovertext += "" + GenericTextColor.COLOR_CHAR + "7Offline";
                 } else if (activity > 0) {
-                    hovertext += ChatColor.COLOR_CHAR + "7Activity Level " + ChatColor.COLOR_CHAR + "9" + activity;
+                    hovertext += GenericTextColor.COLOR_CHAR + "7Activity Level " + GenericTextColor.COLOR_CHAR + "9" + activity;
                 } else {
-                    hovertext += "" + ChatColor.COLOR_CHAR + "cNo Activity";
+                    hovertext += "" + GenericTextColor.COLOR_CHAR + "cNo Activity";
                 }
                 ClickEvent clickevent = null;
                 if (locations[i] != null) {
-                    hovertext += String.format("\n\n" + ChatColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)\n", locations[i].getBlockX(),
+                    hovertext += String.format("\n\n" + GenericTextColor.COLOR_CHAR + "7(x%d/y%d/z%d/%s)\n" + GenericTextColor.COLOR_CHAR + "7Click to teleport", locations[i].getBlockX(),
                             locations[i].getBlockY(), locations[i].getBlockZ(), locations[i].getWorld().getName());
+                    clickevent = new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                            String.format("/auxprotect tp %d %d %d %s", locations[i].getBlockX(),
+                                    locations[i].getBlockY(), locations[i].getBlockZ(),
+                                    locations[i].getWorld().getName()));
                 }
-
-                ActivityRecord activityRecord = activityRecords[i];
-                if (activityRecord != null) {
-                    hovertext += activityRecord.getHoverText();
-                }
-
-                hovertext += "\n\n";
-                hovertext += ChatColor.COLOR_CHAR + "9Click to view";
-                clickevent = new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/auxprotect lookup a:activity t:" + times[i] + "e");
 
                 message.append(AuxProtectSpigot.BLOCK + "")
-                        .event(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new Text(hovertext))).event(clickevent);
+                        .hover(hovertext).event(clickevent);
                 if (activity >= 20) {
-                    message.color(ChatColor.of("#1ecb0d")); // green
+                    message.color(new GenericTextColor("#1ecb0d")); // green
                 } else if (activity >= 10) {
-                    message.color(ChatColor.of("#f9ff17")); // yellow
+                    message.color(new GenericTextColor("#f9ff17")); // yellow
                 } else if (activity > 0) {
-                    message.color(ChatColor.of("#c50000")); // Light red
+                    message.color(new GenericTextColor("#c50000")); // Light red
                 } else if (activity == 0) {
-                    message.color(ChatColor.of("#4e0808")); // Dark red
+                    message.color(new GenericTextColor("#4e0808")); // Dark red
                 } else {
-                    message.color(ChatColor.DARK_GRAY);
+                    message.color(GenericTextColor.DARK_GRAY);
                 }
             }
             if ((i + 1 + shiftMinutes) % 30 == 0 && i < counter.length - 1) {
                 message.append("\n");
             }
         }
-        components.add(message.create());
-        return components.toArray(new BaseComponent[0][0]);
+        return message;
     }
 }

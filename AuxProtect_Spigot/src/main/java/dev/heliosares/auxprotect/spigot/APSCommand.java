@@ -8,14 +8,15 @@ import dev.heliosares.auxprotect.spigot.commands.InvCommand;
 import dev.heliosares.auxprotect.spigot.commands.InventoryCommand;
 import dev.heliosares.auxprotect.spigot.commands.MoneyCommand;
 import dev.heliosares.auxprotect.spigot.commands.SaveInvCommand;
+import dev.heliosares.auxprotect.spigot.commands.SpigotLookupCommand;
 import dev.heliosares.auxprotect.spigot.commands.TpCommand;
 import dev.heliosares.auxprotect.spigot.commands.XrayCommand;
+import jakarta.annotation.Nonnull;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabExecutor;
 
-import javax.annotation.Nonnull;
 import java.util.List;
 
 public class APSCommand implements CommandExecutor, TabExecutor {
@@ -27,18 +28,20 @@ public class APSCommand implements CommandExecutor, TabExecutor {
         this.plugin = plugin;
         this.apcommand = new APCommand<>(plugin, plugin.getCommandPrefix()) {
             {
-                commands.add(new TpCommand(plugin).setTabComplete(false));
-                commands.add(new InvCommand(plugin).setTabComplete(false));
-                commands.add(new InventoryCommand(APSCommand.this.plugin));
-                commands.add(new ActivityCommand(plugin));
-                commands.add(new MoneyCommand(plugin));
-                commands.add(new SaveInvCommand(plugin));
+                // TODO why are these warnings?
+                add(new TpCommand(plugin).setTabComplete(false));
+                add(new InvCommand(plugin).setTabComplete(false));
+                add(new InventoryCommand(APSCommand.this.plugin));
+                add(new ActivityCommand(plugin));
+                add(new MoneyCommand(plugin));
+                add(new SaveInvCommand(plugin));
                 if (plugin.getAPConfig().isPrivate()) {
-                    commands.add(new RetentionCommand(plugin));
-                    commands.add(new XrayCommand(APSCommand.this.plugin));
+                    add(new RetentionCommand(plugin));
+                    add(new XrayCommand(APSCommand.this.plugin));
                 }
             }
         };
+        apcommand.add(new SpigotLookupCommand(plugin)); // Done after to overwrite default LookupCommand
     }
 
     @Override

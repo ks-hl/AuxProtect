@@ -1,10 +1,12 @@
 package dev.heliosares.auxprotect.core;
 
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.MessageBuilder;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Set;
@@ -42,10 +44,10 @@ public interface IAuxProtect {
 
     String getCommandAlias();
 
-    SenderAdapter<?,?> getConsoleSender();
+    SenderAdapter<?, ?> getConsoleSender();
 
     @Nullable
-    SenderAdapter<?,?> getSenderAdapter(String name);
+    SenderAdapter<?, ?> getSenderAdapter(String name);
 
     boolean isShuttingDown();
 
@@ -58,7 +60,7 @@ public interface IAuxProtect {
     String getPluginVersion();
 
     @Nullable
-    APPlayer<?> getAPPlayer(SenderAdapter<?,?> sender);
+    APPlayer<?> getAPPlayer(SenderAdapter<?, ?> sender);
 
     String formatMoney(double amount);
 
@@ -76,5 +78,11 @@ public interface IAuxProtect {
 
     boolean doesWorldExist(String world);
 
+    Set<String> getWorlds();
+
     boolean isPrimaryThread();
+
+    MessageBuilder getMessageBuilder();
+    Set<String> getEntityTypes();
+    Set<String> getItemTypes();
 }

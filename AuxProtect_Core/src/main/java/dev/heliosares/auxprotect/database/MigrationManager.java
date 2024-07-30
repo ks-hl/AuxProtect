@@ -4,8 +4,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -43,7 +43,7 @@ public class MigrationManager {
         // 7
         //
 
-        migrationActions.put(7, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, null, () -> {
+        migrationActions.put(7, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, null, () -> {
 
             total = sql.count(connection, Table.AUXPROTECT_INVDIFFBLOB.toString(), null);
 
@@ -86,7 +86,7 @@ public class MigrationManager {
         // 8
         //
 
-        migrationActions.put(8, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(8, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
         }, () -> {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN time TO blobid");
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN `blob` TO ablob"); //This was a poor naming choice as it conflicts with the datatype
@@ -102,14 +102,14 @@ public class MigrationManager {
         // 9
         //
 
-        migrationActions.put(9, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(9, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
         }, () -> tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN ablob BLOB")));
 
         //
         // 10
         //
 
-        migrationActions.put(10, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(10, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
             try {
                 sql.execute("ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name", connection);
             } catch (SQLException ignored) {
@@ -123,7 +123,7 @@ public class MigrationManager {
         // 11
         //
 
-        migrationActions.put(11, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(11, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
         }, () -> {
             tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment TINYINT");
             tryExecute("UPDATE " + Table.AUXPROTECT_POSITION + " set increment=0 where increment is null");
@@ -134,7 +134,7 @@ public class MigrationManager {
         // 12
         //
 
-        migrationActions.put(12, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(12, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
         }, () -> {
             String buckets = Table.AUXPROTECT_MAIN + " WHERE action_id IN (10,11)";
             sql.execute("INSERT INTO " + Table.AUXPROTECT_INVENTORY + " (time, uid, action_id, world_id, x, y, z, target_id, data) SELECT time, uid, action_id, world_id, x, y, z, target_id, data FROM " + buckets, connection);
@@ -204,7 +204,7 @@ public class MigrationManager {
         // 15
         //
 
-        migrationActions.put(15, new MigrationAction(plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER, () -> {
+        migrationActions.put(15, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
         }, () -> {
             final String where = "action_id IN (" + EntryAction.SHOP_OLD.id + "," + EntryAction.SHOP_OLD.idPos + ")";
             Table tableOld = EntryAction.SHOP_OLD.getTable();
@@ -278,7 +278,7 @@ public class MigrationManager {
                         throw new IllegalArgumentException("Failed to delete entry " + entry);
                     }
 
-                    output.add(new TransactionEntry(entry.getTime(), entry.getUid(), action, entry.getState(), entry.getWorld(), entry.getX(), entry.getY(), entry.getZ(), 0, 0, entry.getTargetId(), "", quantity, cost, balance, target_id2, sql));
+                    output.add(sql.convertToTransactionEntryForMigration(entry, action, quantity, cost, balance, target_id2));
                     this.complete++;
                 }
                 sql.put(connection, tableNew, output);
@@ -426,7 +426,7 @@ public class MigrationManager {
 
     void putRaw(Table table, ArrayList<Object[]> datas) throws SQLException, ClassCastException, IndexOutOfBoundsException {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table.toString() + " ");
-        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

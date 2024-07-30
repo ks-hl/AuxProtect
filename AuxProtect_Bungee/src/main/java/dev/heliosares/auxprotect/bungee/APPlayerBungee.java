@@ -4,7 +4,7 @@ import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.net.InetSocketAddress;
 
 public class APPlayerBungee extends APPlayer<ProxiedPlayer> {

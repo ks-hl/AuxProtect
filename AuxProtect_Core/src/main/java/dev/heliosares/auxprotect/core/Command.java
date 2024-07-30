@@ -2,8 +2,8 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.exceptions.CommandException;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nullable;
 import java.util.List;
 
 public abstract class Command<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> {
@@ -53,8 +53,9 @@ public abstract class Command<S, P extends IAuxProtect, SA extends SenderAdapter
         return false;
     }
 
-    public void setTabComplete(boolean tabComplete) {
+    public Command<S, P, SA> setTabComplete(boolean tabComplete) {
         this.tabComplete = tabComplete;
+        return this;
     }
 
     public boolean doTabComplete() {

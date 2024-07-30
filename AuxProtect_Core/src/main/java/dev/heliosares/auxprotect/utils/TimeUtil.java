@@ -2,7 +2,7 @@ package dev.heliosares.auxprotect.utils;
 
 import dev.heliosares.auxprotect.core.Language;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;

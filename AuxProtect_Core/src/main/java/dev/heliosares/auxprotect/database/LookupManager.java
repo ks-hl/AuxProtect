@@ -151,7 +151,7 @@ public class LookupManager {
      * @see LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters)
      */
     protected void lookup(Connection connection, ArrayList<DbEntry> output, Table table, String stmt, ArrayList<String> writeParams) throws LookupException {
-        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();
@@ -221,38 +221,15 @@ public class LookupManager {
                         } else {
                             target_id = rs.getInt("target_id");
                         }
-                        int qty = -1;
-                        int damage = -1;
-                        if (table.hasBlobID() && table.hasItemMeta()) {
-                            qty = rs.getInt("qty");
-                            if (rs.wasNull()) qty = -1;
-                            damage = rs.getInt("damage");
-                            if (rs.wasNull()) damage = -1;
-                        }
 
-                        EntryData entryData = new EntryData(table, time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data);
+                        EntryData entryData = new EntryData(table, time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, rs);
                         for (EntryLoader loader : loaders) {
                             if (!loader.applies().test(entryData)) continue;
-                            entry = loader.loader().apply(entryData);
+                            entry = loader.loader().load(entryData);
                             if (entry != null) break;
                         }
 
-                        if (table == Table.AUXPROTECT_XRAY) {
-                            short rating = rs.getShort("rating");
-                            entry = new XrayEntry(time, uid, world, x, y, z, target_id, rating, data);
-                        } else if (table == Table.AUXPROTECT_POSITION) {
-                            entry = new PosEntry(time, uid, entryAction, state, world, x, y, z, rs.getByte("increment"), pitch, yaw, target, target_id, data);
-                        } else if (table == Table.AUXPROTECT_TRANSACTIONS) {
-                            short quantity = rs.getShort("quantity");
-                            double cost = rs.getDouble("cost");
-                            double balance = rs.getDouble("balance");
-                            int target_id2 = rs.getInt("target_id2");
-                            entry = new TransactionEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target_id, data, quantity, cost, balance, target_id2, sql);
-                        } else if (table.hasBlobID() && table.hasItemMeta() && qty >= 0 && damage >= 0) {
-                            entry = new SingleItemEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, qty, damage);
-                        } else {
-                            entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
-                        }
+                        entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
 
                         if (table.hasBlobID()) {
                             long blobid = rs.getLong("blobid");

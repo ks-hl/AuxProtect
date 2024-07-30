@@ -3,15 +3,20 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.adapters.message.ClickEvent;
 import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
 import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.adapters.message.HoverEvent;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APPermission;
+import dev.heliosares.auxprotect.core.ActivityRecord;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 
-import javax.annotation.Nullable;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.TimeZone;
 
 public class DbEntry {
@@ -286,7 +291,72 @@ public class DbEntry {
                 .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTime() + "e"));
     }
 
-    public void appendCoordinates(SenderAdapter<?,?> senderAdapter, GenericBuilder message) {
+    public void appendUser(GenericBuilder message) throws SQLException, BusyException {
+        message.append(GenericTextColor.BLUE + getUser()).hover(Results.clickToCopyHoverEvent)
+                .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getUser()));
+    }
+
+    public void appendAction(GenericBuilder message) {
+        message.append(GenericTextColor.WHITE + getAction().getText(getState()));
+    }
+
+    public void appendTarget(GenericBuilder message, IAuxProtect plugin) throws SQLException, BusyException {
+        message.append(GenericTextColor.BLUE + getTarget())
+                .hover(Results.clickToCopyHoverEvent)
+                .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTarget()));
+    }
+
+    public void appendData(GenericBuilder message, IAuxProtect plugin, SenderAdapter<?, ?> sender) {
+        String data = getData();
+        if (data != null && !data.isEmpty()) {
+            HoverEvent hoverEvent = Results.clickToCopyHoverEvent;
+            if (getAction().equals(EntryAction.ACTIVITY)) {
+                try {
+                    ActivityRecord record = ActivityRecord.parse(data);
+                    if (record != null) {
+                        message.append(" " + GenericTextColor.GREEN + record.countScore());
+                        hoverEvent = HoverEvent.showText(Language.L.RESULTS__CLICK_TO_COPY.translate() + record.getHoverText());
+                    }
+                } catch (IllegalArgumentException ignored) {
+                }
+            }
+            if (getAction().equals(EntryAction.SESSION) && !APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(sender)) {
+                message.append(" " + GenericTextColor.COLOR_CHAR + "8[" + GenericTextColor.COLOR_CHAR + "7" + Language.L.RESULTS__REDACTED.translate() + GenericTextColor.COLOR_CHAR + "8]");
+            } else {
+                message.append(" " + GenericTextColor.COLOR_CHAR + "8[" + GenericTextColor.COLOR_CHAR + "7" + data + GenericTextColor.COLOR_CHAR + "8]");
+                message.hover(hoverEvent).click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
+            }
+        }
+        if (getAction().equals(EntryAction.ACTIVITY)) {
+            message.append(" " + GenericTextColor.DARK_GRAY + "[" + GenericTextColor.GRAY + "Copy Minute Range" + GenericTextColor.DARK_GRAY + "]");
+            ZonedDateTime zonedDateTime = Instant.ofEpochMilli(getTime()).atZone(ZoneId.systemDefault());
+            ZonedDateTime start = zonedDateTime.withSecond(0).withNano(0);
+            ZonedDateTime end = start.plusMinutes(1).minusNanos(1000000);
+            message.event(Results.clickToCopyHoverEvent).event(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, start.toInstant().toEpochMilli() + "e-" + end.toInstant().toEpochMilli() + "e"));
+        }
+    }
+
+    public void appendButtons(GenericBuilder message, SenderAdapter<?, ?> sender, String commandPrefix, int index) throws SQLException, BusyException {
+        if (hasBlob()) {
+            if (APPermission.INV.hasPermission(sender)) {
+                message.append(" " + GenericTextColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW + "]")
+                        .click(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                String.format(commandPrefix + " inv %d", index)))
+                        .hover(Language.L.RESULTS__CLICK_TO_VIEW.translate());
+            }
+        }
+        if (getAction().equals(EntryAction.KILL)) {
+            if (APPermission.INV.hasPermission(sender) && !getTarget().startsWith("#")) {
+                message.append(" " + GenericTextColor.COLOR_CHAR + "a[" + Language.L.RESULTS__VIEW_INV + "]")
+                        .click(new ClickEvent(ClickEvent.Action.RUN_COMMAND,
+                                String.format(commandPrefix + " l u:%s a:inventory target:death time:%de+-20e",
+                                        getTarget(), getTime())))
+                        .hover(Language.L.RESULTS__CLICK_TO_VIEW.translate());
+            }
+        }
+    }
+
+    public void appendCoordinates(SenderAdapter<?, ?> senderAdapter, GenericBuilder message) {
         String tpCommand = "/" + AuxProtectAPI.getInstance().getCommandPrefix() + " tp ";
 
         tpCommand += String.format("%d.5 %d %d.5 ", getX(), getY(), getZ());

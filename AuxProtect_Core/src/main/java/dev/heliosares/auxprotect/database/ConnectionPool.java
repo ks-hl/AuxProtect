@@ -2,14 +2,12 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.SQLConsumer;
 import dev.heliosares.auxprotect.utils.SQLFunction;
 import dev.heliosares.auxprotect.utils.SQLFunctionWithException;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nullable;
-import javax.annotation.OverridingMethodsMustInvokeSuper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Blob;
@@ -173,7 +171,6 @@ public class ConnectionPool {
         }
     }
 
-    @OverridingMethodsMustInvokeSuper
     public void close() {
         if (closed) {
             return;

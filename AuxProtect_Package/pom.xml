@@ -49,6 +49,7 @@
                                 <includes>
                                     <include>org.json:json</include>
                                     <include>dev.heliosares:*</include>
+                                    <include>dev.kshl:*</include>
                                 </includes>
                             </artifactSet>
                             <minimizeJar>true</minimizeJar>

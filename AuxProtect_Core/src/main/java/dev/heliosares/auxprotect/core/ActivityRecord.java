@@ -1,8 +1,8 @@
 package dev.heliosares.auxprotect.core;
 
-import net.md_5.bungee.api.ChatColor;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import jakarta.annotation.Nonnull;
 
-import javax.annotation.Nonnull;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -91,16 +91,16 @@ public record ActivityRecord(@Nonnull List<Activity> activities, double andScore
 
     public String getHoverText() {
         StringBuilder hoverText = new StringBuilder("\n\n");
-        hoverText.append(ChatColor.COLOR_CHAR + "7Activity: " + ChatColor.COLOR_CHAR + "9").append(getActivityString());
+        hoverText.append(GenericTextColor.GRAY).append("Activity: ").append(GenericTextColor.BLUE).append(getActivityString());
         if (andScore() > 1E-6) {
-            hoverText.append(ChatColor.COLOR_CHAR + "7... +").append((int) Math.round(andScore())).append(" points");
+            hoverText.append(GenericTextColor.GRAY).append("... +").append((int) Math.round(andScore())).append(" points");
         }
         hoverText.append("\n");
 
         for (Activity activity : new HashSet<>(activities())) {
-            hoverText.append(ChatColor.COLOR_CHAR + "7  ").append(activity.character).append(" = ").append(activity.toString().toLowerCase()).append(" (").append(activity.score).append(")\n");
+            hoverText.append(GenericTextColor.GRAY).append("  ").append(activity.character).append(" = ").append(activity.toString().toLowerCase()).append(" (").append(activity.score).append(")\n");
         }
-        hoverText.append(ChatColor.COLOR_CHAR + "7Moved " + ChatColor.COLOR_CHAR + "9").append(distanceMoved()).append(ChatColor.COLOR_CHAR).append("7 Blocks");
+        hoverText.append(GenericTextColor.GRAY).append("Moved ").append(GenericTextColor.BLUE).append(distanceMoved()).append(GenericTextColor.GRAY).append(" Blocks");
         return hoverText.toString();
     }
 }

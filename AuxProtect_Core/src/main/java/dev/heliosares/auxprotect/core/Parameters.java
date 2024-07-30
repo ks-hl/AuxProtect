@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.core;
 
+import dev.heliosares.auxprotect.adapters.sender.PositionedSender;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Language.L;
@@ -9,10 +10,11 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nullable;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -144,8 +146,12 @@ public class Parameters implements Cloneable {
                             throw new ParseException(L.NOTPLAYERERROR);
                         if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER)
                             throw new ParseException(L.INVALID_PARAMETER, line);
-                        if (sender.getSender() instanceof org.bukkit.entity.Player player) {
-                            parameters.setLocation(player.getWorld().getName(), player.getLocation().getBlockX(), player.getLocation().getBlockY(), player.getLocation().getBlockZ());
+                        if (sender instanceof PositionedSender positionedSender) {
+                            try {
+                                parameters.setLocation(positionedSender.getWorldName(), positionedSender.getBlockX(), positionedSender.getBlockY(), positionedSender.getBlockZ());
+                            } catch (NotPlayerException e) {
+                                throw new ParseException(L.NOTPLAYERERROR);
+                            }
                             parameters.radius(param);
                         } else {
                             throw new ParseException(L.NOTPLAYERERROR);
@@ -972,73 +978,6 @@ public class Parameters implements Cloneable {
             output[i + 1] = out.get(i);
         }
         return output;
-    }
-
-    @Deprecated
-    public boolean matches(DbEntry entry) throws SQLException, BusyException {
-        if (!uids.isEmpty()) {
-            boolean contains = false;
-            for (String user : uids) {
-                if (user.equalsIgnoreCase(entry.getUserUUID())) {
-                    contains = true;
-                    break;
-                }
-            }
-            if (contains == negateUser) {
-                return false;
-            }
-        }
-        if (!targets.isEmpty()) {
-            boolean contains = false;
-            for (String target : targets) {
-                if (target.equalsIgnoreCase(entry.getTargetUUID())) {
-                    contains = true;
-                    break;
-                }
-            }
-            if (contains == negateTarget) {
-                return false;
-            }
-        }
-        if (!exactTime.isEmpty() && !exactTime.contains(entry.getTime())) {
-            return false;
-        }
-        if (entry.getTime() < after || entry.getTime() > before) {
-            return false;
-        }
-        if (!actions.isEmpty() && !actions.contains(entry.getAction().getId(entry.getState()))) {
-            return false;
-        }
-        if (!ratings.isEmpty() && entry instanceof XrayEntry && !ratings.contains(((XrayEntry) entry).getRating())) {
-            return false;
-        }
-        boolean any = false;
-        for (String data : datas) {
-            StringBuilder node = new StringBuilder();
-            for (String part : data.split("[*\\-]")) {
-                if (!node.isEmpty()) {
-                    node.append(".*");
-                }
-                node.append(Pattern.quote(part));
-            }
-            //noinspection AssignmentUsedAsCondition
-            if (any = data.matches(node.toString())) {
-                break;
-            }
-        }
-        if (!any) {
-            return false;
-        }
-        if (!radius.isEmpty() && world > 0) {
-            if (radius.entrySet().stream().anyMatch((e) -> e.getValue() == distance(entry) > e.getKey())) {
-                return false;
-            }
-        }
-        if (!worlds.isEmpty()) {
-            return worlds.contains(plugin.getSqlManager().getWID(entry.getWorld())) != negateWorld;
-        }
-
-        return true;
     }
 
     private Parameters time(String param, boolean before) throws ParseException {

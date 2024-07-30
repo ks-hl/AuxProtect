@@ -4,7 +4,7 @@ import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.kshl.kshlib.yaml.YamlConfig;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;

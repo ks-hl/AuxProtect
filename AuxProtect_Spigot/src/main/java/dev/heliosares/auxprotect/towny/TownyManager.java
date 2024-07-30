@@ -15,7 +15,7 @@ import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;

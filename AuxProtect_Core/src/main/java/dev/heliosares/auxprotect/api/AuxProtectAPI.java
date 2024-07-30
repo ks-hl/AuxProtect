@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.api;
 
-import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -8,11 +7,10 @@ import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.SQLConsumer;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.sql.SQLException;
 import java.util.function.Consumer;
 
@@ -24,7 +22,7 @@ public final class AuxProtectAPI {
     /**
      * Returns the instance of {@link IAuxProtect} for the given platform.
      *
-     * @return The IAuxProtect instance, can be {@link AuxProtectSpigot} or {@link AuxProtectBungee}
+     * @return The IAuxProtect instance, dependent on the platform
      */
     @Nonnull
     public static IAuxProtect getInstance() {
@@ -34,7 +32,7 @@ public final class AuxProtectAPI {
     }
 
     public static void setInstance(IAuxProtect plugin) {
-        if (instance != null && !(plugin instanceof AuxProtectSpigot) && !(plugin instanceof AuxProtectBungee)) {
+        if (instance != null) {
             throw new IllegalStateException("Instance already set");
         }
         if (!plugin.getClass().getPackageName().startsWith("dev.heliosares.auxprotect.")) {

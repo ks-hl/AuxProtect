@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.bungee;
 
+import dev.heliosares.auxprotect.adapters.message.BungeeMessageBuilder;
+import dev.heliosares.auxprotect.adapters.message.MessageBuilder;
 import dev.heliosares.auxprotect.adapters.sender.BungeeSenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -21,7 +23,7 @@ import net.md_5.bungee.api.connection.PendingConnection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -208,6 +210,11 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public boolean isPrimaryThread() {
         return false;
+    }
+
+    @Override
+    public MessageBuilder getMessageBuilder() {
+        return new BungeeMessageBuilder();
     }
 
     @Override

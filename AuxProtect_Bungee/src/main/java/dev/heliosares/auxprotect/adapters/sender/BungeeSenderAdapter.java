@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.bungee.AuxProtectBungee;
 import net.md_5.bungee.api.ChatColor;
 import net.md_5.bungee.api.CommandSender;

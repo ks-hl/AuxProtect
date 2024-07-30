@@ -3,8 +3,8 @@ package dev.heliosares.auxprotect.core;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.utils.IPService;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import java.util.TimeZone;
 
 public abstract class APPlayer<T> {

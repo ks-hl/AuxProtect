@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.spigot;
 
+import dev.heliosares.auxprotect.adapters.message.MessageBuilder;
+import dev.heliosares.auxprotect.adapters.message.SpigotMessageBuilder;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -13,11 +15,15 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.EntryLoader;
+import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.database.SpigotDatabaseRunnable;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.SpigotSQLManager;
 import dev.heliosares.auxprotect.database.Table;
+import dev.heliosares.auxprotect.database.TransactionEntry;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.commands.CSLogsCommand;
@@ -46,15 +52,18 @@ import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.kshl.kshlib.yaml.YamlConfig;
+import jakarta.annotation.Nullable;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.Container;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
@@ -62,7 +71,6 @@ import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -70,6 +78,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -83,8 +92,6 @@ import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
-    public static final char LEFT_ARROW = 9668;
-    public static final char RIGHT_ARROW = 9658;
     public static final char BLOCK = 9608;
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectSpigot instance;
@@ -238,7 +245,15 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     setEnabled(false);
                     return;
                 }
+
                 if (EntryAction.VEIN.isEnabled()) {
+                    getSqlManager().getLookupManager().addLoader(new EntryLoader(
+                            data -> data.table() == Table.AUXPROTECT_XRAY,
+                            data -> {
+                                short rating = data.rs().getShort("rating");
+                                return new XrayEntry(data.time(), data.uid(), data.world(), data.x(), data.y(), data.z(), data.target_id(), rating, data.data());
+                            }
+                    ));
                     try {
                         ArrayList<DbEntry> veins = sqlManager.getAllUnratedXrayRecords(System.currentTimeMillis() - (3600000L * 24L * 7L));
                         if (veins != null) {
@@ -303,11 +318,11 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             EntryAction.PAY.setEnabled(false);
         }
         if (hook(() -> new TownyListener(this), "Towny")) {
-            getSqlManager().getLookupManager().addLoader(data -> {
-                if (data.table() != Table.AUXPROTECT_TOWNY && !data.action().equals(EntryAction.TOWNYNAME)) return null;
-                return new TownyEntry(data.time(), data.uid(), data.action(), data.state(), data.world(),
-                        data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data());
-            });
+            getSqlManager().getLookupManager().addLoader(new EntryLoader(
+                    data -> data.table() == Table.AUXPROTECT_TOWNY || data.action().equals(EntryAction.TOWNYNAME),
+                    data -> new TownyEntry(data.time(), data.uid(), data.action(), data.state(), data.world(),
+                            data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data())
+            ));
         } else {
             for (EntryAction action : EntryAction.values()) {
                 if (action.getTable() == Table.AUXPROTECT_TOWNY) {
@@ -647,8 +662,28 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
+    public Set<String> getWorlds() {
+        return Bukkit.getWorlds().stream().map(World::getName).collect(Collectors.toSet());
+    }
+
+    @Override
     public boolean isPrimaryThread() {
         return Bukkit.isPrimaryThread();
+    }
+
+    @Override
+    public MessageBuilder getMessageBuilder() {
+        return new SpigotMessageBuilder();
+    }
+
+    @Override
+    public Set<String> getEntityTypes() {
+        return Arrays.stream(EntityType.values()).map(EntityType::toString).collect(Collectors.toSet());
+    }
+
+    @Override
+    public Set<String> getItemTypes() {
+        return Arrays.stream(Material.values()).map(Material::toString).collect(Collectors.toSet());
     }
 
     @Override

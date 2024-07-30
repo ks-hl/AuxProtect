@@ -1,6 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
@@ -16,7 +16,7 @@ public class ActivityResults extends Results {
     private final long rangeStart;
     private final long rangeEnd;
 
-    public ActivityResults(IAuxProtect plugin, List<DbEntry> entries, SenderAdapter player, Parameters params) {
+    public ActivityResults(IAuxProtect plugin, List<DbEntry> entries, SpigotSenderAdapter player, Parameters params) {
         super(plugin, entries, player, params);
 
         rangeEnd = entries.get(0).getTime();
@@ -40,7 +40,7 @@ public class ActivityResults extends Results {
         // long thisRangeStart = rangeStart + (page - 1) * millisperpage;
         long thisRangeEnd = rangeEnd - (getNumPages(perPage_) - page) * millisperpage;
 
-        ActivitySolver.solveActivity(getEntries(), Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd).send(player);
+        ActivitySolver.solveActivity(plugin, getEntries(), Math.max(thisRangeEnd - millisperpage, rangeStart), thisRangeEnd).send(player);
 
         super.sendArrowKeys(page);
     }

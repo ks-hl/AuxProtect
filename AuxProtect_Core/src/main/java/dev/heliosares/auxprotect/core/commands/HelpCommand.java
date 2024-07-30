@@ -7,14 +7,15 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Language.L;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.stream.Collectors;
 
 public class HelpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
-    private final List<Command<S, P, SA>> commands;
+    private final Collection<Command<S, P, SA>> commands;
 
-    public HelpCommand(P plugin, List<Command<S, P, SA>> commands) {
+    public HelpCommand(P plugin, Collection<Command<S, P, SA>> commands) {
         super(plugin, "help", APPermission.HELP, false);
         this.commands = commands;
     }

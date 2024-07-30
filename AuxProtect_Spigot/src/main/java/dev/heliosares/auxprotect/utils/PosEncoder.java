@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.ArrayList;

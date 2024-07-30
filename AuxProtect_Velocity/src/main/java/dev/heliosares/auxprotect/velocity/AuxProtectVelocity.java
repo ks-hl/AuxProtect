@@ -28,7 +28,7 @@ import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.kshl.kshlib.yaml.YamlConfig;
 import net.kyori.adventure.text.Component;
 
-import javax.annotation.Nullable;
+import jakarta.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;

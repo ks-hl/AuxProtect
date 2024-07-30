@@ -8,38 +8,24 @@ import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
 import dev.heliosares.auxprotect.core.PlatformType;
-import dev.heliosares.auxprotect.database.ActivityResults;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.LookupManager;
-import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.database.TransactionEntry;
-import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
-import dev.heliosares.auxprotect.utils.MoneySolver;
 import dev.heliosares.auxprotect.utils.PlayTimeSolver;
-import dev.heliosares.auxprotect.utils.PlaybackSolver;
-import dev.heliosares.auxprotect.utils.RetentionSolver;
-import dev.heliosares.auxprotect.utils.XraySolver;
-import net.coreprotect.CoreProtect;
-import net.coreprotect.CoreProtectAPI;
-import org.bukkit.Bukkit;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
@@ -55,6 +41,10 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
 
     public static Results getResultsFor(UUID uuid) {
         return results.get(uuid);
+    }
+
+    public static void putResults(UUID uuid, Results rs) {
+        results.put(uuid, rs);
     }
 
     public static List<String> onTabCompleteStatic(IAuxProtect plugin, SenderAdapter<?, ?> sender, String[] args) {
@@ -137,12 +127,12 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
             possible.addAll(APCommand.allPlayers(plugin, true).stream().map(name -> user + name).toList());
 
             if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
-                for (org.bukkit.entity.EntityType et : org.bukkit.entity.EntityType.values()) {
-                    possible.add(user + "#" + et.toString().toLowerCase());
+                for (String et : plugin.getEntityTypes()) {
+                    possible.add(user + "#" + et.toLowerCase());
                 }
                 if (currentArg.startsWith("target:")) {
-                    for (org.bukkit.Material material : org.bukkit.Material.values()) {
-                        possible.add("target:" + material.toString().toLowerCase());
+                    for (String material : plugin.getItemTypes()) {
+                        possible.add("target:" + material.toLowerCase());
                     }
                 }
             }
@@ -164,9 +154,11 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
             possible.add(currentArg + "d");
             possible.add(currentArg + "w");
         }
-        if (currentArg.startsWith("world:")) {
-            for (org.bukkit.World world : org.bukkit.Bukkit.getWorlds()) {
-                possible.add("world:" + world.getName());
+        if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
+            if (currentArg.startsWith("world:")) {
+                for (String world : plugin.getWorlds()) {
+                    possible.add("world:" + world);
+                }
             }
         }
         if (currentArg.startsWith("rat")) {
@@ -310,175 +302,9 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
                 sender.sendLang(Language.L.COMMAND__LOOKUP__NORESULTS);
                 return;
             }
-            if (params_.hasFlag(Flag.COUNT)) {
-                sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, rs.size());
-                double totalMoney = 0;
-                double totalExp = 0;
-                int dropcount = 0;
-                int pickupcount = 0;
-                Set<Integer> usersForJobsCount = new HashSet<>();
-                for (DbEntry entry : rs) {
-                    if (entry.getAction().equals(EntryAction.JOBS)) {
-                        char type = entry.getData().charAt(0);
-                        double value = Double.parseDouble(entry.getData().substring(1));
-                        if (type == 'x') {
-                            totalExp += value;
-                        } else if (type == '$') {
-                            totalMoney += value;
-                        }
-                        usersForJobsCount.add(entry.getUid());
-                    } else if (entry.getAction().equals(EntryAction.AUCTIONBUY)) {
-                        String[] parts = entry.getData().split(" ");
-                        try {
-                            double each = Double.parseDouble(parts[parts.length - 1].substring(1));
-                            totalMoney += each;
-                        } catch (Exception ignored) {
-                        }
-                    } else if (entry.getAction().equals(EntryAction.DROP)
-                            || entry.getAction().equals(EntryAction.PICKUP)) {
-                        int quantity = -1;
-                        try {
-                            quantity = Integer.parseInt(entry.getData().substring(1));
-                        } catch (Exception ignored) {
-                        }
-                        if (quantity > 0) {
-                            if (entry.getAction().equals(EntryAction.DROP)) {
-                                dropcount += quantity;
-                            } else {
-                                pickupcount += quantity;
-                            }
-                        }
-                    } else if (entry instanceof TransactionEntry transactionEntry) {
-                        totalMoney += transactionEntry.getCost() * (transactionEntry.getState() ? -1 : 1);
-                    }
-                }
-                if (totalMoney != 0 && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
-                    boolean negative = totalMoney < 0;
-                    totalMoney = Math.abs(totalMoney);
-                    sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + plugin.formatMoney(totalMoney));
-                    if (!usersForJobsCount.isEmpty()) {
-                        sender.sendMessageRaw("    &7" + (negative ? "-" : "") + plugin.formatMoney(totalMoney / usersForJobsCount.size()) + "/player");
-                    }
-                }
-                if (totalExp != 0) {
-                    sender.sendMessageRaw("&fTotal Experience: &9" + Math.round(totalExp * 100f) / 100f);
-                    if (!usersForJobsCount.isEmpty()) {
-                        sender.sendMessageRaw("    &7" + Math.round(totalExp / usersForJobsCount.size()) + "/player");
-                    }
-                }
-                String msg = "";
-                if (pickupcount > 0) {
-                    msg += "&fPicked up: &9" + pickupcount + "&7, ";
-                }
-                if (dropcount > 0) {
-                    msg += "&fDropped: &9" + dropcount + "&7, ";
-                }
-                if (pickupcount > 0 && dropcount > 0) {
-                    msg += "&fNet: &9" + (pickupcount - dropcount);
-                }
-                if (!msg.isEmpty()) {
-                    sender.sendMessageRaw(msg);
-                }
-                return;
-            } else if (params_.hasFlag(Flag.PLAYTIME)) {
-                Set<String> users = params_.getUsers();
-                if (users.isEmpty()) {
-                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
-                    return;
-                }
-                if (users.size() > 1) {
-                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
-                    return;
-                }
-                String name = users.stream().findAny().orElse(null);
-                PlayTimeSolver.solvePlaytime(rs,
-                        params_.getAfter(),
-                        params_.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params_.getBefore(),
-                        name,
-                        plugin.getSenderAdapter(name) != null).send(sender);
-                return;
-            } else if (params_.hasFlag(Flag.ACTIVITY)) {
-                Results result = new ActivityResults(plugin, rs, sender, params_);
-                result.showPage(result.getNumPages(4), 4);
-                results.put(sender.getUniqueId(), result);
-                return;
-            } else if (params_.hasFlag(Flag.XRAY)) {
-                Set<Integer> users = new HashSet<>();
-                for (DbEntry entry : rs) {
-                    users.add(entry.getUid());
-                }
-                if (users.size() > 1) {
-                    XraySolver.solve(rs).send(sender);
-                    return;
-                }
-                Iterator<DbEntry> it = rs.iterator();
-                while (it.hasNext()) {
-                    XrayEntry entry = (XrayEntry) it.next();
-                    if (entry.getRating() < 0) {
-                        it.remove();
-                    }
-                }
-            } else if (params_.hasFlag(Flag.MONEY) && sender.getPlatform().getLevel() == PlatformType.Level.SERVER) {
-                Set<String> users = params_.getUsers();
-                if (users.isEmpty()) {
-                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
-                    return;
-                }
-                if (users.size() > 1) {
-                    sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
-                    return;
-                }
-                if (sender.getSender() instanceof org.bukkit.entity.Player player) {
-                    MoneySolver.showMoney(plugin, player, rs, (int) Math.round((double) params_.getAfter() / (1000 * 3600)),
-                            users.stream().findAny().orElse(null));
-                }
-                return;
-            } else if (params_.hasFlag(Flag.RETENTION)) {
-                RetentionSolver.showRetention(plugin, sender, rs, params_.getAfter(), params_.getBefore());
-                return;
-            } else if (params_.hasFlag(Flag.INCREMENTAL_POS) && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
-                List<PlaybackSolver.PosPoint> points = PlaybackSolver.getLocations(plugin, rs, 0);
-                List<DbEntry> newResults = new ArrayList<>();
-                for (PlaybackSolver.PosPoint point : points) {
-                    newResults.add(new PosEntry(point.time(), point.uid(), point.location()));
-                }
-                Collections.reverse(newResults);
-                rs = newResults;
-            } else if (params_.hasFlag(Flag.PLAYBACK) && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
-                List<PlaybackSolver.BlockAction> actions = null;
-                try {
-                    Class.forName("net.coreprotect.CoreProtectAPI");
-                    CoreProtectAPI api = CoreProtect.getInstance().getAPI();
-                    List<String[]> lookup = api.performLookup(
-                            (int) ((System.currentTimeMillis() - params_.getAfter()) / 1000L),
-                            new ArrayList<>(params_.getUsers()),
-                            null,
-                            null,
-                            null,
-                            new ArrayList<>(List.of(0, 1)),
-                            params_.getRadius().entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).max(Integer::compare).orElse(0),
-                            new org.bukkit.Location(Bukkit.getWorld(plugin.getSqlManager().getWorld(params.getWorldID())), params.getX(), params.getY(), params.getZ()));
-                    if (lookup != null) {
-                        List<CoreProtectAPI.ParseResult> results = lookup
-                                .stream()
-                                .map(api::parseResult)
-                                .toList();
-                        actions = results.stream().filter(r -> r.getTimestamp() < params.getBefore())
-                                .map(result -> new PlaybackSolver.BlockAction(result.getTimestamp(), result.getPlayer(), result.getX(), result.getY(), result.getZ(), result.getType(), result.getActionId() == 1))
-                                .toList();
-                    }
-                } catch (ClassNotFoundException ignored) {
-                }
-                new PlaybackSolver(plugin, sender, rs, params_.getAfter(), actions);
-                return;
-            }
-            Results result = new Results(plugin, rs, sender, params_);
-            result.showPage(1, 4);
-            results.put(sender.getUniqueId(), result);
 
-            if (params_.hasFlag(Flag.XRAY)) {
-                XraySolver.solve(rs).send(sender);
-            }
+            handleResults(params_, rs, sender);
+
         } catch (LookupException | ParseException e) {
             sender.sendMessageRaw(e.getMessage());
         } catch (BusyException e) {
@@ -487,6 +313,109 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
             sender.sendLang(Language.L.ERROR);
             plugin.warning("Error during lookup:");
             plugin.print(e);
+        }
+    }
+
+    protected void handleResults(Parameters params_, List<DbEntry> rs, SA sender) throws SQLException, BusyException, LookupException {
+        if (params_.hasFlag(Flag.COUNT)) {
+            sender.sendLang(Language.L.COMMAND__LOOKUP__COUNT, rs.size());
+
+            CountResult countResult = new CountResult();
+            count(rs, countResult);
+
+            if (countResult.totalMoney != 0 && plugin.getPlatform().getLevel() == PlatformType.Level.SERVER) {
+                boolean negative = countResult.totalMoney < 0;
+                countResult.totalMoney = Math.abs(countResult.totalMoney);
+                sender.sendMessageRaw("&fTotal Money: &9" + (negative ? "-" : "") + plugin.formatMoney(countResult.totalMoney));
+                if (!countResult.usersForJobsCount.isEmpty()) {
+                    sender.sendMessageRaw("    &7" + (negative ? "-" : "") + plugin.formatMoney(countResult.totalMoney / countResult.usersForJobsCount.size()) + "/player");
+                }
+            }
+            if (countResult.totalExp != 0) {
+                sender.sendMessageRaw("&fTotal Experience: &9" + Math.round(countResult.totalExp * 100f) / 100f);
+                if (!countResult.usersForJobsCount.isEmpty()) {
+                    sender.sendMessageRaw("    &7" + Math.round(countResult.totalExp / countResult.usersForJobsCount.size()) + "/player");
+                }
+            }
+            String msg = "";
+            if (countResult.pickupCount > 0) {
+                msg += "&fPicked up: &9" + countResult.pickupCount + "&7, ";
+            }
+            if (countResult.dropCount > 0) {
+                msg += "&fDropped: &9" + countResult.dropCount + "&7, ";
+            }
+            if (countResult.pickupCount > 0 && countResult.dropCount > 0) {
+                msg += "&fNet: &9" + (countResult.pickupCount - countResult.dropCount);
+            }
+            if (!msg.isEmpty()) {
+                sender.sendMessageRaw(msg);
+            }
+            return;
+        } else if (params_.hasFlag(Flag.PLAYTIME)) {
+            Set<String> users = params_.getUsers();
+            if (users.isEmpty()) {
+                sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__NOUSER);
+                return;
+            }
+            if (users.size() > 1) {
+                sender.sendLang(Language.L.COMMAND__LOOKUP__PLAYTIME__TOOMANYUSERS);
+                return;
+            }
+            String name = users.stream().findAny().orElse(null);
+            PlayTimeSolver.solvePlaytime(plugin, rs,
+                    params_.getAfter(),
+                    params_.getBefore() == Long.MAX_VALUE ? System.currentTimeMillis() : params_.getBefore(),
+                    name,
+                    plugin.getSenderAdapter(name) != null).send(sender);
+            return;
+        }
+        Results result = new Results(plugin, rs, sender, params_);
+        result.showPage(1, 4);
+
+        putResults(sender.getUniqueId(), result);
+    }
+
+    protected static class CountResult {
+        public double totalMoney;
+        public double totalExp;
+        public int dropCount;
+        public int pickupCount;
+        public final Set<Integer> usersForJobsCount = new HashSet<>();
+    }
+
+    protected void count(List<DbEntry> rs, CountResult countResult) throws SQLException, BusyException {
+        for (DbEntry entry : rs) {
+            if (entry.getAction().equals(EntryAction.JOBS)) {
+                char type = entry.getData().charAt(0);
+                double value = Double.parseDouble(entry.getData().substring(1));
+                if (type == 'x') {
+                    countResult.totalExp += value;
+                } else if (type == '$') {
+                    countResult.totalMoney += value;
+                }
+                countResult.usersForJobsCount.add(entry.getUid());
+            } else if (entry.getAction().equals(EntryAction.AUCTIONBUY)) {
+                String[] parts = entry.getData().split(" ");
+                try {
+                    double each = Double.parseDouble(parts[parts.length - 1].substring(1));
+                    countResult.totalMoney += each;
+                } catch (Exception ignored) {
+                }
+            } else if (entry.getAction().equals(EntryAction.DROP)
+                    || entry.getAction().equals(EntryAction.PICKUP)) {
+                int quantity = -1;
+                try {
+                    quantity = Integer.parseInt(entry.getData().substring(1));
+                } catch (Exception ignored) {
+                }
+                if (quantity > 0) {
+                    if (entry.getAction().equals(EntryAction.DROP)) {
+                        countResult.dropCount += quantity;
+                    } else {
+                        countResult.pickupCount += quantity;
+                    }
+                }
+            }
         }
     }
 

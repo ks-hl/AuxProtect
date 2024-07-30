@@ -1,9 +1,16 @@
 package dev.heliosares.auxprotect.database;
 
+import dev.heliosares.auxprotect.adapters.message.ClickEvent;
+import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
+import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.core.IAuxProtect;
+import dev.heliosares.auxprotect.core.Language;
+import dev.heliosares.auxprotect.spigot.VeinManager;
 import dev.heliosares.auxprotect.spigot.commands.XrayCommand;
+import jakarta.annotation.Nullable;
 import org.bukkit.Location;
 
-import javax.annotation.Nullable;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.UUID;
@@ -63,5 +70,26 @@ public class XrayEntry extends SpigotDbEntry {
             setData(data);
         }
         this.rating = rating;
+    }
+
+    @Override
+    public void appendData(GenericBuilder message, IAuxProtect plugin, SenderAdapter<?, ?> sender) {
+        String rating;
+        if (getRating() == -2) {
+            rating = GenericTextColor.COLOR_CHAR + "5Ignored";
+        } else if (getRating() == -1) {
+            rating = GenericTextColor.COLOR_CHAR + "7Unrated";
+        } else {
+            rating = getRating() + "";
+        }
+        String color = VeinManager.getSeverityColor(getRating()).toString();
+        message.append(String.format(" " + GenericTextColor.COLOR_CHAR + "8[%s%s" + GenericTextColor.COLOR_CHAR + "8]", color, rating)).event(new ClickEvent(
+                ClickEvent.Action.RUN_COMMAND, "/" + plugin.getCommandPrefix() + " xray rate " + getTime()));
+        String hover = "";
+        if (getRating() >= 0) {
+            hover += color + VeinManager.getSeverityDescription(getRating()) + "\n\n";
+        }
+        hover += Language.translate(Language.L.XRAY_CLICK_TO_CHANGE);
+        message.hover(hover);
     }
 }

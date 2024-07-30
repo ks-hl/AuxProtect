@@ -8,6 +8,7 @@ import java.io.File;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SpigotSQLManager extends SQLManager {
     private final TownyManager townyManager;
@@ -27,6 +28,36 @@ public class SpigotSQLManager extends SQLManager {
         }
         this.townyManager = _townyManager;
         this.invDiffManager = new InvDiffManager(this, plugin);
+
+
+        getLookupManager().addLoader(new EntryLoader(
+                data -> data.table() == Table.AUXPROTECT_POSITION,
+                data -> new PosEntry(data.time(), data.uid(), data.action(), data.state(), data.world(), data.x(), data.y(), data.z(), data.rs().getByte("increment"), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data()
+                )));
+
+        getLookupManager().addLoader(new EntryLoader(
+                data -> data.table().hasBlobID() && data.table().hasItemMeta(),
+                data -> {
+                    int qty = data.rs().getInt("qty");
+                    if (data.rs().wasNull()) qty = -1;
+                    int damage = data.rs().getInt("damage");
+                    if (data.rs().wasNull()) damage = -1;
+                    if (qty < 0 || damage < 0) return null;
+
+                    return new SingleItemEntry(data.time(), data.uid(), data.action(), data.state(), data.world(), data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target(), data.target_id(), data.data(), qty, damage);
+                }
+        ));
+
+        getLookupManager().addLoader(new EntryLoader(
+                data -> data.table() == Table.AUXPROTECT_TRANSACTIONS,
+                data -> {
+                    short quantity = data.rs().getShort("quantity");
+                    double cost = data.rs().getDouble("cost");
+                    double balance = data.rs().getDouble("balance");
+                    int target_id2 = data.rs().getInt("target_id2");
+                    return new TransactionEntry(data.time(), data.uid(), data.action(), data.state(), data.world(), data.x(), data.y(), data.z(), data.pitch(), data.yaw(), data.target_id(), data.data(), quantity, cost, balance, target_id2, this);
+                }
+        ));
     }
 
     @Override
@@ -88,20 +119,44 @@ public class SpigotSQLManager extends SQLManager {
     }
 
     @Override
-    protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, int i) throws SQLException {
+    protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
         if (dbEntry instanceof PosEntry posEntry) {
-            preparedStatement.setByte(i, posEntry.getIncrement());
+            preparedStatement.setByte(i.getAndIncrement(), posEntry.getIncrement());
             return true;
         }
         return false;
     }
 
     @Override
-    protected boolean putXrayEntry(PreparedStatement preparedStatement, DbEntry dbEntry, int i) throws SQLException {
+    protected void putXrayEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
         if (dbEntry instanceof XrayEntry xrayEntry) {
-            preparedStatement.setShort(i, xrayEntry.getRating());
+            preparedStatement.setShort(i.getAndIncrement(), xrayEntry.getRating());
+        }
+    }
+
+    @Override
+    protected boolean putSingleItemEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException, BusyException {
+        if (dbEntry instanceof SingleItemEntry sientry && sientry.getItem() != null) {
+            preparedStatement.setInt(i.getAndIncrement(), sientry.getQty());
+            preparedStatement.setInt(i.getAndIncrement(), sientry.getDamage());
             return true;
         }
         return false;
+    }
+
+    @Override
+    protected void putTransaction(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException, BusyException {
+        if (!(dbEntry instanceof TransactionEntry transactionEntry)) return;
+
+        preparedStatement.setShort(i.getAndIncrement(), transactionEntry.getQuantity());
+        preparedStatement.setDouble(i.getAndIncrement(), transactionEntry.getCost());
+        preparedStatement.setDouble(i.getAndIncrement(), transactionEntry.getBalance());
+        preparedStatement.setInt(i.getAndIncrement(), transactionEntry.getTargetId2());
+
+    }
+
+    @Override
+    public DbEntry convertToTransactionEntryForMigration(DbEntry entry, EntryAction action, short quantity, double cost, double balance, int target_id2) throws SQLException, BusyException {
+        return new TransactionEntry(entry.getTime(), entry.getUid(), action, entry.getState(), entry.getWorld(), entry.getX(), entry.getY(), entry.getZ(), 0, 0, entry.getTargetId(), "", quantity, cost, balance, target_id2, this);
     }
 }

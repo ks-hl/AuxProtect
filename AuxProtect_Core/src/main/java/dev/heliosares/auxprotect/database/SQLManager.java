@@ -7,9 +7,9 @@ import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SQLManager extends ConnectionPool {
     public static final int MAX_LOOKUP_SIZE = 500000;
@@ -366,13 +367,20 @@ public class SQLManager extends ConnectionPool {
         setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
     }
 
-    protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, int i) throws SQLException {
+    protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
         return false;
     }
 
-    protected boolean putXrayEntry(PreparedStatement preparedStatement, DbEntry dbEntry, int i) throws SQLException {
+    protected void putXrayEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
+    }
+
+    protected boolean putSingleItemEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException, BusyException {
         return false;
     }
+
+    protected void putTransaction(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException, BusyException {
+    }
+
 
     protected void put(Connection connection, Table table, @Nullable List<DbEntry> entries) throws SQLException, BusyException {
         long start = System.nanoTime();
@@ -392,7 +400,7 @@ public class SQLManager extends ConnectionPool {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
-        final boolean hasLocation = plugin.getPlatform() .getLevel() == PlatformType.Level.SERVER && table.hasLocation();
+        final boolean hasLocation = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && table.hasLocation();
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();
@@ -408,76 +416,68 @@ public class SQLManager extends ConnectionPool {
         }
         try (PreparedStatement statement = connection.prepareStatement(stmt.toString())) {
 
-            int i = 1;
+            AtomicInteger i = new AtomicInteger(1);
             for (DbEntry dbEntry : entries) {
-                int prior = i;
-                statement.setLong(i++, dbEntry.getTime());
-                statement.setInt(i++, dbEntry.getUid());
+                final int prior = i.get();
+                statement.setLong(i.getAndIncrement(), dbEntry.getTime());
+                statement.setInt(i.getAndIncrement(), dbEntry.getUid());
                 int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
 
                 if (hasAction) {
-                    statement.setInt(i++, action);
+                    statement.setInt(i.getAndIncrement(), action);
                 }
                 if (hasLocation) {
-                    statement.setInt(i++, getWID(dbEntry.getWorld()));
-                    statement.setInt(i++, dbEntry.getX());
-                    statement.setInt(i++, Math.max(Math.min(dbEntry.getY(), Short.MAX_VALUE), Short.MIN_VALUE));
-                    statement.setInt(i++, dbEntry.getZ());
+                    statement.setInt(i.getAndIncrement(), getWID(dbEntry.getWorld()));
+                    statement.setInt(i.getAndIncrement(), dbEntry.getX());
+                    statement.setInt(i.getAndIncrement(), Math.max(Math.min(dbEntry.getY(), Short.MAX_VALUE), Short.MIN_VALUE));
+                    statement.setInt(i.getAndIncrement(), dbEntry.getZ());
 
-                    if (putPosEntry(statement, dbEntry, i)) {
-                        i++;
-                    } else if (table == Table.AUXPROTECT_POSITION) {
-                        statement.setByte(i++, (byte) 0);
+                    if (!putPosEntry(statement, dbEntry, i) && table == Table.AUXPROTECT_POSITION) {
+                        statement.setByte(i.getAndIncrement(), (byte) 0);
                     }
                 }
                 if (hasLook) {
-                    statement.setInt(i++, dbEntry.getPitch());
-                    statement.setInt(i++, dbEntry.getYaw());
+                    statement.setInt(i.getAndIncrement(), dbEntry.getPitch());
+                    statement.setInt(i.getAndIncrement(), dbEntry.getYaw());
                 }
                 if (table.hasStringTarget()) {
                     String target = sanitize(dbEntry.getTargetUUID());
-                    statement.setString(i++, target);
+                    statement.setString(i.getAndIncrement(), target);
                     if (table == Table.AUXPROTECT_LONGTERM) {
-                        statement.setInt(i++, target.toLowerCase().hashCode());
+                        statement.setInt(i.getAndIncrement(), target.toLowerCase().hashCode());
                     }
                 } else {
-                    statement.setInt(i++, dbEntry.getTargetId());
+                    statement.setInt(i.getAndIncrement(), dbEntry.getTargetId());
                 }
-                if (putXrayEntry(statement, dbEntry, i)) {
-                    i++;
-                }
+
+                putXrayEntry(statement, dbEntry, i);
+
                 if (hasData) {
-                    statement.setString(i++, sanitize(dbEntry.getData()));
+                    statement.setString(i.getAndIncrement(), sanitize(dbEntry.getData()));
                 }
                 if (table.hasBlob()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        setBlob(connection, statement, i++, dbEntry.getBlob());
-                    } else statement.setNull(i++, Types.NULL);
+                        setBlob(connection, statement, i.getAndIncrement(), dbEntry.getBlob());
+                    } else statement.setNull(i.getAndIncrement(), Types.NULL);
                 } else if (table.hasBlobID()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
                         long blobid = getBlobManager(table).getBlobId(connection, dbEntry.getBlob());
-                        statement.setLong(i++, blobid);
-                    } else statement.setNull(i++, Types.NULL);
+                        statement.setLong(i.getAndIncrement(), blobid);
+                    } else statement.setNull(i.getAndIncrement(), Types.NULL);
                     if (table.hasItemMeta()) {
-                        if (dbEntry instanceof SingleItemEntry sientry && sientry.getItem() != null) {
-                            statement.setInt(i++, sientry.getQty());
-                            statement.setInt(i++, sientry.getDamage());
-                        } else {
-                            statement.setNull(i++, Types.NULL);
-                            statement.setNull(i++, Types.NULL);
+                        if (!putSingleItemEntry(statement, dbEntry, i)) {
+                            statement.setNull(i.getAndIncrement(), Types.NULL);
+                            statement.setNull(i.getAndIncrement(), Types.NULL);
                         }
                     }
                 }
-                if (dbEntry instanceof TransactionEntry transactionEntry) {
-                    statement.setShort(i++, transactionEntry.getQuantity());
-                    statement.setDouble(i++, transactionEntry.getCost());
-                    statement.setDouble(i++, transactionEntry.getBalance());
-                    statement.setInt(i++, transactionEntry.getTargetId2());
-                }
-                if (i - prior != numColumns) {
+
+                putTransaction(statement, dbEntry, i);
+
+                if (i.get() - prior != numColumns) {
                     plugin.warning("Incorrect number of columns provided inserting action "
                             + dbEntry.getAction().toString() + " into " + table);
-                    plugin.warning(i - prior + " =/= " + numColumns);
+                    plugin.warning(i.get() - prior + " =/= " + numColumns);
                     plugin.warning("Statement: " + stmt);
                     throw new IllegalArgumentException();
                 }
@@ -753,5 +753,9 @@ public class SQLManager extends ConnectionPool {
         LastKeys(int id) {
             this.id = (short) id;
         }
+    }
+
+    public DbEntry convertToTransactionEntryForMigration(DbEntry entry, EntryAction action, short quantity, double cost, double balance, int target_id2) throws SQLException, BusyException {
+        return null;
     }
 }
