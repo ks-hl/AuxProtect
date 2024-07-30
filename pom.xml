@@ -9,12 +9,12 @@
     <name>AuxProtect</name>
 
     <modules>
-        <module>AuxProtect_Spigot_1.20</module>
-        <module>AuxProtect_1.21</module>
-
         <module>AuxProtect_Core</module>
 
+        <module>AuxProtect_Spigot_1.20</module>
+        <module>AuxProtect_Spigot_1.21</module>
         <module>AuxProtect_Spigot</module>
+
         <module>AuxProtect_Bungee</module>
         <module>AuxProtect_Velocity</module>
 
