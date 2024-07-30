@@ -1,5 +1,7 @@
 package dev.heliosares.auxprotect.adapters.sender;
 
+import dev.heliosares.auxprotect.adapters.location.LocationAdapter;
+import dev.heliosares.auxprotect.adapters.location.SpigotLocationAdapter;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -10,7 +12,6 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.Optional;
 import java.util.UUID;
 
 public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtectSpigot> implements PositionedSender, BungeeComponentSender {
@@ -80,44 +81,9 @@ public class SpigotSenderAdapter extends SenderAdapter<CommandSender, AuxProtect
         }
     }
 
-    private Location getLocation() throws NotPlayerException {
+    public LocationAdapter getLocation() throws NotPlayerException {
         if (!(getSender() instanceof Player player)) throw new NotPlayerException();
 
-        return player.getLocation();
-    }
-
-    @Override
-    public int getBlockX() throws NotPlayerException {
-        return getLocation().getBlockX();
-    }
-
-    @Override
-    public int getBlockY() throws NotPlayerException {
-        return getLocation().getBlockY();
-    }
-
-    @Override
-    public int getBlockZ() throws NotPlayerException {
-        return getLocation().getBlockZ();
-    }
-
-    @Override
-    public double getX() throws NotPlayerException {
-        return getLocation().getX();
-    }
-
-    @Override
-    public double getY() throws NotPlayerException {
-        return getLocation().getY();
-    }
-
-    @Override
-    public double getZ() throws NotPlayerException {
-        return getLocation().getZ();
-    }
-
-    @Override
-    public String getWorldName() throws NotPlayerException {
-        return Optional.ofNullable(getLocation().getWorld()).map(World::getName).orElse(null);
+        return new SpigotLocationAdapter(player.getLocation());
     }
 }

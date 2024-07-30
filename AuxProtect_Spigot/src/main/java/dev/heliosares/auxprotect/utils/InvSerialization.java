@@ -151,37 +151,6 @@ public class InvSerialization {
         }
     }
 
-    public static void debug(byte[] bytes) {
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-        System.out.println("Debug Byte[] Dump:");
-        try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
-            boolean keep = true;
-            while (keep) {
-                keep = false;
-                try {
-                    System.out.println(stream.readInt());
-                    keep = true;
-                } catch (Exception ignored) {
-                }
-                try {
-                    Object o = stream.readObject();
-                    String out = "null";
-                    if (o != null) {
-                        out = o.toString();
-                        if (out.length() > 50) {
-                            out = out.substring(0, 50);
-                        }
-                    }
-                    System.out.println(out);
-                    keep = true;
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        System.out.println("EOF");
-    }
-
     public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
         if (bytes == null) return null;
         ItemStack[][] contents = new ItemStack[4][];

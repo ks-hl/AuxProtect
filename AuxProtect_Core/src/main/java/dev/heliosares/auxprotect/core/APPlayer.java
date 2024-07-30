@@ -35,6 +35,6 @@ public abstract class APPlayer<T> {
     @Nullable
     public abstract String getIPAddress();
 
-    public abstract SenderAdapter getSenderAdapter();
+    public abstract SenderAdapter<? super T,?> getSenderAdapter();
     protected abstract IAuxProtect getPlugin();
 }

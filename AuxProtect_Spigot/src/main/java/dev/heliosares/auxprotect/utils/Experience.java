@@ -34,26 +34,6 @@ public class Experience {
     }
 
     /**
-     * Get the total amount of experience required to progress to the next level.
-     *
-     * @param level the current level
-     * @see <a
-     * href=http://minecraft.gamepedia.com/Experience#Leveling_up>Experience#Leveling_up</a>
-     */
-    public static int getExpToNextLevel(int level) {
-        if (level > 30) {
-            // Simplified formula. Internal: 112 + (level - 30) * 9
-            return level * 9 - 158;
-        }
-        if (level > 15) {
-            // Simplified formula. Internal: 37 + (level - 15) * 5
-            return level * 5 - 38;
-        }
-        // Internal: 7 + level * 2
-        return level * 2 + 7;
-    }
-
-    /**
      * Calculate level based on total experience.
      *
      * @param exp the total experience
@@ -70,26 +50,6 @@ public class Experience {
             return Math.sqrt(exp + 9D) - 3;
         }
         return 0;
-    }
-
-    /**
-     * Change a Player's experience.
-     *
-     * <p>
-     * This method is preferred over {@link Player#giveExp(int)}. <br>
-     * In older versions the method does not take differences in exp per level into
-     * account. This leads to overlevelling when granting players large amounts of
-     * experience. <br>
-     * In modern versions, while differing amounts of experience per level are
-     * accounted for, the approach used is loop-heavy and requires an excessive
-     * number of calculations, which makes it quite slow.
-     *
-     * @param player the Player affected
-     * @param exp    the amount of experience to add or remove
-     */
-    public static void giveExp(Player player, int exp) {
-        exp += getTotalExp(player);
-        setExp(player, exp);
     }
 
     public static void setExp(Player player, int exp) {

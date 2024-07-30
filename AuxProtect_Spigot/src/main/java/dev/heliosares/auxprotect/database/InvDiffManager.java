@@ -19,7 +19,6 @@ public class InvDiffManager extends BlobManager {
     protected final ConcurrentLinkedQueue<InvDiffRecord> queue = new ConcurrentLinkedQueue<>();
     private final SQLManager sql;
     private final IAuxProtect plugin;
-    private long nextBlobID;
 
     public InvDiffManager(SQLManager sql, IAuxProtect plugin) {
         super(Table.AUXPROTECT_INVDIFFBLOB, sql, plugin);
