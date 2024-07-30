@@ -47,9 +47,10 @@
                         <configuration>
                             <artifactSet>
                                 <includes>
-                                    <include>org.json:json</include>
                                     <include>dev.heliosares:**</include>
-                                    <include>dev.kshl:**</include>
+
+                                    <include>org.json:json</include>
+                                    <include>org.yaml:snakeyaml</include>
                                 </includes>
                             </artifactSet>
                         </configuration>

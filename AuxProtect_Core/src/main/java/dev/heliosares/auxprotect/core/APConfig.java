@@ -4,7 +4,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.KeyUtil;
 import dev.heliosares.auxprotect.utils.TimeUtil;
-import dev.kshl.kshlib.yaml.YamlConfig;
+import dev.heliosares.auxprotect.utils.YamlConfig;
 
 import java.io.File;
 import java.io.IOException;

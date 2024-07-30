@@ -34,26 +34,10 @@
             <artifactId>jakarta.annotation-api</artifactId>
             <version>3.0.0</version>
         </dependency>
-
-        <!-- Clone https://github.com/ks-hl/KshLib, and `mvn install` it -->
         <dependency>
-            <groupId>dev.kshl</groupId>
-            <artifactId>KshLib</artifactId>
-            <version>1.0</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.spigotmc</groupId>
-                    <artifactId>**</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>net.md-5</groupId>
-                    <artifactId>**</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.velocitypowered</groupId>
-                    <artifactId>**</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>2.2</version>
         </dependency>
     </dependencies>
 

@@ -16,7 +16,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
-import dev.kshl.kshlib.yaml.YamlConfig;
+import dev.heliosares.auxprotect.utils.YamlConfig;
 import jakarta.annotation.Nullable;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;

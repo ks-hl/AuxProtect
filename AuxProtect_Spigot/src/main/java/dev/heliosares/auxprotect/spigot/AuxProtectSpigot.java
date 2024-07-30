@@ -51,7 +51,7 @@ import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
-import dev.kshl.kshlib.yaml.YamlConfig;
+import dev.heliosares.auxprotect.utils.YamlConfig;
 import jakarta.annotation.Nullable;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;

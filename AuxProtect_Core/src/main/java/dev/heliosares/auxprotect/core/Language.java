@@ -2,8 +2,8 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.kshl.kshlib.yaml.YamlConfig;
 
+import dev.heliosares.auxprotect.utils.YamlConfig;
 import jakarta.annotation.Nullable;
 import java.io.IOException;
 import java.util.Collection;
