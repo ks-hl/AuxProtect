@@ -22,7 +22,7 @@ public class XrayResults {
 
         Results.sendEntry(plugin, sender, en, -1, true, true, true);
 
-        final GenericBuilder message = new GenericBuilder();
+        final GenericBuilder message = new GenericBuilder(plugin);
         String xraycmd = "/ap xray rate %de %d";
         if (auto) {
             xraycmd += " -auto";

@@ -1,8 +1,8 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import net.ess3.api.IUser;
 import net.essentialsx.api.v2.events.TransactionEvent;
@@ -34,8 +34,7 @@ public class EssentialsListener implements Listener {
         if (loc == null) {
             plugin.add(new DbEntry(label, EntryAction.PAY, false, AuxProtectSpigot.getLabel(target.getBase()), amount));
         } else {
-            plugin.add(new DbEntry(label, EntryAction.PAY, false, loc,
-                    AuxProtectSpigot.getLabel(e.getTarget().getBase()), amount));
+            plugin.add(new SpigotDbEntry(label, EntryAction.PAY, false, loc, AuxProtectSpigot.getLabel(e.getTarget().getBase()), amount));
         }
     }
 }

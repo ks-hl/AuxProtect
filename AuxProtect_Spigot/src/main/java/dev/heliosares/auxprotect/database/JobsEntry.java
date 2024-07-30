@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener;
 import org.bukkit.Location;
 
-public class JobsEntry extends DbEntry {
+public class JobsEntry extends SpigotDbEntry {
 
     public final char type;
     private double value;
@@ -15,7 +15,7 @@ public class JobsEntry extends DbEntry {
     }
 
     public JobsEntry(String userLabel, String jobName, char type, double value) {
-        super(userLabel, EntryAction.JOBS, false, jobName, "");
+        super(userLabel, EntryAction.JOBS, false, null, jobName, "");
         this.value = value;
         this.type = type;
     }

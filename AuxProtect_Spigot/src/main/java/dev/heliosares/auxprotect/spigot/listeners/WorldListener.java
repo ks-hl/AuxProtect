@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.spigot.listeners;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
@@ -24,7 +25,7 @@ public class WorldListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onLightningStrikeEvent(LightningStrikeEvent e) {
-        plugin.add(new DbEntry("#env", EntryAction.LIGHTNING, false, e.getLightning().getLocation(), "", e.getLightning().isEffect() ? "effect" : ""));
+        plugin.add(new SpigotDbEntry("#env", EntryAction.LIGHTNING, false, e.getLightning().getLocation(), "", e.getLightning().isEffect() ? "effect" : ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -41,11 +42,11 @@ public class WorldListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RaidTriggerEvent e) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RAIDTRIGGER, false, e.getPlayer().getLocation(), "", "")), 3);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RAIDTRIGGER, false, e.getPlayer().getLocation(), "", "")), 3);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RaidSpawnWaveEvent e) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> e.getRaiders().forEach(raider -> plugin.add(new DbEntry("#raid", EntryAction.RAIDSPAWN, false, raider.getLocation(), AuxProtectSpigot.getLabel(raider), ""))), 1);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> e.getRaiders().forEach(raider -> plugin.add(new SpigotDbEntry("#raid", EntryAction.RAIDSPAWN, false, raider.getLocation(), AuxProtectSpigot.getLabel(raider), ""))), 1);
     }
 }

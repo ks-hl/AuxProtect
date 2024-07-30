@@ -17,13 +17,13 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.kshl.kshlib.yaml.YamlConfig;
+import jakarta.annotation.Nullable;
 import net.md_5.bungee.api.CommandSender;
 import net.md_5.bungee.api.chat.TextComponent;
 import net.md_5.bungee.api.connection.PendingConnection;
 import net.md_5.bungee.api.connection.ProxiedPlayer;
 import net.md_5.bungee.api.plugin.Plugin;
 
-import jakarta.annotation.Nullable;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -208,6 +208,11 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
+    public Set<String> getWorlds() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public boolean isPrimaryThread() {
         return false;
     }
@@ -215,6 +220,16 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     @Override
     public MessageBuilder getMessageBuilder() {
         return new BungeeMessageBuilder();
+    }
+
+    @Override
+    public Set<String> getEntityTypes() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<String> getItemTypes() {
+        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -299,13 +314,13 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public SenderAdapter getConsoleSender() {
+    public BungeeSenderAdapter getConsoleSender() {
         return new BungeeSenderAdapter(this, this.getProxy().getConsole());
     }
 
     @Nullable
     @Override
-    public SenderAdapter getSenderAdapter(String name) {
+    public BungeeSenderAdapter getSenderAdapter(String name) {
         ProxiedPlayer target = getProxy().getPlayer(name);
         if (target == null) return null;
         return new BungeeSenderAdapter(this, target);
@@ -333,7 +348,7 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
     }
 
     @Override
-    public APPlayerBungee getAPPlayer(SenderAdapter sender) {
+    public APPlayerBungee getAPPlayer(SenderAdapter<?, ?> sender) {
         if (!(sender.getSender() instanceof ProxiedPlayer proxiedPlayer)) return null;
         synchronized (apPlayers) {
             if (apPlayers.containsKey(sender.getUniqueId())) {
@@ -345,7 +360,7 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
         }
     }
 
-    public void removeAPPlayer(SenderAdapter sender) {
+    public void removeAPPlayer(SenderAdapter<?, ?> sender) {
         synchronized (apPlayers) {
             apPlayers.remove(sender.getUniqueId());
         }

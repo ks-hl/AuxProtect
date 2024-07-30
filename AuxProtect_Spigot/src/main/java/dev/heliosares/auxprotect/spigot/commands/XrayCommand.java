@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.spigot.commands;
 import dev.heliosares.auxprotect.adapters.message.ClickEvent;
 import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
 import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
-import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.Language;
@@ -19,6 +19,7 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
@@ -28,7 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.UUID;
 
-public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
+public class XrayCommand extends Command<CommandSender, AuxProtectSpigot, SpigotSenderAdapter> {
 
     public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMyy HHmm");
     HashMap<String, Results> results = new HashMap<>();
@@ -38,11 +39,11 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
     }
 
     @Override
-    public void onCommand(SA sender, String label, String[] args) throws CommandException {
+    public void onCommand(SpigotSenderAdapter sender, String label, String[] args) throws CommandException {
         if (sender.getPlatform().getLevel() != PlatformType.Level.SERVER) {
             throw new PlatformException();
         }
-        if (sender.getSender() instanceof Player player && plugin instanceof AuxProtectSpigot spigot) {
+        if (sender.getSender() instanceof Player player) {
             if (args.length > 1) {
                 boolean auto_ = false;
                 boolean override_ = false;
@@ -77,8 +78,8 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                         }
 
                         if (skip) {
-                            if (spigot.getVeinManager().skip(sender.getUniqueId(), time_)) {
-                                nextEntry(spigot, sender, auto);
+                            if (plugin.getVeinManager().skip(sender.getUniqueId(), time_)) {
+                                nextEntry(plugin, sender, auto);
                                 return;
                             }
                             sender.sendLang(Language.L.XRAY_NOTFOUND);
@@ -109,7 +110,7 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
 
                         entry = (XrayEntry) entries.get(0);
                     } else {
-                        entry = spigot.getVeinManager().current(sender.getUniqueId());
+                        entry = plugin.getVeinManager().current(sender.getUniqueId());
                     }
 
                     if (args.length >= 4) {
@@ -130,7 +131,7 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                         }
                         if (entry.getRating() >= 0 && !override) {
                             sender.sendLang(Language.L.XRAY_ALREADY_RATED);
-                            GenericBuilder message = new GenericBuilder();
+                            GenericBuilder message = new GenericBuilder(plugin);
                             message.append("[Overwrite]").color(GenericTextColor.RED).bold(true);
                             StringBuilder thiscmd = new StringBuilder("/" + label);
                             for (String arg : args) {
@@ -159,11 +160,11 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                         }
                         sender.sendLang(Language.L.XRAY_RATE_WRITTEN);
                         if (auto) {
-                            nextEntry(spigot, sender, true);
+                            nextEntry(plugin, sender, true);
                         }
                     } else {
                         try {
-                            XrayResults.sendEntry(spigot, sender, entry, auto);
+                            XrayResults.sendEntry(plugin, sender, entry, auto);
                         } catch (BusyException e) {
                             sender.sendLang(Language.L.DATABASE_BUSY);
                         } catch (SQLException e) {
@@ -219,7 +220,7 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                                     });
                                     sender.sendMessageRaw("&aDone!");
                                 } else {
-                                    GenericBuilder message = new GenericBuilder().append("Are you sure you want to rate all entries from " + name + " as 0?").color(GenericTextColor.RED);
+                                    GenericBuilder message = new GenericBuilder(plugin).append("Are you sure you want to rate all entries from " + name + " as 0?").color(GenericTextColor.RED);
                                     message.newLine();
                                     message.newLine();
                                     message.append("[Yes]").color(GenericTextColor.RED).bold(true);
@@ -248,12 +249,12 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                     sender.executeCommand(cmd);
                 }
             } else {
-                XrayEntry current = spigot.getVeinManager().current(sender.getUniqueId());
+                XrayEntry current = plugin.getVeinManager().current(sender.getUniqueId());
                 if (current != null) {
                     sender.executeCommand(String.format(plugin.getCommandPrefix() + " tp %d %d %d %s %d %d", current.getX(),
                             current.getY(), current.getZ(), current.getWorld(), 45, 0));
                     try {
-                        XrayResults.sendEntry(spigot, sender, current, true);
+                        XrayResults.sendEntry(plugin, sender, current, true);
                     } catch (BusyException e) {
                         sender.sendLang(Language.L.DATABASE_BUSY);
                         return;
@@ -262,12 +263,12 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                         return;
                     }
                 }
-                nextEntry(spigot, sender, true);
+                nextEntry(plugin, sender, true);
             }
         }
     }
 
-    private void nextEntry(AuxProtectSpigot plugin, SA player, boolean auto) {
+    private void nextEntry(AuxProtectSpigot plugin, SpigotSenderAdapter player, boolean auto) {
         XrayEntry en = plugin.getVeinManager().next(player.getUniqueId());
         if (en == null) {
             player.sendLang(Language.L.XRAY_DONE);
@@ -290,7 +291,7 @@ public class XrayCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
     }
 
     @Override
-    public List<String> onTabComplete(SA sender, String label, String[] args) {
+    public List<String> onTabComplete(SpigotSenderAdapter sender, String label, String[] args) {
         // TODO This whole thing...
         return null;
     }

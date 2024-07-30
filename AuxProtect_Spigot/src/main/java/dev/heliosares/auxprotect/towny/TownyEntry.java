@@ -1,15 +1,15 @@
 package dev.heliosares.auxprotect.towny;
 
-import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 
 import java.sql.SQLException;
 
-public class TownyEntry extends DbEntry {
+public class TownyEntry extends SpigotDbEntry {
 
     public TownyEntry(String userLabel, EntryAction action, boolean state, Location location, String targetLabel,
                       String data) throws NullPointerException {
@@ -17,7 +17,7 @@ public class TownyEntry extends DbEntry {
     }
 
     public TownyEntry(String userLabel, EntryAction action, boolean state, String targetLabel, String data) {
-        super(userLabel, action, state, targetLabel, data);
+        super(userLabel, action, state, null, targetLabel, data);
     }
 
     public TownyEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,

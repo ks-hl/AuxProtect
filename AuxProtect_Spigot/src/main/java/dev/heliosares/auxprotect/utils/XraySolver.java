@@ -3,6 +3,7 @@ package dev.heliosares.auxprotect.utils;
 import dev.heliosares.auxprotect.adapters.message.ClickEvent;
 import dev.heliosares.auxprotect.adapters.message.GenericBuilder;
 import dev.heliosares.auxprotect.adapters.message.GenericTextColor;
+import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.XrayEntry;
@@ -15,8 +16,8 @@ import java.util.List;
 
 public class XraySolver {
 
-    public static GenericBuilder solve(List<DbEntry> entries) throws SQLException, BusyException {
-        GenericBuilder message = new GenericBuilder();
+    public static GenericBuilder solve(IAuxProtect plugin, List<DbEntry> entries) throws SQLException, BusyException {
+        GenericBuilder message = new GenericBuilder(plugin);
         HashMap<String, ArrayList<DbEntry>> hash = new HashMap<>();
         for (int i = entries.size() - 1; i >= 0; i--) {
             DbEntry entry = entries.get(i);

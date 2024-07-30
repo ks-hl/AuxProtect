@@ -8,6 +8,7 @@ import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
@@ -192,7 +193,7 @@ public class TownyManager implements Runnable {
                     double balance = town.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) continue;
                     lastBalances.put(town.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                    plugin.add(new SpigotDbEntry(getLabel(town), EntryAction.TOWNBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
                 }
             }
         }
@@ -205,7 +206,7 @@ public class TownyManager implements Runnable {
                     double balance = nation.getAccount().getHoldingBalance();
                     if (lastBalance != null && Math.abs(lastBalance - balance) < 1E-6) return;
                     lastBalances.put(nation.getUUID(), balance);
-                    plugin.add(new DbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
+                    plugin.add(new SpigotDbEntry(getLabel(nation), EntryAction.NATIONBALANCE, false, null, "periodic", plugin.formatMoney(balance)));
                 }
             }
         }

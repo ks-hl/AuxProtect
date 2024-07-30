@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InventoryUtil_1_20;
@@ -70,8 +71,7 @@ public class InventoryListener implements Listener {
         if (location == null) {
             location = player.getLocation();
         }
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label,
-                count + " items in inventory.");
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.INV, state, location, label, count + " items in inventory.");
         plugin.add(entry);
     }
 
@@ -172,7 +172,7 @@ public class InventoryListener implements Listener {
             entryItems = new ItemStack[]{e.getCurrentItem()};
         } else return;
 
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getWhoClicked()), action, false, e.getWhoClicked().getLocation(), e.getCurrentItem().getType().toString().toLowerCase(), data);
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getWhoClicked()), action, false, e.getWhoClicked().getLocation(), e.getCurrentItem().getType().toString().toLowerCase(), data);
 
         if (entryItems != null) {
             try {

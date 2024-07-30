@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Activity;
 import dev.heliosares.auxprotect.core.IAuxProtect;
@@ -7,6 +8,7 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PickupEntry;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.ChartRenderer;
 import dev.heliosares.auxprotect.utils.InvSerialization;
@@ -82,14 +84,14 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityDismountEvent(EntityDismountEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.MOUNT, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.MOUNT, false,
                 e.getDismounted().getLocation(), AuxProtectSpigot.getLabel(e.getDismounted()), "");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityMountEvent(EntityMountEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.MOUNT, true,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.MOUNT, true,
                 e.getMount().getLocation(), AuxProtectSpigot.getLabel(e.getMount()), "");
         plugin.add(entry);
     }
@@ -114,7 +116,7 @@ public class EntityListener implements Listener {
         } else {
             cause = "#env";
         }
-        DbEntry entry = new DbEntry(cause, EntryAction.EXPLODE, true, e.getEntity().getLocation(),
+        DbEntry entry = new SpigotDbEntry(cause, EntryAction.EXPLODE, true, e.getEntity().getLocation(),
                 AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }
@@ -182,7 +184,7 @@ public class EntityListener implements Listener {
                 // Going to log both for now. Repetitive, but it seems more intuitive.
             }
         }
-        DbEntry entry = new DbEntry(sourceName, action, false, e.getEntity().getLocation(), targetName, itemname);
+        DbEntry entry = new SpigotDbEntry(sourceName, action, false, e.getEntity().getLocation(), targetName, itemname);
         plugin.add(entry);
     }
 
@@ -220,14 +222,14 @@ public class EntityListener implements Listener {
                 && ((LivingEntity) e.getEntity()).getHealth() - e.getFinalDamage() <= 0) {
             reason = EntryAction.KILL;
         }
-        DbEntry entry = new DbEntry("#env", reason, false, e.getEntity().getLocation(), targetName,
+        DbEntry entry = new SpigotDbEntry("#env", reason, false, e.getEntity().getLocation(), targetName,
                 e.getCause() + ", " + (Math.round(e.getFinalDamage() * 10) / 10.0) + "HP");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onResurrect(EntityResurrectEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.TOTEM, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.TOTEM, false,
                 e.getEntity().getLocation(), "", "");
         plugin.add(entry);
     }
@@ -269,7 +271,7 @@ public class EntityListener implements Listener {
 
             plugin.getAPPlayer(player).addActivity(Activity.PICKUP);
 
-            if (isChartMap(e.getItem().getItemStack()) && !APPermission.LOOKUP_MONEY.hasPermission(player)) {
+            if (isChartMap(e.getItem().getItemStack()) && !APPermission.LOOKUP_MONEY.hasPermission(new SpigotSenderAdapter(plugin, player))) {
                 e.setCancelled(true);
                 e.getItem().remove();
             }
@@ -293,7 +295,7 @@ public class EntityListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onTame(EntityTameEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getOwner()), EntryAction.TAME, false,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }

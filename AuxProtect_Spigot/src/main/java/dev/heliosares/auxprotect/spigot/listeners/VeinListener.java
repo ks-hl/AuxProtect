@@ -1,10 +1,12 @@
 package dev.heliosares.auxprotect.spigot.listeners;
 
+import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.PerPlayerManager;
+import jakarta.annotation.Nullable;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
@@ -13,11 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import jakarta.annotation.Nullable;
 import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.UUID;
 
 public class VeinListener implements Listener {
 
@@ -30,27 +28,18 @@ public class VeinListener implements Listener {
     private static final int NON_ORE_RADIUS = 10;
     private static final int ORE_RADIUS = 5;
     private static final int NON_ORE_THRESHOLD = 2;
-    final PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(() -> new BlockHistory());
+    final PerPlayerManager<BlockHistory> blockhistory = new PerPlayerManager<>(BlockHistory::new);
     private final AuxProtectSpigot plugin;
 
     public VeinListener(AuxProtectSpigot plugin) {
         this.plugin = plugin;
 
         // Maybe overkill, just preventing memory leaks
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                synchronized (blockhistory) {
-                    Iterator<Entry<UUID, BlockHistory>> it = blockhistory.entrySet().iterator();
-                    while (it.hasNext()) {
-                        Entry<UUID, BlockHistory> entry = it.next();
-                        if (entry.getValue().timeSinceUsed() > 300000L) {
-                            it.remove();
-                        }
-                    }
-                }
+        plugin.getServer().getScheduler().runTaskTimerAsynchronously(plugin, () -> {
+            synchronized (blockhistory) {
+                blockhistory.entrySet().removeIf(entry -> entry.getValue().timeSinceUsed() > 300000L);
             }
-        }.runTaskTimerAsynchronously(plugin, 20 * 60 * 5, 20 * 60 * 5);
+        }, 20L * 60L * 5L, 20L * 60L * 5L);
 
         NETHER_CHECK.add(Material.ANCIENT_DEBRIS);
 
@@ -66,11 +55,11 @@ public class VeinListener implements Listener {
         if (!EntryAction.VEIN.isEnabled()) {
             return;
         }
-        if (APPermission.XRAY_EXEMPT.hasPermission(e.getPlayer())) {
+        if (APPermission.XRAY_EXEMPT.hasPermission(new SpigotSenderAdapter(plugin, e.getPlayer()))) {
             return;
         }
 
-        boolean ore = false;
+        boolean ore;
         switch (e.getBlock().getWorld().getEnvironment()) {
             case NETHER:
                 if (e.getBlock().getY() > NETHER_MAXY) {

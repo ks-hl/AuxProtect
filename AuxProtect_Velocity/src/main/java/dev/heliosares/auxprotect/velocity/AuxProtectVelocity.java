@@ -11,6 +11,8 @@ import com.velocitypowered.api.proxy.ConsoleCommandSource;
 import com.velocitypowered.api.proxy.Player;
 import com.velocitypowered.api.proxy.ProxyServer;
 import dev.heliosares.auxprotect.AuxProtectVersion;
+import dev.heliosares.auxprotect.adapters.message.MessageBuilder;
+import dev.heliosares.auxprotect.adapters.message.VelocityMessageBuilder;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.VelocitySenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
@@ -26,9 +28,10 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.kshl.kshlib.yaml.YamlConfig;
-import net.kyori.adventure.text.Component;
-
 import jakarta.annotation.Nullable;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -380,6 +383,36 @@ public final class AuxProtectVelocity implements IAuxProtect {
         server.getAllPlayers().stream().filter(player -> player.hasPermission(node.node)).forEach(player -> player.sendMessage(Component.text(msg)));
     }
 
+    @Override
+    public boolean doesWorldExist(String world) {
+        return false;
+    }
+
+    @Override
+    public Set<String> getWorlds() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean isPrimaryThread() {
+        return false;
+    }
+
+    @Override
+    public MessageBuilder getMessageBuilder() {
+        return new VelocityMessageBuilder();
+    }
+
+    @Override
+    public Set<String> getEntityTypes() {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Set<String> getItemTypes() {
+        throw new UnsupportedOperationException();
+    }
+
     public String formatMoney(double d) {
         if (!Double.isFinite(d) || Double.isNaN(d)) {
             return "$NaN";
@@ -393,5 +426,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     public ProxyServer getProxy() {
         return server;
+    }
+
+    public static String toString(Component component) {
+        return PlainTextComponentSerializer.plainText().serialize(component);
     }
 }

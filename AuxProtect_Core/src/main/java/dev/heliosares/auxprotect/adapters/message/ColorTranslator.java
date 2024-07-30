@@ -19,8 +19,4 @@ public class ColorTranslator {
     public static String stripColor(@NotNull String text) {
         return text.replaceAll("[§&][0-9a-flmnorA-FLMNOR]", "");
     }
-
-//    public static String toString(Component component) {
-//        return PlainTextComponentSerializer.plainText().serialize(component);
-//    }
 }

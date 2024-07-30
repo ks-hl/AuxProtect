@@ -48,11 +48,10 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>
-                                    <include>dev.heliosares:*</include>
-                                    <include>dev.kshl:*</include>
+                                    <include>dev.heliosares:**</include>
+                                    <include>dev.kshl:**</include>
                                 </includes>
                             </artifactSet>
-                            <minimizeJar>true</minimizeJar>
                         </configuration>
                     </execution>
                 </executions>
@@ -123,6 +122,12 @@
         <dependency>
             <groupId>dev.heliosares</groupId>
             <artifactId>AuxProtect_Bungee</artifactId>
+            <version>${revision}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>dev.heliosares</groupId>
+            <artifactId>AuxProtect_Velocity</artifactId>
             <version>${revision}</version>
         </dependency>
     </dependencies>

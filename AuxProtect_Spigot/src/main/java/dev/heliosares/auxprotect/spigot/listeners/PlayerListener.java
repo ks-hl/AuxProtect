@@ -10,6 +10,7 @@ import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
+import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -97,7 +98,7 @@ public class PlayerListener implements Listener {
         }
         plugin.getAPPlayer(player).lastLoggedMoney = System.currentTimeMillis();
         try {
-            plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
+            plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.MONEY, false, player.getLocation(),
                     reason, plugin.formatMoney(plugin.getEconomy().getBalance(player))));
         } catch (NullPointerException ignored) {
             // CMI producing a NullPointerException for an unknown reason, irrelevant to this plugin.
@@ -125,7 +126,7 @@ public class PlayerListener implements Listener {
             if (item.getType() == Material.NAME_TAG) {
                 ItemMeta meta = item.getItemMeta();
                 if (meta != null && meta.hasDisplayName()) {
-                    plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.NAMETAG, true,
+                    plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.NAMETAG, true,
                             e.getRightClicked().getLocation(), AuxProtectSpigot.getLabel(e.getRightClicked()), meta.getDisplayName()));
                 }
             }
@@ -174,14 +175,14 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityToggleGlideEvent(EntityToggleGlideEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.ELYTRA, e.isGliding(),
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getEntity()), EntryAction.ELYTRA, e.isGliding(),
                 e.getEntity().getLocation(), "", "");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerGameModeChangeEvent(PlayerGameModeChangeEvent e) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.GAMEMODE, false,
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.GAMEMODE, false,
                 e.getPlayer().getLocation(), e.getNewGameMode().toString(), ""));
     }
 
@@ -199,13 +200,15 @@ public class PlayerListener implements Listener {
                 sup = type.toString().toLowerCase();
             }
         }
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CONSUME, false,
                 e.getPlayer().getLocation(), e.getItem().getType().toString().toLowerCase(), sup);
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerJoinEvent(PlayerJoinEvent e) {
+        SpigotSenderAdapter senderAdapter = new SpigotSenderAdapter(plugin, e.getPlayer());
+
         APPlayerSpigot apPlayer = plugin.getAPPlayer(e.getPlayer());
         apPlayer.lastMoved = System.currentTimeMillis();
         logMoney(plugin, e.getPlayer(), "join");
@@ -224,7 +227,7 @@ public class PlayerListener implements Listener {
                     plugin.print(ex);
                 }
             });
-            if (APPermission.LOOKUP.hasPermission(e.getPlayer()) || APPermission.CSLOGS.hasPermission(e.getPlayer()) && EntryAction.SHOP_CS.isEnabled()) {
+            if (APPermission.LOOKUP.hasPermission(senderAdapter) || APPermission.CSLOGS.hasPermission(senderAdapter) && EntryAction.SHOP_CS.isEnabled()) {
                 plugin.getServer().getScheduler().runTaskAsynchronously(plugin, apPlayer::getTimeZone);
             }
         }
@@ -241,10 +244,9 @@ public class PlayerListener implements Listener {
             } catch (SQLException | BusyException e1) {
                 return;
             }
-            SpigotSenderAdapter senderAdapter = new SpigotSenderAdapter(plugin, e.getPlayer());
             senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_WAITING);
             senderAdapter.sendLang(Language.L.COMMAND__INV__NOTIFY_PLAYER_ENSURE_ROOM);
-            GenericBuilder message = new GenericBuilder();
+            GenericBuilder message = new GenericBuilder(plugin);
             message.newLine();
             message.append("         ");
             if (e.getPlayer().getUniqueId().getMostSignificantBits() == 0) { // bedrock player
@@ -258,7 +260,7 @@ public class PlayerListener implements Listener {
             e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
         }, 40);
 
-        if (plugin.update != null && APPermission.ADMIN.hasPermission(e.getPlayer())) {
+        if (plugin.update != null && APPermission.ADMIN.hasPermission(senderAdapter)) {
             plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.tellAboutUpdate(e.getPlayer()), 20);
         }
     }
@@ -323,32 +325,32 @@ public class PlayerListener implements Listener {
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerKickEvent(PlayerKickEvent e) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.KICK, false,
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.KICK, false,
                 e.getPlayer().getLocation(), "", e.getReason()));
     }
 
     protected void logSession(Player player, boolean login, String supp) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
                 supp));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerLeashEntityEvent(PlayerLeashEntityEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, true,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, true,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onEntityPlaceEvent(EntityPlaceEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ENTITY, true,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.ENTITY, true,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), "");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onVehicleDestroyEvent(VehicleDestroyEvent e) {
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getAttacker()), EntryAction.ENTITY, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getAttacker()), EntryAction.ENTITY, false,
                 e.getVehicle().getLocation(), AuxProtectSpigot.getLabel(e.getVehicle()), "");
         plugin.add(entry);
     }
@@ -364,14 +366,14 @@ public class PlayerListener implements Listener {
 
         boolean tether = entity.getLeashHolder().getType().toString().startsWith("LEASH_");
 
-        DbEntry entry = new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, false,
+        DbEntry entry = new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.LEASH, false,
                 e.getEntity().getLocation(), AuxProtectSpigot.getLabel(e.getEntity()), tether ? "was tethered" : "");
         plugin.add(entry);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onPlayerRespawnEvent(PlayerRespawnEvent e) {
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RESPAWN, false,
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RESPAWN, false,
                 e.getRespawnLocation(), "", ""));
     }
 
@@ -379,14 +381,14 @@ public class PlayerListener implements Listener {
     public void onCommand(PlayerCommandPreprocessEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.COMMAND);
 
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.COMMAND, false,
                 e.getPlayer().getLocation(), e.getMessage(), ""));
     }
 
     @EventHandler(ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.CHAT);
-        plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
         if (plugin.getAPConfig().isDemoMode()) {
             e.getPlayer().sendMessage(GenericTextColor.RED + "Chat is disabled.");
             e.setCancelled(true);

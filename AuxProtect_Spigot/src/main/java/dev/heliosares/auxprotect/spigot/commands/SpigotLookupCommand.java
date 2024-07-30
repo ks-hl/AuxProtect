@@ -69,7 +69,7 @@ public class SpigotLookupCommand extends LookupCommand<CommandSender, AuxProtect
                     }
                 }
             }
-            XraySolver.solve(rs).send(sender);
+            XraySolver.solve(plugin, rs).send(sender);
             return;
         } else if (params_.hasFlag(Parameters.Flag.MONEY) && sender.getPlatform().getLevel() == PlatformType.Level.SERVER) {
             Set<String> users = params_.getUsers();
