@@ -2,9 +2,9 @@ package dev.heliosares.auxprotect.core;
 
 import dev.heliosares.auxprotect.adapters.message.ColorTranslator;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-
 import dev.heliosares.auxprotect.utils.YamlConfig;
 import jakarta.annotation.Nullable;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -16,6 +16,7 @@ public class Language {
     private static Supplier<YamlConfig> defaultLangSupplier;
     private static IAuxProtect plugin;
     private static YamlConfig lang;
+    private static YamlConfig defaultLang;
     private static String c1;
     private static String c2;
     private static String c3;
@@ -28,7 +29,9 @@ public class Language {
     }
 
     public static void reload() throws IOException {
-        YamlConfig defaultLang = defaultLangSupplier.get();
+        defaultLang = defaultLangSupplier.get();
+        defaultLang.load();
+
         lang = langSupplier.get();
         lang.load();
 
@@ -234,6 +237,9 @@ public class Language {
                 }
                 if (lang != null) {
                     message = lang.getString(name).orElse(null);
+                }
+                if (message == null && defaultLang != null) {
+                    message = defaultLang.getString(name).orElse(null);
                 }
                 if (message == null) throw new IllegalArgumentException("Message not found: " + name);
                 message = convert(message);
