@@ -187,7 +187,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             SERVER_VERSION = 16;
             print(e);
         }
-        debug("Compatability version: " + SERVER_VERSION, 1);
+        debug("Compatibility version: " + SERVER_VERSION, 1);
 
         File sqliteFile = null;
         String uri;

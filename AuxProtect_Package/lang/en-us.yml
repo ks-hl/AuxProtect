@@ -3,7 +3,7 @@
 # the file in the plugin directory will be replaced with the included file.
 # If you don't want your language file being reset with new versions, set this version number to 99999
 
-version: 9
+version: 10
 
 color:
   p: '9'
@@ -120,7 +120,12 @@ command:
     - '&sSee tab completion for list of valid tables.'
     - '&sMinimum time is 2 weeks.'
   time:
-    server-time: '&pServer time:'
+    click-to-copy: 'Click any line to copy'
+    epoch-time: 'Epoch Time'
+    formatted: 'Formatted'
+    relative: 'Relative'
+    relative-expanded: 'Relative Expanded'
+    server-time: '&pServer time'
 playernotfound: '&cPlayer not found.'
 lookup-playernotfound: '&cPlayer <target> not found.'
 lookup-unknownaction: '&cUnknown action: <action>.'
@@ -150,6 +155,7 @@ results:
     last: '&pJump to Last Page'
   redacted: 'REDACTED'
   time: '&t<time> ago'
+  time-from-now: '&t<time> from now'
   time-now: '&tJust Now'
   view: 'View'
   view-inv: 'View Inv'
