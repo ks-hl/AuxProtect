@@ -25,7 +25,7 @@
         <profile>
             <id>include-auxprotect-private</id>
             <modules>
-                <module>AuxProtect_Private</module>
+                <module>AuxProtect_PrivateModule</module>
             </modules>
         </profile>
     </profiles>

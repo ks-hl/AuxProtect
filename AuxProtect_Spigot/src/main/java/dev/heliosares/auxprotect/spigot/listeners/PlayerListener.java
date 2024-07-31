@@ -15,7 +15,6 @@ import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
-import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -280,7 +279,6 @@ public class PlayerListener implements Listener {
         apPlayer.logPostTeleportPos(e.getTo());
         apPlayer.lastLoggedPos = System.currentTimeMillis();
         boolean sameWorld = Objects.equals(e.getFrom().getWorld(), e.getTo().getWorld());
-        if (!sameWorld || e.getFrom().distance(e.getTo()) > 64) PlaybackSolver.close(e.getPlayer().getUniqueId());
 
         if (!plugin.getAPConfig().isInventoryOnWorldChange() || sameWorld) return;
 

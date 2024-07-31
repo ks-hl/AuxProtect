@@ -44,7 +44,6 @@ import dev.heliosares.auxprotect.spigot.listeners.WorldListener;
 import dev.heliosares.auxprotect.towny.TownyListener;
 import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.Pane;
-import dev.heliosares.auxprotect.utils.PlaybackSolver;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.heliosares.auxprotect.utils.YamlConfig;
@@ -629,7 +628,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             sqlManager = null;
         }
         Pane.shutdown();
-        PlaybackSolver.shutdown();
         info("Done disabling.");
     }
 
