@@ -7,23 +7,17 @@ import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.APConfig;
 import dev.heliosares.auxprotect.core.APPermission;
-import dev.heliosares.auxprotect.core.Activity;
-import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.EntryLoader;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.SpigotDatabaseRunnable;
-import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.SpigotSQLManager;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.spigot.commands.CSLogsCommand;
 import dev.heliosares.auxprotect.spigot.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.spigot.listeners.AuctionHouseListener;
 import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
@@ -39,7 +33,6 @@ import dev.heliosares.auxprotect.spigot.listeners.PlayerAuctionsListener;
 import dev.heliosares.auxprotect.spigot.listeners.PlayerListener;
 import dev.heliosares.auxprotect.spigot.listeners.ProjectileListener;
 import dev.heliosares.auxprotect.spigot.listeners.ShopGUIPlusListener;
-import dev.heliosares.auxprotect.spigot.listeners.VeinListener;
 import dev.heliosares.auxprotect.spigot.listeners.WorldListener;
 import dev.heliosares.auxprotect.towny.TownyListener;
 import dev.heliosares.auxprotect.towny.TownyManager;
@@ -74,7 +67,6 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -99,7 +91,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
     private Economy econ;
-    private VeinManager veinManager;
     private ClaimInvCommand claiminvcommand;
     private APSCommand apcommand;
     private int SERVER_VERSION;
@@ -223,65 +214,14 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             pass = getAPConfig().getPass();
         }
         try {
-            sqlManager = new SpigotSQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
+            sqlManager = newSQLManager(uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
         } catch (ClassNotFoundException e) {
             warning("No driver for SQL found. Disabling");
             setEnabled(false);
             throw new RuntimeException(e);
         }
-        veinManager = new VeinManager();
 
-        new BukkitRunnable() {
-
-            @Override
-            public void run() {
-                try {
-                    sqlManager.connect();
-                    if (!config.isSkipRowCount()) sqlManager.count();
-                } catch (Exception e) {
-                    print(e);
-                    getLogger().severe("Failed to connect to SQL database. Disabling.");
-                    setEnabled(false);
-                    return;
-                }
-
-                if (EntryAction.VEIN.isEnabled()) {
-                    getSqlManager().getLookupManager().addLoader(new EntryLoader(
-                            data -> data.table() == Table.AUXPROTECT_XRAY,
-                            data -> {
-                                short rating = data.rs().getShort("rating");
-                                return new XrayEntry(data.time(), data.uid(), data.world(), data.x(), data.y(), data.z(), data.target_id(), rating, data.data());
-                            }
-                    ));
-                    try {
-                        ArrayList<DbEntry> veins = sqlManager.getAllUnratedXrayRecords(System.currentTimeMillis() - (3600000L * 24L * 7L));
-                        if (veins != null) {
-                            for (DbEntry vein : veins) {
-                                veinManager.add((XrayEntry) vein);
-                            }
-                        }
-                    } catch (Exception e) {
-                        print(e);
-                        return;
-                    }
-                }
-                long lastloaded = 0;
-                try {
-                    lastloaded = sqlManager.getLast(SQLManager.LastKeys.TELEMETRY);
-                } catch (SQLException | BusyException ignored) {
-                }
-                long delay = 15 * 20;
-                if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
-                    debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
-                } else {
-                    debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
-                    delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
-                }
-
-                getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
-
-            }
-        }.runTaskAsynchronously(this);
+        getServer().getScheduler().runTaskAsynchronously(this, this::initDatabase);
 
         dbRunnable = new SpigotDatabaseRunnable(this, sqlManager);
 
@@ -294,7 +234,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         getServer().getPluginManager().registerEvents(new PaneListener(this), this);
         getServer().getPluginManager().registerEvents(new WorldListener(this), this);
         getServer().getPluginManager().registerEvents(new CommandListener(this), this);
-        getServer().getPluginManager().registerEvents(new VeinListener(this), this);
 
         // this feels cursed to run setupEconomy() like this...
         Telemetry.reportHook(this, "Vault", setupEconomy());
@@ -326,7 +265,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
-        if (config.isPrivate()) Objects.requireNonNull(this.getCommand("cslogs")).setExecutor(new CSLogsCommand(this));
         Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = createAPSCommand()));
         Objects.requireNonNull(this.getCommand("auxprotect")).setTabCompleter(apcommand);
 
@@ -361,7 +299,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             }
         }.runTaskLater(this, 60);
 
-        if (!config.isPrivate()) {
+        if (!isPrivate()) {
             EntryAction.ALERT.setEnabled(false);
             EntryAction.CENSOR.setEnabled(false);
             EntryAction.IGNOREABANDONED.setEnabled(false);
@@ -377,7 +315,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         new BukkitRunnable() {
 
             private boolean running;
-            private int lastLoggedActivityMinute = -1;
 
             @Override
             public void run() {
@@ -391,83 +328,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     synchronized (apPlayers) {
                         players = new ArrayList<>(apPlayers.values());
                     }
-                    Calendar calendar = Calendar.getInstance();
-                    int minute = calendar.get(Calendar.MINUTE);
-                    int second = calendar.get(Calendar.SECOND);
 
-                    boolean logActivity = lastLoggedActivityMinute != minute && second >= 30;
-                    // Put in the middle of the minute to make parsing it later easier
-                    if (logActivity) {
-                        lastLoggedActivityMinute = minute;
-                    }
                     for (APPlayerSpigot apPlayer : players) {
-                        if (!apPlayer.getPlayer().isOnline()) {
-                            continue;
-                        }
-
-                        if (config.getInventoryInterval() > 0) {
-                            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config.getInventoryInterval()) {
-                                apPlayer.logInventory("periodic");
-                            }
-                        }
-
-                        if (config.getMoneyInterval() > 0) {
-                            if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
-                                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.getPlayer(), "periodic");
-                            }
-                        }
-
-                        if (config.getPosInterval() > 0) {
-                            if (apPlayer.lastMoved > apPlayer.lastLoggedPos && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
-                                apPlayer.logPos(apPlayer.getPlayer().getLocation());
-                            } else if (config.doLogIncrementalPosition()) {
-                                apPlayer.tickDiffPos();
-                            }
-                        }
-
-                        if (getTownyManager() != null) {
-                            getTownyManager().run();
-                        }
-
-                        if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
-                            apPlayer.lastCheckedMovement = System.currentTimeMillis();
-                            apPlayer.move();
-                        }
-
-                        if (logActivity && config.isPrivate()) {
-                            if (Set.of("flat", "void").contains(apPlayer.getPlayer().getWorld().getName()) && config.isPrivate()) {
-                                apPlayer.addActivity(Activity.IN_SPAWN);
-                            }
-
-                            add(new SpigotDbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ACTIVITY, false, apPlayer.getPlayer().getLocation(), "", apPlayer.concludeActivityForMinute()));
-
-                            int tallied = 0;
-                            int inactive = 0;
-                            for (ActivityRecord record : apPlayer.getActivityStack()) {
-                                if (record == null || record.activities().isEmpty()) {
-                                    continue;
-                                }
-                                tallied++;
-                                if (record.countScore() < 10) {
-                                    inactive++;
-                                }
-                            }
-                            if (tallied >= 15 && (double) inactive / (double) tallied > 0.75
-                                    && !APPermission.BYPASS_INACTIVE.hasPermission(apPlayer.getSenderAdapter())) {
-                                if (System.currentTimeMillis() - apPlayer.lastNotifyInactive > 600000L) {
-                                    apPlayer.lastNotifyInactive = System.currentTimeMillis();
-                                    String msg = Language.translate(Language.L.INACTIVE_ALERT, apPlayer.getPlayer().getName(), inactive, tallied);
-                                    for (Player player : Bukkit.getOnlinePlayers()) {
-                                        if (APPermission.NOTIFY_INACTIVE.hasPermission(apPlayer.getSenderAdapter())) {
-                                            player.sendMessage(msg);
-                                        }
-                                    }
-                                    info(msg);
-                                    add(new SpigotDbEntry(AuxProtectSpigot.getLabel(apPlayer.getPlayer()), EntryAction.ALERT, false,
-                                            apPlayer.getPlayer().getLocation(), "inactive", inactive + "/" + tallied));
-                                }
-                            }
-                        }
+                        periodicPlayerTick(apPlayer);
                     }
                 } finally {
                     running = false;
@@ -548,6 +411,73 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
+    protected SpigotSQLManager newSQLManager(String uri, String tablePrefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
+        return new SpigotSQLManager(this, uri, tablePrefix, sqliteFile, mysql, user, pass);
+    }
+
+    protected void periodicPlayerTick(APPlayerSpigot apPlayer) {
+        if (!apPlayer.getPlayer().isOnline()) {
+            return;
+        }
+
+        if (config.getInventoryInterval() > 0) {
+            if (System.currentTimeMillis() - apPlayer.lastLoggedInventory >= config.getInventoryInterval()) {
+                apPlayer.logInventory("periodic");
+            }
+        }
+
+        if (config.getMoneyInterval() > 0) {
+            if (System.currentTimeMillis() - apPlayer.lastLoggedMoney >= config.getMoneyInterval()) {
+                PlayerListener.logMoney(AuxProtectSpigot.this, apPlayer.getPlayer(), "periodic");
+            }
+        }
+
+        if (config.getPosInterval() > 0) {
+            if (apPlayer.lastMoved > apPlayer.lastLoggedPos && System.currentTimeMillis() - apPlayer.lastLoggedPos >= config.getPosInterval()) {
+                apPlayer.logPos(apPlayer.getPlayer().getLocation());
+            } else if (config.doLogIncrementalPosition()) {
+                apPlayer.tickDiffPos();
+            }
+        }
+
+        if (getTownyManager() != null) {
+            getTownyManager().run();
+        }
+
+        if (System.currentTimeMillis() - apPlayer.lastCheckedMovement >= 1000) {
+            apPlayer.lastCheckedMovement = System.currentTimeMillis();
+            apPlayer.move();
+        }
+    }
+
+    protected void initDatabase() {
+        try {
+            sqlManager.connect();
+            if (!config.isSkipRowCount()) sqlManager.count();
+        } catch (Exception e) {
+            print(e);
+            getLogger().severe("Failed to connect to SQL database. Disabling.");
+            setEnabled(false);
+            return;
+        }
+
+        long lastloaded = 0;
+        try {
+            lastloaded = sqlManager.getLast(SQLManager.LastKeys.TELEMETRY);
+        } catch (SQLException | BusyException ignored) {
+        }
+        long delay = 15 * 20;
+        if (System.currentTimeMillis() - lastloaded > 1000 * 60 * 60) {
+            debug("Initializing telemetry. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
+        } else {
+            debug("Delaying telemetry initialization to avoid rate-limiting. THIS MESSAGE WILL DISPLAY REGARDLESS OF WHETHER BSTATS CONFIG IS ENABLED. THIS DOES NOT INHERENTLY MEAN ITS ENABLED", 3);
+            delay = (1000 * 60 * 60 - (System.currentTimeMillis() - lastloaded)) / 50;
+        }
+
+        getServer().getScheduler().runTaskLater(AuxProtectSpigot.this, () -> Telemetry.init(AuxProtectSpigot.this, 14232), delay);
+
+    }
+
     private boolean hook(Supplier<Listener> listener, String... names) {
         boolean hook;
         try {
@@ -585,12 +515,16 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         return null;
     }
 
+    protected APPlayerSpigot newAPPlayer(Player player) {
+        return new APPlayerSpigot(this, player);
+    }
+
     public APPlayerSpigot getAPPlayer(Player player) {
         synchronized (apPlayers) {
             if (apPlayers.containsKey(player.getUniqueId())) {
                 return apPlayers.get(player.getUniqueId());
             }
-            APPlayerSpigot apPlayer = new APPlayerSpigot(this, player);
+            APPlayerSpigot apPlayer = newAPPlayer(player);
             apPlayers.put(player.getUniqueId(), apPlayer);
             return apPlayer;
         }
@@ -679,6 +613,11 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
+    public boolean isPrivate() {
+        return false;
+    }
+
+    @Override
     public void info(String string) {
         string = ChatColor.stripColor(string);
         this.getLogger().info(string);
@@ -741,19 +680,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public void add(DbEntry entry) {
-        // This is only async because veinManager performs SQL lookups
-        runAsync(() -> {
-            if (entry instanceof XrayEntry) {
-                if (veinManager.add((XrayEntry) entry)) {
-                    return;
-                }
-            }
-            dbRunnable.add(entry);
-        });
-    }
-
-    public VeinManager getVeinManager() {
-        return veinManager;
+        dbRunnable.add(entry);
     }
 
     @Override
@@ -782,7 +709,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Nullable
     @Override
-    public SenderAdapter getSenderAdapter(String name) {
+    public SpigotSenderAdapter getSenderAdapter(String name) {
         Player target = getServer().getPlayer(name);
         if (target == null) return null;
         return new SpigotSenderAdapter(this, target);
@@ -804,7 +731,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     }
 
     @Override
-    public APPlayerSpigot getAPPlayer(SenderAdapter sender) {
+    public APPlayerSpigot getAPPlayer(SenderAdapter<?, ?> sender) {
         if (!(sender.getSender() instanceof Player player)) return null;
         return getAPPlayer(player);
     }

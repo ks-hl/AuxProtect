@@ -72,7 +72,7 @@ public enum Table {
                 default -> false;
             };
         }
-        return plugin.getAPConfig().isPrivate() || !characteristics.contains(PRIVATE);
+        return plugin.isPrivate() || !characteristics.contains(PRIVATE);
     }
 
     public boolean hasAPEntries() {

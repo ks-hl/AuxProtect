@@ -431,4 +431,9 @@ public final class AuxProtectVelocity implements IAuxProtect {
     public static String toString(Component component) {
         return PlainTextComponentSerializer.plainText().serialize(component);
     }
+
+    @Override
+    public boolean isPrivate() {
+        return false;
+    }
 }

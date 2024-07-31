@@ -2,15 +2,12 @@ package dev.heliosares.auxprotect.spigot;
 
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.commands.APCommand;
-import dev.heliosares.auxprotect.core.commands.RetentionCommand;
-import dev.heliosares.auxprotect.spigot.commands.ActivityCommand;
 import dev.heliosares.auxprotect.spigot.commands.InvCommand;
 import dev.heliosares.auxprotect.spigot.commands.InventoryCommand;
 import dev.heliosares.auxprotect.spigot.commands.MoneyCommand;
 import dev.heliosares.auxprotect.spigot.commands.SaveInvCommand;
 import dev.heliosares.auxprotect.spigot.commands.SpigotLookupCommand;
 import dev.heliosares.auxprotect.spigot.commands.TpCommand;
-import dev.heliosares.auxprotect.spigot.commands.XrayCommand;
 import jakarta.annotation.Nonnull;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,13 +29,8 @@ public class APSCommand implements CommandExecutor, TabExecutor {
                 add(new TpCommand(plugin).setTabComplete(false));
                 add(new InvCommand(plugin).setTabComplete(false));
                 add(new InventoryCommand(APSCommand.this.plugin));
-                add(new ActivityCommand(plugin));
                 add(new MoneyCommand(plugin));
                 add(new SaveInvCommand(plugin));
-                if (plugin.getAPConfig().isPrivate()) {
-                    add(new RetentionCommand(plugin));
-                    add(new XrayCommand(APSCommand.this.plugin));
-                }
             }
         };
         apcommand.add(new SpigotLookupCommand(plugin)); // Done after to overwrite default LookupCommand

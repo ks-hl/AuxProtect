@@ -1,6 +1,5 @@
 package dev.heliosares.auxprotect.spigot;
 
-import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.adapters.sender.SpigotSenderAdapter;
 import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.Activity;
@@ -10,12 +9,11 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.utils.InvSerialization;
-import dev.heliosares.auxprotect.utils.PosEncoder;
+import jakarta.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
-import jakarta.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -24,7 +22,6 @@ public class APPlayerSpigot extends APPlayer<Player> {
     private final List<ActivityRecord> activityStack = new ArrayList<>();
     private ArrayList<Activity> currentActivity;
     private final Player player;
-    private final List<Byte> posBlob = new ArrayList<>();
     public long lastLoggedMoney;
     public long lastLoggedInventory;
     public long lastLoggedInventoryDiff;
@@ -37,8 +34,6 @@ public class APPlayerSpigot extends APPlayer<Player> {
     public long lastNotifyInactive;
     // hotbar, main, armor, offhand, echest
     private List<ItemStack> invDiffItems;
-    private Location lastLocationDiff;
-    private PosEncoder.Posture lastPosture;
 
     public APPlayerSpigot(AuxProtectSpigot plugin, Player player) {
         super(plugin, player);
@@ -163,16 +158,6 @@ public class APPlayerSpigot extends APPlayer<Player> {
     }
 
     public void tickDiffPos() {
-        if (lastLocationDiff != null) {
-            synchronized (posBlob) {
-                PosEncoder.Posture posture = PosEncoder.Posture.fromPlayer(getPlayer());
-                for (byte b : PosEncoder.encode(lastLocationDiff, getPlayer().getLocation(), posture, lastPosture)) {
-                    posBlob.add(b);
-                }
-                lastPosture = posture;
-            }
-        }
-        lastLocationDiff = getPlayer().getLocation().clone();
     }
 
     public void logPos(Location location) {
@@ -185,24 +170,15 @@ public class APPlayerSpigot extends APPlayer<Player> {
 
     public void logPostTeleportPos(Location location) {
         plugin.add(new PosEntry(AuxProtectSpigot.getLabel(getPlayer()), EntryAction.TP, true, location, ""));
-        lastLocationDiff = null; // Set to null to force a one-tick pause before checking again
     }
 
-    private void logPos(Location location, boolean tp) {
+    protected void logPos(Location location, boolean tp) {
         lastLoggedPos = System.currentTimeMillis();
-        DbEntry entry = new PosEntry("$" + getPlayer().getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
+        plugin.add(getCurrentPosEntry(location, tp));
+    }
 
-        if (!tp) lastLocationDiff = getPlayer().getLocation().clone();
-
-        synchronized (posBlob) {
-            byte[] blob = new byte[posBlob.size()];
-            for (int i = 0; i < blob.length; i++) blob[i] = posBlob.get(i);
-            entry.setBlob(blob);
-            posBlob.clear();
-        }
-
-        plugin.add(entry);
-
+    protected PosEntry getCurrentPosEntry(Location location, boolean tp) {
+        return new PosEntry("$" + getPlayer().getUniqueId(), tp ? EntryAction.TP : EntryAction.POS, false, location, "");
     }
 
     private List<ItemStack> getInventory() {
@@ -238,7 +214,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
     }
 
     @Override
-    public SenderAdapter getSenderAdapter() {
+    public SpigotSenderAdapter getSenderAdapter() {
         return new SpigotSenderAdapter(getPlugin(), player);
     }
 

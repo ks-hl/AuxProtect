@@ -85,4 +85,5 @@ public interface IAuxProtect {
     MessageBuilder getMessageBuilder();
     Set<String> getEntityTypes();
     Set<String> getItemTypes();
+    boolean isPrivate();
 }

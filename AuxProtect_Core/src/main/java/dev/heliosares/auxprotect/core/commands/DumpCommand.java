@@ -49,11 +49,9 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
             }
             trace.append(" (").append(plugin.getSqlManager().getTimeConnected()).append(")\n");
         }
-        trace.append("Plugin version: ").append(plugin.getPluginVersion()).append("\n");
+        trace.append("Plugin version: ").append(plugin.getPluginVersion()).append(plugin.isPrivate() ? " PRIVATE" : "").append("\n");
         trace.append("Key: ");
-        if (plugin.getAPConfig().isPrivate()) {
-            trace.append("private.").append(plugin.getAPConfig().getKeyHolder());
-        } else if (plugin.getAPConfig().isDonor()) {
+        if (plugin.getAPConfig().isDonor()) {
             trace.append("donor.").append(plugin.getAPConfig().getKeyHolder());
         } else {
             trace.append("none");

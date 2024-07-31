@@ -151,10 +151,6 @@ public class APConfig {
                 plugin.info("Invalid donor key");
                 return;
             }
-            if (isPrivate()) {
-                plugin.info("Private key!");
-                return;
-            }
             if (isDonor()) {
                 plugin.info("Valid donor key!");
                 return;
@@ -193,12 +189,6 @@ public class APConfig {
 
     public long getNationBankInterval() {
         return nationBankInterval;
-    }
-
-    public boolean isPrivate() {
-        if (key == null)
-            return false;
-        return key.isPrivate();
     }
 
     public boolean isDonor() {

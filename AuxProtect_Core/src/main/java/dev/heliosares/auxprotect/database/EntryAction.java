@@ -246,7 +246,7 @@ public class EntryAction {
             }
         }
         if (getTable() == null || !getTable().exists(plugin)) return false;
-        if (!plugin.getAPConfig().isPrivate()) {
+        if (!plugin.isPrivate()) {
             if (equals(IGNOREABANDONED) || equals(VEIN)) {
                 return false;
             }

@@ -115,19 +115,6 @@ public class SpigotSQLManager extends SQLManager {
         }
     }
 
-    public void updateXrayEntry(XrayEntry entry) throws SQLException, BusyException {
-        if (!super.isConnected())
-            return;
-        String stmt = "UPDATE " + entry.getAction().getTable().toString();
-        stmt += "\nSET rating=?, data=?";
-        stmt += "\nWHERE time = ? AND uid = ? AND target_id = ?";
-
-        if (executeReturnRows(stmt, entry.getRating(), sanitize(entry.getData()), entry.getTime(), entry.getUid(), entry.getTargetId()) > 1) {
-            getPlugin().warning("Updated multiple entries when updating the following entry:");
-            Results.sendEntry(getPlugin(), getPlugin().getConsoleSender(), entry, 0, true, true, true);
-        }
-    }
-
     @Override
     protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
         if (dbEntry instanceof PosEntry posEntry) {
@@ -135,13 +122,6 @@ public class SpigotSQLManager extends SQLManager {
             return true;
         }
         return false;
-    }
-
-    @Override
-    protected void putXrayEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
-        if (dbEntry instanceof XrayEntry xrayEntry) {
-            preparedStatement.setShort(i.getAndIncrement(), xrayEntry.getRating());
-        }
     }
 
     @Override

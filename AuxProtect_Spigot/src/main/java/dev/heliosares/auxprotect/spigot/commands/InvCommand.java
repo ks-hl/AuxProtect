@@ -41,6 +41,7 @@ import org.bukkit.inventory.ItemStack;
 
 import java.sql.SQLException;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
@@ -204,10 +205,12 @@ public class InvCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>
         return null;
     }
 
+    public static final DateTimeFormatter ratedByDateFormatter = DateTimeFormatter.ofPattern("ddMMMyy HHmm");
+
     private static void update(IAuxProtect plugin, Player staff, long time) throws SQLException, BusyException {
         plugin.getSqlManager().execute(
                 "UPDATE " + Table.AUXPROTECT_INVENTORY + " SET data=" + plugin.getSqlManager().concat("ifnull(data,'')", "?") + " WHERE time=? AND action_id=?",
-                30000L, LocalDateTime.now().format(XrayCommand.ratedByDateFormatter) + ": Recovered by " + staff.getName() + "; ",
+                30000L, LocalDateTime.now().format(ratedByDateFormatter) + ": Recovered by " + staff.getName() + "; ",
                 time, EntryAction.INVENTORY.id);
     }
 

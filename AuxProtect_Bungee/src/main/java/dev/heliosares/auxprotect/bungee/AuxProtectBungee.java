@@ -406,4 +406,9 @@ public final class AuxProtectBungee extends Plugin implements IAuxProtect {
 
         return "$" + (Math.round(d * 100) / 100.0);
     }
+
+    @Override
+    public boolean isPrivate() {
+        return false;
+    }
 }

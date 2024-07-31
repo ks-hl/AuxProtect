@@ -16,7 +16,7 @@ public class Telemetry {
         metrics.addCustomChart(new Metrics.SingleLineChart("entries", () -> plugin.getSqlManager().getCount()));
 
         metrics.addCustomChart(new Metrics.SimplePie("private", () -> {
-            if (plugin.getAPConfig().isPrivate()) {
+            if (plugin.isPrivate()) {
                 return "Private";
             }
             if (plugin.getAPConfig().isDonor()) {
