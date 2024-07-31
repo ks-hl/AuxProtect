@@ -16,14 +16,11 @@ import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.EntryLoader;
-import dev.heliosares.auxprotect.database.PosEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.database.SpigotDatabaseRunnable;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.SpigotSQLManager;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.database.TransactionEntry;
 import dev.heliosares.auxprotect.database.XrayEntry;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.commands.CSLogsCommand;
@@ -44,7 +41,6 @@ import dev.heliosares.auxprotect.spigot.listeners.ProjectileListener;
 import dev.heliosares.auxprotect.spigot.listeners.ShopGUIPlusListener;
 import dev.heliosares.auxprotect.spigot.listeners.VeinListener;
 import dev.heliosares.auxprotect.spigot.listeners.WorldListener;
-import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.towny.TownyListener;
 import dev.heliosares.auxprotect.towny.TownyManager;
 import dev.heliosares.auxprotect.utils.Pane;
@@ -91,7 +87,7 @@ import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
-public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
+public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public static final char BLOCK = 9608;
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
     private static AuxProtectSpigot instance;
@@ -150,6 +146,10 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     public int getCompatabilityVersion() {
         return SERVER_VERSION;
+    }
+
+    protected APSCommand createAPSCommand() {
+        return new APSCommand(this);
     }
 
     @Override
@@ -328,7 +328,7 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));
         if (config.isPrivate()) Objects.requireNonNull(this.getCommand("cslogs")).setExecutor(new CSLogsCommand(this));
-        Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = new APSCommand(this)));
+        Objects.requireNonNull(this.getCommand("auxprotect")).setExecutor((apcommand = createAPSCommand()));
         Objects.requireNonNull(this.getCommand("auxprotect")).setTabCompleter(apcommand);
 
         new BukkitRunnable() {

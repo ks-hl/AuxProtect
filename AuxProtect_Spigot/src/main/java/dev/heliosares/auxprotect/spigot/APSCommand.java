@@ -55,4 +55,7 @@ public class APSCommand implements CommandExecutor, TabExecutor {
         return apcommand.onTabComplete(new SpigotSenderAdapter(plugin, sender), label, args);
     }
 
+    protected APCommand<CommandSender, AuxProtectSpigot, SpigotSenderAdapter> getAPCommand() {
+        return apcommand;
+    }
 }
