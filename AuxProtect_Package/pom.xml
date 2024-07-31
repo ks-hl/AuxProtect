@@ -15,13 +15,10 @@
         <finalName>AuxProtect-${revision}</finalName>
         <resources>
             <resource>
-                <directory>${basedir}</directory>
+                <directory>src/main/resources</directory>
                 <filtering>true</filtering>
                 <includes>
-                    <include>plugin.yml</include>
-                    <include>lang/*</include>
-                    <include>config.yml</include>
-                    <include>bungee.yml</include>
+                    <include>**</include>
                 </includes>
             </resource>
         </resources>
