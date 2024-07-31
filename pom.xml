@@ -21,6 +21,15 @@
         <module>AuxProtect_Package</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <id>include-auxprotect-private</id>
+            <modules>
+                <module>AuxProtect_Private</module>
+            </modules>
+        </profile>
+    </profiles>
+
     <properties>
         <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>

@@ -1,5 +1,5 @@
 name: AuxProtect
-version: '${project.version}'
+version: '${revision}'
 main: dev.heliosares.auxprotect.spigot.AuxProtectSpigot
 description: A plugin designed to supplement CoreProtect in a few ways.
 api-version: 1.13
