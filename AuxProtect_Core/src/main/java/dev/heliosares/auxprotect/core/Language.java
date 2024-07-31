@@ -246,6 +246,10 @@ public class Language {
                 }
                 if (message == null && defaultLang != null) {
                     message = defaultLang.getString(name).orElse(null);
+
+                    if (message != null) {// && !Objects.equals(getLocale(), "en-us")) {
+                        plugin.warning("Failed to find lang `" + name + "` in loaded lang file, used default en-us lang.");
+                    }
                 }
                 if (message == null) throw new IllegalArgumentException("Message not found: " + name);
                 message = convert(message);
