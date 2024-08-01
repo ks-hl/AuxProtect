@@ -8,6 +8,11 @@
         <version>${revision}</version>
     </parent>
 
+    <build>
+        <sourceDirectory>src/main/java</sourceDirectory>
+        <testSourceDirectory>src/main/test</testSourceDirectory>
+    </build>
+
     <artifactId>AuxProtect_Core</artifactId>
     <version>${revision}</version>
     <name>AuxProtect_Core</name>

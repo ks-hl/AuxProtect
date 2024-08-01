@@ -1,8 +1,7 @@
 **/target/
 /test_run/
 .idea*
-auxprotect.iml
-AuxProtect.iml
+*.iml
 .classpath
 .project
 *.bat
