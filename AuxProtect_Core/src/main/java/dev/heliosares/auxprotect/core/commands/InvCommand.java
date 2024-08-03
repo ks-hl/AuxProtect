@@ -41,6 +41,7 @@ import org.bukkit.inventory.ItemStack;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -196,7 +197,7 @@ public class InvCommand extends Command {
                 i1++;
             }
 
-            enderpane.onClose((p) -> plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.openInventory(mainInv), 1));
+            enderpane.onClose((p) -> AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> player.openInventory(mainInv), 1));
             return mainInv;
         }
         return null;

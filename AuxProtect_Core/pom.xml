@@ -51,9 +51,21 @@
                             <artifactSet>
                                 <includes>
                                     <include>org.json:json</include>
+                                    <include>io.papermc:paperlib</include>
+                                    <include>space.arim.morepaperlib:morepaperlib</include>
                                     <include>dev.heliosares:*</include>
                                 </includes>
                             </artifactSet>
+                            <relocations>
+                                <relocation>
+                                    <pattern>io.papermc.lib</pattern>
+                                    <shadedPattern>dev.heliosares.auxprotect.lib.paperlib</shadedPattern>
+                                </relocation>
+                                <relocation>
+                                    <pattern>space.arim.morepaperlib</pattern>
+                                    <shadedPattern>dev.heliosares.auxprotect.lib.morepaperlib</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <minimizeJar>true</minimizeJar>
                         </configuration>
                     </execution>
@@ -109,6 +121,11 @@
             <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots/</url>
         </repository>
 
+        <repository>
+            <id>papermc</id>
+            <url>https://repo.papermc.io/repository/maven-public/</url>
+        </repository>
+
         <!--        Bungee-->
         <repository>
             <id>bungeecord-repo</id>
@@ -156,6 +173,12 @@
             <id>olzie-repo</id>
             <url>https://repo.olziedev.com/</url>
         </repository>
+
+        <!--        MorePaperLib-->
+        <repository>
+            <id>arim-mvn-lgpl3</id>
+            <url>https://mvn-repo.arim.space/lesser-gpl3/</url>
+        </repository>
     </repositories>
     <dependencies>
         <dependency>
@@ -164,10 +187,17 @@
             <version>4.13.2</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
+<!--        <dependency>
             <groupId>org.spigotmc</groupId>
             <artifactId>spigot-api</artifactId>
             <version>1.21-R0.1-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        -->
+        <dependency>
+            <groupId>dev.folia</groupId>
+            <artifactId>folia-api</artifactId>
+            <version>1.20.6-R0.1-SNAPSHOT</version>
             <scope>provided</scope>
         </dependency>
         <dependency>
@@ -262,6 +292,18 @@
             <artifactId>playerauctions-api</artifactId>
             <version>1.27.3</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.papermc</groupId>
+            <artifactId>paperlib</artifactId>
+            <version>1.0.7</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>space.arim.morepaperlib</groupId>
+            <artifactId>morepaperlib</artifactId>
+            <version>0.4.3</version>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>dev.heliosares</groupId>

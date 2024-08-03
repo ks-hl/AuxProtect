@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.utils;
 import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.ProtocolManager;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
-import dev.heliosares.auxprotect.core.APPlayer;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
@@ -19,21 +18,23 @@ import net.md_5.bungee.api.chat.TextComponent;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 import org.json.simple.parser.ParseException;
+import space.arim.morepaperlib.scheduling.ScheduledTask;
 
 import javax.annotation.Nullable;
 import java.io.IOException;
 import java.sql.SQLException;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class PlaybackSolver extends BukkitRunnable {
+public class PlaybackSolver implements Runnable {
     private static final Map<UUID, PlaybackSolver> instances = new HashMap<>();
     private final List<PosPoint> points;
     private final long startTime;
     private final long realReferenceTime;
+    private ScheduledTask task;
 
     private final Map<String, FakePlayer> actors = new HashMap<>();
     private final ProtocolManager protocol;
@@ -111,7 +112,11 @@ public class PlaybackSolver extends BukkitRunnable {
             modified.add(action.sendChange(audience, true));
         }
 
-        runTaskTimer((AuxProtectSpigot) plugin, 1, 1);
+        this.task = AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().runAtFixedRate(
+                this, // the Runnable instance
+                Duration.ofMillis(100), // initial delay
+                Duration.ofMillis(100) // period
+        );
 
         timeZone = plugin.getAPPlayer(sender).getTimeZone().toZoneId();
     }
@@ -190,7 +195,6 @@ public class PlaybackSolver extends BukkitRunnable {
 
         audience.spigot().sendMessage(ChatMessageType.ACTION_BAR, TextComponent.fromLegacyText(TimeUtil.format(timeNow, TimeUtil.entryTimeFormat, timeZone) + "  " + ChatColor.COLOR_CHAR + "7-  " + TimeUtil.millisToString(System.currentTimeMillis() - timeNow) + " ago"));
 
-
         for (Iterator<PosPoint> it = points.iterator(); it.hasNext(); ) {
             if (closed) return;
             PosPoint point = it.next();
@@ -228,7 +232,6 @@ public class PlaybackSolver extends BukkitRunnable {
         }
         swing.forEach(FakePlayer::swingArm);
 
-
         for (Iterator<FakePlayer> it = actors.values().iterator(); it.hasNext(); ) {
             if (closed) return;
             FakePlayer pl = it.next();
@@ -242,7 +245,9 @@ public class PlaybackSolver extends BukkitRunnable {
 
     public void close() {
         if (closed) return;
-        cancel();
+        if (task != null && !task.isCancelled()) {
+            task.cancel(); // Cancel the scheduled task
+        }
         closed = true;
         if (audience.isOnline()) {
             audience.sendMessage(Language.translate(Language.L.COMMAND__LOOKUP__PLAYBACK__STOPPED));

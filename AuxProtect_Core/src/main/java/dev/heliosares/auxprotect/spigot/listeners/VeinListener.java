@@ -11,9 +11,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import javax.annotation.Nullable;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -37,20 +37,17 @@ public class VeinListener implements Listener {
         this.plugin = plugin;
 
         // Maybe overkill, just preventing memory leaks
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                synchronized (blockhistory) {
-                    Iterator<Entry<UUID, BlockHistory>> it = blockhistory.entrySet().iterator();
-                    while (it.hasNext()) {
-                        Entry<UUID, BlockHistory> entry = it.next();
-                        if (entry.getValue().timeSinceUsed() > 300000L) {
-                            it.remove();
-                        }
+        AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().runAtFixedRate(() -> {
+            synchronized (blockhistory) {
+                Iterator<Entry<UUID, BlockHistory>> it = blockhistory.entrySet().iterator();
+                while (it.hasNext()) {
+                    Entry<UUID, BlockHistory> entry = it.next();
+                    if (entry.getValue().timeSinceUsed() > 300000L) {
+                        it.remove();
                     }
                 }
             }
-        }.runTaskTimerAsynchronously(plugin, 20 * 60 * 5, 20 * 60 * 5);
+        }, Duration.ofMinutes(5), Duration.ofMinutes(5));
 
         NETHER_CHECK.add(Material.ANCIENT_DEBRIS);
 
@@ -131,12 +128,7 @@ public class VeinListener implements Listener {
         if (nearbyNonOres < NON_ORE_THRESHOLD) {
             entry.setRating((short) -2, null);
         }
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                plugin.add(entry);
-            }
-        }.runTaskAsynchronously(plugin);
+        AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().run(() -> plugin.add(entry));
     }
 
     /**
