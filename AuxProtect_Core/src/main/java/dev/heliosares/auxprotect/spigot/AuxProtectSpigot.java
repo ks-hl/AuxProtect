@@ -26,7 +26,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotati.NotNull;
 import space.arim.morepaperlib.MorePaperLib;
 
 import javax.annotation.Nullable;
@@ -669,7 +669,6 @@ public final class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     @Override
     public void runSync(Runnable run) {
-        AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().run((run));
     }
 
     public int queueSize() {
