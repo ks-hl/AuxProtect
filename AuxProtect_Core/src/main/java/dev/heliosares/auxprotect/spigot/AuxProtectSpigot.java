@@ -26,7 +26,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.RegisteredServiceProvider;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.jetbrains.annotati.NotNull;
+import org.jetbrains.annotations.NotNull;
 import space.arim.morepaperlib.MorePaperLib;
 
 import javax.annotation.Nullable;
