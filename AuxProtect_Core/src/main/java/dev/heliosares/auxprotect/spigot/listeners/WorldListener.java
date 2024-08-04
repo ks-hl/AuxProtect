@@ -36,16 +36,15 @@ public class WorldListener implements Listener {
             DbEntry entry = new SingleItemEntry("#" + e.getCause().toString().toLowerCase(), EntryAction.ITEMFRAME, false, item.getLocation(), item.getItem().getType().toString().toLowerCase(), "", item.getItem());
             plugin.add(entry);
         }
-
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RaidTriggerEvent e) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RAIDTRIGGER, false, e.getPlayer().getLocation(), "", "")), 3);
+        AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> plugin.add(new DbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.RAIDTRIGGER, false, e.getPlayer().getLocation(), "", "")), 3L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RaidSpawnWaveEvent e) {
-        plugin.getServer().getScheduler().runTaskLater(plugin, () -> e.getRaiders().forEach(raider -> plugin.add(new DbEntry("#raid", EntryAction.RAIDSPAWN, false, raider.getLocation(), AuxProtectSpigot.getLabel(raider), ""))), 1);
+        AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> e.getRaiders().forEach(raider -> plugin.add(new DbEntry("#raid", EntryAction.RAIDSPAWN, false, raider.getLocation(), AuxProtectSpigot.getLabel(raider), ""))), 1L);
     }
 }

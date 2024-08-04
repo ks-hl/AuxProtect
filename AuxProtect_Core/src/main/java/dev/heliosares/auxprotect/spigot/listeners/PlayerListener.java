@@ -33,34 +33,17 @@ import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityPlaceEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerLeashEntityEvent;
-import org.bukkit.event.player.AsyncPlayerChatEvent;
-import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerGameModeChangeEvent;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerItemConsumeEvent;
-import org.bukkit.event.player.PlayerItemDamageEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerKickEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.event.player.PlayerTeleportEvent;
-import org.bukkit.event.player.PlayerUnleashEntityEvent;
+import org.bukkit.event.player.*;
 import org.bukkit.event.vehicle.VehicleDestroyEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.potion.PotionType;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Objects;
-import java.util.Set;
+import java.time.Duration;
+import java.util.*;
 
 public class PlayerListener implements Listener {
 
@@ -133,7 +116,7 @@ public class PlayerListener implements Listener {
             }
             if (item.getType() == Material.WATER_BUCKET) {
                 if (mobs.contains(e.getRightClicked().getType())) {
-                    plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                    AuxProtectSpigot.getMorePaperLib().scheduling().regionSpecificScheduler(e.getRightClicked().getLocation()).runDelayed(() -> {
                         ItemStack newBucket = e.getPlayer().getInventory().getItem(e.getHand());
                         if (newBucket != null && !buckets.contains(newBucket.getType())) newBucket = null;
                         plugin.add(new SingleItemEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.BUCKET, true,
@@ -216,7 +199,8 @@ public class PlayerListener implements Listener {
             String data = "";
             if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
             logSession(e.getPlayer(), true, data);
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
+
+            AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().run(() -> {
                 try {
                     plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
                             e.getPlayer().getName(), ip);
@@ -227,13 +211,13 @@ public class PlayerListener implements Listener {
                 }
             });
             if (APPermission.LOOKUP.hasPermission(e.getPlayer()) || APPermission.CSLOGS.hasPermission(e.getPlayer()) && EntryAction.SHOP_CS.isEnabled()) {
-                plugin.getServer().getScheduler().runTaskAsynchronously(plugin, apPlayer::getTimeZone);
+                AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().run(apPlayer::getTimeZone);
             }
         }
 
         apPlayer.logInventory("join");
 
-        plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> {
+        AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().runDelayed(() -> {
             try {
                 if (plugin.getSqlManager().getUserManager()
                         .getPendingInventory(plugin.getSqlManager().getUserManager()
@@ -257,10 +241,10 @@ public class PlayerListener implements Listener {
             message.append("\n" + ChatColor.COLOR_CHAR + "f").event((ClickEvent) null).event((HoverEvent) null);
             e.getPlayer().spigot().sendMessage(message.create());
             e.getPlayer().playSound(e.getPlayer().getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
-        }, 40);
+        }, Duration.ofMillis(2000));
 
         if (plugin.update != null && APPermission.ADMIN.hasPermission(e.getPlayer())) {
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> plugin.tellAboutUpdate(e.getPlayer()), 20);
+            AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> plugin.tellAboutUpdate(e.getPlayer()), 20);
         }
     }
 
@@ -292,24 +276,20 @@ public class PlayerListener implements Listener {
         }
         final byte[] inventory = inventory_;
 
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                byte[] newInventory = null;
-                try {
-                    newInventory = InvSerialization.playerToByteArray(e.getPlayer());
-                } catch (Exception e1) {
-                    plugin.warning("Error serializing inventory for teleport");
-                    plugin.print(e1);
-                }
-                if (Arrays.equals(inventory, newInventory)) {
-                    return;
-                }
-                apPlayer.logInventory("worldchange", e.getFrom(), inventory);
-                apPlayer.logInventory("worldchange", e.getTo(), newInventory);
+        AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> {
+            byte[] newInventory = null;
+            try {
+                newInventory = InvSerialization.playerToByteArray(e.getPlayer());
+            } catch (Exception e1) {
+                plugin.warning("Error serializing inventory for teleport");
+                plugin.print(e1);
             }
-
-        }.runTaskLater(plugin, 3);
+            if (Arrays.equals(inventory, newInventory)) {
+                return;
+            }
+            apPlayer.logInventory("worldchange", e.getFrom(), inventory);
+            apPlayer.logInventory("worldchange", e.getTo(), newInventory);
+        }, 3L);
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
