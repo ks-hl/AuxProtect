@@ -1,10 +1,11 @@
 **/target/
 /test_run/
 .idea*
-auxprotect.iml
-AuxProtect.iml
+*.iml
 .classpath
 .project
 *.bat
 test_run/
 dependency-reduced-pom.xml
+/AuxProtect_Private
+/AuxProtect_Private*
