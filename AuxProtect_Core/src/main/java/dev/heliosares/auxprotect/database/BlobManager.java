@@ -49,6 +49,7 @@ public class BlobManager {
         synchronized (cache) {
             other = cache.get(hash);
         }
+        cleanup();
 
         final BlobCache blobCache = new BlobCache(0, blob, hash);
 
@@ -106,7 +107,7 @@ public class BlobManager {
 
     public void cleanup() {
         synchronized (cache) {
-            if (System.currentTimeMillis() - lastcleanup < 300000) {
+            if (System.currentTimeMillis() - lastcleanup < 30000) {
                 return;
             }
             lastcleanup = System.currentTimeMillis();

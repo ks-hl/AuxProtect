@@ -682,7 +682,15 @@ public class SQLManager extends ConnectionPool {
     }
 
     public void cleanup() {
-        usermanager.cleanup();
+        if (usermanager != null) {
+            usermanager.cleanup();
+        }
+        if (invBlobManager != null) {
+            invBlobManager.cleanup();
+        }
+        if (transactionBlobManager != null) {
+            transactionBlobManager.cleanup();
+        }
     }
 
     public void tick() {
