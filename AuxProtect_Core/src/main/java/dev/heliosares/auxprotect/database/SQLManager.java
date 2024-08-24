@@ -388,7 +388,7 @@ public class SQLManager extends ConnectionPool {
             entries = new ArrayList<>();
 
             DbEntry entry;
-            while ((entry = table.queue.poll()) != null) {
+            while (entries.size() < 128 && (entry = table.queue.poll()) != null) {
                 entries.add(entry);
             }
         }
