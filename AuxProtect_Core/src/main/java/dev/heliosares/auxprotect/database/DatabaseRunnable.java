@@ -1,12 +1,13 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.exceptions.BusyException;
-
 import jakarta.annotation.Nonnull;
-import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.ConcurrentLinkedQueue;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class DatabaseRunnable implements Runnable {
@@ -63,10 +64,11 @@ public class DatabaseRunnable implements Runnable {
                 lastWarn = System.currentTimeMillis();
                 plugin.warning("Overlapping logging windows by " + locked + " ms.");
             }
-            plugin.debug("Overlapping logging windows by " + locked + " ms.", 1);
             if (locked < 300000) {
                 return;
-            } else {
+            }
+            if (System.currentTimeMillis() - lastWarn > 600000) {
+                lastWarn = System.currentTimeMillis();
                 plugin.warning("Overlapping logging windows by 5 minutes, continuing.");
             }
         }

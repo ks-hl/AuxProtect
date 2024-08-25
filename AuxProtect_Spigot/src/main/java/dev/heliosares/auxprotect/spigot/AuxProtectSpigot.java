@@ -224,7 +224,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         getServer().getScheduler().runTaskAsynchronously(this, this::initDatabase);
 
         dbRunnable = new SpigotDatabaseRunnable(this, sqlManager);
-
         getServer().getScheduler().runTaskTimerAsynchronously(this, dbRunnable, 60, 5);
 
         getServer().getPluginManager().registerEvents(new ProjectileListener(this), this);
