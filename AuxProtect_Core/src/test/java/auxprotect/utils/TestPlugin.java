@@ -1,19 +1,15 @@
 package dev.heliosares.auxprotect.utils;
 
-import dev.heliosares.auxprotect.adapters.config.JSONConfigAdapter;
+import dev.heliosares.auxprotect.adapters.message.MessageBuilder;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.core.APConfig;
-import dev.heliosares.auxprotect.core.APPermission;
-import dev.heliosares.auxprotect.core.APPlayer;
-import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.PlatformType;
+import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.BusyException;
-
 import jakarta.annotation.Nullable;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -35,78 +31,8 @@ public class TestPlugin implements IAuxProtect {
             AuxProtectAPI.setInstance(this);
         } catch (IllegalStateException ignored) {
         }
-        File configFile = new File(getDataFolder(), "config.json");
-        if (!configFile.exists()) {
-            configFile.getParentFile().mkdirs();
-            configFile.createNewFile();
-            try (FileWriter writer = new FileWriter(configFile, false)) {
-                writer.write("""
-                        {
-                          "lang": "en-us",
-                          "MySQL": {
-                            "use": false,
-                            "host": "localhost",
-                            "port": 3306,
-                            "database": "database",
-                            "username": "username",
-                            "password": "password",
-                            "table-prefix": ""
-                          },
-                          "OverrideCommands": false,
-                          "SanitizeUnicode": false,
-                          "AutoPurge": {
-                            "Enabled": false,
-                            "default": "180d",
-                            "Table": {
-                              "auxprotect_main": "default",
-                              "auxprotect_spam": "default",
-                              "auxprotect_abandoned": "default",
-                              "auxprotect_xray": "default",
-                              "auxprotect_inventory": "default",
-                              "auxprotect_commands": "default",
-                              "auxprotect_position": "default",
-                              "auxprotect_towny": "default",
-                              "auxprotect_api": "default",
-                              "auxprotect_chat": "default"
-                            }
-                          },
-                          "Actions": {
-                            "money": {
-                              "Enabled": true,
-                              "Interval": 60000
-                            },
-                            "pos": {
-                              "Enabled": true,
-                              "Interval": 3000
-                            },
-                            "inventory": {
-                              "Enabled": true,
-                              "WorldChange": false,
-                              "Interval": 3600000,
-                              "Diff-Interval": 0,
-                              "LowestPriority": false
-                            },
-                            "townbalance": {
-                              "Enabled": true,
-                              "Interval": 5000
-                            },
-                            "nationbalance": {
-                              "Enabled": true,
-                              "Interval": 5000
-                            },
-                            "session": {
-                              "Enabled": true,
-                              "LogIP": true
-                            }
-                          },
-                          "checkforupdates": true
-                        }""");
-                writer.flush();
-            }
-        }
         apConfig = new APConfig();
-        JSONConfigAdapter jsonConfigAdapter = new JSONConfigAdapter(getDataFolder(), "config.json");
-        apConfig.load(this, jsonConfigAdapter);
+        apConfig.load(this, new File(getDataFolder(), "config.yml"), () -> getClass().getClassLoader().getResourceAsStream("config.yml"));
 
         sql = new SQLManager(this, target, prefix, sqliteFile, mysql, user, pass);
         sql.connect();
@@ -259,6 +185,41 @@ public class TestPlugin implements IAuxProtect {
     @Override
     public void broadcast(String msg, APPermission node) {
 
+    }
+
+    @Override
+    public boolean doesWorldExist(String world) {
+        return false;
+    }
+
+    @Override
+    public Set<String> getWorlds() {
+        return Set.of();
+    }
+
+    @Override
+    public boolean isPrimaryThread() {
+        return false;
+    }
+
+    @Override
+    public MessageBuilder getMessageBuilder() {
+        return null;
+    }
+
+    @Override
+    public Set<String> getEntityTypes() {
+        return Set.of();
+    }
+
+    @Override
+    public Set<String> getItemTypes() {
+        return Set.of();
+    }
+
+    @Override
+    public boolean isPrivate() {
+        return false;
     }
 
     public String formatMoney(double d) {

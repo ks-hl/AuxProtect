@@ -10,7 +10,7 @@
 
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
-        <testSourceDirectory>src/main/test</testSourceDirectory>
+        <testSourceDirectory>src/test/java</testSourceDirectory>
     </build>
 
     <artifactId>AuxProtect_Core</artifactId>
