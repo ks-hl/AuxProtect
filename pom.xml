@@ -31,7 +31,6 @@
     </profiles>
 
     <properties>
-        <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
         <revision>1.4-pre1</revision>
     </properties>
