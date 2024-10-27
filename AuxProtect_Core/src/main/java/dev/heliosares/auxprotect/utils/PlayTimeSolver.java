@@ -40,6 +40,10 @@ public class PlayTimeSolver {
         boolean newLogout = false;
         double[] counter = new double[hours];
         int hour = 0;
+        final long DAY_MILLIS = 24 * 3600000;
+        long[] recentPlaytimeCutoff = {14 * DAY_MILLIS, 7 * DAY_MILLIS, 3 * DAY_MILLIS};
+        double[] recentPlaytime = new double[recentPlaytimeCutoff.length];
+
         for (int i = entries.size() - 1; i >= 0; i--) {
             DbEntry entry = entries.get(i);
             if (entry.getAction() != EntryAction.SESSION) {
@@ -65,6 +69,14 @@ public class PlayTimeSolver {
                 if (logout < login) {
                     newLogout = false;
                     continue;
+                }
+                for (int i1 = 0; i1 < recentPlaytime.length; i1++) {
+                    long cutoff = System.currentTimeMillis() - recentPlaytimeCutoff[i1];
+                    if (login > cutoff) {
+                        recentPlaytime[i1] += (logout - login) / 3600_000D;
+                    } else if (logout > cutoff) {
+                        recentPlaytime[i1] += (logout - cutoff) / 3600_000D;
+                    }
                 }
                 while (hour < counter.length) {
                     long hourTime = firstTime + (long) hour * 3600 * 1000;
@@ -145,8 +157,17 @@ public class PlayTimeSolver {
             message.append(AuxProtectSpigot.BLOCK + "").color(ChatColor.BLACK).event((HoverEvent) null);
         }
         message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(ChatColor.BLUE);
-        message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(ChatColor.GRAY)
+        message.append(" - " + (Math.round(hourCount * 10.0) / 10.0) + "h").color(ChatColor.GRAY)
                 .event((HoverEvent) null);
+        components.add(message.create());
+        message = new ComponentBuilder();
+        for (int i = 0; i < recentPlaytime.length; i++) {
+            double pt = recentPlaytime[i];
+            double days = recentPlaytimeCutoff[i] / DAY_MILLIS;
+            message.append("\n");
+            message.append(days + " days. ").color(ChatColor.BLUE);
+            message.append(" - " + pt + "h").color(ChatColor.GRAY);
+        }
         components.add(message.create());
         return components.toArray(new BaseComponent[0][0]);
     }
