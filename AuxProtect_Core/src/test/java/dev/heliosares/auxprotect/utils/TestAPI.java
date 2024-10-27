@@ -4,7 +4,6 @@ import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
 import dev.heliosares.auxprotect.exceptions.BusyException;
@@ -30,10 +29,10 @@ public class TestAPI {
         assert testAction != null;
         assertThrows(AlreadyExistsException.class, () -> AuxProtectAPI.createAction("test", "test_action", "test_action", null));
 
-        DbEntry entry = new DbEntry("user", testAction, false, null, "target", "data");
+        DbEntry entry = new DbEntry("user", testAction, false, "target", "data");
         testPlugin.add(entry);
         Thread.sleep(100);
-        var lookup = testPlugin.getSqlManager().getLookupManager().lookup(new Parameters(Table.AUXPROTECT_API).addAction(null,testAction,0));
+        var lookup = testPlugin.getSqlManager().getLookupManager().lookup(new Parameters(Table.AUXPROTECT_API).addAction(null, testAction, 0));
         assert !lookup.isEmpty();
     }
 }

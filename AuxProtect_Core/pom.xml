@@ -11,6 +11,7 @@
     <build>
         <sourceDirectory>src/main/java</sourceDirectory>
         <testSourceDirectory>src/test/java</testSourceDirectory>
+        <testResources><testResource><directory>../AuxProtect_Package/src/main/resources</directory></testResource></testResources>
     </build>
 
     <artifactId>AuxProtect_Core</artifactId>
