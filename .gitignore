@@ -1,7 +1,7 @@
 **/target/
 /test_run/
 .idea*
-*.iml
+**/*.iml
 .classpath
 .project
 *.bat
