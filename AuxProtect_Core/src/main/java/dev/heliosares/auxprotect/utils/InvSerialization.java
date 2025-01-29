@@ -159,8 +159,8 @@ public class InvSerialization {
     private static void write(BukkitObjectOutputStream stream, ItemStack item, String playerName) throws IOException {
         try {
             stream.writeObject(item);
-        } catch (IOException e) {
-            String msg = "Failed to serialize " + item + " for " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getMessage() + ")";
+        } catch (Throwable e) {
+            String msg = "Failed to serialize " + item + " for " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
             spamMap.values().removeIf(l -> System.currentTimeMillis() - l > 60000L);
             if (!spamMap.containsKey(msg)) {
                 spamMap.put(msg, System.currentTimeMillis());

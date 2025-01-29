@@ -18,6 +18,6 @@
     <properties>
         <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
-        <revision>1.3.3-pre1</revision>
+        <revision>1.3.3-pre2</revision>
     </properties>
 </project>
