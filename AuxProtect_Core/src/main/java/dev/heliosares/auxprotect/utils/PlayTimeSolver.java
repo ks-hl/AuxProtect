@@ -7,9 +7,6 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
-import net.md_5.bungee.api.ChatColor;
-import net.md_5.bungee.api.chat.ComponentBuilder;
-import net.md_5.bungee.api.chat.HoverEvent;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -19,6 +16,7 @@ import java.util.List;
 
 public class PlayTimeSolver {
     public static final char BLOCK = 9608;
+
     public static GenericBuilder solvePlaytime(IAuxProtect plugin, List<DbEntry> entries, long startTimeMillis, long stopTimeMillis, String player, final boolean currentlyOnline) {
         final GenericBuilder message = new GenericBuilder(plugin);
         final int limitDays = 60;
@@ -151,19 +149,14 @@ public class PlayTimeSolver {
             message.append(BLOCK + "").color(GenericTextColor.BLACK);
         }
         message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(GenericTextColor.BLUE);
-        message.append(" (" + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(GenericTextColor.GRAY);
+        message.append(" - " + (Math.round(hourCount * 10.0) / 10.0) + "h)").color(GenericTextColor.GRAY);
 
-        message.append(" " + startTime.plusHours(hours).format(formatterDate)).color(ChatColor.BLUE);
-        message.append(" - " + (Math.round(hourCount * 10.0) / 10.0) + "h").color(ChatColor.GRAY)
-                .event((HoverEvent) null);
-        components.add(message.create());
-        message = new ComponentBuilder();
         for (int i = 0; i < recentPlaytime.length; i++) {
             double pt = recentPlaytime[i];
-            double days = recentPlaytimeCutoff[i] / DAY_MILLIS;
+            int days = (int) (recentPlaytimeCutoff[i] / DAY_MILLIS);
             message.append("\n");
-            message.append(days + " days. ").color(ChatColor.BLUE);
-            message.append(" - " + pt + "h").color(ChatColor.GRAY);
+            message.append(days + " days. ").color(GenericTextColor.BLUE);
+            message.append(" - " + pt + "h").color(GenericTextColor.GRAY);
         }
 
         return message;
