@@ -6,8 +6,7 @@
     <parent>
         <groupId>dev.heliosares</groupId>
         <artifactId>AuxProtect</artifactId>
-        <version>1.4-pre1</version>
-        <relativePath>../pom.xml</relativePath>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>AuxProtect_Package</artifactId>
