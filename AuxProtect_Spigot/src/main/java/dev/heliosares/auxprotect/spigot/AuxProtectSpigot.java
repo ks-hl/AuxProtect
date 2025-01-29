@@ -652,9 +652,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     @Override
     public void print(Throwable t) {
         getLogger().log(Level.WARNING, t.getMessage(), t);
-        String stack = StackUtil.format(t, 3);
-        if (stackHashHistory.add(stack.hashCode())) {
-            stack = StackUtil.format(t, 20);
+        String stack = StackUtil.format(t, Integer.MAX_VALUE);
+        if (!stackHashHistory.add(stack.hashCode())) {
+            stack = StackUtil.format(t, 3);
         }
         logToStackLog(stack);
     }

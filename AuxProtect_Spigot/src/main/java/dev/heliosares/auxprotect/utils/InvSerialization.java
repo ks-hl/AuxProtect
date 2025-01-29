@@ -13,6 +13,8 @@ import org.bukkit.util.io.BukkitObjectOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class InvSerialization {
 
@@ -114,10 +116,10 @@ public class InvSerialization {
         }
         return playerToByteArray(new PlayerInventoryRecord(player.getInventory().getStorageContents(),
                 player.getInventory().getArmorContents(), player.getInventory().getExtraContents(),
-                player.getEnderChest().getContents(), Experience.getTotalExp(player)));
+                player.getEnderChest().getContents(), Experience.getTotalExp(player)), player.getName());
     }
 
-    public static byte[] playerToByteArray(PlayerInventoryRecord record) throws IOException {
+    public static byte[] playerToByteArray(PlayerInventoryRecord record, String playerName) throws IOException {
         if (record == null) {
             return null;
         }
@@ -126,22 +128,22 @@ public class InvSerialization {
 
             stream.writeInt(record.storage().length);
             for (ItemStack item : record.storage()) {
-                stream.writeObject(item);
+                write(stream, item, playerName);
             }
 
             stream.writeInt(record.armor().length);
             for (ItemStack item : record.armor()) {
-                stream.writeObject(item);
+                write(stream, item, playerName);
             }
 
             stream.writeInt(record.extra().length);
             for (ItemStack item : record.extra()) {
-                stream.writeObject(item);
+                write(stream, item, playerName);
             }
 
             stream.writeInt(record.ender().length);
             for (ItemStack item : record.ender()) {
-                stream.writeObject(item);
+                write(stream, item, playerName);
             }
 
             stream.writeInt(record.exp());
@@ -149,6 +151,53 @@ public class InvSerialization {
 
             return byteArrayOutputStream.toByteArray();
         }
+    }
+
+    private static final Map<String, Long> spamMap = new HashMap<>();
+
+    private static void write(BukkitObjectOutputStream stream, ItemStack item, String playerName) throws IOException {
+        try {
+            stream.writeObject(item);
+        } catch (Throwable e) {
+            String msg = "Failed to serialize " + item + " for " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
+            spamMap.values().removeIf(l -> System.currentTimeMillis() - l > 60000L);
+            if (!spamMap.containsKey(msg)) {
+                spamMap.put(msg, System.currentTimeMillis());
+                AuxProtectAPI.warning(msg);
+            }
+            stream.writeObject(null);
+        }
+    }
+
+    public static void debug(byte[] bytes) {
+        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
+        System.out.println("Debug Byte[] Dump:");
+        try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
+            boolean keep = true;
+            while (keep) {
+                keep = false;
+                try {
+                    System.out.println(stream.readInt());
+                    keep = true;
+                } catch (Exception ignored) {
+                }
+                try {
+                    Object o = stream.readObject();
+                    String out = "null";
+                    if (o != null) {
+                        out = o.toString();
+                        if (out.length() > 50) {
+                            out = out.substring(0, 50);
+                        }
+                    }
+                    System.out.println(out);
+                    keep = true;
+                } catch (Exception ignored) {
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        System.out.println("EOF");
     }
 
     public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
