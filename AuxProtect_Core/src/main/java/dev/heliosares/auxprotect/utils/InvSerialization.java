@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -58,10 +57,7 @@ public class InvSerialization {
             } catch (Exception ignored) {
                 //Allows reading a single item as an array
             }
-            if (size < 1) {
-                AuxProtectSpigot.getInstance().warning("Empty BLOB");
-                return new ItemStack[0];
-            }
+            if (size < 1) return new ItemStack[0];
             ItemStack[] arrayOfItemStack = new ItemStack[size];
 
             for (int i = 0; i < arrayOfItemStack.length; i++) {
@@ -128,23 +124,27 @@ public class InvSerialization {
         try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
 
             stream.writeInt(record.storage().length);
-            for (ItemStack item : record.storage()) {
-                write(stream, item, playerName);
+            for (int i = 0; i < record.storage().length; i++) {
+                ItemStack item = record.storage()[i];
+                write(stream, item, playerName, "main inventory", i);
             }
 
             stream.writeInt(record.armor().length);
-            for (ItemStack item : record.armor()) {
-                write(stream, item, playerName);
+            for (int i = 0; i < record.armor().length; i++) {
+                ItemStack item = record.armor()[i];
+                write(stream, item, playerName, "armor", i);
             }
 
             stream.writeInt(record.extra().length);
-            for (ItemStack item : record.extra()) {
-                write(stream, item, playerName);
+            for (int i = 0; i < record.extra().length; i++) {
+                ItemStack item = record.extra()[i];
+                write(stream, item, playerName, "offhand/extra", i);
             }
 
             stream.writeInt(record.ender().length);
-            for (ItemStack item : record.ender()) {
-                write(stream, item, playerName);
+            for (int i = 0; i < record.ender().length; i++) {
+                ItemStack item = record.ender()[i];
+                write(stream, item, playerName, "ender chest", i);
             }
 
             stream.writeInt(record.exp());
@@ -156,11 +156,11 @@ public class InvSerialization {
 
     private static final Map<String, Long> spamMap = new HashMap<>();
 
-    private static void write(BukkitObjectOutputStream stream, ItemStack item, String playerName) throws IOException {
+    private static void write(BukkitObjectOutputStream stream, ItemStack item, String playerName, String inventoryName, int index) throws IOException {
         try {
             stream.writeObject(item);
         } catch (Throwable e) {
-            String msg = "Failed to serialize " + item + " for " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
+            String msg = "Failed to serialize item in " + inventoryName + ", slot " + index + " of " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
             spamMap.values().removeIf(l -> System.currentTimeMillis() - l > 60000L);
             if (!spamMap.containsKey(msg)) {
                 spamMap.put(msg, System.currentTimeMillis());
@@ -168,37 +168,6 @@ public class InvSerialization {
             }
             stream.writeObject(null);
         }
-    }
-
-    public static void debug(byte[] bytes) {
-        ByteArrayInputStream byteArrayInputStream = new ByteArrayInputStream(bytes);
-        System.out.println("Debug Byte[] Dump:");
-        try (BukkitObjectInputStream stream = new BukkitObjectInputStream(byteArrayInputStream)) {
-            boolean keep = true;
-            while (keep) {
-                keep = false;
-                try {
-                    System.out.println(stream.readInt());
-                    keep = true;
-                } catch (Exception ignored) {
-                }
-                try {
-                    Object o = stream.readObject();
-                    String out = "null";
-                    if (o != null) {
-                        out = o.toString();
-                        if (out.length() > 50) {
-                            out = out.substring(0, 50);
-                        }
-                    }
-                    System.out.println(out);
-                    keep = true;
-                } catch (Exception ignored) {
-                }
-            }
-        } catch (Exception ignored) {
-        }
-        System.out.println("EOF");
     }
 
     public static PlayerInventoryRecord toPlayerInventory(byte[] bytes) throws IOException, ClassNotFoundException {
