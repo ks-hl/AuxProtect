@@ -4,7 +4,6 @@ import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
 import com.palmergames.bukkit.towny.object.Town;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
@@ -145,7 +144,7 @@ public class TownyManager implements Runnable {
             names.put(uid, name);
         };
         if (async) {
-            plugin.getServer().getScheduler().runTaskAsynchronously(plugin, run);
+            AuxProtectSpigot.getMorePaperLib().scheduling().asyncScheduler().run((run));
         } else {
             run.run();
         }

@@ -52,7 +52,7 @@ public class InvCommand extends Command {
     }
 
     public static void openSync(IAuxProtect plugin, Player player, Inventory inventory) {
-        plugin.runSync(() -> player.openInventory(inventory));
+        AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).run(() -> player.openInventory(inventory), null);
     }
 
     public static Inventory makeInventory(IAuxProtect plugin_, Player player, OfflinePlayer target,
@@ -83,7 +83,7 @@ public class InvCommand extends Command {
                         }
                         if (closed.get()) return;
                         closed.set(true);
-                        plugin.runSync(player::closeInventory);
+                        AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).run(player::closeInventory, null);
                         player.sendMessage(L.COMMAND__LOOKUP__LOOKING.translate());
                         try {
                             update(plugin, player, when);
@@ -95,7 +95,7 @@ public class InvCommand extends Command {
                             player.sendMessage(L.ERROR.translate());
                             return;
                         }
-                        plugin.runSync(() -> {
+                        AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).run(() -> {
                             PlayerInventoryRecord inv_;
                             inv_ = InvDiffManager.listToPlayerInv(Arrays.asList(mainInv.getContents()), inv.exp());
 
@@ -113,8 +113,8 @@ public class InvCommand extends Command {
                             targetO.sendMessage(L.COMMAND__INV__NOTIFY_PLAYER.translate(player.getName(), TimeUtil.millisToString(System.currentTimeMillis() - when)));
                             targetO.playSound(targetO.getLocation(), Sound.BLOCK_NOTE_BLOCK_PLING, 1, 1);
                             plugin.add(new DbEntry(AuxProtectSpigot.getLabel(player), EntryAction.RECOVER, false, player.getLocation(), AuxProtectSpigot.getLabel(target), "force"));
-                        });
 
+                        }, null);
                     }), L.INV_RECOVER_MENU__BUTTON__FORCE__LABEL.translate(), L.INV_RECOVER_MENU__BUTTON__FORCE__HOVER.translateList());
                 } else {
                     pane.addButton(49, Material.GRAY_STAINED_GLASS_PANE, null,
@@ -123,7 +123,7 @@ public class InvCommand extends Command {
                 pane.addButton(50, Material.GREEN_STAINED_GLASS_PANE, () -> plugin.runAsync(() -> {
                     if (closed.get()) return;
                     closed.set(true);
-                    plugin.runSync(player::closeInventory);
+                    AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).run(player::closeInventory, null);
                     ItemStack[] output = new ItemStack[45];
                     for (int i = 0; i < output.length; i++) {
                         output[i] = mainInv.getItem(i);
@@ -196,7 +196,7 @@ public class InvCommand extends Command {
                 i1++;
             }
 
-            enderpane.onClose((p) -> plugin.getServer().getScheduler().runTaskLater(plugin, () -> player.openInventory(mainInv), 1));
+            enderpane.onClose((p) -> AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().runDelayed(() -> player.openInventory(mainInv), 1));
             return mainInv;
         }
         return null;

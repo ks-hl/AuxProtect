@@ -8,16 +8,19 @@ import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.command.CommandSender;
+import org.bukkit.command.ConsoleCommandSender;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
 
-import javax.annotation.Nullable;
 import java.util.UUID;
+
+import static io.papermc.lib.PaperLib.teleportAsync;
 
 public class SpigotSenderAdapter extends SenderAdapter {
 
     private final AuxProtectSpigot plugin;
     private final CommandSender sender;
+    int tries;
 
     public SpigotSenderAdapter(AuxProtectSpigot plugin, CommandSender sender) {
         this.plugin = plugin;
@@ -59,7 +62,11 @@ public class SpigotSenderAdapter extends SenderAdapter {
 
     @Override
     public void executeCommand(String command) {
-        plugin.runSync(() -> plugin.getServer().dispatchCommand(sender, command));
+        if (sender instanceof ConsoleCommandSender) {
+            AuxProtectSpigot.getMorePaperLib().scheduling().globalRegionalScheduler().run(() -> plugin.getServer().dispatchCommand(sender, command));
+        } else {
+            AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler((Entity) sender).run(() -> plugin.getServer().dispatchCommand(sender, command), null);
+        }
     }
 
     @Override
@@ -73,21 +80,16 @@ public class SpigotSenderAdapter extends SenderAdapter {
         if (sender instanceof Player player) {
             World world = plugin.getServer().getWorld(worldname);
             final Location target = new Location(world, x, y, z, yaw, pitch);
-            player.teleport(target);
+            teleportAsync(player, target);
             if (player.getGameMode() == GameMode.SPECTATOR) {
-                new BukkitRunnable() {
-                    int tries;
-
-                    @Override
-                    public void run() {
-                        if (tries++ >= 5 || (player.getWorld().equals(target.getWorld())
-                                && player.getLocation().distance(target) < 2)) {
-                            this.cancel();
-                            return;
-                        }
-                        player.teleport(target);
+                AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).runAtFixedRate(task -> {
+                    if (tries++ >= 5 || (player.getWorld().equals(target.getWorld())
+                            && player.getLocation().distance(target) < 2)) {
+                        task.cancel();
+                        return;
                     }
-                }.runTaskTimer(plugin, 2, 1);
+                    teleportAsync(player, target);
+                }, null, 2, 1);
             }
         } else {
             throw new UnsupportedOperationException();
