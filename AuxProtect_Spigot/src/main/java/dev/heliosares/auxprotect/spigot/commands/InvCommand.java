@@ -43,6 +43,7 @@ import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -240,10 +241,19 @@ public class InvCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>
         }
         if (entry.getAction().equals(EntryAction.INVENTORY)) {
             PlayerInventoryRecord inv_;
+            byte[] blob;
             try {
-                inv_ = InvSerialization.toPlayerInventory(entry.getBlob());
+                blob = entry.getBlob();
             } catch (Exception e1) {
-                plugin.warning("Error serializing inventory lookup");
+                plugin.warning("Error getting blob from inventory entry");
+                plugin.print(e1);
+                sender.sendLang(Language.L.ERROR);
+                return;
+            }
+            try {
+                inv_ = InvSerialization.toPlayerInventory(blob);
+            } catch (Exception e1) {
+                plugin.warning("Error deserializing inventory: " + Base64.getEncoder().encodeToString(blob));
                 plugin.print(e1);
                 sender.sendLang(Language.L.ERROR);
                 return;

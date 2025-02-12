@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.utils;
 
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -15,7 +14,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class InvSerialization {
 
@@ -58,10 +59,7 @@ public class InvSerialization {
             } catch (Exception ignored) {
                 //Allows reading a single item as an array
             }
-            if (size < 1) {
-                AuxProtectSpigot.getInstance().warning("Empty BLOB");
-                return new ItemStack[0];
-            }
+            if (size < 1) return new ItemStack[0];
             ItemStack[] arrayOfItemStack = new ItemStack[size];
 
             for (int i = 0; i < arrayOfItemStack.length; i++) {
@@ -115,36 +113,29 @@ public class InvSerialization {
         if (player == null) {
             return null;
         }
+        IntSet[] skip = new IntSet[4];
+        for (int i = 0; i < skip.length; i++) {
+            skip[i] = new IntSet();
+        }
         return playerToByteArray(new PlayerInventoryRecord(player.getInventory().getStorageContents(),
                 player.getInventory().getArmorContents(), player.getInventory().getExtraContents(),
-                player.getEnderChest().getContents(), Experience.getTotalExp(player)), player.getName());
+                player.getEnderChest().getContents(), Experience.getTotalExp(player)), player.getName(), skip, 100);
     }
 
-    public static byte[] playerToByteArray(PlayerInventoryRecord record, String playerName) throws IOException {
-        if (record == null) {
-            return null;
-        }
+    private static byte[] playerToByteArray(PlayerInventoryRecord record, String playerName, IntSet[] skip, int maxRecursion) throws IOException {
+        if (record == null) return null;
+        if (maxRecursion <= 0) return null;
+
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         try (BukkitObjectOutputStream stream = new BukkitObjectOutputStream(byteArrayOutputStream)) {
 
-            stream.writeInt(record.storage().length);
-            for (ItemStack item : record.storage()) {
-                write(stream, item, playerName);
-            }
-
-            stream.writeInt(record.armor().length);
-            for (ItemStack item : record.armor()) {
-                write(stream, item, playerName);
-            }
-
-            stream.writeInt(record.extra().length);
-            for (ItemStack item : record.extra()) {
-                write(stream, item, playerName);
-            }
-
-            stream.writeInt(record.ender().length);
-            for (ItemStack item : record.ender()) {
-                write(stream, item, playerName);
+            try {
+                writeInventory(stream, record.storage(), playerName, "main inventory", skip[0]);
+                writeInventory(stream, record.armor(), playerName, "armor", skip[1]);
+                writeInventory(stream, record.extra(), playerName, "offhand/extra", skip[2]);
+                writeInventory(stream, record.ender(), playerName, "ender chest", skip[3]);
+            } catch (ItemSerializationException e) {
+                return playerToByteArray(record, playerName, skip, maxRecursion - 1);
             }
 
             stream.writeInt(record.exp());
@@ -156,17 +147,40 @@ public class InvSerialization {
 
     private static final Map<String, Long> spamMap = new HashMap<>();
 
-    private static void write(BukkitObjectOutputStream stream, ItemStack item, String playerName) throws IOException {
+    private static void writeInventory(BukkitObjectOutputStream stream, ItemStack[] items, String playerName, String inventoryName, IntSet skip) throws IOException {
+        stream.writeInt(items.length);
+        for (int i = 0; i < items.length; i++) {
+            if (skip.contains(i)) {
+                stream.writeObject(null);
+                continue;
+            }
+            ItemStack item = items[i];
+            writeItem(stream, item, playerName, inventoryName, i, skip);
+        }
+    }
+
+    private static class IntSet extends HashSet<Integer> {
+    }
+
+    private static class ItemSerializationException extends IOException {
+        public ItemSerializationException(Throwable cause) {
+            super(cause);
+        }
+    }
+
+    private static void writeItem(BukkitObjectOutputStream stream, ItemStack item, String playerName, String inventoryName, int index, Set<Integer> skip) throws IOException {
         try {
             stream.writeObject(item);
         } catch (Throwable e) {
-            String msg = "Failed to serialize " + item + " for " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
+            skip.add(index);
+            String msg = "Failed to serialize item in " + inventoryName + ", slot " + index + " of " + playerName + ". This is not an issue with AuxProtect, it is Bukkit failing to serialize the item correctly. The item will be logged as an empty slot. (" + e.getClass().getName() + ": " + e.getMessage() + ")";
             spamMap.values().removeIf(l -> System.currentTimeMillis() - l > 60000L);
             if (!spamMap.containsKey(msg)) {
                 spamMap.put(msg, System.currentTimeMillis());
                 AuxProtectAPI.warning(msg);
+                AuxProtectAPI.print(e);
             }
-            stream.writeObject(null);
+            throw new ItemSerializationException(e);
         }
     }
 
