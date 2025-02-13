@@ -65,7 +65,7 @@ public class ClaimInvCommand implements CommandExecutor {
                         if (target instanceof Player play
                                 && play.getOpenInventory().getTopInventory().getHolder() instanceof Pane pane) {
                             pane.cancel();
-                            plugin.runSync(play::closeInventory);
+                            AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(play).run(play::closeInventory, null);
                             break out;
                         }
                         sender.sendMessage(L.COMMAND__CLAIMINV__OTHERHASNONE.translate());

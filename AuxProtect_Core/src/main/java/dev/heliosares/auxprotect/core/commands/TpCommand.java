@@ -9,8 +9,13 @@ import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.entity.Entity;
 
 import java.util.List;
+
+import static io.papermc.lib.PaperLib.teleportAsync;
 
 public class TpCommand extends Command {
 
@@ -35,7 +40,7 @@ public class TpCommand extends Command {
                 pitch = Integer.parseInt(args[5]);
                 yaw = Integer.parseInt(args[6]);
             }
-            sender.teleport(args[4], x, y, z, pitch, yaw);
+            teleportAsync((Entity) sender.getSender(), new Location(Bukkit.getWorld(args[4]), x, y, z, pitch, yaw));
         } catch (NumberFormatException | NullPointerException e) {
             throw new SyntaxException();
         } catch (UnsupportedOperationException e) {
