@@ -9,11 +9,13 @@ import org.bukkit.entity.ItemFrame;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.BlockDispenseLootEvent;
 import org.bukkit.event.hanging.HangingBreakEvent;
 import org.bukkit.event.hanging.HangingBreakEvent.RemoveCause;
 import org.bukkit.event.raid.RaidSpawnWaveEvent;
 import org.bukkit.event.raid.RaidTriggerEvent;
 import org.bukkit.event.weather.LightningStrikeEvent;
+import org.bukkit.inventory.ItemStack;
 
 public class WorldListener implements Listener {
 
@@ -48,5 +50,21 @@ public class WorldListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void on(RaidSpawnWaveEvent e) {
         plugin.getServer().getScheduler().runTaskLater(plugin, () -> e.getRaiders().forEach(raider -> plugin.add(new SpigotDbEntry("#raid", EntryAction.RAIDSPAWN, false, raider.getLocation(), AuxProtectSpigot.getLabel(raider), ""))), 1);
+    }
+
+    @EventHandler
+    public void on(BlockDispenseLootEvent e) {
+        for (ItemStack loot : e.getDispensedLoot()) {
+            SingleItemEntry sie = new SingleItemEntry(
+                    "#" + e.getBlock().getType(),
+                    EntryAction.DROP,
+                    false,
+                    e.getBlock().getLocation(),
+                    loot.getType().toString().toLowerCase(),
+                    "",
+                    loot
+            );
+            plugin.add(sie);
+        }
     }
 }
