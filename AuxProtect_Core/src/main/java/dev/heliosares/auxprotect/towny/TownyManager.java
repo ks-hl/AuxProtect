@@ -1,5 +1,6 @@
 package dev.heliosares.auxprotect.towny;
 
+import com.palmergames.bukkit.towny.TownyEconomyHandler;
 import com.palmergames.bukkit.towny.TownyUniverse;
 import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Nation;
@@ -157,6 +158,8 @@ public class TownyManager implements Runnable {
 
     @Override
     public void run() {
+        if (!TownyEconomyHandler.isActive()) return;
+
         if (lastTownBankUpdate == 0) {
             lastTownBankUpdate = 1;
             try {

@@ -255,7 +255,7 @@
         <dependency>
             <groupId>com.comphenix.protocol</groupId>
             <artifactId>ProtocolLib</artifactId>
-            <version>5.3.0-SNAPSHOT</version>
+            <version>5.3.0</version>
         </dependency>
         <dependency>
             <groupId>com.olziedev</groupId>
@@ -275,7 +275,6 @@
         </dependency>
     </dependencies>
     <properties>
-        <jars>${env.USERPROFILE}/eclipse-workspace/jars</jars>
         <project.build.sourceEncoding>UTF8</project.build.sourceEncoding>
     </properties>
 </project>
