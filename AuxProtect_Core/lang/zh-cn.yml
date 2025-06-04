@@ -1,44 +1,49 @@
-version: 7
+version: 9
 
 color:
   p: '9'
   s: 'f'
   t: '7'
 update: '&t有新的 &pAuxProtect &t更新可用！\n&t当前版本：&p<current_version> &t新版本：&p<new_version>\n&thttps://www.spigotmc.org/resources/auxprotect.99147/'
-no-permission: '&c您没有权限执行该操作。'
+no-permission: '&c您没有权限执行该操作.'
 no-permission-node: '&c您没有权限执行该操作：&t<node>'
-no-permission-flag: '&c您没有权限进行该标记操作。'
+no-permission-flag: '&c您没有权限进行该标记操作.'
 invalid-parameter: '&c无效的参数：&l<invalid_parameter>'
-invalid-syntax: '&c无效的语法。'
-invalid-notenough: '&c参数不足。'
-error: '&c发生错误。'
-action-disabled: '&c此操作已被禁用。'
-notplayererror: '此命令仅可在游戏内使用。'
-backup-sqliteonly: '备份仅适用于SQLite数据库。'
-unknown-subcommand: '未知的子命令。输入 &p/ap help &t获取更多信息。'
+invalid-syntax: '&c无效的语法.'
+invalid-notenough: '&c参数不足.'
+error: '&c发生错误.'
+action-disabled: '&c此操作已被禁用.'
+notplayererror: '此命令仅可在游戏内使用.'
+backup-sqliteonly: '备份仅适用于SQLite数据库.'
+unknown-subcommand: '未知的子命令.输入 &p/ap help &t获取更多信息.'
+playernotfound: '&c玩家未找到'
 command:
   ap:
-    help: '&t输入 &p/ap help &t获取更多信息。'
+    help: '&t输入 &p/ap help &t获取更多信息.'
     developed-by: '开发者'
     backup-created: '已创建备份：&p<file>'
-    config-reloaded: '&p配置已重新加载。'
+    config-reloaded: '&p配置已重新加载.'
     lang-reloaded: '&p语言已重新加载：&l<locale>'
     lang-not-found: '&p找不到语言文件：&l<file>'
   saveinv:
-    success: '&p已成功手动保存玩家 &p<target> &t的背包。 &o时间：&p<time>'
-    toosoon: '&c该玩家的背包已在较短时间内保存过。'
+    success: '&p已成功手动保存玩家 &p<target> &t的背包. &o时间：&p<time>'
+    toosoon: '&c该玩家的背包已在较短时间内保存过.'
   inv:
-    recovered: '&p管理员 &s恢复了玩家 &p<target> &s的背包，时间距今 &p<time>。'
-    force-recovered: '&p管理员强制恢复了玩家 &p<target> &s的背包，时间距今 &p<time>。'
-    success: '&s您已恢复玩家 &p<target> &s的背包。'
-    notify-player: '&p管理员 &s恢复了您在时间 &p<time> &s的背包。'
+    recovered: '&p管理员 &s恢复了玩家 &p<target> &s的背包，时间距今 &p<time>.'
+    force-recovered: '&p管理员强制恢复了玩家 &p<target> &s的背包，时间距今 &p<time>.'
+    success: '&s您已恢复玩家 &p<target> &s的背包.'
+    notify-player: '&p管理员 &s恢复了您在时间 &p<time> &s的背包.'
+    notify-player-claim-button: '&a[领取]'
+    notify-player-claim-hover: '&a点击领取恢复的背包'
+    notify-player-claim-alt: '&f输入 &b/claiminv&f 领取'
     notify-player-ensure-room: '&t请确保在领取之前您的背包有足够的空间！'
+    notify-player-waiting: '&a您有恢复的背包等待领取！'
     item-viewer: '物品查看器'
   claiminv:
-    cancelled-other: '&a您取消了玩家 &p<target> &s的可领取背包。'
-    cancelled: '&c您的可领取背包已取消。'
-    youhavenone: '&c您没有可领取的背包。'
-    otherhasnone: '&c该玩家没有可领取的背包可取消。'
+    cancelled-other: '&a您取消了玩家 &p<target> &s的可领取背包.'
+    cancelled: '&c您的可领取背包已取消.'
+    youhavenone: '&c您没有可领取的背包.'
+    otherhasnone: '&c该玩家没有可领取的背包可取消.'
     header: '领取背包'
     claim-button:
       label: '领取'
@@ -46,44 +51,44 @@ command:
   purge:
     purging: '&p正在清理表 &l<table&g<...'
     uids: '&p清理未使用的UID...'
-    notvacuum: '&c跳过压缩SQLite文件。上次执行时间：&l<time>。若要强制执行，请从控制台运行 ''ap sqli vacuum''。'
+    notvacuum: '&c跳过压缩SQLite文件.上次执行时间：&l<time>.若要强制执行，请从控制台运行 ''ap sqli vacuum''.'
     vacuum: '&p正在压缩SQLite文件...'
-    complete-count: '&p清理完成。共清理了 &l<rows> 行。'
-    error: '&c清理过程中发生错误。'
-    time: '&c清理时间太短。请尝试更长的时间。'
-    table: '&c该表无效或不存在。'
-    nopurge: '&c无法直接清理该表。'
-    skipauto: '&p跳过自动清理，因为距上次清理时间仅过去了 &l<time>。'
+    complete-count: '&p清理完成.共清理了 &l<rows> 行.'
+    error: '&c清理过程中发生错误.'
+    time: '&c清理时间太短.请尝试更长的时间.'
+    table: '&c该表无效或不存在.'
+    nopurge: '&c无法直接清理该表.'
+    skipauto: '&p跳过自动清理，因为距上次清理时间仅过去了 &l<time>.'
   lookup:
     unknown-world: '&c未知的世界：&l<world>'
     looking: '&p正在搜索数据库...'
-    noresults: '&c未找到结果。'
-    count: '&p找到 &l<results> 个结果。'
-    page-footer: '&t页数（&p<page_number>/<page_count>&t），共 &p<entry_count> 个条目。'
-    page-footer-groups: '&t页数（&p<page_number>/<page_count>&t），共 &p<entry_count> 个组。'
-    no-results-selected: '&c您没有查询结果可翻页。'
-    nopage: '&c该页不存在。'
-    toomany: '&c条目过多。请尝试缩小搜索范围。 （&l<count> 条，超过 &l<max> 条)'
-    incompatible-tables: '&c这些操作不兼容。'
-    action-negate: '&c无法对操作进行否定。'
-    action-perm: '&c您没有查找该操作的权限。 &t''&l<node>'''
-    action-none: '&c您必须指定一个操作。'
-    rating-wrong: '&c只能为 a:vein 指定 ''rating''。'
-    nodata: '&c该表没有数据记录。'
+    noresults: '&c未找到结果.'
+    count: '&p找到 &l<results> 个结果.'
+    page-footer: '&t页数（&p<page_number>/<page_count>&t），共 &p<entry_count> 个条目.'
+    page-footer-groups: '&t页数（&p<page_number>/<page_count>&t），共 &p<entry_count> 个组.'
+    no-results-selected: '&c您没有查询结果可翻页.'
+    nopage: '&c该页不存在.'
+    toomany: '&c条目过多.请尝试缩小搜索范围. （&l<count> 条，超过 &l<max> 条)'
+    incompatible-tables: '&c这些操作不兼容.'
+    action-negate: '&c无法对操作进行否定.'
+    action-perm: '&c您没有查找该操作的权限. &t''&l<node>'''
+    action-none: '&c您必须指定一个操作.'
+    rating-wrong: '&c只能为 a:vein 指定 ''rating''.'
+    nodata: '&c该表没有数据记录.'
+    wrong-flag: '&c不能在 <table> 表中使用 #<flag> 标志'
     playback:
       starting: '&p正在开始回放...'
-      stopped: '&p回放已停止。'
-      toolong: '&c无法回放超过 &l<limit> 的时间范围。'
+      stopped: '&p回放已停止.'
+      toolong: '&c无法回放超过 &l<limit> 的时间范围.'
     playtime:
       header: '&p<target>''<optional_s> 游玩时间'
       hover: '&p<time>\n&p<minutes> &8在线'
-      nouser: '&c未指定用户。'
-      toomanyusers: '&c指定的用户过多。'
-      toolong: '&c游玩时间的最大范围为 &l<days> 天。'
+      nouser: '&c未指定用户.'
+      toomanyusers: '&c指定的用户过多.'
+      toolong: '&c游玩时间的最大范围为 &l<days> 天.'
     invalid-time-parameter: '无效的时间参数：&l<specifier>'
   help:
-    # 注意，帮助语言中的 <> 括号是字面值，不代表翻译。
-    nohelp: '&c此命令没有帮助页面。'
+    nohelp: '&c此命令没有帮助页面.'
     header: '&s----- &pAuxProtect 帮助 &s-----'
     help:
       - '&p/$prefix lookup &l<params> &s- 执行查询操作'
@@ -92,24 +97,30 @@ command:
       - '&p/$prefix help [command] &s- 显示此消息，或获取关于子命令的更多信息'
       - '&s'
       - '&t查看更多信息请访问 Wiki：https://github.com/Heliosares/AuxProtect/wiki'
-  lookup-playernotfound: '&c找不到玩家 &p<target>。'
-  lookup-unknownaction: '&c未知的操作：&l<action>。'
-  xray-rate-nochange: '&c该条目的评级已经是这个值了。'
-  xray-rate-written: '&a评级已成功保存。'
-  xray-done: '&a没有更多的x光检查记录！'
-  xray-notfound: '&c在该时间内未找到结果。'
-  xray-toomany: '&c结果过多。'
-  xray-already-rated: '&c此条目已经评级过。是否仍要评级？'
-  xray-click-to-change: '&a点击以评级'
-  inactive-alert: '&8[&4服务器&8] &e<user> &t可能处于非活动状态。&e<inactive_minutes> &t分钟未活动，总计 &e<total_minutes> &t分钟。'
-  yes: '是'
-  no: '否'
-  database-busy: '&c数据库正忙。请稍后再试，或查看控制台获取更多信息。'
-  protocollib-not-loaded: '&c此操作需要ProtocolLib插件，但未安装。'
+    inventory:
+      - '&s/$prefix &pinventory &s<名称> [时间]'
+    playtime:
+      - '&s/$prefix &pplaytime &s<名称> [时间]'
+  lookup-playernotfound: '&c找不到玩家 &p<target>.'
+  lookup-unknownaction: '&c未知的操作：&l<action>.'
+  time:
+    server-time: '&p服务器时间：'
+xray-rate-nochange: '&c该条目的评级已经是这个值了.'
+xray-rate-written: '&a评级已成功保存.'
+xray-done: '&a没有更多的x光检查记录！'
+xray-notfound: '&c在该时间内未找到结果.'
+xray-toomany: '&c结果过多.'
+xray-already-rated: '&c此条目已经评级过.是否仍要评级？'
+xray-click-to-change: '&a点击以评级'
+inactive-alert: '&8[&4服务器&8] &e<user> &t可能处于非活动状态.&e<inactive_minutes> &t分钟未活动，总计 &e<total_minutes> &t分钟.'
+yes: '是'
+no: '否'
+database-busy: '&c数据库正忙.请稍后再试，或查看控制台获取更多信息.'
+protocollib-not-loaded: '&c此操作需要ProtocolLib插件，但未安装.'
 
 results:
   click-to-copy: '单击以复制到剪贴板'
-  click-to-copy-time: '&t单击以复制到剪贴板。 (时间：&p<time>毫秒)'
+  click-to-copy-time: '&t单击以复制到剪贴板. (时间：&p<time>毫秒)'
   click-to-view: '单击查看！'
   grouping-of: '&f分组（&p<entry_count> &f个条目）'
   header: '&pAuxProtect 结果'
@@ -127,7 +138,7 @@ results:
 inv-recover-menu:
   main-header: '<target> &l<optional_s>背包 - &l<time> 前'
   ender-header: '<target> &l<optional_s>末影箱 - &l<time> 前'
-  xp-error: '&c无法恢复经验值。'
+  xp-error: '&c无法恢复经验值.'
   button:
     force:
       label: '&2&l强制恢复背包'
@@ -137,7 +148,7 @@ inv-recover-menu:
         - ''
         - '&t这将&c&l覆盖&7玩家当前的'
         - '&7背包和经验值，以'
-        - '&7上面查看到的内容为准。'
+        - '&7上面查看到的内容为准.'
     force-unavailable:
       label: '&8&l强制恢复背包不可用'
       hover:
@@ -149,11 +160,11 @@ inv-recover-menu:
         - ''
         - '&t这将为玩家提供'
         - '&t领取此背包的提示，如同'
-        - '&t打开一个拥有上述内容的箱子。他们还将获得'
-        - '&t此处所述的经验值。'
+        - '&t打开一个拥有上述内容的箱子.他们还将获得'
+        - '&t此处所述的经验值.'
         - ''
         - '&c这不会覆盖任何内容，可能会'
-        - '&c重复道具，&t如果它们最初未丢失。'
+        - '&c重复道具，&t如果它们最初未丢失.'
     close: '&c&l关闭'
     ender-chest: '&8&l查看末影箱'
     xp:
@@ -212,6 +223,7 @@ actions:
     n: 卸下坐骑
   msg: 发送消息
   nametag: 命名标签
+  nationbalance: 国家余额
   nationbank:
     p: 存入
     n: 取出
@@ -234,12 +246,22 @@ actions:
   session:
     p: 登录
     n: 登出
-  shop:
-    p: 购买
-    n: 出售
+  shop_cs:
+    p: 从ChestShop购买
+    n: 在ChestShop出售
+  shop_ds:
+    p: 购买 (DS)
+    n: 出售 (DS)
+  shop_sgp:
+    p: 购买 (SGP)
+    n: 出售 (SGP)
+  shop_esg:
+    p: 购买 (ESG+)
+    n: 出售 (ESG+)
   smith: 升级到下界合金
   tame: 驯服
   totem: 使用不死图腾
+  townbalance: 城镇余额
   townbank:
     p: 存入
     n: 取出
