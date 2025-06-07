@@ -15,7 +15,6 @@
     </build>
 
     <artifactId>AuxProtect_Core</artifactId>
-    <version>${revision}</version>
     <name>AuxProtect_Core</name>
 
     <dependencies>

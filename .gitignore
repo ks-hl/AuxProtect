@@ -9,3 +9,4 @@ test_run/
 dependency-reduced-pom.xml
 /AuxProtect_Private
 /AuxProtect_Private*
+.flattened-pom.xml
