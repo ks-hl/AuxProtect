@@ -42,7 +42,11 @@ public class GenericBuilder {
     }
 
     public GenericBuilder append(String text) {
-        return append(new GenericComponent(text));
+        return append(text, true);
+    }
+
+    public GenericBuilder append(String text, boolean translate) {
+        return append(new GenericComponent(text, translate));
     }
 
     public GenericBuilder append(Object value) {

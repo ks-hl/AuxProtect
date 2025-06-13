@@ -301,7 +301,8 @@ public class DbEntry {
     }
 
     public void appendTarget(GenericBuilder message, IAuxProtect plugin) throws SQLException, BusyException {
-        message.append(GenericTextColor.BLUE + getTarget())
+        message.append(getTarget(), false)
+                .color(GenericTextColor.BLUE)
                 .hover(Results.clickToCopyHoverEvent)
                 .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, getTarget()));
     }
@@ -323,8 +324,12 @@ public class DbEntry {
             if (getAction().equals(EntryAction.SESSION) && !APPermission.LOOKUP_ACTION.dot(EntryAction.SESSION.toString().toLowerCase()).dot("ip").hasPermission(sender)) {
                 message.append(" " + GenericTextColor.COLOR_CHAR + "8[" + GenericTextColor.COLOR_CHAR + "7" + Language.L.RESULTS__REDACTED.translate() + GenericTextColor.COLOR_CHAR + "8]");
             } else {
-                message.append(" " + GenericTextColor.COLOR_CHAR + "8[" + GenericTextColor.COLOR_CHAR + "7" + data + GenericTextColor.COLOR_CHAR + "8]");
-                message.hover(hoverEvent).click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
+                message.append(" [").color(GenericTextColor.GRAY);
+                message.append(data, false)
+                        .color(GenericTextColor.GRAY)
+                        .hover(hoverEvent)
+                        .click(new ClickEvent(ClickEvent.Action.COPY_TO_CLIPBOARD, data));
+                message.append("]").color(GenericTextColor.GRAY);
             }
         }
         if (getAction().equals(EntryAction.ACTIVITY)) {

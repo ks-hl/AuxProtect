@@ -8,7 +8,15 @@ public class GenericComponent {
     boolean bold, italics, underlined, strikethrough, magic;
 
     public GenericComponent(String text) {
-        this.text = ColorTranslator.translateAlternateColorCodes(text);
+        this(true);
+    }
+
+    public GenericComponent(String text, boolean translate) {
+        if (translate) {
+            this.text = ColorTranslator.translateAlternateColorCodes(text);
+        } else {
+            this.text = text;
+        }
     }
 
     public GenericComponent(Object o) {

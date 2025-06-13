@@ -28,7 +28,7 @@ public class APVListener {
 
     @Subscribe
     public void on(CommandExecuteEvent e) {
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getCommandSource()), EntryAction.COMMAND, false, e.getCommand().trim(), ""));
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getCommandSource()), EntryAction.COMMAND, false, "/" + e.getCommand().trim(), ""));
     }
 
     @Subscribe
