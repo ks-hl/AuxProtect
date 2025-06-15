@@ -329,6 +329,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     }
 
                     for (APPlayerSpigot apPlayer : players) {
+                        if (getServer().getPlayer(apPlayer.getPlayer().getUniqueId()) == null) continue;
                         periodicPlayerTick(apPlayer);
                     }
                 } finally {

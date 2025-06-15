@@ -68,7 +68,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
             movedAmountThisMinute = 0;
             hasMovedThisMinute = false;
 
-            if (record == null) return null;
+            if (record == null) return ";0";
             return record.toString();
         }
     }
