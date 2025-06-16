@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
 import dev.heliosares.auxprotect.exceptions.*;
+import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
@@ -105,7 +106,7 @@ public class InventoryCommand extends Command {
                         TimeUtil.millisToString(System.currentTimeMillis() - inv.basetime()),
                         inv.basetime() + "e", inv.numdiff()));
 
-        plugin.runSync(() -> player.openInventory(output));
+        AuxProtectSpigot.getMorePaperLib().scheduling().entitySpecificScheduler(player).run(() -> player.openInventory(output), null);
     }
 
     @Override
