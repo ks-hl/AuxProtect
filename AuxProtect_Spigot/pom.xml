@@ -129,12 +129,6 @@
             <version>1.7.1</version>
         </dependency>
         <dependency>
-            <groupId>com.github.7sat</groupId>
-            <artifactId>DynamicShop3</artifactId>
-            <version>3.16.1</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>com.github.Zrips</groupId>
             <artifactId>Jobs</artifactId>
             <version>4.17.2</version>

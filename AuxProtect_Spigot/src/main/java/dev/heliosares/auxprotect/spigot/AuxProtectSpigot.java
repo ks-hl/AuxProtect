@@ -22,7 +22,6 @@ import dev.heliosares.auxprotect.spigot.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.spigot.listeners.AuctionHouseListener;
 import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
 import dev.heliosares.auxprotect.spigot.listeners.CommandListener;
-import dev.heliosares.auxprotect.spigot.listeners.DynamicShopListener;
 import dev.heliosares.auxprotect.spigot.listeners.EconomyShopGUIListener;
 import dev.heliosares.auxprotect.spigot.listeners.EntityListener;
 import dev.heliosares.auxprotect.spigot.listeners.EssentialsListener;
@@ -239,7 +238,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         EntryAction.SHOP_SGP.setEnabled(hook(() -> new ShopGUIPlusListener(this), "ShopGuiPlus"));
         EntryAction.SHOP_ESG.setEnabled(hook(() -> new EconomyShopGUIListener(this), "EconomyShopGUI", "EconomyShopGUI-Premium"));
-        EntryAction.SHOP_DS.setEnabled(hook(() -> new DynamicShopListener(this), "DynamicShop"));
         EntryAction.SHOP_CS.setEnabled(hook(() -> new ChestShopListener(this), "ChestShop"));
 
         boolean auctionHook = hook(() -> new AuctionHouseListener(this), "AuctionHouse");
