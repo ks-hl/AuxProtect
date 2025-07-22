@@ -14,10 +14,8 @@ import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
 import java.io.IOException;
-import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.Objects;
-import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransactionEntry extends SpigotDbEntry {
     private final short quantity;
@@ -131,7 +129,7 @@ public class TransactionEntry extends SpigotDbEntry {
     public void appendTarget(GenericBuilder message, IAuxProtect plugin) throws SQLException, BusyException {
         HoverEvent hoverEvent = null;
         if (getQuantity() > 0) {
-            message.append(GenericTextColor.BLUE + " " + getQuantity());
+            message.append(GenericTextColor.BLUE + "" + getQuantity() + " ");
         }
         if (getBlob() != null && getBlob().length > 0) {
             try {
