@@ -23,7 +23,19 @@ public class EconomyShopGUIListener implements Listener {
             ItemStack item = shopItem.getItemToGive();
             boolean state = e.getTransactionType().toString().contains("BUY");
 
-            plugin.add(new TransactionEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.SHOP_ESG, state, e.getPlayer().getLocation(), item.getType().toString().toLowerCase(), "", (short) 0, e.getPrice(), plugin.getEconomy().getBalance(e.getPlayer()), item, "#server"));
+            plugin.add(new TransactionEntry(
+                    AuxProtectSpigot.getLabel(e.getPlayer()),
+                    EntryAction.SHOP_ESG,
+                    state,
+                    e.getPlayer().getLocation(),
+                    item.getType().toString().toLowerCase(),
+                    "",
+                    (short) 0,
+                    e.getPrice(),
+                    plugin.getEconomy().getBalance(e.getPlayer()),
+                    item,
+                    "#server"
+            ));
         }
     }
 }

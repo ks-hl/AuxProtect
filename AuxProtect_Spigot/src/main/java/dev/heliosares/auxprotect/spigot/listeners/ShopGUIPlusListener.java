@@ -25,6 +25,18 @@ public class ShopGUIPlusListener implements Listener {
         boolean state = result.getShopAction() == ShopAction.BUY;
         ItemStack item = result.getShopItem().getItem();
 
-        plugin.add(new TransactionEntry(AuxProtectSpigot.getLabel(result.getPlayer()), EntryAction.SHOP_SGP, state, result.getPlayer().getLocation(), item.getType().toString().toLowerCase(), "", (short) 0, result.getPrice(), plugin.getEconomy().getBalance(result.getPlayer()), item, "#server"));
+        plugin.add(new TransactionEntry(
+                AuxProtectSpigot.getLabel(result.getPlayer()),
+                EntryAction.SHOP_SGP,
+                state,
+                result.getPlayer().getLocation(),
+                item.getType().toString().toLowerCase(),
+                "",
+                (short) result.getAmount(),
+                result.getPrice(),
+                plugin.getEconomy().getBalance(result.getPlayer()),
+                item,
+                "#server"
+        ));
     }
 }

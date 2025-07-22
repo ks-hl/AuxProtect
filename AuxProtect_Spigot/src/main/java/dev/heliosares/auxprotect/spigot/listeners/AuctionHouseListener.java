@@ -2,8 +2,6 @@ package dev.heliosares.auxprotect.spigot.listeners;
 
 import com.spawnchunk.auctionhouse.events.ListItemEvent;
 import com.spawnchunk.auctionhouse.events.PurchaseItemEvent;
-import dev.heliosares.auxprotect.api.AuxProtectAPI;
-import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
@@ -33,9 +31,15 @@ public class AuctionHouseListener implements Listener {
                 l = new Location(world, 0, 0, 0);
             }
         }
-        DbEntry entry = new SingleItemEntry("$" + e.getSeller_UUID(), EntryAction.AUCTIONLIST, false, l,
-                e.getItem().getType().toString().toLowerCase(), plugin.formatMoney(e.getPrice()), e.getItem());
-        plugin.add(entry);
+        plugin.add(new SingleItemEntry(
+                "$" + e.getSeller_UUID(),
+                EntryAction.AUCTIONLIST,
+                false,
+                l,
+                e.getItem().getType().toString().toLowerCase(),
+                plugin.formatMoney(e.getPrice()),
+                e.getItem()
+        ));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
@@ -52,9 +56,13 @@ public class AuctionHouseListener implements Listener {
             }
         }
 
-        DbEntry entry = new SingleItemEntry("$" + e.getBuyer_UUID(), EntryAction.AUCTIONBUY, false, l,
+        plugin.add(new SingleItemEntry(
+                "$" + e.getBuyer_UUID(),
+                EntryAction.AUCTIONBUY,
+                false,
+                l,
                 e.getItem().getType().toString().toLowerCase(),
-                "From " + e.getSeller().getName() + " for " + plugin.formatMoney(e.getPrice()), e.getItem());
-        plugin.add(entry);
+                "From " + e.getSeller().getName() + " for " + plugin.formatMoney(e.getPrice()), e.getItem()
+        ));
     }
 }
