@@ -72,6 +72,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.logging.Level;
@@ -311,27 +312,25 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
         new BukkitRunnable() {
 
-            private boolean running;
+            private final ReentrantLock lock = new ReentrantLock();
 
             @Override
             public void run() {
-                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected() || running) {
+                if (!isEnabled() || sqlManager == null || !sqlManager.isConnected()) {
                     return;
                 }
-                running = true;
+                if (!lock.tryLock()) return;
                 try {
-                    List<APPlayerSpigot> players;
-                    // Make a new list to not tie up other calls to apPlayers
-                    synchronized (apPlayers) {
-                        players = new ArrayList<>(apPlayers.values());
-                    }
-
-                    for (APPlayerSpigot apPlayer : players) {
-                        if (getServer().getPlayer(apPlayer.getPlayer().getUniqueId()) == null) continue;
-                        periodicPlayerTick(apPlayer);
+                    for (Player player : getServer().getOnlinePlayers()) {
+                        try {
+                            periodicPlayerTick(getAPPlayer(player));
+                        } catch (Throwable t) {
+                            warning("An error occurred processing player tick for " + player.getName());
+                            print(t);
+                        }
                     }
                 } finally {
-                    running = false;
+                    lock.unlock();
                 }
             }
         }.runTaskTimerAsynchronously(this, 40, 4);
@@ -415,6 +414,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     protected void periodicPlayerTick(APPlayerSpigot apPlayer) {
         if (!apPlayer.getPlayer().isOnline()) {
+            debug(apPlayer.getPlayer().getName() + " not online");
             return;
         }
 
