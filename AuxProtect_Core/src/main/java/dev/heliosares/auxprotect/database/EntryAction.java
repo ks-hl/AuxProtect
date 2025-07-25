@@ -130,7 +130,7 @@ public class EntryAction {
 
     public static final EntryAction SHOP_SGP = new EntryAction("shop_sgp", 1500, 1501, Table.AUXPROTECT_TRANSACTIONS);
     public static final EntryAction SHOP_ESG = new EntryAction("shop_esg", 1502, 1503, Table.AUXPROTECT_TRANSACTIONS);
-    public static final EntryAction SHOP_DS = new EntryAction("shop_ds", 1504, 1505, Table.AUXPROTECT_TRANSACTIONS);
+    // SHOP_DS : 1504, 1505
     public static final EntryAction SHOP_CS = new EntryAction("shop_cs", 1506, 1507, Table.AUXPROTECT_TRANSACTIONS);
 
     public final boolean hasDual;
