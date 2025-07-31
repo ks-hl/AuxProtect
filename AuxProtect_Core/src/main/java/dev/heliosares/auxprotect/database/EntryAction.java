@@ -95,6 +95,9 @@ public class EntryAction {
     public static final EntryAction SMITH = new EntryAction("smith", 1157, Table.AUXPROTECT_INVENTORY);
     public static final EntryAction BUCKET = new EntryAction("bucket", 1158, 1159, Table.AUXPROTECT_INVENTORY);
 
+    public static final EntryAction CRATEOPEN = new EntryAction("crateopen", 1160, Table.AUXPROTECT_INVENTORY);
+    public static final EntryAction CRATEREWARD = new EntryAction("cratereward", 1161, Table.AUXPROTECT_INVENTORY);
+
     // COMMANDS
     public static final EntryAction COMMAND = new EntryAction("command", 1280, Table.AUXPROTECT_COMMANDS);
 

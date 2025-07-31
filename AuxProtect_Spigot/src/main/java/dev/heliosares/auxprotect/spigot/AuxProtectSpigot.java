@@ -25,6 +25,7 @@ import dev.heliosares.auxprotect.spigot.listeners.CommandListener;
 import dev.heliosares.auxprotect.spigot.listeners.EconomyShopGUIListener;
 import dev.heliosares.auxprotect.spigot.listeners.EntityListener;
 import dev.heliosares.auxprotect.spigot.listeners.EssentialsListener;
+import dev.heliosares.auxprotect.spigot.listeners.ExcellentCratesListener;
 import dev.heliosares.auxprotect.spigot.listeners.InventoryListener;
 import dev.heliosares.auxprotect.spigot.listeners.JobsListener;
 import dev.heliosares.auxprotect.spigot.listeners.PaneListener;
@@ -260,6 +261,10 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                 }
             }
             EntryAction.TOWNYNAME.setEnabled(false);
+        }
+        if (!hook(() -> new ExcellentCratesListener(this), "ExcellentCrates")) {
+            EntryAction.CRATEOPEN.setEnabled(false);
+            EntryAction.CRATEREWARD.setEnabled(false);
         }
 
         Objects.requireNonNull(this.getCommand("claiminv")).setExecutor(claiminvcommand = new ClaimInvCommand(this));

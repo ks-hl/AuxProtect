@@ -16,7 +16,8 @@ softdepend: [
   Jobs,
   ShopGUIPlus,
   Towny,
-  Vault
+  Vault,
+  ExcellentCrates
 ]
 loadbefore: [
   AdvancedPortals,

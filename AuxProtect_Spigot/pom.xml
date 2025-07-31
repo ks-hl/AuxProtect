@@ -65,6 +65,12 @@
             <id>olzie-repo</id>
             <url>https://repo.olziedev.com/</url>
         </repository>
+
+        <!--        ExcellentCrates-->
+        <repository>
+            <id>nightexpress-releases</id>
+            <url>https://repo.nightexpressdev.com/releases</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -162,6 +168,11 @@
             <artifactId>playerauctions-api</artifactId>
             <version>1.27.3</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>su.nightexpress.excellentcrates</groupId>
+            <artifactId>ExcellentCrates</artifactId>
+            <version>6.2.1</version>
         </dependency>
     </dependencies>
 </project>

@@ -214,6 +214,8 @@ actions:
   connect: connected to
   consume: consumed
   craft: crafted
+  crateopen: opened crate
+  cratereward: got from crate
   drop: dropped
   elytra:
     p: started flying
