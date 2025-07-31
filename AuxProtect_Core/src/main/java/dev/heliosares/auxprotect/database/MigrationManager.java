@@ -236,7 +236,6 @@ public class MigrationManager {
                         action = switch (parts[0]) {
                             case "SGP" -> EntryAction.SHOP_SGP;
                             case "CS" -> EntryAction.SHOP_CS;
-                            case "DS" -> EntryAction.SHOP_DS;
                             case "ESG" -> EntryAction.SHOP_ESG;
                             default -> throw new IllegalArgumentException();
                         };
