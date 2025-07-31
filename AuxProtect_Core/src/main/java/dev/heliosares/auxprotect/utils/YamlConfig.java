@@ -85,6 +85,7 @@ public class YamlConfig {
     }
 
     private YamlConfig loadFromStream(InputStream in) {
+        Objects.requireNonNull(in, "InputStream must not be null");
         Yaml yaml = new Yaml(new Constructor(new LoaderOptions()), new Representer(new DumperOptions()), new DumperOptions(), new Resolver() {
             @Override
             public void addImplicitResolver(Tag tag, Pattern regexp, String first, int limit) {

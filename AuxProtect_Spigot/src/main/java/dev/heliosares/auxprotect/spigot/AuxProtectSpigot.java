@@ -157,7 +157,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
 
         try {
-            String langFileName = "lang/" + config.getConfig().getString("lang").orElse("") + ".yml";
+            String langFileName = "lang/" + config.getConfig().getString("lang").orElse("en-us") + ".yml";
             Language.load(this,
                     () -> new YamlConfig(new File(getDataFolder(), langFileName),
                             () -> getResource(langFileName)),
