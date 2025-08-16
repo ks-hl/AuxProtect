@@ -187,7 +187,7 @@ actions:
   explode: 造成爆炸
   gamemode: 切换游戏模式到
   grab: 抓取
-  hurt: 受伤
+  hurt: 伤害
   ignoreabandoned: 忽略废弃警告
   inv:
     p: 打开
