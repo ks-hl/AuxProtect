@@ -56,4 +56,8 @@ public class SpigotLocationAdapter extends LocationAdapter {
     public float getYaw() {
         return handle.getYaw();
     }
+
+    public Location getHandle() {
+        return handle;
+    }
 }
