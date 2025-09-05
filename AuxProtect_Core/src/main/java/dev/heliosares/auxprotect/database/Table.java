@@ -271,7 +271,7 @@ public enum Table {
         this.autopurgeinterval = autopurgeinterval;
     }
 
-    static final int COUNTER_FACTOR = 10000;
+    static final int COUNTER_FACTOR = 100_000;
 
     public synchronized long getNextSnowflake() {
         long now = System.currentTimeMillis();
@@ -280,8 +280,9 @@ public enum Table {
             counter = 0;
         } else if (counter + 1 < COUNTER_FACTOR) {
             counter++;
-        } else {
-            throw new IllegalStateException("Max counter reached for this millisecond");
+        } else { // Resort to old method of skipping to the next millisecond. It's not pretty, but this should be an extreme edge case
+            lastTime++;
+            counter = 0;
         }
         return lastTime * COUNTER_FACTOR + counter;
     }
