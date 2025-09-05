@@ -176,7 +176,7 @@ public class LookupManager {
                     int count = 0;
                     parseStart = System.currentTimeMillis();
                     while (rs.next()) {
-                        long time = rs.getLong("time");
+                        long snowflake = rs.getLong("time");
                         int uid = rs.getInt("uid");
                         int action_id = -1;
                         if (hasAction) {
@@ -222,7 +222,7 @@ public class LookupManager {
                             target_id = rs.getInt("target_id");
                         }
 
-                        EntryData entryData = new EntryData(table, time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, rs);
+                        EntryData entryData = new EntryData(table, snowflake, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, rs);
                         for (EntryLoader loader : loaders) {
                             if (!loader.applies().test(entryData)) continue;
                             entry = loader.loader().load(entryData);
@@ -230,7 +230,7 @@ public class LookupManager {
                         }
 
                         if (entry == null) {
-                            entry = new DbEntry(time, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
+                            entry = new DbEntry(snowflake, uid, entryAction, state, world, x, y, z, pitch, yaw, target, target_id, data, sql);
                         }
 
                         if (table.hasBlobID()) {

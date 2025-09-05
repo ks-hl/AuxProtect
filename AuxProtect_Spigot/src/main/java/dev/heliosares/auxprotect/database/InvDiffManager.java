@@ -99,8 +99,6 @@ public class InvDiffManager extends BlobManager {
     }
 
     public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
-        long after = 0;
-
         try {
             return sql.executeReturnException(connection -> {
                 long basetime_;
@@ -109,7 +107,7 @@ public class InvDiffManager extends BlobManager {
                         " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
                     statement.setInt(1, uid);
                     statement.setLong(2, EntryAction.INVENTORY.id);
-                    statement.setLong(3, time);
+                    statement.setLong(3, time * Table.COUNTER_FACTOR);
                     try (ResultSet rs = statement.executeQuery()) {
                         if (!rs.next()) {
                             plugin.debug("Did not find base inventory");
@@ -140,8 +138,8 @@ public class InvDiffManager extends BlobManager {
                         " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
                         ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
                     statement.setInt(1, uid);
-                    statement.setLong(2, after);
-                    statement.setLong(3, time);
+                    statement.setLong(2, basetime);
+                    statement.setLong(3, time * Table.COUNTER_FACTOR);
                     try (ResultSet rs = statement.executeQuery()) {
                         while (rs.next()) {
                             int slot = rs.getInt("slot");
