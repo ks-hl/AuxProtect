@@ -524,18 +524,20 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     public APPlayerSpigot getAPPlayer(Player player) {
         synchronized (apPlayers) {
-            if (apPlayers.containsKey(player.getUniqueId())) {
-                return apPlayers.get(player.getUniqueId());
-            }
-            APPlayerSpigot apPlayer = newAPPlayer(player);
-            apPlayers.put(player.getUniqueId(), apPlayer);
-            return apPlayer;
+            return apPlayers.compute(player.getUniqueId(), (k, apPlayer) -> {
+                // Ensures the APPlayer's Player instance is the most recent
+                if (apPlayer != null && apPlayer.getPlayer().isOnline()) {
+                    return apPlayer;
+                }
+                return newAPPlayer(player);
+            });
         }
     }
 
-    public void removeAPPlayer(Player player) {
+    public void removeOfflineAPPlayers(Player player) {
         synchronized (apPlayers) {
             apPlayers.remove(player.getUniqueId());
+            apPlayers.values().removeIf(apPlayer -> !apPlayer.getPlayer().isOnline());
         }
     }
 

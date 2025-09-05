@@ -318,7 +318,7 @@ public class PlayerListener implements Listener {
 
         plugin.getAPPlayer(e.getPlayer()).logInventory("quit");
 
-        plugin.removeAPPlayer(e.getPlayer());
+        plugin.removeOfflineAPPlayers(e.getPlayer());
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

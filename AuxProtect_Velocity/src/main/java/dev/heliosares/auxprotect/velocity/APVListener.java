@@ -34,7 +34,7 @@ public class APVListener {
     @Subscribe
     public void onServerKickEvent(KickedFromServerEvent e) {
         plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, e.getServer().getServerInfo().getName(), e.getServerKickReason().map(AuxProtectVelocity::toString).orElse("")));
-        plugin.removeAPPlayer(e.getPlayer().getUniqueId());
+        plugin.removeOfflineAPPlayers(e.getPlayer().getUniqueId());
     }
 
     @Subscribe
@@ -63,7 +63,7 @@ public class APVListener {
         if (!e.getResult().isAllowed()) {
             plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, "", e.getResult().getReasonComponent().map(AuxProtectVelocity::toString).orElse("")));
             plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.SESSION, false, "", ""));
-            plugin.removeAPPlayer(e.getPlayer().getUniqueId());
+            plugin.removeOfflineAPPlayers(e.getPlayer().getUniqueId());
         }
     }
 
@@ -75,7 +75,7 @@ public class APVListener {
     @Subscribe
     public void onPlayerDisconnectEvent(DisconnectEvent e) {
         plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.SESSION, false, "", ""));
-        plugin.removeAPPlayer(e.getPlayer().getUniqueId());
+        plugin.removeOfflineAPPlayers(e.getPlayer().getUniqueId());
     }
 
 }

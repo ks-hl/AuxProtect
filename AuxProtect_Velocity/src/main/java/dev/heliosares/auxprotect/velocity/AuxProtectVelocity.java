@@ -341,20 +341,22 @@ public final class AuxProtectVelocity implements IAuxProtect {
 
     @Override
     public APPlayerVelocity getAPPlayer(SenderAdapter<?, ?> sender) {
-        if (!(sender.getSender() instanceof Player proxiedPlayer)) return null;
+        if (!(sender.getSender() instanceof Player player)) return null;
         synchronized (apPlayers) {
-            if (apPlayers.containsKey(sender.getUniqueId())) {
-                return apPlayers.get(sender.getUniqueId());
-            }
-            APPlayerVelocity apPlayer = new APPlayerVelocity(this, proxiedPlayer);
-            apPlayers.put(sender.getUniqueId(), apPlayer);
-            return apPlayer;
+            return apPlayers.compute(sender.getUniqueId(), (k, apPlayer) -> {
+                // Ensures the APPlayer's Player instance is the most recent
+                if (apPlayer != null && apPlayer.getPlayer().isActive()) {
+                    return apPlayer;
+                }
+                return new APPlayerVelocity(this, player);
+            });
         }
     }
 
-    public void removeAPPlayer(UUID uuid) {
+    public void removeOfflineAPPlayers(UUID uuid) {
         synchronized (apPlayers) {
             apPlayers.remove(uuid);
+            apPlayers.values().removeIf(apPlayer -> !apPlayer.getPlayer().isActive());
         }
     }
 
