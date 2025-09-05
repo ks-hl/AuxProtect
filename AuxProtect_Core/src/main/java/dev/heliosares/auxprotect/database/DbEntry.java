@@ -58,7 +58,7 @@ public class DbEntry {
 
     DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
             int yaw, String targetLabel, String data, SQLManager sql) {
-        this.snowflake = action.getTable().getNextSnowflake();
+        this.snowflake = Snowflake.getNextSnowflake();
         this.userLabel = userLabel;
         this.action = action;
         this.state = state;
@@ -103,11 +103,11 @@ public class DbEntry {
     }
 
     public long getTime() {
-        return snowflake / Table.COUNTER_FACTOR;
+        return snowflake / Snowflake.COUNTER_FACTOR;
     }
 
     public long getCounter() {
-        return snowflake % Table.COUNTER_FACTOR;
+        return snowflake % Snowflake.COUNTER_FACTOR;
     }
 
     public EntryAction getAction() {

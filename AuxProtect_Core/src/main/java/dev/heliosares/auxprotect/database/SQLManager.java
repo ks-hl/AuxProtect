@@ -515,7 +515,7 @@ public class SQLManager extends ConnectionPool {
             }
             return count;
         }
-        long snowflake = (System.currentTimeMillis() - time) * Table.COUNTER_FACTOR;
+        long snowflake = (System.currentTimeMillis() - time) * Snowflake.COUNTER_FACTOR;
 
         count += executeReturnRows("DELETE FROM " + table + " WHERE (time < ?);", snowflake);
         if (table == Table.AUXPROTECT_INVENTORY) {
@@ -563,7 +563,7 @@ public class SQLManager extends ConnectionPool {
 
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE rating=-1";
         if (since > 0) {
-            stmt += " AND time>" + since * Table.COUNTER_FACTOR;
+            stmt += " AND time>" + since * Snowflake.COUNTER_FACTOR;
         }
         try {
             return lookupManager.lookup(Table.AUXPROTECT_XRAY, stmt, null);
@@ -607,8 +607,7 @@ public class SQLManager extends ConnectionPool {
         return switch (table) {
             case AUXPROTECT_INVENTORY -> invBlobManager;
             case AUXPROTECT_TRANSACTIONS -> transactionBlobManager;
-            default ->
-                    throw new IllegalArgumentException("Table " + table + " does not have an associated blob manager.");
+            default -> throw new IllegalArgumentException("Table " + table + " does not have an associated blob manager.");
         };
     }
 

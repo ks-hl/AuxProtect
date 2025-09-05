@@ -203,7 +203,7 @@ public class APPlayerSpigot extends APPlayer<Player> {
         for (ItemStack item : playerInventory.getExtraContents()) {
             contents.add(item == null ? null : item.clone());
         }
-        for (ItemStack item : playerInventory.getContents()) {
+        for (ItemStack item : getPlayer().getEnderChest()) {
             contents.add(item == null ? null : item.clone());
         }
         return contents;

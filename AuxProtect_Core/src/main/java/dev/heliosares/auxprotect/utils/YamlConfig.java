@@ -141,7 +141,13 @@ public class YamlConfig {
     }
 
     public Optional<Long> getLong(String key) {
-        return get(key, s -> s instanceof Long, o -> (Long) o);
+        return get(key, s -> s instanceof Long || s instanceof Integer, o -> {
+            if (o instanceof Integer i) {
+                return i.longValue();
+            } else {
+                return (Long) o;
+            }
+        });
     }
 
     public Long getLongOrSet(String key, Long def) {

@@ -38,8 +38,6 @@ public enum Table {
     private final Set<Characteristic> characteristics;
     private final Set<Integer> usedids = new HashSet<>();
     private long autopurgeinterval;
-    private long lastTime;
-    private int counter;
 
     Table(Characteristic... characteristics) {
         this.characteristics = Set.of(characteristics);
@@ -269,21 +267,5 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
-    }
-
-    static final int COUNTER_FACTOR = 100_000;
-
-    public synchronized long getNextSnowflake() {
-        long now = System.currentTimeMillis();
-        if (now > lastTime) {
-            lastTime = now;
-            counter = 0;
-        } else if (counter + 1 < COUNTER_FACTOR) {
-            counter++;
-        } else { // Resort to old method of skipping to the next millisecond. It's not pretty, but this should be an extreme edge case
-            lastTime++;
-            counter = 0;
-        }
-        return lastTime * COUNTER_FACTOR + counter;
     }
 }

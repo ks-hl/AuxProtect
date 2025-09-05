@@ -7,6 +7,7 @@ import dev.heliosares.auxprotect.core.Language.L;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
+import dev.heliosares.auxprotect.database.Snowflake;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
@@ -902,15 +903,15 @@ public class Parameters implements Cloneable {
                 if (!stmt.isEmpty()) {
                     stmt.append(" OR ");
                 }
-                stmt.append("time = ").append(exact);
+                stmt.append("time BETWEEN ").append(exact * Snowflake.COUNTER_FACTOR).append(" AND ").append((exact + 1) * Snowflake.COUNTER_FACTOR - 1);
             }
             stmts.add("(" + stmt + ")");
         }
         if (after > 0) {
-            stmts.add("time >= " + after);
+            stmts.add("time >= " + after * Snowflake.COUNTER_FACTOR);
         }
         if (before < Long.MAX_VALUE) {
-            stmts.add("time <= " + before);
+            stmts.add("time <= " + before * Snowflake.COUNTER_FACTOR);
         }
         if (!actions.isEmpty() && table.hasActionId()) {
             stmts.add("action_id IN " + toGroup(actions));

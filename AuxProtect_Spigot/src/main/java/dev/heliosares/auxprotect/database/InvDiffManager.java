@@ -12,7 +12,11 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class InvDiffManager extends BlobManager {
@@ -29,20 +33,24 @@ public class InvDiffManager extends BlobManager {
     public static PlayerInventoryRecord listToPlayerInv(List<ItemStack> contents, int exp) {
         ItemStack[] storage = new ItemStack[36];
         ItemStack[] armor = new ItemStack[4];
-        ItemStack[] extra = new ItemStack[1];
+        ItemStack[] extra = new ItemStack[3];
         ItemStack[] ender = new ItemStack[27];
+        int storageEnd = storage.length; // 36
+        int armorEnd = storageEnd + armor.length; // 40
+        int extraEnd = armorEnd + extra.length; // 43
+        int enderEnd = extraEnd + ender.length; // 70
         for (int i = 0; i < contents.size(); i++) {
             ItemStack item = contents.get(i);
             if (i < 27) {
-                storage[i + 9] = item;
-            } else if (i < 36) {
-                storage[i - 27] = item;
-            } else if (i < 40) {
-                armor[4 - i + 35] = item;
-            } else if (i < 41) {
-                extra[i - 40] = item;
-            } else if (i < 68) {
-                ender[i - 41] = item;
+                storage[i + 9] = item; // hotbar
+            } else if (i < storageEnd) {
+                storage[i - 27] = item; // main inv
+            } else if (i < armorEnd) {
+                armor[armor.length - (i - storageEnd) - 1] = item;
+            } else if (i < extraEnd) {
+                extra[i - armorEnd] = item;
+            } else if (i < enderEnd) {
+                ender[i - extraEnd] = item;
             } else break;
         }
         return new PlayerInventoryRecord(storage, armor, extra, ender, exp);
@@ -52,6 +60,7 @@ public class InvDiffManager extends BlobManager {
         if (inv == null) {
             return null;
         }
+        System.out.println(inv.storage().length + "," + inv.armor().length + "," + inv.extra().length + "," + inv.ender().length);
         List<ItemStack> output = new ArrayList<>();
         output.addAll(Arrays.asList(inv.storage()).subList(9, inv.storage().length));
         output.addAll(Arrays.asList(inv.storage()).subList(0, 9));
@@ -66,13 +75,12 @@ public class InvDiffManager extends BlobManager {
     }
 
     public void logInvDiff(UUID uuid, int slot, int qty, ItemStack item) {
-        queue.add(new InvDiffRecord(uuid, slot, qty, item));
+        queue.add(new InvDiffRecord(Snowflake.getNextSnowflake(), uuid, slot, qty, item));
     }
 
     protected void put(Connection connection) {
         for (InvDiffRecord diff; (diff = queue.poll()) != null; ) {
             byte[] blob = null;
-            final long time = System.currentTimeMillis();
             Integer damage = null;
             if (diff.qty() != 0 && diff.item() != null) {
                 if (diff.item().getItemMeta() != null && diff.item().getItemMeta() instanceof Damageable meta) {
@@ -91,7 +99,7 @@ public class InvDiffManager extends BlobManager {
                 long blobid = getBlobId(connection, blob);
                 String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
-                sql.execute(stmt, connection, time, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
+                sql.execute(stmt, connection, diff.snowflake, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
             } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }
@@ -107,7 +115,7 @@ public class InvDiffManager extends BlobManager {
                         " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
                     statement.setInt(1, uid);
                     statement.setLong(2, EntryAction.INVENTORY.id);
-                    statement.setLong(3, time * Table.COUNTER_FACTOR);
+                    statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
                     try (ResultSet rs = statement.executeQuery()) {
                         if (!rs.next()) {
                             plugin.debug("Did not find base inventory");
@@ -132,6 +140,7 @@ public class InvDiffManager extends BlobManager {
                     return null;
                 }
                 List<ItemStack> output = playerInvToList(inv, true);
+                plugin.info(output.size() + "");
 
                 int numdiff = 0;
                 try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
@@ -139,7 +148,7 @@ public class InvDiffManager extends BlobManager {
                         ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
                     statement.setInt(1, uid);
                     statement.setLong(2, basetime);
-                    statement.setLong(3, time * Table.COUNTER_FACTOR);
+                    statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
                     try (ResultSet rs = statement.executeQuery()) {
                         while (rs.next()) {
                             int slot = rs.getInt("slot");
@@ -173,7 +182,7 @@ public class InvDiffManager extends BlobManager {
                         }
                     }
                 }
-                return new DiffInventoryRecord(basetime, numdiff, listToPlayerInv(output, inv.exp()));
+                return new DiffInventoryRecord(basetime / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
             }, 3000L, DiffInventoryRecord.class);
         } catch (SQLException | IOException | ClassNotFoundException | BusyException e) {
             throw e;
@@ -183,7 +192,7 @@ public class InvDiffManager extends BlobManager {
         }
     }
 
-    public record InvDiffRecord(UUID uuid, int slot, int qty, ItemStack item) {
+    public record InvDiffRecord(long snowflake, UUID uuid, int slot, int qty, ItemStack item) {
     }
 
     public record DiffInventoryRecord(long basetime, int numdiff, PlayerInventoryRecord inventory) {
