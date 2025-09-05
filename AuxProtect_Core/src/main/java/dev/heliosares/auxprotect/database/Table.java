@@ -38,6 +38,8 @@ public enum Table {
     private final Set<Characteristic> characteristics;
     private final Set<Integer> usedids = new HashSet<>();
     private long autopurgeinterval;
+    private long lastTime;
+    private int counter;
 
     Table(Characteristic... characteristics) {
         this.characteristics = Set.of(characteristics);
@@ -67,8 +69,8 @@ public enum Table {
     public boolean exists(IAuxProtect plugin) {
         if (plugin.getPlatform().getLevel() == PlatformType.Level.PROXY) {
             return switch (this) {
-                case AUXPROTECT_MAIN, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_LONGTERM, AUXPROTECT_API, AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION ->
-                        true;
+                case AUXPROTECT_MAIN, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_LONGTERM, AUXPROTECT_API,
+                     AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION -> true;
                 default -> false;
             };
         }
@@ -267,5 +269,20 @@ public enum Table {
             throw new UnsupportedOperationException();
         }
         this.autopurgeinterval = autopurgeinterval;
+    }
+
+    static final int COUNTER_FACTOR = 10000;
+
+    public synchronized long getNextSnowflake() {
+        long now = System.currentTimeMillis();
+        if (now > lastTime) {
+            lastTime = now;
+            counter = 0;
+        } else if (counter + 1 < COUNTER_FACTOR) {
+            counter++;
+        } else {
+            throw new IllegalStateException("Max counter reached for this millisecond");
+        }
+        return lastTime * COUNTER_FACTOR + counter;
     }
 }

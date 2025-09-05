@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 15;
+    public static final int TARGET_DB_VERSION = 16;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -284,6 +284,18 @@ public class MigrationManager {
 
                 sql.execute("DELETE FROM " + tableOld + " WHERE time IN (" + input.stream().map(entry -> String.valueOf(entry.getTime())).reduce((a, b) -> a + "," + b).orElse(null) + ")", connection);
             } while (!input.isEmpty());
+        }));
+
+
+        //
+        // 16
+        //
+
+        migrationActions.put(16, new MigrationAction(true, () -> {
+        }, () -> {
+            for (Table table : Table.values()) {
+                sql.execute("UPDATE " + table + " set time=time*? WHERE time<", connection, Table.COUNTER_FACTOR, 1735689600000L * Table.COUNTER_FACTOR);
+            }
         }));
 
         //

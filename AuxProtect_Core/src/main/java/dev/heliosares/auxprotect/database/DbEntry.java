@@ -58,7 +58,7 @@ public class DbEntry {
 
     DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
             int yaw, String targetLabel, String data, SQLManager sql) {
-        this.time = DatabaseRunnable.getTime(action.getTable());
+        this.time = action.getTable().getNextSnowflake();
         this.userLabel = userLabel;
         this.action = action;
         this.state = state;
@@ -99,7 +99,11 @@ public class DbEntry {
     }
 
     public long getTime() {
-        return time;
+        return time / Table.COUNTER_FACTOR;
+    }
+
+    public long getCounter() {
+        return time % Table.COUNTER_FACTOR;
     }
 
     public EntryAction getAction() {

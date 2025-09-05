@@ -4,14 +4,12 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import jakarta.annotation.Nonnull;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
 public class DatabaseRunnable implements Runnable {
-    private static final HashMap<Table, Long> lastTimes = new HashMap<>();
     @Nonnull
     private final SQLManager sqlManager;
     @Nonnull
@@ -22,16 +20,6 @@ public class DatabaseRunnable implements Runnable {
     public DatabaseRunnable(@Nonnull IAuxProtect plugin, @Nonnull SQLManager sqlManager) {
         this.sqlManager = sqlManager;
         this.plugin = plugin;
-    }
-
-    public static synchronized long getTime(Table table) {
-        long time = System.currentTimeMillis();
-        Long lastTime = lastTimes.get(table);
-        if (lastTime != null && time <= lastTime) {
-            time = lastTime + 1;
-        }
-        lastTimes.put(table, time);
-        return time;
     }
 
     public void add(DbEntry entry) {
