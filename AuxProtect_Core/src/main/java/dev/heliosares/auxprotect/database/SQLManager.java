@@ -419,7 +419,7 @@ public class SQLManager extends ConnectionPool {
             AtomicInteger i = new AtomicInteger(1);
             for (DbEntry dbEntry : entries) {
                 final int prior = i.get();
-                statement.setLong(i.getAndIncrement(), dbEntry.getTime());
+                statement.setLong(i.getAndIncrement(), dbEntry.getSnowflake());
                 statement.setInt(i.getAndIncrement(), dbEntry.getUid());
                 int action = dbEntry.getState() ? dbEntry.getAction().idPos : dbEntry.getAction().id;
 
@@ -515,12 +515,11 @@ public class SQLManager extends ConnectionPool {
             }
             return count;
         }
+        long snowflake = (System.currentTimeMillis() - time) * Table.COUNTER_FACTOR;
 
-        count += executeReturnRows("DELETE FROM " + table + " WHERE (time < ?);",
-                System.currentTimeMillis() - time);
+        count += executeReturnRows("DELETE FROM " + table + " WHERE (time < ?);", snowflake);
         if (table == Table.AUXPROTECT_INVENTORY) {
-            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);",
-                    System.currentTimeMillis() - time);
+            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);", snowflake);
             count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
                     + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
                     + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
@@ -564,7 +563,7 @@ public class SQLManager extends ConnectionPool {
 
         String stmt = "SELECT * FROM " + Table.AUXPROTECT_XRAY + " WHERE rating=-1";
         if (since > 0) {
-            stmt += " AND time>" + since;
+            stmt += " AND time>" + since * Table.COUNTER_FACTOR;
         }
         try {
             return lookupManager.lookup(Table.AUXPROTECT_XRAY, stmt, null);
@@ -640,7 +639,7 @@ public class SQLManager extends ConnectionPool {
     public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
         if (entry.getAction().getTable().hasBlob())
             return executeReturn(connection -> {
-                try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getTime() + " LIMIT 1")) {
+                try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getSnowflake() + " LIMIT 1")) {
                     try (ResultSet rs = pstmt.executeQuery()) {
                         if (rs.next()) {
                             return getBlob(rs, 1);
@@ -662,8 +661,8 @@ public class SQLManager extends ConnectionPool {
                 if (table == null) table = entry.getAction().getTable();
                 else if (table != entry.getAction().getTable())
                     throw new IllegalArgumentException("Incompatible actions");
-                stmt.append(entry.getTime()).append(",");
-                entryHash.put(entry.getTime(), entry);
+                stmt.append(entry.getSnowflake()).append(",");
+                entryHash.put(entry.getSnowflake(), entry);
             }
             if (table == null) return;
             stmt = new StringBuilder(String.format(stmt.substring(0, stmt.length() - 1), table) + ")");

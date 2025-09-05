@@ -43,7 +43,7 @@ public class DbEntry {
     protected final int yaw;
     protected final EntryAction action;
     protected final boolean state;
-    private final long time;
+    private final long snowflake;
     protected String data;
     protected String userLabel;
     protected String user;
@@ -58,7 +58,7 @@ public class DbEntry {
 
     DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
             int yaw, String targetLabel, String data, SQLManager sql) {
-        this.time = action.getTable().getNextSnowflake();
+        this.snowflake = action.getTable().getNextSnowflake();
         this.userLabel = userLabel;
         this.action = action;
         this.state = state;
@@ -80,9 +80,9 @@ public class DbEntry {
         this(userLabel, action, state, null, 0, 0, 0, 0, 0, targetLabel, data, SQLManager.getInstance());
     }
 
-    protected DbEntry(long time, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
+    protected DbEntry(long snowflake, int uid, EntryAction action, boolean state, String world, int x, int y, int z,
                       int pitch, int yaw, String target, int target_id, String data, SQLManager sql) {
-        this.time = time;
+        this.snowflake = snowflake;
         this.uid = uid;
         this.action = action;
         this.state = state;
@@ -98,12 +98,16 @@ public class DbEntry {
         this.sql = sql;
     }
 
+    public long getSnowflake() {
+        return snowflake;
+    }
+
     public long getTime() {
-        return time / Table.COUNTER_FACTOR;
+        return snowflake / Table.COUNTER_FACTOR;
     }
 
     public long getCounter() {
-        return time % Table.COUNTER_FACTOR;
+        return snowflake % Table.COUNTER_FACTOR;
     }
 
     public EntryAction getAction() {
