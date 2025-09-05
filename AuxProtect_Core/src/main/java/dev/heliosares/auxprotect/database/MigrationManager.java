@@ -295,7 +295,7 @@ public class MigrationManager {
         }, () -> {
             for (Table table : Table.values()) {
                 if (!table.hasAPEntries() && table != Table.AUXPROTECT_INVDIFF) continue;
-                sql.execute("UPDATE " + table + " set time=time*? WHERE time<", connection, Table.COUNTER_FACTOR, 1735689600000L * Table.COUNTER_FACTOR);
+                sql.execute("UPDATE " + table + " set time=time*? WHERE time<?", connection, Table.COUNTER_FACTOR, 1735689600000L * Table.COUNTER_FACTOR);
             }
         }));
 
