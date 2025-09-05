@@ -13,6 +13,7 @@ import jakarta.annotation.Nullable;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.PlayerInventory;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -75,10 +76,11 @@ public class APPlayerSpigot extends APPlayer<Player> {
 
     public void move() {
         synchronized (activityStack) {
+            Location location = getPlayer().getLocation().clone();
             if (lastLocation != null && Objects.equals(lastLocation.getWorld(), getPlayer().getWorld())) {
-                movedAmountThisMinute += Math.min(lastLocation.distance(getPlayer().getLocation()), 10);
+                movedAmountThisMinute += Math.min(lastLocation.distance(location), 10);
             }
-            lastLocation = getPlayer().getLocation();
+            lastLocation = location;
             lastCheckedMovement = System.currentTimeMillis();
         }
     }
@@ -183,7 +185,8 @@ public class APPlayerSpigot extends APPlayer<Player> {
 
     private List<ItemStack> getInventory() {
         List<ItemStack> contents = new ArrayList<>();
-        ItemStack[] array = getPlayer().getInventory().getStorageContents();
+        PlayerInventory playerInventory = getPlayer().getInventory();
+        ItemStack[] array = playerInventory.getStorageContents();
         for (int i = 9; i < array.length; i++) {
             ItemStack item = array[i];
             contents.add(item == null ? null : item.clone());
@@ -192,15 +195,15 @@ public class APPlayerSpigot extends APPlayer<Player> {
             ItemStack item = array[i];
             contents.add(item == null ? null : item.clone());
         }
-        array = getPlayer().getInventory().getArmorContents();
+        array = playerInventory.getArmorContents();
         for (int i = array.length - 1; i >= 0; i--) {
             ItemStack item = array[i];
             contents.add(item == null ? null : item.clone());
         }
-        for (ItemStack item : getPlayer().getInventory().getExtraContents()) {
+        for (ItemStack item : playerInventory.getExtraContents()) {
             contents.add(item == null ? null : item.clone());
         }
-        for (ItemStack item : getPlayer().getEnderChest().getContents()) {
+        for (ItemStack item : playerInventory.getContents()) {
             contents.add(item == null ? null : item.clone());
         }
         return contents;

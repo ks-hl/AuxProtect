@@ -263,6 +263,16 @@ public class LookupCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S,
             }
             if (params_ == null) params_ = Parameters.parse(sender, args);
 
+            // For private fork only
+            if (params_.hasFlag(Flag.PLAYBACK) || params_.hasFlag(Flag.INCREMENTAL_POS)) {
+                if (params_.getBefore() < Long.MAX_VALUE) {
+                    params_.before(params_.getBefore() + 30000);
+                }
+                if (params_.getAfter() > 0) {
+                    params_.after(params_.getAfter() - 30000);
+                }
+            }
+
             sender.sendLang(Language.L.COMMAND__LOOKUP__LOOKING);
 
             int count = plugin.getSqlManager().getLookupManager().count(params_);
