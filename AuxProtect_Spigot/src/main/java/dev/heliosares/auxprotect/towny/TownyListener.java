@@ -1,6 +1,17 @@
 package dev.heliosares.auxprotect.towny;
 
-import com.palmergames.bukkit.towny.event.*;
+import com.palmergames.bukkit.towny.event.DeleteNationEvent;
+import com.palmergames.bukkit.towny.event.DeleteTownEvent;
+import com.palmergames.bukkit.towny.event.NationAddTownEvent;
+import com.palmergames.bukkit.towny.event.NationRemoveTownEvent;
+import com.palmergames.bukkit.towny.event.NewDayEvent;
+import com.palmergames.bukkit.towny.event.NewNationEvent;
+import com.palmergames.bukkit.towny.event.NewTownEvent;
+import com.palmergames.bukkit.towny.event.RenameNationEvent;
+import com.palmergames.bukkit.towny.event.RenameTownEvent;
+import com.palmergames.bukkit.towny.event.TownAddResidentEvent;
+import com.palmergames.bukkit.towny.event.TownClaimEvent;
+import com.palmergames.bukkit.towny.event.TownRemoveResidentEvent;
 import com.palmergames.bukkit.towny.event.economy.BankTransactionEvent;
 import com.palmergames.bukkit.towny.event.economy.NationTransactionEvent;
 import com.palmergames.bukkit.towny.event.economy.TownTransactionEvent;
@@ -152,9 +163,10 @@ public class TownyListener implements Listener {
     private void handleBank(BankTransactionEvent e, Government g, EntryAction action) {
         String user = "#server";
         Location loc = null;
-        if (e.getTransaction().getPlayer() != null) {
-            user = AuxProtectSpigot.getLabel(e.getTransaction().getPlayer());
-            loc = e.getTransaction().getPlayer().getLocation();
+        Player player = e.getTransaction().getSendingPlayer();
+        if (player != null) {
+            user = AuxProtectSpigot.getLabel(player);
+            loc = player.getLocation();
         }
         boolean state = switch (e.getTransaction().getType()) {
             case ADD, DEPOSIT -> true;
