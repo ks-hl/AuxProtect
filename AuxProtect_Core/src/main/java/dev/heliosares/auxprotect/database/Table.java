@@ -3,7 +3,9 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -245,6 +247,16 @@ public enum Table {
         if (idPos > 0 && idPos != id + 1) {
             throw new IllegalArgumentException("idPos is not id+1: id=" + id + ", idPos=" + idPos + " for action: " + name);
         }
+    }
+
+    public List<String> getIndexStatements() {
+        List<String> out = new ArrayList<>();
+        out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_uid ON " + this + " (uid)");
+        out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_time ON " + this + " (time)");
+        if (hasLocation()) {
+            out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_xz ON " + this + " (x,z)");
+        }
+        return out;
     }
 
     public enum Characteristic {

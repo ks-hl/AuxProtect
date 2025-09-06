@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.utils.KeyUtil;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import dev.heliosares.auxprotect.utils.YamlConfig;
+import lombok.Getter;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,33 +16,56 @@ import java.util.function.Supplier;
 public class APConfig {
 
     private IAuxProtect plugin;
+    @Getter
     private boolean inventoryOnWorldChange;
     private boolean checkforupdates;
+    @Getter
     private long posInterval;
+    @Getter
     private long inventoryInterval;
+    @Getter
     private long inventoryDiffInterval;
+    @Getter
     private long moneyInterval;
+    @Getter
     private long townBankInterval;
+    @Getter
     private long nationBankInterval;
+    @Getter
     private boolean overrideCommands;
     private boolean logIncrementalPosition;
     private boolean disableVacuum;
+    @Getter
     private boolean consoleSQL;
+    @Getter
     private boolean sessionLogIP;
+    @Getter
     private boolean skipRowCount;
     private KeyUtil key;
+    @Getter
     private YamlConfig config;
+    @Getter
     private int debug;
     private boolean mysql;
+    @Getter
     private String host;
+    @Getter
     private String port;
+    @Getter
     private String user;
+    @Getter
     private String pass;
+    @Getter
     private String database;
     private String tablePrefix;
+    @Getter
     private long autoPurgePeriodicity;
+    @Getter
     private boolean demoMode;
+    @Getter
     private boolean sanitizeUnicode;
+    @Getter
+    private boolean indexing;
 
     public void load(IAuxProtect plugin, File file, Supplier<InputStream> streamSupplier) throws IOException {
         this.plugin = plugin;
@@ -110,6 +134,7 @@ public class APConfig {
             }
         }
         demoMode = config.getBoolean("demomode").orElse(false);
+        indexing = config.getBoolean("Indexing").orElse(false);
         config.save();
     }
 
@@ -159,36 +184,8 @@ public class APConfig {
         plugin.info("No donor key");
     }
 
-    public boolean isInventoryOnWorldChange() {
-        return inventoryOnWorldChange;
-    }
-
     public boolean shouldCheckForUpdates() {
         return checkforupdates;
-    }
-
-    public long getPosInterval() {
-        return posInterval;
-    }
-
-    public long getInventoryInterval() {
-        return inventoryInterval;
-    }
-
-    public long getInventoryDiffInterval() {
-        return inventoryDiffInterval;
-    }
-
-    public long getMoneyInterval() {
-        return moneyInterval;
-    }
-
-    public long getTownBankInterval() {
-        return townBankInterval;
-    }
-
-    public long getNationBankInterval() {
-        return nationBankInterval;
     }
 
     public boolean isDonor() {
@@ -201,42 +198,10 @@ public class APConfig {
         return key.getKeyHolder();
     }
 
-    public boolean isOverrideCommands() {
-        return overrideCommands;
-    }
-
-    public YamlConfig getConfig() {
-        return config;
-    }
-
-    public int getDebug() {
-        return debug;
-    }
-
     public void setDebug(int debug) throws IOException {
         this.debug = debug;
         config.set("debug", debug);
         config.save();
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public String getPort() {
-        return port;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public String getPass() {
-        return pass;
-    }
-
-    public String getDatabase() {
-        return database;
     }
 
     public boolean isMySQL() {
@@ -250,10 +215,6 @@ public class APConfig {
         return tablePrefix;
     }
 
-    public long getAutoPurgePeriodicity() {
-        return autoPurgePeriodicity;
-    }
-
     public boolean doLogIncrementalPosition() {
         return logIncrementalPosition;
     }
@@ -262,23 +223,4 @@ public class APConfig {
         return disableVacuum;
     }
 
-    public boolean isDemoMode() {
-        return demoMode;
-    }
-
-    public boolean isSessionLogIP() {
-        return sessionLogIP;
-    }
-
-    public boolean isSanitizeUnicode() {
-        return sanitizeUnicode;
-    }
-
-    public boolean isSkipRowCount() {
-        return skipRowCount;
-    }
-
-    public boolean isConsoleSQL() {
-        return consoleSQL;
-    }
 }

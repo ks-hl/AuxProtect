@@ -28,8 +28,8 @@ public class BlobManager {
     protected void createTable(Connection connection) throws SQLException {
         sql.execute("CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT PRIMARY KEY, ablob MEDIUMBLOB, hash INT);", connection);
 
-        sql.execute("CREATE INDEX IF NOT EXISTS idx_blobid ON " + table + " (blobid)", connection);
-        sql.execute("CREATE INDEX IF NOT EXISTS idx_hash ON " + table + " (hash)", connection);
+        sql.execute("CREATE INDEX IF NOT EXISTS idx_" + table + "_blobid ON " + table + " (blobid)", connection);
+        sql.execute("CREATE INDEX IF NOT EXISTS idx_" + table + "_hash ON " + table + " (hash)", connection);
     }
 
     protected long getBlobId(Connection connection, final byte[] blob, long snowflake) throws SQLException {

@@ -79,6 +79,7 @@ public class InvSerialization {
      * @throws IOException            Malformed blob
      */
     public static ItemStack toItemStack(byte[] bytes) throws ClassNotFoundException, IOException {
+        if (bytes == null) return null;
         return toItemStackArray(bytes)[0];
     }
 

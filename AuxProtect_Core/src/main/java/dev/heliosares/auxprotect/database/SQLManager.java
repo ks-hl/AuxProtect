@@ -203,6 +203,11 @@ public class SQLManager extends ConnectionPool {
         for (Table table : Table.values()) {
             if (table.hasAPEntries() && table.exists(plugin)) {
                 execute(table.getSQLCreateString(plugin), connection);
+                if (plugin.getAPConfig().isIndexing()) {
+                    for (String indexStatement : table.getIndexStatements()) {
+                        execute(indexStatement, connection);
+                    }
+                }
             }
         }
         String stmt;
@@ -210,7 +215,7 @@ public class SQLManager extends ConnectionPool {
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
             stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
             execute(stmt, connection);
-            execute("CREATE INDEX IF NOT EXISTS idx_time_uid ON " + Table.AUXPROTECT_INVDIFF + " (time, uid)", connection);
+            execute("CREATE INDEX IF NOT EXISTS idx_" + Table.AUXPROTECT_INVDIFF + "_time_uid ON " + Table.AUXPROTECT_INVDIFF + " (time, uid)", connection);
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
             stmt += " (name varchar(255), wid SMALLINT);";
@@ -270,6 +275,7 @@ public class SQLManager extends ConnectionPool {
     }
 
     private void init(Connection connection) throws SQLException, BusyException {
+        connection.prepareStatement("PRAGMA temp_store=1").execute();
         connection.setAutoCommit(false);
         try {
             this.migrationmanager = new MigrationManager(this, connection, plugin);

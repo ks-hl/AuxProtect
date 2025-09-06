@@ -96,6 +96,10 @@ Actions:
     # Whether to log the current session's IP in the data of a:session
     LogIP: true
 
+# Indexing makes lookups significantly faster at the cost of about 50% more storage space usage.
+# Use with caution on large servers, especially those with already large databases.
+Indexing: true
+
 # Automatically check for updates and display notifications in game.
 # It's recommended to leave this enabled, as I'm constantly improving the plugin.
 checkforupdates: true

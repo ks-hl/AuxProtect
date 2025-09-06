@@ -12,6 +12,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.sql.SQLException;
 import java.time.Instant;
@@ -35,15 +37,17 @@ public class DbEntry {
     }
 
     protected SQLManager sql;
+    @Getter
     protected final String world;
-    protected final int x;
-    protected final int y;
-    protected final int z;
-    protected final int pitch;
-    protected final int yaw;
+    @Getter
+    protected final int x, y, z, pitch, yaw;
+    @Getter
     protected final EntryAction action;
     protected final boolean state;
+    @Getter
     private final long snowflake;
+    @Setter
+    @Getter
     protected String data;
     protected String userLabel;
     protected String user;
@@ -54,6 +58,7 @@ public class DbEntry {
     protected int target_id;
 
     private long blobid = -1;
+    @Setter
     private byte[] blob;
 
     DbEntry(String userLabel, EntryAction action, boolean state, String world, int x, int y, int z, int pitch,
@@ -98,10 +103,6 @@ public class DbEntry {
         this.sql = sql;
     }
 
-    public long getSnowflake() {
-        return snowflake;
-    }
-
     public long getTime() {
         return snowflake / Snowflake.COUNTER_FACTOR;
     }
@@ -110,20 +111,8 @@ public class DbEntry {
         return snowflake % Snowflake.COUNTER_FACTOR;
     }
 
-    public EntryAction getAction() {
-        return action;
-    }
-
     public boolean getState() {
         return state;
-    }
-
-    public String getData() {
-        return data;
-    }
-
-    public void setData(String data) {
-        this.data = data;
     }
 
     public int getUid() throws SQLException, BusyException {
@@ -227,10 +216,6 @@ public class DbEntry {
         return blob;
     }
 
-    public void setBlob(byte[] blob) {
-        this.blob = blob;
-    }
-
     public boolean hasBlob() {
         return blob != null || blobid >= 0;
     }
@@ -261,30 +246,6 @@ public class DbEntry {
 
         }
         return out;
-    }
-
-    public String getWorld() {
-        return world;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
-    }
-
-    public int getPitch() {
-        return pitch;
-    }
-
-    public int getYaw() {
-        return yaw;
     }
 
     public void appendTime(GenericBuilder message, TimeZone timeZone) {

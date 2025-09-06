@@ -146,16 +146,18 @@ public class InvDiffManager extends BlobManager {
             Map<Integer, InvDiffIngredients> ingredientsMap = new HashMap<>();
 
             int numdiff = 0;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT d.slot, b.ablob, d.qty, d.damage " +
-                    "FROM " + Table.AUXPROTECT_INVDIFF + " AS d " +
-                    "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS b ON d.blobid = b.blobid " +
-                    "WHERE d.uid=? AND d.time BETWEEN ? AND ? " +
-                    "ORDER BY d.time DESC")) {
+            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " AS inv " +
+                    "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS invblob ON inv.blobid=invblob.blobid " +
+                    "WHERE uid=? AND time BETWEEN ? AND ? ORDER BY time DESC")) {
                 statement.setInt(1, uid);
                 statement.setLong(2, basetime);
                 statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
+                sql.debugSQLStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " AS inv " +
+                        "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS invblob ON inv.blobid=invblob.blobid " +
+                        "WHERE uid=? AND time BETWEEN ? AND ? ORDER BY time DESC", uid, basetime, time * Snowflake.COUNTER_FACTOR);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
+                        numdiff++;
                         int slot = rs.getInt("slot");
                         InvDiffIngredients ingredients = ingredientsMap.computeIfAbsent(slot, s -> new InvDiffIngredients());
                         if (ingredients.quantity == null) {
@@ -179,23 +181,27 @@ public class InvDiffManager extends BlobManager {
                                 ingredients.blob = blob;
                             }
                         }
-                        numdiff++;
                     }
                 }
                 for (int i = 0; i < output.size(); i++) {
                     InvDiffIngredients ingredients = ingredientsMap.get(i);
                     if (ingredients == null) continue; // No change, don't touch the slot
 
-                    if (ingredients.getQuantity() <= 0) { // There was change and it ended with nothing in the slot
+                    if (ingredients.getQuantity() != null && ingredients.getQuantity() <= 0) { // There was change and it ended with nothing in the slot
                         output.set(i, null);
                         continue;
                     }
 
-                    ItemStack item = InvSerialization.toItemStack(ingredients.getBlob());
+                    ItemStack item = output.get(i);
+                    if (ingredients.getBlob() != null) {
+                        item = InvSerialization.toItemStack(ingredients.getBlob());
+                    }
                     if (item != null) {
-                        item.setAmount(ingredients.getQuantity());
+                        if (ingredients.getQuantity() != null) {
+                            item.setAmount(ingredients.getQuantity());
+                        }
                         plugin.debug("setting slot " + i + " to " + ingredients.quantity);
-                        if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+                        if (ingredients.getDamage() != null && item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
                             meta.setDamage(ingredients.getDamage());
                             item.setItemMeta(meta);
                         }

@@ -4,8 +4,15 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 
-import java.sql.*;
-import java.util.*;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
 public class SQLUserManager {
@@ -286,6 +293,8 @@ public class SQLUserManager {
         }
         plugin.debug(stmt, 3);
         sql.execute(stmt, connection);
+        sql.execute("CREATE INDEX IF NOT EXISTS idx_" + Table.AUXPROTECT_UIDS + "_hash ON " + Table.AUXPROTECT_UIDS + " (hash)", connection);
+
         sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV
                 + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)", connection);
     }
