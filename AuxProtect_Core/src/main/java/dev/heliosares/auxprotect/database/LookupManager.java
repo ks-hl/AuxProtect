@@ -33,10 +33,21 @@ public class LookupManager {
 
         ArrayList<String> writeparams = new ArrayList<>(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
         String stmt = "SELECT * FROM " + param.getTable().toString();
-        if (sqlstmts[0].length() > 1) {
-            stmt += "\nWHERE " + sqlstmts[0];
+        if (!param.getActions().isEmpty()) {
+            Table.Index index = null;
+            if (!param.getUsers().isEmpty()) {
+                index = Table.Index.UID;
+            } else if (param.getTable().hasLocation() && !param.getRadius().isEmpty() && param.getWorldID() >= 0) {
+                index = Table.Index.XZ;
+            }
+            if (index != null) {
+                stmt += " " + sql.indexedBy(index.getName(param.getTable()));
+            }
         }
-        stmt += "\nORDER BY time DESC\nLIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
+        if (sqlstmts[0].length() > 1) {
+            stmt += " WHERE " + sqlstmts[0];
+        }
+        stmt += " ORDER BY time DESC LIMIT " + (SQLManager.MAX_LOOKUP_SIZE + 1) + ";";
         List<DbEntry> out = lookup(param.getTable(), stmt, writeparams);
 
         if (param.hasFlag(Parameters.Flag.PLAYBACK) || param.hasFlag(Parameters.Flag.INCREMENTAL_POS)) {
@@ -78,7 +89,7 @@ public class LookupManager {
                     String[] sqlstmts = param.toSQL(plugin);
                     String stmt = sql.getCountStmt(param.getTable().toString());
                     if (sqlstmts[0].length() > 1) {
-                        stmt += "\nWHERE " + sqlstmts[0];
+                        stmt += " WHERE " + sqlstmts[0];
                     }
                     plugin.debug(stmt);
                     try (PreparedStatement statement = connection.prepareStatement(stmt)) {

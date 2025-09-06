@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,14 +29,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class SQLManager extends ConnectionPool {
     public static final int MAX_LOOKUP_SIZE = 500000;
+    @Getter
     private static SQLManager instance;
     private final IAuxProtect plugin;
     private final HashMap<String, Integer> worlds = new HashMap<>();
     private final File sqliteFile;
+    @Getter
     private final LookupManager lookupManager;
     private final BlobManager invBlobManager;
     private final BlobManager transactionBlobManager;
     private final SQLUserManager usermanager;
+    @Getter
     private final String tablePrefix;
     int rowcount;
     private MigrationManager migrationmanager;
@@ -64,20 +68,8 @@ public class SQLManager extends ConnectionPool {
         this.sqliteFile = sqliteFile;
     }
 
-    public static SQLManager getInstance() {
-        return instance;
-    }
-
-    public String getTablePrefix() {
-        return tablePrefix;
-    }
-
     public SQLUserManager getUserManager() {
         return usermanager;
-    }
-
-    public LookupManager getLookupManager() {
-        return lookupManager;
     }
 
     public int getCount() {
@@ -200,10 +192,14 @@ public class SQLManager extends ConnectionPool {
             transactionBlobManager.createTable(connection);
         }
 
+        boolean doIndex = plugin.getAPConfig().isIndexing();
+        if (doIndex) {
+            plugin.info("Initializing and indexing tables... (this may take a while if you have a big database and it's the first time indexing)");
+        }
         for (Table table : Table.values()) {
             if (table.hasAPEntries() && table.exists(plugin)) {
                 execute(table.getSQLCreateString(plugin), connection);
-                if (plugin.getAPConfig().isIndexing()) {
+                if (doIndex) {
                     for (String indexStatement : table.getIndexStatements()) {
                         execute(indexStatement, connection);
                     }
@@ -763,7 +759,7 @@ public class SQLManager extends ConnectionPool {
         return null;
     }
 
-    public String autoincrement() {
-        return isMySQL() ? "AUTO_INCREMENT" : "";
+    public String indexedBy(String index) {
+        return String.format(isMySQL() ? "USE INDEX (%s)" : "INDEXED BY %s", index);
     }
 }

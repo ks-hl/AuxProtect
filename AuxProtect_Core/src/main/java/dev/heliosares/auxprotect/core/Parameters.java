@@ -15,6 +15,7 @@ import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -33,37 +34,56 @@ public class Parameters implements Cloneable {
     // ----------------------------------------------
     public final long time_created = System.currentTimeMillis();
     private final IAuxProtect plugin;
+    @Getter
     private final Set<Long> exactTime = new HashSet<>();
     private final Set<String> uids = new HashSet<>();
+    @Getter
     private final Set<String> targets = new HashSet<>();
+    @Getter
     private final Set<String> users = new HashSet<>();
     // action
+    @Getter
     private final Set<Integer> actions = new HashSet<>();
+    @Getter
     private final Set<String> datas = new HashSet<>();
     // radius
+    @Getter
     private final HashMap<Integer, Boolean> radius = new HashMap<>();
     private final Set<Integer> worlds = new HashSet<>();
     // flags
+    @Getter
     private final Set<Flag> flags = new HashSet<>();
     // ratings
+    @Getter
     private final Set<Short> ratings = new HashSet<>();
     // user
+    @Getter
     boolean negateUser;
     // target
+    @Getter
     boolean negateTarget;
     // data
+    @Getter
     boolean negateData;
     // world
+    @Getter
     boolean negateWorld;
     // time
+    @Getter
     private long after;
+    @Getter
     private long before = Long.MAX_VALUE;
     // table
+    @Getter
     private Table table;
     private int world;
+    @Getter
     private int x;
+    @Getter
     private int y;
+    @Getter
     private int z;
+    @Getter
     private double groupRange;
 
     // ----------------------------------------------------
@@ -733,77 +753,12 @@ public class Parameters implements Cloneable {
     // ------------------- GETTERS -------------------
     // -----------------------------------------------
 
-    public long getAfter() {
-        return after;
-    }
-
-    public long getBefore() {
-        return before;
-    }
-
-    public Set<Long> getExactTime() {
-        return exactTime;
-    }
-
-    public boolean isNegateUser() {
-        return negateUser;
-    }
-
-    /**
-     * This is only used in a select few places. Parameters#getUIDS matters more
-     *
-     * @return the set of users
-     */
-    public Set<String> getUsers() {
-        return users;
-    }
-
     public Set<String> getUIDs() {
         return uids;
     }
 
-    public Set<Integer> getActions() {
-        return actions;
-    }
-
-    public boolean isNegateTarget() {
-        return negateTarget;
-    }
-
-    public Set<String> getTargets() {
-        return targets;
-    }
-
-    public boolean isNegateData() {
-        return negateData;
-    }
-
-    public Set<String> getDatas() {
-        return datas;
-    }
-
-    public Table getTable() {
-        return table;
-    }
-
-    public HashMap<Integer, Boolean> getRadius() {
-        return radius;
-    }
-
     public int getWorldID() {
         return world;
-    }
-
-    public int getX() {
-        return x;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getZ() {
-        return z;
     }
 
     public Parameters setLocation(String world, int x, int y, int z) throws ParseException {
@@ -821,10 +776,6 @@ public class Parameters implements Cloneable {
         return this;
     }
 
-    public boolean isNegateWorld() {
-        return negateWorld;
-    }
-
     public Parameters setNegateWorld(boolean negateWorld) {
         this.negateWorld = negateWorld;
         return this;
@@ -832,18 +783,6 @@ public class Parameters implements Cloneable {
 
     public Set<Integer> getWorld() {
         return worlds;
-    }
-
-    public Set<Flag> getFlags() {
-        return flags;
-    }
-
-    public Set<Short> getRatings() {
-        return ratings;
-    }
-
-    public double getGroupRange() {
-        return groupRange;
     }
 
     public boolean hasFlag(Flag flag) {
@@ -1089,5 +1028,4 @@ public class Parameters implements Cloneable {
             return true;
         }
     }
-
 }

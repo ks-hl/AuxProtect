@@ -111,50 +111,52 @@ public class InvDiffManager extends BlobManager {
 
     public DiffInventoryRecord getContentsAt(int uid, final long time) throws Exception {
         return sql.executeReturnException(connection -> {
-            long basetime_;
-            long blobid_;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
-                    " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
+            long baseSnowflake;
+            PlayerInventoryRecord inv;
+
+            try (PreparedStatement statement = connection.prepareStatement(
+                    String.format("""
+                            SELECT i.time, b.ablob
+                            FROM %s i
+                            JOIN %s b ON i.blobid = b.blobid
+                            WHERE i.uid = ?
+                              AND i.action_id = ?
+                              AND i.time <= ?
+                            ORDER BY i.time DESC
+                            LIMIT 1
+                            """, Table.AUXPROTECT_INVENTORY, Table.AUXPROTECT_INVBLOB))) {
                 statement.setInt(1, uid);
-                statement.setLong(2, EntryAction.INVENTORY.id);
+                statement.setInt(2, EntryAction.INVENTORY.id);
                 statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
                 try (ResultSet rs = statement.executeQuery()) {
                     if (!rs.next()) {
                         plugin.debug("Did not find base inventory");
                         return null;
                     }
-                    basetime_ = rs.getLong(1);
-                    blobid_ = rs.getLong(2);
+                    baseSnowflake = rs.getLong(1);
+                    byte[] blob = sql.getBlob(rs, 2);
+                    if (rs.wasNull() || blob == null) {
+                        plugin.debug("Did not find inventory from blob");
+                        return null;
+                    }
+                    inv = InvSerialization.toPlayerInventory(blob);
                 }
             }
 
-            final long basetime = basetime_;
-            final long blobid = blobid_;
-
-            PlayerInventoryRecord inv = null;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?")) {
-                statement.setLong(1, blobid);
-                try (ResultSet rs = statement.executeQuery()) {
-                    if (rs.next()) inv = InvSerialization.toPlayerInventory(sql.getBlob(rs, 1));
-                }
-            }
-            if (inv == null) {
-                plugin.debug("Did not find inventory from blob");
-                return null;
-            }
             List<ItemStack> output = playerInvToList(inv, true);
             Map<Integer, InvDiffIngredients> ingredientsMap = new HashMap<>();
 
             int numdiff = 0;
-            try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " AS inv " +
-                    "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS invblob ON inv.blobid=invblob.blobid " +
-                    "WHERE uid=? AND time BETWEEN ? AND ? ORDER BY time DESC")) {
+            try (PreparedStatement statement = connection.prepareStatement(String.format("""
+                    SELECT *
+                    FROM %s AS inv
+                    LEFT JOIN %s AS invblob ON inv.blobid=invblob.blobid
+                    WHERE uid=?
+                     AND time BETWEEN ? AND ?
+                    ORDER BY time DESC""", Table.AUXPROTECT_INVDIFF, Table.AUXPROTECT_INVDIFFBLOB))) {
                 statement.setInt(1, uid);
-                statement.setLong(2, basetime);
+                statement.setLong(2, baseSnowflake);
                 statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
-                sql.debugSQLStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF + " AS inv " +
-                        "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS invblob ON inv.blobid=invblob.blobid " +
-                        "WHERE uid=? AND time BETWEEN ? AND ? ORDER BY time DESC", uid, basetime, time * Snowflake.COUNTER_FACTOR);
                 try (ResultSet rs = statement.executeQuery()) {
                     while (rs.next()) {
                         numdiff++;
@@ -209,7 +211,7 @@ public class InvDiffManager extends BlobManager {
                     output.set(i, item);
                 }
             }
-            return new DiffInventoryRecord(basetime / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
+            return new DiffInventoryRecord(baseSnowflake / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
         }, 3000L, DiffInventoryRecord.class);
     }
 

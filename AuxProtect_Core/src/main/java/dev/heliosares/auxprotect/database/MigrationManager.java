@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -26,9 +27,13 @@ public class MigrationManager {
     private final IAuxProtect plugin;
     private final Map<Integer, MigrationAction> migrationActions;
     private boolean isMigrating;
+    @Getter
     private int version;
+    @Getter
     private int originalVersion;
+    @Getter
     private int complete;
+    @Getter
     private int total;
     private int migratingToVersion;
 
@@ -295,6 +300,7 @@ public class MigrationManager {
         }, () -> {
             for (Table table : Table.values()) {
                 if (!table.hasAPEntries() && table != Table.AUXPROTECT_INVDIFF) continue;
+                if (!table.exists(plugin)) continue;
                 sql.execute("UPDATE " + table + " set time=time*? WHERE time<?", connection, Snowflake.COUNTER_FACTOR, 1735689600000L * Snowflake.COUNTER_FACTOR);
             }
         }));
@@ -311,27 +317,11 @@ public class MigrationManager {
         }
     }
 
-    public int getComplete() {
-        return complete;
-    }
-
-    public int getTotal() {
-        return total;
-    }
-
     public String getProgressString() {
         if (!isMigrating()) return null;
         if (migratingToVersion <= 0) return null;
         int progressPercentage = (int) Math.floor((double) getComplete() / getTotal() * 100);
         return String.format("Migration to v%d %d%% complete. (%d/%d). DO NOT INTERRUPT", migratingToVersion, progressPercentage, getComplete(), getTotal());
-    }
-
-    public int getOriginalVersion() {
-        return originalVersion;
-    }
-
-    public int getVersion() {
-        return version;
     }
 
     private void setVersion(int version) throws SQLException {

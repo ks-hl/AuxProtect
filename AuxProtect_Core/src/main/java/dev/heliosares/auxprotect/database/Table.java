@@ -3,7 +3,7 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
 
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -250,13 +250,41 @@ public enum Table {
     }
 
     public List<String> getIndexStatements() {
-        List<String> out = new ArrayList<>();
-        out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_uid ON " + this + " (uid)");
-        out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_time ON " + this + " (time)");
-        if (hasLocation()) {
-            out.add("CREATE INDEX IF NOT EXISTS idx_" + this + "_xz ON " + this + " (x,z)");
+        return Arrays.stream(Index.values()).filter(i -> i.exists(this)).map(i -> i.getCreate(this)).toList();
+    }
+
+    public enum Index {
+        UID, TIME, XZ;
+
+        public String getName(Table table) {
+            String name = "idx_" + table;
+
+            if (table.hasActionId()) name += "_action";
+
+            return name + "_" + this.toString().toLowerCase();
         }
-        return out;
+
+        public boolean exists(Table table) {
+            return this != XZ || table.hasLocation();
+        }
+
+        public String getCreate(Table table) {
+            return "CREATE INDEX IF NOT EXISTS " + getName(table) + " ON " + table + " " + getColumns(table);
+        }
+
+        private String getColumns(Table table) {
+            String out = "(";
+            if (table.hasActionId()) {
+                out += "action_id, ";
+            }
+            out += switch (this) {
+                case UID -> "uid";
+                case TIME -> "time";
+                case XZ -> "x, z";
+            };
+            out += ")";
+            return out;
+        }
     }
 
     public enum Characteristic {
