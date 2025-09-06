@@ -89,14 +89,6 @@ public class SpigotSQLManager extends SQLManager {
     }
 
     @Override
-    protected void postTables(Connection connection) throws SQLException {
-        if (invDiffManager != null) {
-            invDiffManager.init(connection);
-        }
-        super.postTables(connection);
-    }
-
-    @Override
     protected void tickPuts(Connection connection) {
         super.tickPuts(connection);
         if (invDiffManager != null) {

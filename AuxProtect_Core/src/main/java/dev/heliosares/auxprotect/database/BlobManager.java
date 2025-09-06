@@ -17,7 +17,6 @@ public class BlobManager {
     private final IAuxProtect plugin;
     protected final HashMap<Integer, BlobCache> cache = new HashMap<>();
     private final Table table;
-    private long nextBlobID = 1;
     private long lastcleanup;
 
     public BlobManager(Table table, SQLManager sqlManager, IAuxProtect plugin) {
@@ -27,20 +26,13 @@ public class BlobManager {
     }
 
     protected void createTable(Connection connection) throws SQLException {
-        sql.execute("CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT, ablob MEDIUMBLOB, hash INT);", connection);
+        sql.execute("CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT PRIMARY KEY, ablob MEDIUMBLOB, hash INT);", connection);
+
+        sql.execute("CREATE INDEX IF NOT EXISTS idx_blobid ON " + table + " (blobid)", connection);
+        sql.execute("CREATE INDEX IF NOT EXISTS idx_hash ON " + table + " (hash)", connection);
     }
 
-    protected void init(Connection connection) throws SQLException {
-        try (PreparedStatement stmt = connection.prepareStatement("SELECT MAX(blobid) FROM " + table)) {
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    nextBlobID = rs.getLong(1);
-                }
-            }
-        }
-    }
-
-    protected long getBlobId(Connection connection, final byte[] blob) throws SQLException {
+    protected long getBlobId(Connection connection, final byte[] blob, long snowflake) throws SQLException {
         if (blob == null) {
             return -1;
         }
@@ -70,18 +62,17 @@ public class BlobManager {
                     long otherid = rs.getLong(1);
                     byte[] otherBytes = sql.getBlob(rs, "ablob");
                     if (blobCache.equals(new BlobCache(otherid, otherBytes, Arrays.hashCode(otherBytes)))) {
-                        plugin.debug("Looked up blobid: " + (id = otherid), 5);
+                        id = otherid;
+                        plugin.debug("Looked up blobid: " + id, 5);
                         break;
-                    } else {
-                        plugin.warning("Hash collision! id=" + otherid);
                     }
                 }
             }
         }
         if (id < 0) {
             stmt = "INSERT INTO " + table + " (blobid, ablob, hash) VALUES (?,?,?)";
-            sql.execute(stmt, connection, id = ++nextBlobID, blob, hash);
-            plugin.debug("NEW blobid: " + nextBlobID, 5);
+            id = snowflake;
+            sql.execute(stmt, connection, id, blob, hash);
         }
         if (id > 0) {
             synchronized (cache) {

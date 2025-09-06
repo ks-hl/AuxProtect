@@ -96,7 +96,7 @@ public class InventoryCommand<S, P extends IAuxProtect, SA extends SenderAdapter
         } catch (BusyException e) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;
-        } catch (ClassNotFoundException | SQLException | IOException e) {
+        } catch (Throwable e) {
             plugin.print(e);
             sender.sendLang(Language.L.ERROR);
             return;

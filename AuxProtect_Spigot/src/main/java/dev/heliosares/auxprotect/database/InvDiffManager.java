@@ -4,6 +4,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
+import lombok.Getter;
+import lombok.Setter;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 
@@ -15,7 +17,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
@@ -60,7 +64,6 @@ public class InvDiffManager extends BlobManager {
         if (inv == null) {
             return null;
         }
-        System.out.println(inv.storage().length + "," + inv.armor().length + "," + inv.extra().length + "," + inv.ender().length);
         List<ItemStack> output = new ArrayList<>();
         output.addAll(Arrays.asList(inv.storage()).subList(9, inv.storage().length));
         output.addAll(Arrays.asList(inv.storage()).subList(0, 9));
@@ -96,100 +99,120 @@ public class InvDiffManager extends BlobManager {
                 }
             }
             try {
-                long blobid = getBlobId(connection, blob);
+                long blobid = getBlobId(connection, blob, diff.snowflake());
                 String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
-                sql.execute(stmt, connection, diff.snowflake, sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
+                sql.execute(stmt, connection, diff.snowflake(), sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
             } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }
         }
     }
 
-    public DiffInventoryRecord getContentsAt(int uid, final long time) throws SQLException, IOException, ClassNotFoundException, BusyException {
-        try {
-            return sql.executeReturnException(connection -> {
-                long basetime_;
-                long blobid_;
-                try (PreparedStatement statement = connection.prepareStatement("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
-                        " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
-                    statement.setInt(1, uid);
-                    statement.setLong(2, EntryAction.INVENTORY.id);
-                    statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
-                    try (ResultSet rs = statement.executeQuery()) {
-                        if (!rs.next()) {
-                            plugin.debug("Did not find base inventory");
-                            return null;
-                        }
-                        basetime_ = rs.getLong(1);
-                        blobid_ = rs.getLong(2);
+    public DiffInventoryRecord getContentsAt(int uid, final long time) throws Exception {
+        return sql.executeReturnException(connection -> {
+            long basetime_;
+            long blobid_;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT time,blobid FROM " + Table.AUXPROTECT_INVENTORY +
+                    " WHERE uid=? AND action_id=? AND time<=? ORDER BY time DESC LIMIT 1")) {
+                statement.setInt(1, uid);
+                statement.setLong(2, EntryAction.INVENTORY.id);
+                statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (!rs.next()) {
+                        plugin.debug("Did not find base inventory");
+                        return null;
                     }
+                    basetime_ = rs.getLong(1);
+                    blobid_ = rs.getLong(2);
                 }
+            }
 
-                final long basetime = basetime_;
-                final long blobid = blobid_;
+            final long basetime = basetime_;
+            final long blobid = blobid_;
 
-                PlayerInventoryRecord inv = null;
-                try (PreparedStatement statement = connection.prepareStatement("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=" + blobid)) {
-                    try (ResultSet rs = statement.executeQuery()) {
-                        if (rs.next()) inv = InvSerialization.toPlayerInventory(sql.getBlob(rs, 1));
-                    }
+            PlayerInventoryRecord inv = null;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT ablob FROM " + Table.AUXPROTECT_INVBLOB + " WHERE blobid=?")) {
+                statement.setLong(1, blobid);
+                try (ResultSet rs = statement.executeQuery()) {
+                    if (rs.next()) inv = InvSerialization.toPlayerInventory(sql.getBlob(rs, 1));
                 }
-                if (inv == null) {
-                    plugin.debug("Did not find inventory from blob");
-                    return null;
-                }
-                List<ItemStack> output = playerInvToList(inv, true);
-                plugin.info(output.size() + "");
+            }
+            if (inv == null) {
+                plugin.debug("Did not find inventory from blob");
+                return null;
+            }
+            List<ItemStack> output = playerInvToList(inv, true);
+            Map<Integer, InvDiffIngredients> ingredientsMap = new HashMap<>();
 
-                int numdiff = 0;
-                try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM " + Table.AUXPROTECT_INVDIFF +
-                        " LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " ON " + Table.AUXPROTECT_INVDIFF + ".blobid=" + Table.AUXPROTECT_INVDIFFBLOB +
-                        ".blobid where uid=? AND time BETWEEN ? AND ? ORDER BY time ASC")) {
-                    statement.setInt(1, uid);
-                    statement.setLong(2, basetime);
-                    statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
-                    try (ResultSet rs = statement.executeQuery()) {
-                        while (rs.next()) {
-                            int slot = rs.getInt("slot");
-                            byte[] blob = sql.getBlob(rs, "ablob");
+            int numdiff = 0;
+            try (PreparedStatement statement = connection.prepareStatement("SELECT d.slot, b.ablob, d.qty, d.damage " +
+                    "FROM " + Table.AUXPROTECT_INVDIFF + " AS d " +
+                    "LEFT JOIN " + Table.AUXPROTECT_INVDIFFBLOB + " AS b ON d.blobid = b.blobid " +
+                    "WHERE d.uid=? AND d.time BETWEEN ? AND ? " +
+                    "ORDER BY d.time DESC")) {
+                statement.setInt(1, uid);
+                statement.setLong(2, basetime);
+                statement.setLong(3, time * Snowflake.COUNTER_FACTOR);
+                try (ResultSet rs = statement.executeQuery()) {
+                    while (rs.next()) {
+                        int slot = rs.getInt("slot");
+                        InvDiffIngredients ingredients = ingredientsMap.computeIfAbsent(slot, s -> new InvDiffIngredients());
+                        if (ingredients.quantity == null) {
                             int qty = rs.getInt("qty");
-                            ItemStack item;
-                            if (qty == 0 && !rs.wasNull()) {
-                                item = null;
-                            } else {
-                                if (blob == null) {
-                                    item = output.get(slot);
-                                } else {
-                                    item = InvSerialization.toItemStack(blob);
-                                }
-                                if (item != null) {
-                                    if (qty > 0) {
-                                        item.setAmount(qty);
-                                        plugin.debug("setting slot " + slot + " to " + qty);
-                                    }
-                                    if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
-                                        int damage = rs.getInt("damage");
-                                        if (!rs.wasNull()) {
-                                            meta.setDamage(damage);
-                                            item.setItemMeta(meta);
-                                        }
-                                    }
-                                }
+                            if (!rs.wasNull()) {
+                                ingredients.quantity = qty;
                             }
-                            output.set(slot, item);
-                            numdiff++;
                         }
+                        if (ingredients.quantity != null && ingredients.quantity <= 0) {
+                            continue; // If the most recent quantity is 0, we don't need any other data
+                        }
+                        if (ingredients.damage == null) {
+                            int damage = rs.getInt("damage");
+                            if (!rs.wasNull()) {
+                                ingredients.damage = damage;
+                            }
+                        }
+                        if (ingredients.blob == null) {
+                            byte[] blob = sql.getBlob(rs, "ablob");
+                            if (!rs.wasNull()) {
+                                ingredients.blob = blob;
+                            }
+                        }
+                        numdiff++;
                     }
                 }
-                return new DiffInventoryRecord(basetime / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
-            }, 3000L, DiffInventoryRecord.class);
-        } catch (SQLException | IOException | ClassNotFoundException | BusyException e) {
-            throw e;
-        } catch (Exception e) {
-            plugin.print(e);
-            return null;
-        }
+                for (int i = 0; i < output.size(); i++) {
+                    InvDiffIngredients ingredients = ingredientsMap.get(i);
+                    if (ingredients == null) continue; // No change, don't touch the slot
+
+                    if (ingredients.getQuantity() <= 0) { // There was change and it ended with nothing in the slot
+                        output.set(i, null);
+                        continue;
+                    }
+
+                    ItemStack item = InvSerialization.toItemStack(ingredients.getBlob());
+                    if (item != null) {
+                        item.setAmount(ingredients.getQuantity());
+                        plugin.debug("setting slot " + i + " to " + ingredients.quantity);
+                        if (item.getItemMeta() != null && item.getItemMeta() instanceof Damageable meta) {
+                            meta.setDamage(ingredients.getDamage());
+                            item.setItemMeta(meta);
+                        }
+                    }
+                    output.set(i, item);
+                }
+            }
+            return new DiffInventoryRecord(basetime / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
+        }, 3000L, DiffInventoryRecord.class);
+    }
+
+    @Getter
+    @Setter
+    private static final class InvDiffIngredients {
+        private Integer quantity;
+        private Integer damage;
+        private byte[] blob;
     }
 
     public record InvDiffRecord(long snowflake, UUID uuid, int slot, int qty, ItemStack item) {

@@ -210,6 +210,7 @@ public class SQLManager extends ConnectionPool {
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
             stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
             execute(stmt, connection);
+            execute("CREATE INDEX IF NOT EXISTS idx_time_uid ON " + Table.AUXPROTECT_INVDIFF + " (time, uid)", connection);
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
             stmt += " (name varchar(255), wid SMALLINT);";
@@ -264,14 +265,6 @@ public class SQLManager extends ConnectionPool {
     }
 
     protected void postTables(Connection connection) throws SQLException {
-        if (invBlobManager != null) {
-            invBlobManager.init(connection);
-        }
-
-        if (transactionBlobManager != null) {
-            transactionBlobManager.init(connection);
-        }
-
         if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
             setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
     }
@@ -461,7 +454,7 @@ public class SQLManager extends ConnectionPool {
                     } else statement.setNull(i.getAndIncrement(), Types.NULL);
                 } else if (table.hasBlobID()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        long blobid = getBlobManager(table).getBlobId(connection, dbEntry.getBlob());
+                        long blobid = getBlobManager(table).getBlobId(connection, dbEntry.getBlob(), dbEntry.getSnowflake());
                         statement.setLong(i.getAndIncrement(), blobid);
                     } else statement.setNull(i.getAndIncrement(), Types.NULL);
                     if (table.hasItemMeta()) {
@@ -763,5 +756,9 @@ public class SQLManager extends ConnectionPool {
 
     public DbEntry convertToTransactionEntryForMigration(DbEntry entry, EntryAction action, short quantity, double cost, double balance, int target_id2) throws SQLException, BusyException {
         return null;
+    }
+
+    public String autoincrement() {
+        return isMySQL() ? "AUTO_INCREMENT" : "";
     }
 }

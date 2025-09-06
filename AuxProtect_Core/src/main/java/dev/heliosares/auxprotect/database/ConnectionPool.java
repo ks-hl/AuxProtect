@@ -321,19 +321,21 @@ public class ConnectionPool {
     }
 
     public int executeReturnGenerated(String stmt, Object... args) throws SQLException, BusyException {
+        return executeReturn(connection -> executeReturnGenerated(connection, stmt, args), 30000L, Integer.class);
+    }
+
+    public int executeReturnGenerated(Connection connection, String stmt, Object... args) throws SQLException {
         debugSQLStatement(stmt, args);
-        return executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
-                prepare(connection, pstmt, args);
-                pstmt.executeUpdate();
-                try (ResultSet rs = pstmt.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        return rs.getInt(1);
-                    }
+        try (PreparedStatement pstmt = connection.prepareStatement(stmt, Statement.RETURN_GENERATED_KEYS)) {
+            prepare(connection, pstmt, args);
+            pstmt.executeUpdate();
+            try (ResultSet rs = pstmt.getGeneratedKeys()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
                 }
             }
-            return -1;
-        }, 30000L, Integer.class);
+        }
+        return -1;
     }
 
     public ResultMap executeGetMap(String stmt, Object... args) throws SQLException, BusyException {
