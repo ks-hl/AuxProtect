@@ -275,7 +275,6 @@ public class SQLManager extends ConnectionPool {
     }
 
     private void init(Connection connection) throws SQLException, BusyException {
-        connection.prepareStatement("PRAGMA temp_store=1").execute();
         connection.setAutoCommit(false);
         try {
             this.migrationmanager = new MigrationManager(this, connection, plugin);
