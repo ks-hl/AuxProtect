@@ -1,4 +1,0 @@
-name: AuxProtectBungee
-main: dev.heliosares.auxprotect.bungee.AuxProtectBungee
-version: '${project.version}'
-author: Heliosares
