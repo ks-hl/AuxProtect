@@ -1,24 +1,15 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.core.PlatformType;
-import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.exceptions.LookupException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class MigrationManager {
     public static final int TARGET_DB_VERSION = 16;
@@ -37,260 +28,11 @@ public class MigrationManager {
     private int total;
     private int migratingToVersion;
 
-    @SuppressWarnings("deprecation")
     MigrationManager(SQLManager sql, Connection connection, IAuxProtect plugin) {
         this.sql = sql;
         this.plugin = plugin;
         this.connection = connection;
         HashMap<Integer, MigrationAction> migrationActions = new HashMap<>();
-
-        //
-        // 7
-        //
-
-        migrationActions.put(7, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, null, () -> {
-
-            total = sql.count(connection, Table.AUXPROTECT_INVDIFFBLOB.toString(), null);
-
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVDIFFBLOB + " ADD COLUMN hash INT");
-
-            String stmt = "SELECT blobid, ablob FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE (hash IS NULL) LIMIT ";
-
-            plugin.debug(stmt, 3);
-
-            boolean any = true;
-            Set<Long> ignore = new HashSet<>();
-            int limit = 50;
-            while (any) {
-                any = false;
-                HashMap<Long, Integer> hashes = new HashMap<>();
-                try (PreparedStatement pstmt = connection.prepareStatement(stmt + (limit + ignore.size()))) {
-                    pstmt.setFetchSize(500);
-                    try (ResultSet results = pstmt.executeQuery()) {
-                        while (results.next()) {
-                            long blobid = results.getLong("blobid");
-                            if (ignore.contains(blobid)) continue;
-                            any = true;
-                            complete++;
-                            hashes.put(blobid, Arrays.hashCode(sql.getBlob(results, "ablob")));
-                        }
-                    }
-                }
-                hashes.forEach((k, v) -> {
-                    try {
-                        sql.execute("UPDATE " + Table.AUXPROTECT_INVDIFFBLOB + " SET hash=? WHERE blobid=?", connection, v, k);
-                    } catch (SQLException e) {
-                        plugin.warning("Error while committing hash for blobid: " + k + ", this is probably fine.");
-                        ignore.add(k);
-                    }
-                });
-            }
-        }));
-
-        //
-        // 8
-        //
-
-        migrationActions.put(8, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-        }, () -> {
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN time TO blobid");
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " RENAME COLUMN `blob` TO ablob"); //This was a poor naming choice as it conflicts with the datatype
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVBLOB + " ADD COLUMN hash INT");
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN blobid BIGINT");
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN damage INT");
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_INVENTORY + " ADD COLUMN qty INT");
-            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET blobid=time WHERE hasblob=1", connection);
-            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET hasblob=null", connection);
-        }));
-
-        //
-        // 9
-        //
-
-        migrationActions.put(9, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-        }, () -> tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN ablob BLOB")));
-
-        //
-        // 10
-        //
-
-        migrationActions.put(10, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-            try {
-                sql.execute("ALTER TABLE " + Table.AUXPROTECT_LASTS + " RENAME COLUMN `key` TO name", connection);
-            } catch (SQLException ignored) {
-                // This may error if migrating from a version where the `lasts` table has not yet been created, as this is executed pre-tables
-            }
-        }, () -> {
-        })); //This was a poor naming choice as it conflicts with the phrase `KEY`
-
-
-        //
-        // 11
-        //
-
-        migrationActions.put(11, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-        }, () -> {
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_POSITION + " ADD COLUMN increment TINYINT");
-            tryExecute("UPDATE " + Table.AUXPROTECT_POSITION + " set increment=0 where increment is null");
-        }));
-
-
-        //
-        // 12
-        //
-
-        migrationActions.put(12, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-        }, () -> {
-            String buckets = Table.AUXPROTECT_MAIN + " WHERE action_id IN (10,11)";
-            sql.execute("INSERT INTO " + Table.AUXPROTECT_INVENTORY + " (time, uid, action_id, world_id, x, y, z, target_id, data) SELECT time, uid, action_id, world_id, x, y, z, target_id, data FROM " + buckets, connection);
-            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1158 WHERE action_id=10", connection);
-            sql.execute("UPDATE " + Table.AUXPROTECT_INVENTORY + " SET action_id=1159 WHERE action_id=11", connection);
-            sql.execute("DELETE FROM " + buckets, connection);
-        }));
-
-
-        //
-        // 13
-        //
-
-        migrationActions.put(13, new MigrationAction(true, () -> {
-        }, () -> {
-            tryExecute("DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE ROWID NOT IN (SELECT MIN(ROWID) FROM " + Table.AUXPROTECT_UIDS + " GROUP BY uuid)");
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_UIDS + " RENAME TO " + Table.AUXPROTECT_UIDS + "_temp");
-            sql.getUserManager().init(connection);
-            tryExecute("INSERT INTO " + Table.AUXPROTECT_UIDS + " (uid,uuid) SELECT uid,uuid FROM " + Table.AUXPROTECT_UIDS + "_temp");
-
-            Set<String> uidValues = new HashSet<>();
-            try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT uuid FROM " + Table.AUXPROTECT_UIDS + " WHERE hash IS NULL")) {
-                try (ResultSet rs = preparedStatement.executeQuery()) {
-                    while (rs.next()) {
-                        uidValues.add(rs.getString(1));
-                    }
-                }
-            }
-            tryExecute("ALTER TABLE " + Table.AUXPROTECT_LONGTERM + " ADD COLUMN target_hash INT");
-            Set<String> longTermValues = new HashSet<>();
-            try (PreparedStatement preparedStatement = connection.prepareStatement("SELECT target FROM " + Table.AUXPROTECT_LONGTERM + " WHERE target_hash IS NULL")) {
-                try (ResultSet rs = preparedStatement.executeQuery()) {
-                    while (rs.next()) {
-                        longTermValues.add(rs.getString(1));
-                    }
-                }
-            }
-
-            total = uidValues.size() + longTermValues.size();
-            complete = 0;
-            for (String value : uidValues) {
-                sql.execute("UPDATE " + Table.AUXPROTECT_UIDS + " SET hash=? WHERE uuid=?", connection, value.hashCode(), value);
-                complete++;
-            }
-
-            for (String value : longTermValues) {
-                sql.execute("UPDATE " + Table.AUXPROTECT_LONGTERM + " SET target_hash=? WHERE target=?", connection, value.toLowerCase().hashCode(), value);
-                complete++;
-            }
-        }));
-
-
-        //
-        // 14
-        //
-
-        migrationActions.put(14, new MigrationAction(sql.isMySQL(), () -> {
-        }, () -> {
-            for (Table table : Table.values()) {
-                if (!table.hasStringTarget() && !table.hasData() || !table.exists(plugin)) continue;
-                sql.execute("ALTER TABLE " + table + " CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;", connection);
-            }
-        }));
-
-
-        //
-        // 15
-        //
-
-        migrationActions.put(15, new MigrationAction(plugin.getPlatform().getLevel() == PlatformType.Level.SERVER, () -> {
-        }, () -> {
-            final String where = "action_id IN (" + EntryAction.SHOP_OLD.id + "," + EntryAction.SHOP_OLD.idPos + ")";
-            Table tableOld = EntryAction.SHOP_OLD.getTable();
-            Table tableNew = EntryAction.SHOP_SGP.getTable();
-            this.total = sql.count(connection, tableOld.toString(), where);
-            plugin.info("Migrating " + total + " entries...");
-            this.complete = 0;
-            ArrayList<DbEntry> input = new ArrayList<>();
-            Set<Long> seen = new HashSet<>();
-            do {
-                input.clear();
-                try {
-                    sql.getLookupManager().lookup(connection, input, tableOld, //
-                            "SELECT * FROM " + tableOld + //
-                                    " WHERE " + where + //
-                                    " ORDER BY time ASC LIMIT 10000", new ArrayList<>());
-                } catch (LookupException e) {
-                    throw new SQLException(e);
-                }
-
-                ArrayList<DbEntry> output = new ArrayList<>();
-                for (DbEntry entry : input) {
-                    String[] parts = entry.getData().split(", ");
-                    double cost = 0, balance = 0;
-                    short quantity;
-                    EntryAction action;
-                    int target_id2 = 0;
-                    try {
-                        action = switch (parts[0]) {
-                            case "SGP" -> EntryAction.SHOP_SGP;
-                            case "CS" -> EntryAction.SHOP_CS;
-                            case "ESG" -> EntryAction.SHOP_ESG;
-                            default -> throw new IllegalArgumentException();
-                        };
-                        if (parts.length >= 3) {
-                            quantity = Short.parseShort(parts[2].split(" ")[1]);
-
-                            String valueStr = parts[1];
-                            double value;
-                            if (!valueStr.contains(" each")) {
-                                valueStr = valueStr.replaceAll(" each", "");
-                                value = Double.parseDouble(valueStr.replaceAll("[$,]", ""));
-                            } else {
-                                double each = Double.parseDouble(valueStr.split(" ")[0].replaceAll("[$,]", ""));
-                                value = each * quantity;
-                            }
-                            if (value > 0) cost = value;
-
-                            int balanceIndex = action == EntryAction.SHOP_CS ? 4 : 3;
-                            if (parts.length > balanceIndex) {
-                                balance = Double.parseDouble(parts[balanceIndex].split(" ")[1].replaceAll("[$,]", ""));
-                            }
-                            if (action == EntryAction.SHOP_CS) {
-                                String target2 = parts[3].split(" ")[1];
-                                target_id2 = sql.getUserManager().getUIDFromUsername(target2, true);
-                                if (target_id2 < 0)
-                                    target_id2 = sql.getUserManager().getUIDFromUUID(target2, false, true);
-                            }
-                        } else {
-                            throw new IllegalArgumentException();
-                        }
-                    } catch (IllegalArgumentException e) {
-                        plugin.warning("Failed to parse entry during migration (" + e.getMessage() + "), it will be lost: " + entry);
-                        if (plugin.getAPConfig().getDebug() > 0) {
-                            plugin.print(e);
-                        }
-                        continue;
-                    }
-                    if (!seen.add(entry.getTime())) {
-                        throw new IllegalArgumentException("Failed to delete entry " + entry);
-                    }
-
-                    output.add(sql.convertToTransactionEntryForMigration(entry, action, quantity, cost, balance, target_id2));
-                    this.complete++;
-                }
-                sql.put(connection, tableNew, output);
-
-                sql.execute("DELETE FROM " + tableOld + " WHERE time IN (" + input.stream().map(entry -> String.valueOf(entry.getTime())).reduce((a, b) -> a + "," + b).orElse(null) + ")", connection);
-            } while (!input.isEmpty());
-        }));
-
 
         //
         // 16
@@ -301,7 +43,7 @@ public class MigrationManager {
             for (Table table : Table.values()) {
                 if (!table.hasAPEntries() && table != Table.AUXPROTECT_INVDIFF) continue;
                 if (!table.exists(plugin)) continue;
-                sql.execute("UPDATE " + table + " set time=time*? WHERE time<?", connection, Snowflake.COUNTER_FACTOR, 1735689600000L * Snowflake.COUNTER_FACTOR);
+                sql.execute(connection, "UPDATE " + table + " set time=time*? WHERE time<?", Snowflake.COUNTER_FACTOR, 1735689600000L * Snowflake.COUNTER_FACTOR);
             }
         }));
 
@@ -325,7 +67,7 @@ public class MigrationManager {
     }
 
     private void setVersion(int version) throws SQLException {
-        sql.execute("INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (" + System.currentTimeMillis() + "," + (this.version = version) + ")", connection);
+        sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_VERSION + " (time,version) VALUES (?,?)", System.currentTimeMillis(), this.version = version);
         plugin.info("Done migrating to version " + version);
     }
 
@@ -335,31 +77,28 @@ public class MigrationManager {
 
     void preTables() throws SQLException, BusyException {
 
-        sql.execute("CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER);", connection);
+        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER)");
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time DESC LIMIT 1";
-        plugin.debug(stmt, 3);
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet results = statement.executeQuery(stmt)) {
-                if (results.next()) version = results.getInt("version");
-            }
-        }
+        sql.query(connection, "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time DESC LIMIT 1", rs -> {
+            if (rs.next()) version = rs.getInt("version");
+        });
+        sql.query(connection, "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time ASC LIMIT 1", rs -> {
+            if (rs.next()) originalVersion = rs.getInt("version");
+        });
 
-        stmt = "SELECT * FROM " + Table.AUXPROTECT_VERSION + " ORDER BY time ASC LIMIT 1";
-        plugin.debug(stmt, 3);
-        try (Statement statement = connection.createStatement()) {
-            try (ResultSet results = statement.executeQuery(stmt)) {
-                if (results.next()) originalVersion = results.getInt("version");
-            }
-        }
-
-        if (sql.getVersion() < 1) {
-            setVersion(TARGET_DB_VERSION);
+        int currentVersion = sql.getVersion();
+        if (currentVersion < 1) {
+            setVersion(currentVersion = TARGET_DB_VERSION);
             originalVersion = TARGET_DB_VERSION;
         }
 
-        if (version < 6) {
+        if (currentVersion < 6) {
             plugin.warning("This database version is no longer supported. Please download AuxProtect 1.2.7 and run it first to upgrade your database, wait for migration to complete, then run this version again. https://www.spigotmc.org/resources/auxprotect.99147/download?version=509785");
+            throw new SQLException();
+        }
+
+        if (currentVersion < 15) {
+            plugin.warning("This database version is no longer supported. Please download AuxProtect 1.3.3 and run it first to upgrade your database, wait for migration to complete, then run this version again. https://www.spigotmc.org/resources/auxprotect.99147/download?version=575276");
             throw new SQLException();
         }
 
@@ -367,17 +106,12 @@ public class MigrationManager {
             plugin.info("Outdated DB Version: " + sql.getVersion() + ". Migrating to version: " + TARGET_DB_VERSION + "...");
             plugin.info("This may take a while. Please do not interrupt.");
             isMigrating = true;
-            boolean needBackup = false;
             for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
                 MigrationAction action = migrationActions.get(i);
-                if (action.necessary) {
-                    needBackup = true;
-                    break;
+                if (action == null) {
+                    plugin.warning("This database version is no longer supported. Please download an older AuxProtect version and run it first to upgrade your database, wait for migration to complete, then run this version again. https://www.spigotmc.org/resources/auxprotect.99147");
+                    throw new SQLException();
                 }
-            }
-            if (!sql.isMySQL() && needBackup) {
-                String path = sql.backup();
-                if (path != null) plugin.info("Pre-migration database backup created: " + path);
             }
         }
 
@@ -419,20 +153,11 @@ public class MigrationManager {
 
         plugin.debug("Purging temporary tables");
         for (Table table : Table.values()) {
-            sql.execute("DROP TABLE IF EXISTS " + table.toString() + "temp;", connection);
-            sql.execute("DROP TABLE IF EXISTS " + table + "_temp;", connection);
+            sql.execute(connection, "DROP TABLE IF EXISTS " + table.toString() + "temp");
+            sql.execute(connection, "DROP TABLE IF EXISTS " + table + "_temp");
         }
 
         isMigrating = false;
-    }
-
-    private void tryExecute(String stmt) {
-        try {
-            sql.execute(stmt, connection);
-        } catch (SQLException e) {
-            plugin.warning("Error, if you are reattempting migration this is expected.");
-            plugin.print(e);
-        }
     }
 
 
