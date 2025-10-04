@@ -19,7 +19,7 @@ import dev.heliosares.auxprotect.database.Results;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;

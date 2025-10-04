@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 
 import jakarta.annotation.Nonnull;
 import java.sql.SQLException;

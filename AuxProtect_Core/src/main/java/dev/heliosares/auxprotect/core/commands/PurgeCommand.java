@@ -6,7 +6,7 @@ import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.TimeUtil;

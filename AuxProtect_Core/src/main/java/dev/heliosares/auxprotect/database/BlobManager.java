@@ -1,11 +1,9 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -26,10 +24,10 @@ public class BlobManager {
     }
 
     protected void createTable(Connection connection) throws SQLException {
-        sql.execute("CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT PRIMARY KEY, ablob MEDIUMBLOB, hash INT);", connection);
+        sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + table + " (blobid BIGINT PRIMARY KEY, ablob MEDIUMBLOB, hash INT);");
 
-        sql.execute("CREATE INDEX IF NOT EXISTS idx_" + table + "_blobid ON " + table + " (blobid)", connection);
-        sql.execute("CREATE INDEX IF NOT EXISTS idx_" + table + "_hash ON " + table + " (hash)", connection);
+        sql.execute(connection, "CREATE INDEX IF NOT EXISTS idx_" + table + "_blobid ON " + table + " (blobid)");
+        sql.execute(connection, "CREATE INDEX IF NOT EXISTS idx_" + table + "_hash ON " + table + " (hash)");
     }
 
     protected long getBlobId(Connection connection, final byte[] blob, long snowflake) throws SQLException {
@@ -53,26 +51,20 @@ public class BlobManager {
 
 
         // DESC to use the most recent blobid if there are duplicates. Allows duplicate data to be purged sooner
-        String stmt = "SELECT blobid,ablob FROM " + table + " WHERE hash=? ORDER BY blobid DESC";
-        long id = -1;
-        try (PreparedStatement statement = connection.prepareStatement(stmt)) {
-            statement.setInt(1, hash);
-            try (ResultSet rs = statement.executeQuery()) {
-                while (rs.next()) {
-                    long otherid = rs.getLong(1);
-                    byte[] otherBytes = sql.getBlob(rs, "ablob");
-                    if (blobCache.equals(new BlobCache(otherid, otherBytes, Arrays.hashCode(otherBytes)))) {
-                        id = otherid;
-                        plugin.debug("Looked up blobid: " + id, 5);
-                        break;
-                    }
+        long id = sql.query(connection, "SELECT blobid,ablob FROM " + table + " WHERE hash=? ORDER BY blobid DESC", rs -> {
+            while (rs.next()) {
+                long otherid = rs.getLong(1);
+                byte[] otherBytes = sql.getBlob(rs, "ablob");
+                if (Arrays.equals(blob, otherBytes)) {
+                    plugin.debug("Looked up blobid: " + otherid, 5);
+                    return otherid;
                 }
             }
-        }
+            return -1L;
+        }, hash);
         if (id < 0) {
-            stmt = "INSERT INTO " + table + " (blobid, ablob, hash) VALUES (?,?,?)";
             id = snowflake;
-            sql.execute(stmt, connection, id, blob, hash);
+            sql.execute(connection, "INSERT INTO " + table + " (blobid, ablob, hash) VALUES (?,?,?)", id, blob, hash);
         }
         if (id > 0) {
             synchronized (cache) {
@@ -84,16 +76,10 @@ public class BlobManager {
 
     public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
         if (entry.getBlobID() <= 0) return null;
-        return sql.executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + table + " WHERE blobid=" + entry.getBlobID())) {
-                try (ResultSet rs = pstmt.executeQuery()) {
-                    if (rs.next()) {
-                        return sql.getBlob(rs, 1);
-                    }
-                }
-            }
-            return null;
-        }, 30000L, byte[].class);
+        return sql.query("SELECT ablob FROM " + table + " WHERE blobid=?", rs -> {
+            if (!rs.next()) return null;
+            return sql.getBlob(rs, 1);
+        }, 30000L, entry.getBlobID());
     }
 
     public void cleanup() {

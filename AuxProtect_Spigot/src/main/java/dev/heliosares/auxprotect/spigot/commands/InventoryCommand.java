@@ -9,7 +9,7 @@ import dev.heliosares.auxprotect.core.commands.APCommand;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.InvDiffManager.DiffInventoryRecord;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
@@ -21,7 +21,6 @@ import org.bukkit.OfflinePlayer;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 
-import java.io.IOException;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.UUID;
@@ -76,8 +75,8 @@ public class InventoryCommand<S, P extends IAuxProtect, SA extends SenderAdapter
         int uid;
         String uuid;
         try {
-            uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
-            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, false);
+            uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
+            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
         } catch (BusyException e) {
             sender.sendLang(Language.L.DATABASE_BUSY);
             return;

@@ -25,10 +25,12 @@ import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.YamlConfig;
+import dev.kshl.kshlib.exceptions.BusyException;
+import dev.kshl.kshlib.function.ConnectionConsumer;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
@@ -59,6 +61,7 @@ public final class AuxProtectVelocity implements IAuxProtect {
     private final HashMap<UUID, APPlayerVelocity> apPlayers = new HashMap<>();
     final Set<Integer> stackHashHistory = new HashSet<>();
     private DatabaseRunnable dbRunnable;
+    @Getter
     SQLManager sqlManager;
     private boolean isShuttingDown;
     private String stackLog = "";
@@ -122,9 +125,15 @@ public final class AuxProtectVelocity implements IAuxProtect {
         server.getEventManager().register(this, new APVListener(this));
 
         File sqliteFile = null;
-        String uri;
+        String hostAndPort = null;
+        String database = null;
+        String user = null;
+        String pass = null;
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
+            hostAndPort = getAPConfig().getHost() + ":" + getAPConfig().getPort();
+            database = getAPConfig().getDatabase();
+            user = getAPConfig().getUser();
+            pass = getAPConfig().getPass();
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {
@@ -145,26 +154,22 @@ public final class AuxProtectVelocity implements IAuxProtect {
                     return;
                 }
             }
-            uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
-        }
-        String user = null;
-        String pass = null;
-        boolean mysql = getAPConfig().isMySQL();
-        if (mysql) {
-            user = getAPConfig().getUser();
-            pass = getAPConfig().getPass();
         }
         try {
-            sqlManager = new SQLManager(this, uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
+            sqlManager = new SQLManager(this, hostAndPort, database, getAPConfig().getTablePrefix(), sqliteFile, user, pass);
         } catch (ClassNotFoundException e) {
             warning("No driver for SQL found. Disabling");
+            onProxyShutdown(null);
+            throw new RuntimeException(e);
+        } catch (SQLException | IOException e) {
+            warning("Failed to create database instance");
             onProxyShutdown(null);
             throw new RuntimeException(e);
         }
 
         runAsync(() -> {
             try {
-                sqlManager.connect();
+                sqlManager.init();
                 if (!config.isSkipRowCount()) sqlManager.count();
             } catch (Exception e) {
                 print(e);
@@ -190,8 +195,8 @@ public final class AuxProtectVelocity implements IAuxProtect {
             dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
                 info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
-                sqlManager.setSkipAsyncCheck(true);
-                sqlManager.execute(connection -> dbRunnable.run(true), 3000L);
+                sqlManager.markAsShuttingDown();
+                sqlManager.execute((ConnectionConsumer) connection -> dbRunnable.run(true), 3000L);
             } catch (BusyException e) {
                 warning("Database busy, some entries will be lost.");
             } catch (SQLException e) {
@@ -220,10 +225,6 @@ public final class AuxProtectVelocity implements IAuxProtect {
     @Override
     public InputStream getResource(String string) {
         return getClass().getClassLoader().getResourceAsStream(string);
-    }
-
-    public SQLManager getSqlManager() {
-        return sqlManager;
     }
 
     @Override

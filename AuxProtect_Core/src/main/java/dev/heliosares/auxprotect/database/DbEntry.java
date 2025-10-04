@@ -10,7 +10,7 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.ActivityRecord;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
 import lombok.Getter;
 import lombok.Setter;
@@ -119,7 +119,7 @@ public class DbEntry {
         if (uid > 0) {
             return uid;
         }
-        return uid = sql.getUserManager().getUIDFromUUID(getUserUUID(), true, true);
+        return uid = sql.getUserManager().getUIDFromUUID(getUserUUID(), true);
     }
 
     public String getUser() throws SQLException, BusyException {
@@ -132,7 +132,7 @@ public class DbEntry {
         if (!getUserUUID().startsWith("$") || getUserUUID().length() != 37) {
             return user = getUserUUID();
         }
-        user = sql.getUserManager().getUsernameFromUID(getUid(), false);
+        user = sql.getUserManager().getUsernameFromUID(getUid());
         if (user == null) {
             user = getUserUUID();
         }
@@ -146,7 +146,7 @@ public class DbEntry {
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true, true);
+        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true);
     }
 
     public String getTarget() throws SQLException, BusyException {
@@ -159,7 +159,7 @@ public class DbEntry {
         if (action.getTable().hasStringTarget() || !getTargetUUID().startsWith("$") || getTargetUUID().length() != 37) {
             return target = getTargetUUID();
         }
-        target = sql.getUserManager().getUsernameFromUID(getTargetId(), false);
+        target = sql.getUserManager().getUsernameFromUID(getTargetId());
         if (target == null) {
             target = getTargetUUID();
         }
@@ -171,7 +171,7 @@ public class DbEntry {
             return targetLabel;
         }
         if (target_id > 0) {
-            targetLabel = sql.getUserManager().getUUIDFromUID(target_id, false);
+            targetLabel = sql.getUserManager().getUUIDFromUID(target_id);
         } else if (target_id == 0) {
             return targetLabel = "";
         }
@@ -186,7 +186,7 @@ public class DbEntry {
             return userLabel;
         }
         if (uid > 0) {
-            userLabel = sql.getUserManager().getUUIDFromUID(uid, false);
+            userLabel = sql.getUserManager().getUUIDFromUID(uid);
         } else if (uid == 0) {
             return userLabel = "";
         }

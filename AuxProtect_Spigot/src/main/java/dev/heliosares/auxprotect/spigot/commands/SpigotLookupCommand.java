@@ -6,7 +6,7 @@ import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.commands.LookupCommand;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.TransactionEntry;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.MoneySolver;

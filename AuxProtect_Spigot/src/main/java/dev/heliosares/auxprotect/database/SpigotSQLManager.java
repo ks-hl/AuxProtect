@@ -1,11 +1,12 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.towny.TownyEntry;
 import dev.heliosares.auxprotect.towny.TownyManager;
+import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.io.File;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -15,8 +16,8 @@ public class SpigotSQLManager extends SQLManager {
     private final TownyManager townyManager;
     private final InvDiffManager invDiffManager;
 
-    public SpigotSQLManager(AuxProtectSpigot plugin, String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
-        super(plugin, target, prefix, sqliteFile, mysql, user, pass);
+    public SpigotSQLManager(AuxProtectSpigot plugin, String host, String database, String prefix, File sqliteFile, String user, String pass) throws ClassNotFoundException, SQLException, IOException {
+        super(plugin, host, database, prefix, sqliteFile, user, pass);
 
         TownyManager _townyManager = null;
         try {
@@ -68,7 +69,9 @@ public class SpigotSQLManager extends SQLManager {
     }
 
     @Override
-    protected void otherConnectTasks() {
+    protected void postInit() throws SQLException {
+        super.postInit();
+
         if (townyManager != null) townyManager.init();
     }
 

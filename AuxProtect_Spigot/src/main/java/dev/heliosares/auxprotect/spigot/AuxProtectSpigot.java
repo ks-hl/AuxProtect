@@ -17,7 +17,6 @@ import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.SpigotDatabaseRunnable;
 import dev.heliosares.auxprotect.database.SpigotSQLManager;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.commands.ClaimInvCommand;
 import dev.heliosares.auxprotect.spigot.listeners.AuctionHouseListener;
 import dev.heliosares.auxprotect.spigot.listeners.ChestShopListener;
@@ -40,7 +39,10 @@ import dev.heliosares.auxprotect.utils.Pane;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.UpdateChecker;
 import dev.heliosares.auxprotect.utils.YamlConfig;
+import dev.kshl.kshlib.exceptions.BusyException;
+import dev.kshl.kshlib.function.ConnectionConsumer;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -82,6 +84,7 @@ import java.util.stream.Collectors;
 public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     public static final char BLOCK = 9608;
     private static final DateTimeFormatter ERROR_TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
+    @Getter
     private static AuxProtectSpigot instance;
     private static SpigotSQLManager sqlManager;
     private final APConfig config = new APConfig();
@@ -92,15 +95,13 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private DatabaseRunnable dbRunnable;
     long lastCheckedForUpdate;
     private Economy econ;
+    @Getter
     private ClaimInvCommand claiminvcommand;
+    @Getter
     private APSCommand apcommand;
     private int SERVER_VERSION;
     private boolean isShuttingDown;
     private String stackLog = "";
-
-    public static AuxProtectSpigot getInstance() {
-        return instance;
-    }
 
     public static String getLabel(Object o) {
         if (o == null) {
@@ -125,14 +126,6 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             return o.toString().toLowerCase();
         }
         return "#null";
-    }
-
-    public ClaimInvCommand getClaiminvcommand() {
-        return claiminvcommand;
-    }
-
-    public APSCommand getApcommand() {
-        return apcommand;
     }
 
     public int getCompatabilityVersion() {
@@ -180,10 +173,12 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         }
         debug("Compatibility version: " + SERVER_VERSION, 1);
 
+        String user = null;
+        String pass = null;
         File sqliteFile = null;
-        String uri;
         if (getAPConfig().isMySQL()) {
-            uri = String.format("jdbc:mysql://%s:%s/%s", getAPConfig().getHost(), getAPConfig().getPort(), getAPConfig().getDatabase());
+            user = getAPConfig().getUser();
+            pass = getAPConfig().getPass();
         } else {
             sqliteFile = new File(getDataFolder(), "database/auxprotect.db");
             if (!sqliteFile.getParentFile().exists()) {
@@ -204,20 +199,16 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
                     return;
                 }
             }
-            uri = "jdbc:sqlite:" + sqliteFile.getAbsolutePath();
         }
 
-        String user = null;
-        String pass = null;
-        boolean mysql = getAPConfig().isMySQL();
-        if (mysql) {
-            user = getAPConfig().getUser();
-            pass = getAPConfig().getPass();
-        }
         try {
-            sqlManager = newSQLManager(uri, getAPConfig().getTablePrefix(), sqliteFile, mysql, user, pass);
+            sqlManager = newSQLManager(getAPConfig().getHost() + ":" + getAPConfig().getPort(), getAPConfig().getDatabase(), getAPConfig().getTablePrefix(), sqliteFile, user, pass);
         } catch (ClassNotFoundException e) {
             warning("No driver for SQL found. Disabling");
+            setEnabled(false);
+            throw new RuntimeException(e);
+        } catch (SQLException | IOException e) {
+            warning("Failed to create database instance");
             setEnabled(false);
             throw new RuntimeException(e);
         }
@@ -413,8 +404,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
         dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, true, "AuxProtect", ""));
     }
 
-    protected SpigotSQLManager newSQLManager(String uri, String tablePrefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
-        return new SpigotSQLManager(this, uri, tablePrefix, sqliteFile, mysql, user, pass);
+    protected SpigotSQLManager newSQLManager(String hostAndPort, String database, String tablePrefix, File sqliteFile, String user, String pass) throws ClassNotFoundException, SQLException, IOException {
+        return new SpigotSQLManager(this, hostAndPort, database, tablePrefix, sqliteFile, user, pass);
     }
 
     protected void periodicPlayerTick(APPlayerSpigot apPlayer) {
@@ -455,7 +446,7 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
 
     protected void initDatabase() {
         try {
-            sqlManager.connect();
+            sqlManager.init();
             if (!config.isSkipRowCount()) sqlManager.count();
         } catch (Exception e) {
             print(e);
@@ -552,8 +543,8 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
             dbRunnable.add(new DbEntry("#console", EntryAction.PLUGINLOAD, false, "AuxProtect", ""));
             try {
                 info("Logging final entries... (If you are reloading the plugin, this may cause lag)");
-                sqlManager.setSkipAsyncCheck(true);
-                sqlManager.execute(connection -> dbRunnable.run(true), 3000L);
+                sqlManager.markAsShuttingDown();
+                sqlManager.execute((ConnectionConsumer) connection -> dbRunnable.run(true), 3000L);
             } catch (BusyException e) {
                 warning("Database busy, some entries will be lost.");
             } catch (SQLException e) {

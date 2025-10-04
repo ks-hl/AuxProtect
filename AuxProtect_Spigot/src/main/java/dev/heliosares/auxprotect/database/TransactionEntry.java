@@ -7,9 +7,10 @@ import dev.heliosares.auxprotect.adapters.message.HoverEvent;
 import dev.heliosares.auxprotect.adapters.sender.SenderAdapter;
 import dev.heliosares.auxprotect.api.AuxProtectAPI;
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import jakarta.annotation.Nullable;
+import lombok.Getter;
 import org.bukkit.Location;
 import org.bukkit.inventory.ItemStack;
 
@@ -18,8 +19,11 @@ import java.sql.SQLException;
 import java.util.Objects;
 
 public class TransactionEntry extends SpigotDbEntry {
+    @Getter
     private final short quantity;
+    @Getter
     private final double cost;
+    @Getter
     private final double balance;
 
     protected String targetLabel2;
@@ -63,18 +67,6 @@ public class TransactionEntry extends SpigotDbEntry {
         this.target_id2 = target_id2;
     }
 
-    public short getQuantity() {
-        return quantity;
-    }
-
-    public double getCost() {
-        return cost;
-    }
-
-    public double getBalance() {
-        return balance;
-    }
-
     public ItemStack getItem() throws SQLException, BusyException, IOException, ClassNotFoundException {
         if (getBlob() == null) return null;
 
@@ -90,7 +82,7 @@ public class TransactionEntry extends SpigotDbEntry {
         if (target_id2 > 0) {
             return target_id2;
         }
-        return target_id2 = sql.getUserManager().getUIDFromUUID(getTargetUUID2(), true, true);
+        return target_id2 = sql.getUserManager().getUIDFromUUID(getTargetUUID2(), true);
     }
 
     public String getTarget2() throws SQLException, BusyException {
@@ -103,7 +95,7 @@ public class TransactionEntry extends SpigotDbEntry {
         if (!getTargetUUID2().startsWith("$") || getTargetUUID2().length() != 37) {
             return target2 = getTargetUUID2();
         }
-        target2 = sql.getUserManager().getUsernameFromUID(getTargetId2(), false);
+        target2 = sql.getUserManager().getUsernameFromUID(getTargetId2());
         if (target2 == null) {
             target2 = getTargetUUID2();
         }
@@ -115,7 +107,7 @@ public class TransactionEntry extends SpigotDbEntry {
             return targetLabel2;
         }
         if (target_id2 > 0) {
-            targetLabel2 = sql.getUserManager().getUUIDFromUID(target_id2, false);
+            targetLabel2 = sql.getUserManager().getUUIDFromUID(target_id2);
         } else if (target_id2 == 0) {
             return targetLabel2 = "";
         }

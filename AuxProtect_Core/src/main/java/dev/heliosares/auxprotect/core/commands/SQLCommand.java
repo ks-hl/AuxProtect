@@ -5,8 +5,8 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.database.ResultMap;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
+import dev.kshl.kshlib.sql.ResultMap;
 
 import java.util.List;
 
@@ -39,7 +39,7 @@ public class SQLCommand <S, P extends IAuxProtect, SA extends SenderAdapter<S, P
             } else if (args[0].equalsIgnoreCase("sqli")) {
                 plugin.getSqlManager().execute(stmt, 30000L);
             } else {
-                ResultMap results = plugin.getSqlManager().executeGetMap(stmt);
+                var results = plugin.getSqlManager().executeReturnMap(stmt, 5000L);
                 StringBuilder line = new StringBuilder();
                 for (String label : results.getLabels()) {
                     if (!line.isEmpty()) {

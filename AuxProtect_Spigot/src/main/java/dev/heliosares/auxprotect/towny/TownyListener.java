@@ -24,7 +24,7 @@ import com.palmergames.bukkit.towny.object.Government;
 import com.palmergames.bukkit.towny.object.Resident;
 import com.palmergames.bukkit.towny.object.WorldCoord;
 import dev.heliosares.auxprotect.database.EntryAction;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
@@ -80,7 +80,7 @@ public class TownyListener implements Listener {
         }
         String uuid = null;
         try {
-            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid, true);
+            uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
         } catch (SQLException | BusyException ignored) {
             //Unlikely
         }

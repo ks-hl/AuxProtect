@@ -7,11 +7,10 @@ import dev.heliosares.auxprotect.core.*;
 import dev.heliosares.auxprotect.database.DatabaseRunnable;
 import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.SQLManager;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nullable;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.sql.SQLException;
@@ -26,7 +25,7 @@ public class TestPlugin implements IAuxProtect {
     private final DatabaseRunnable dbRunnable;
     private final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(10);
 
-    public TestPlugin(String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException, SQLException, BusyException, IOException {
+    public TestPlugin(String hostAndPort, String database, String prefix, File sqliteFile, String user, String pass) throws ClassNotFoundException, SQLException, BusyException, IOException {
         try {
             AuxProtectAPI.setInstance(this);
         } catch (IllegalStateException ignored) {
@@ -34,8 +33,8 @@ public class TestPlugin implements IAuxProtect {
         apConfig = new APConfig();
         apConfig.load(this, new File(getDataFolder(), "config.yml"), () -> getClass().getClassLoader().getResourceAsStream("config.yml"));
 
-        sql = new SQLManager(this, target, prefix, sqliteFile, mysql, user, pass);
-        sql.connect();
+        sql = new SQLManager(this, hostAndPort, database, prefix, sqliteFile, user, pass);
+        sql.init();
 
         dbRunnable = new DatabaseRunnable(this, sql);
         executor.scheduleAtFixedRate(dbRunnable, 50, 50, TimeUnit.MILLISECONDS);

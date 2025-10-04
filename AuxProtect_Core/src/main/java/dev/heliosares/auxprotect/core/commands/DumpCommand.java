@@ -5,12 +5,12 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.Command;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
-import dev.heliosares.auxprotect.database.ConnectionPool;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
 import dev.heliosares.auxprotect.utils.StackUtil;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import dev.kshl.kshlib.misc.Formatter;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -23,6 +23,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>> extends Command<S, P, SA> {
 
@@ -30,8 +31,7 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
         super(plugin, "dump", APPermission.ADMIN, true, "stats");
     }
 
-    public static String dump(IAuxProtect plugin, boolean simple, boolean chat, boolean file, boolean config,
-                              boolean stats) throws Exception {
+    public static String dump(IAuxProtect plugin, boolean simple, boolean chat, boolean config, boolean stats) throws Exception {
         StringBuilder trace = new StringBuilder();
         if (!stats) {
             trace.append("Generated: ");
@@ -65,27 +65,10 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
             trace.append("Java: ").append(Runtime.version().toString()).append("\n");
         }
         trace.append("Queued: ").append(plugin.queueSize()).append("\n");
-        if (!stats) {
-            trace.append("Pool Expired: ").append(ConnectionPool.getExpiredConnections()).append("\n");
-        }
-        long[] write = ConnectionPool.calculateWriteTimes();
-        if (write != null) {
-            trace.append("Access:\n");
-            trace.append("  Average Time: ").append(Math.round((double) write[1] / write[2] * 100.0) / 100.0).append("ms\n");
-            trace.append("  Duty: ").append(Math.round((double) write[1] / write[0] * 10000.0) / 100.0).append("%\n");
-            if (!simple && !stats) {
-                trace.append("  Across: ").append(write[0]).append("ms\n");
-                trace.append("  Count: ").append(write[2]).append("\n");
-                long writeCheckout = plugin.getSqlManager().getLockedSince();
-                StackTraceElement[] heldBy = plugin.getSqlManager().getWhoHasLock();
-                if (writeCheckout > 0 && heldBy != null) {
-                    trace.append("  Locked For: ").append(System.currentTimeMillis() - writeCheckout).append("ms\n");
-                    trace.append("  Locked by: ").append(StackUtil.format(heldBy, 0));
-                } else {
-                    trace.append("  Unlocked");
-                }
-                trace.append("\n");
-            }
+        double[] usage = plugin.getSqlManager().getUsageTimeRatios();
+        if (usage != null) {
+            Function<Double, String> format = d -> Formatter.toString(d * 100, 1, true, true) + "%";
+            trace.append(String.format("Access 5s/1m/5m: %s/%s/%s", format.apply(usage[0]), format.apply(usage[1]), format.apply(usage[2])));
         }
         if (!stats) {
             trace.append("Database type: ").append(plugin.getSqlManager().isMySQL() ? "mysql" : "sqlite").append("\n");
@@ -194,7 +177,6 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
     public void onCommand(SA sender, String label, String[] args) throws CommandException {
         boolean simple = false;
         boolean chat = false;
-        boolean file = false;
         boolean config = false;
         boolean stats = args[0].equalsIgnoreCase("stats");
         if (!stats) {
@@ -202,7 +184,6 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
                 switch (args[i].toLowerCase()) {
                     case "chat" -> chat = true;
                     case "simple" -> simple = true;
-//                        case "file" -> file = true;
                     case "config" -> config = true;
                     default -> throw new SyntaxException();
                 }
@@ -210,7 +191,7 @@ public class DumpCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P
             sender.sendMessageRaw("&aBuilding trace...");
         }
         try {
-            sender.sendMessageRaw("&a" + dump(plugin, simple, chat, file, config, stats));
+            sender.sendMessageRaw("&a" + dump(plugin, simple, chat, config, stats));
         } catch (Exception e) {
             plugin.print(e);
             sender.sendLang(Language.L.ERROR);

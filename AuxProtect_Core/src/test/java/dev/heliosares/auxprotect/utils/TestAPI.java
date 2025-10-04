@@ -6,9 +6,9 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.Table;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import org.junit.Test;
 
 import java.io.File;
@@ -23,7 +23,7 @@ public class TestAPI {
         File sqliteFile = new File("test_run", "database.db");
         if (sqliteFile.exists()) //noinspection ResultOfMethodCallIgnored
             sqliteFile.delete();
-        TestPlugin testPlugin = new TestPlugin("jdbc:sqlite:" + sqliteFile.getAbsolutePath(), null, sqliteFile, false, null, null);
+        TestPlugin testPlugin = new TestPlugin(null, null, null, sqliteFile, null, null);
 
         EntryAction testAction = AuxProtectAPI.createAction("test", "test_action", "test_action", null);
         assert testAction != null;

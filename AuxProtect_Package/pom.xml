@@ -39,12 +39,19 @@
                             <goal>shade</goal>
                         </goals>
                         <configuration>
+                            <relocations>
+                                <relocation>
+                                    <pattern>dev.kshl.kshlib</pattern>
+                                    <shadedPattern>dev.kshl.auxprotect.kshlib</shadedPattern>
+                                </relocation>
+                            </relocations>
                             <artifactSet>
                                 <includes>
                                     <include>dev.heliosares:**</include>
 
                                     <include>org.json:json</include>
                                     <include>org.yaml:snakeyaml</include>
+                                    <include>dev.kshl:KshLib</include>
                                 </includes>
                             </artifactSet>
                         </configuration>
@@ -111,12 +118,6 @@
         <dependency>
             <groupId>dev.heliosares</groupId>
             <artifactId>AuxProtect_Spigot</artifactId>
-            <version>${revision}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>dev.heliosares</groupId>
-            <artifactId>AuxProtect_Bungee</artifactId>
             <version>${revision}</version>
         </dependency>
 

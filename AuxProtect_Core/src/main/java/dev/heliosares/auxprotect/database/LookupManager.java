@@ -4,9 +4,9 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.PlatformType;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
+import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -83,11 +83,11 @@ public class LookupManager {
 
     public int count(Parameters... params) throws LookupException {
         try {
-            return sql.executeReturn(connection -> {
+            return sql.execute(connection -> {
                 int count = 0;
                 for (Parameters param : params) {
                     String[] sqlstmts = param.toSQL(plugin);
-                    String stmt = sql.getCountStmt(param.getTable().toString());
+                    String stmt = sql.getCountStmt() + param.getTable().toString();
                     if (sqlstmts[0].length() > 1) {
                         stmt += " WHERE " + sqlstmts[0];
                     }
@@ -104,7 +104,7 @@ public class LookupManager {
                     }
                 }
                 return count;
-            }, 3000L, Integer.class);
+            }, 3000L);
         } catch (BusyException e) {
             throw new LookupException(Language.L.DATABASE_BUSY);
         } catch (Exception e1) {

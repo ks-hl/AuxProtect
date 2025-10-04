@@ -9,6 +9,7 @@ import dev.heliosares.auxprotect.exceptions.CommandException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.PlatformException;
 import dev.heliosares.auxprotect.exceptions.SyntaxException;
+import dev.kshl.kshlib.function.ConnectionFunction;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -189,7 +190,7 @@ public class APCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>>
                 plugin.runAsync(() -> {
                     String backup;
                     try {
-                        backup = plugin.getSqlManager().executeReturn(connection -> plugin.getSqlManager().backup(), 30000L, String.class);
+                        backup = plugin.getSqlManager().execute((ConnectionFunction<String>) connection -> plugin.getSqlManager().backup(), 30000L);
                     } catch (Exception e) {
                         plugin.print(e);
                         return;

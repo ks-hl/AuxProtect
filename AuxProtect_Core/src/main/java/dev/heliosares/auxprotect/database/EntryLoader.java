@@ -1,7 +1,5 @@
 package dev.heliosares.auxprotect.database;
 
-import dev.heliosares.auxprotect.exceptions.BusyException;
-
 import java.sql.SQLException;
 import java.util.function.Predicate;
 

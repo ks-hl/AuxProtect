@@ -4,9 +4,12 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import dev.kshl.kshlib.exceptions.BusyException;
+import dev.kshl.kshlib.function.ConnectionConsumer;
+import dev.kshl.kshlib.function.ConnectionFunction;
+import dev.kshl.kshlib.sql.ConnectionManager;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
@@ -27,7 +30,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public class SQLManager extends ConnectionPool {
+public class SQLManager extends ConnectionManager {
     public static final int MAX_LOOKUP_SIZE = 500000;
     @Getter
     private static SQLManager instance;
@@ -47,9 +50,11 @@ public class SQLManager extends ConnectionPool {
     private boolean isConnectedAndInitDone;
     private int nextWid;
     private int nextActionId = 1;
+    @Getter
+    private long timeConnected;
 
-    public SQLManager(IAuxProtect plugin, String target, String prefix, File sqliteFile, boolean mysql, String user, String pass) throws ClassNotFoundException {
-        super(plugin, target, mysql, user, pass);
+    public SQLManager(IAuxProtect plugin, String host, String database, String prefix, File sqliteFile, String user, String pass) throws ClassNotFoundException, SQLException, IOException {
+        super(sqliteFile, host, database, user, pass, 10);
         instance = this;
         this.plugin = plugin;
         this.usermanager = new SQLUserManager(plugin, this);
@@ -89,15 +94,31 @@ public class SQLManager extends ConnectionPool {
         return migrationmanager.getOriginalVersion();
     }
 
-    public void connect() throws SQLException, BusyException {
+    @Override
+    public void init(Connection connection) throws SQLException {
+        timeConnected = System.currentTimeMillis();
         plugin.info("Connecting to database...");
 
         try {
-            super.init(this::init);
-        } catch (SQLException e) {
+            executeTransaction(connection, () -> {
+                this.migrationmanager = new MigrationManager(this, connection, plugin);
+                migrationmanager.preTables();
+
+                createTables(connection);
+
+                usermanager.init(connection);
+
+                migrationmanager.postTables();
+
+                postTables(connection);
+
+                plugin.debug("table init done.");
+            });
+        } catch (Throwable e) {
             if (migrationmanager != null && migrationmanager.isMigrating()) {
-                plugin.warning(
-                        "Error while migrating database. This database will likely not work with the current version. You will need to restore a backup (plugins/AuxProtect/database/backups) and try again. Please contact the plugin developer if you are unable to complete migration.");
+                plugin.warning("An error occurred while migrating database. Rolling back changes.");
+            } else {
+                plugin.warning("An error occurred during initialization. Rolling back changes.");
             }
             throw e;
         }
@@ -108,7 +129,7 @@ public class SQLManager extends ConnectionPool {
         // Auto Purge
         out:
         if (plugin.getAPConfig().getAutoPurgePeriodicity() > 0) {
-            long timeSincePurge = System.currentTimeMillis() - getLast(LastKeys.AUTO_PURGE);
+            long timeSincePurge = System.currentTimeMillis() - getLast(connection, LastKeys.AUTO_PURGE);
             if (timeSincePurge < plugin.getAPConfig().getAutoPurgePeriodicity()) {
                 plugin.info(Language.L.COMMAND__PURGE__SKIPAUTO.translate(TimeUtil.millisToString(timeSincePurge)));
                 break out;
@@ -132,16 +153,16 @@ public class SQLManager extends ConnectionPool {
             if (anypurge) {
                 try {
                     plugin.info(Language.L.COMMAND__PURGE__UIDS.translate());
-                    count += purgeUIDs();
+                    count += purgeUIDs(connection);
 
-                    if (!isMySQL()) plugin.getSqlManager().execute(plugin.getSqlManager()::vacuum, 30000L);
+                    if (!isMySQL()) vacuum(connection);
                 } catch (SQLException e) {
                     plugin.warning(Language.L.COMMAND__PURGE__ERROR.translate());
                     plugin.print(e);
                     break out;
                 }
                 plugin.info(Language.L.COMMAND__PURGE__COMPLETE_COUNT.translate(count));
-                setLast(LastKeys.AUTO_PURGE, System.currentTimeMillis());
+                setLast(connection, LastKeys.AUTO_PURGE, System.currentTimeMillis());
             }
         }
 
@@ -157,6 +178,21 @@ public class SQLManager extends ConnectionPool {
     public void close() {
         isConnected = false;
         super.close();
+    }
+
+    @Override
+    protected void debug(String line) {
+        plugin.debug(line, 5);
+    }
+
+    @Override
+    protected boolean checkAsync() {
+        return !plugin.isPrimaryThread();
+    }
+
+    @Override
+    protected boolean isDebug() {
+        return plugin.getAPConfig().getDebug() >= 5;
     }
 
     @Nullable
@@ -198,10 +234,10 @@ public class SQLManager extends ConnectionPool {
         }
         for (Table table : Table.values()) {
             if (table.hasAPEntries() && table.exists(plugin)) {
-                execute(table.getSQLCreateString(plugin), connection);
+                execute(connection, table.getSQLCreateString(plugin));
                 if (doIndex) {
                     for (String indexStatement : table.getIndexStatements()) {
-                        execute(indexStatement, connection);
+                        execute(connection, indexStatement);
                     }
                 }
             }
@@ -210,12 +246,12 @@ public class SQLManager extends ConnectionPool {
         if (plugin.getPlatform() == PlatformType.SPIGOT) {
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_INVDIFF;
             stmt += " (time BIGINT, uid INT, slot INT, qty INT, blobid BIGINT, damage INT);";
-            execute(stmt, connection);
-            execute("CREATE INDEX IF NOT EXISTS idx_" + Table.AUXPROTECT_INVDIFF + "_time_uid ON " + Table.AUXPROTECT_INVDIFF + " (time, uid)", connection);
+            execute(connection, stmt);
+            execute(connection, "CREATE INDEX IF NOT EXISTS idx_" + Table.AUXPROTECT_INVDIFF + "_time_uid ON " + Table.AUXPROTECT_INVDIFF + " (time, uid)");
 
             stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_WORLDS;
             stmt += " (name varchar(255), wid SMALLINT);";
-            execute(stmt, connection);
+            execute(connection, stmt);
 
             stmt = "SELECT * FROM " + Table.AUXPROTECT_WORLDS + ";";
             debugSQLStatement(stmt);
@@ -233,25 +269,19 @@ public class SQLManager extends ConnectionPool {
             }
         }
 
-        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS;
-        stmt += " (name SMALLINT PRIMARY KEY, value BIGINT);";
-        execute(stmt, connection);
+        execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_LASTS + " (name SMALLINT PRIMARY KEY, value BIGINT)");
         for (LastKeys key : LastKeys.values()) {
             try {
-                execute("INSERT INTO " + Table.AUXPROTECT_LASTS + " (name, value) VALUES (?,?)", connection, key.id);
+                execute(connection, "INSERT INTO " + Table.AUXPROTECT_LASTS + " (name) VALUES (?)", key.id);
             } catch (SQLException ignored) {
                 // Ensures each LastKeys has a value, so we can just UPDATE later
             }
         }
 
-        stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS
-                + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255), owner varchar(255), created BIGINT);";
-        execute(stmt, connection);
+        execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_API_ACTIONS + " (name varchar(255), nid SMALLINT, pid SMALLINT, ntext varchar(255), ptext varchar(255), owner varchar(255), created BIGINT)");
 
-        stmt = "SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS + ";";
-        debugSQLStatement(stmt);
         try (Statement statement = connection.createStatement()) {
-            try (ResultSet results = statement.executeQuery(stmt)) {
+            try (ResultSet results = statement.executeQuery("SELECT * FROM " + Table.AUXPROTECT_API_ACTIONS)) {
                 while (results.next()) {
                     String key = results.getString("name");
                     int nid = results.getInt("nid");
@@ -266,68 +296,39 @@ public class SQLManager extends ConnectionPool {
     }
 
     protected void postTables(Connection connection) throws SQLException {
-        if (getLast(LastKeys.LEGACY_POSITIONS, connection) == 0)
-            setLast(LastKeys.LEGACY_POSITIONS, System.currentTimeMillis(), connection);
-    }
-
-    private void init(Connection connection) throws SQLException, BusyException {
-        connection.setAutoCommit(false);
-        try {
-            this.migrationmanager = new MigrationManager(this, connection, plugin);
-            migrationmanager.preTables();
-
-            createTables(connection);
-
-            usermanager.init(connection);
-
-            migrationmanager.postTables();
-
-            postTables(connection);
-
-            connection.commit();
-            plugin.debug("table init done.");
-        } catch (Throwable t) {
-            plugin.warning("An error occurred during initialization. Rolling back changes.");
-            connection.rollback();
-            throw t;
-        } finally {
-            if (!connection.getAutoCommit()) connection.setAutoCommit(true);
-        }
+        if (getLast(connection, LastKeys.LEGACY_POSITIONS) == 0)
+            setLast(connection, LastKeys.LEGACY_POSITIONS, System.currentTimeMillis());
     }
 
     public int purgeUIDs() throws SQLException, BusyException {
-        int count = executeReturn(connection -> {
-            connection.setAutoCommit(false);
-            try {
-                // Step 1: Create a Temporary Table
-                execute("CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)", connection);
+        return execute((ConnectionFunction<Integer>) this::purgeUIDs, 3000L);
+    }
 
-                // Step 2: Insert Data into the Temporary Table
-                for (Table table : Table.values()) {
-                    if (table.hasAPEntries() && table.exists(plugin)) {
-                        execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT uid FROM " + table, connection);
-                        if (!table.hasStringTarget()) {
-                            execute("INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT target_id FROM " + table, connection);
-                        }
+    public int purgeUIDs(Connection connection) throws SQLException {
+        int count = executeTransaction(connection, () -> {
+            // Step 1: Create a Temporary Table
+            execute(connection, "CREATE TEMP" + (isMySQL() ? "ORARY" : "") + " TABLE temp_uids (uid INT PRIMARY KEY)");
+
+            // Step 2: Insert Data into the Temporary Table
+            for (Table table : Table.values()) {
+                if (table.hasAPEntries() && table.exists(plugin)) {
+                    execute(connection, "INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT uid FROM " + table);
+                    if (!table.hasStringTarget()) {
+                        execute(connection, "INSERT" + (isMySQL() ? "" : " OR") + " IGNORE INTO temp_uids (uid) SELECT target_id FROM " + table);
                     }
                 }
-
-                // Step 3: Delete the UIDs
-                int count_ = executeReturnRows(connection, "DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
-
-                // Step 4: Drop the Temporary Table
-                execute("DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids", connection);
-
-                connection.commit();
-
-                return count_;
-            } catch (Throwable t) {
-                connection.rollback();
-                throw t;
-            } finally {
-                if (!connection.getAutoCommit()) connection.setAutoCommit(true);
             }
-        }, 30000L, Integer.class);
+
+            // Step 3: Delete the UIDs
+            int count_ = executeReturnRows(connection, "DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
+
+            // Step 4: Drop the Temporary Table
+            execute(connection, "DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids");
+
+            connection.commit();
+
+            return count_;
+        });
 
         // Log and Clear Cache
         plugin.debug("Purged " + count + " UIDs");
@@ -341,14 +342,14 @@ public class SQLManager extends ConnectionPool {
             plugin.info("Vacuum is disabled. To force this run `ap sqli vacuum` from the console.");
             return;
         }
-        long sinceLastVac = System.currentTimeMillis() - getLast(LastKeys.VACUUM, connection);
+        long sinceLastVac = System.currentTimeMillis() - getLast(connection, LastKeys.VACUUM);
         if (sinceLastVac < 24L * 3600000L * 6L) {
             plugin.info(Language.L.COMMAND__PURGE__NOTVACUUM.translate(TimeUtil.millisToString(sinceLastVac)));
             return;
         }
         plugin.info(Language.L.COMMAND__PURGE__VACUUM.translate());
         try {
-            execute("VACUUM", connection);
+            execute(connection, "VACUUM");
         } catch (SQLException e) {
             if (e.getErrorCode() == 13) {
                 plugin.info("Your machine has insufficient space in the temporary partition to condense the database. " +
@@ -358,7 +359,7 @@ public class SQLManager extends ConnectionPool {
                 throw e;
             }
         }
-        setLast(LastKeys.VACUUM, System.currentTimeMillis(), connection);
+        setLast(connection, LastKeys.VACUUM, System.currentTimeMillis());
     }
 
     protected boolean putPosEntry(PreparedStatement preparedStatement, DbEntry dbEntry, AtomicInteger i) throws SQLException {
@@ -451,7 +452,7 @@ public class SQLManager extends ConnectionPool {
                 }
                 if (table.hasBlob()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
-                        setBlob(connection, statement, i.getAndIncrement(), dbEntry.getBlob());
+                        statement.setBytes(i.getAndIncrement(), dbEntry.getBlob());
                     } else statement.setNull(i.getAndIncrement(), Types.NULL);
                 } else if (table.hasBlobID()) {
                     if (dbEntry.hasBlob() && dbEntry.getBlob() != null) {
@@ -488,40 +489,42 @@ public class SQLManager extends ConnectionPool {
     }
 
     public int purge(Table table, long time) throws SQLException, BusyException {
-        if (!isConnected)
-            return 0;
-        if (time < Table.MIN_PURGE_INTERVAL) {
-            return 0;
-        }
-        int count = 0;
-        if (table == null) {
-            for (Table table1 : Table.values()) {
-                if (!table1.hasAPEntries()) {
-                    continue;
+        return execute(connection -> {
+            if (!isConnected)
+                return 0;
+            if (time < Table.MIN_PURGE_INTERVAL) {
+                return 0;
+            }
+            int count = 0;
+            if (table == null) {
+                for (Table table1 : Table.values()) {
+                    if (!table1.hasAPEntries()) {
+                        continue;
+                    }
+                    if (!table1.exists(plugin)) {
+                        continue;
+                    }
+                    if (!table1.canPurge()) {
+                        continue;
+                    }
+                    count += purge(table1, time);
                 }
-                if (!table1.exists(plugin)) {
-                    continue;
-                }
-                if (!table1.canPurge()) {
-                    continue;
-                }
-                count += purge(table1, time);
+                return count;
+            }
+            long snowflake = (System.currentTimeMillis() - time) * Snowflake.COUNTER_FACTOR;
+
+            count += executeReturnRows(connection, "DELETE FROM " + table + " WHERE (time < ?);", snowflake);
+            if (table == Table.AUXPROTECT_INVENTORY) {
+                count += executeReturnRows(connection, "DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?)", snowflake);
+                count += executeReturnRows(connection, "DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
+                        + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
+                        + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL)");
+                count += executeReturnRows(connection, "DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE "
+                        + Table.AUXPROTECT_INVBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
+                        + Table.AUXPROTECT_INVENTORY + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL)");
             }
             return count;
-        }
-        long snowflake = (System.currentTimeMillis() - time) * Snowflake.COUNTER_FACTOR;
-
-        count += executeReturnRows("DELETE FROM " + table + " WHERE (time < ?);", snowflake);
-        if (table == Table.AUXPROTECT_INVENTORY) {
-            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFF + " WHERE (time < ?);", snowflake);
-            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVDIFFBLOB + " WHERE "
-                    + Table.AUXPROTECT_INVDIFFBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
-                    + Table.AUXPROTECT_INVDIFF + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
-            count += executeReturnRows("DELETE FROM " + Table.AUXPROTECT_INVBLOB + " WHERE "
-                    + Table.AUXPROTECT_INVBLOB + ".blobid NOT IN (SELECT DISTINCT blobid FROM "
-                    + Table.AUXPROTECT_INVENTORY + " WHERE blobid" + (isMySQL() ? " IS" : "") + " NOT NULL);");
-        }
-        return count;
+        }, 5000L);
     }
 
     public synchronized int getWID(String world) {
@@ -626,23 +629,18 @@ public class SQLManager extends ConnectionPool {
     }
 
     public int count(Table table) throws SQLException, BusyException {
-        return executeReturn(connection -> count(connection, table.toString(), null), 5000L, Integer.class);
+        return execute((ConnectionFunction<Integer>) connection -> count(connection, table.toString()), 5000L);
     }
 
     public byte[] getBlob(DbEntry entry) throws SQLException, BusyException {
-        if (entry.getAction().getTable().hasBlob())
-            return executeReturn(connection -> {
-                try (PreparedStatement pstmt = connection.prepareStatement("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=" + entry.getSnowflake() + " LIMIT 1")) {
-                    try (ResultSet rs = pstmt.executeQuery()) {
-                        if (rs.next()) {
-                            return getBlob(rs, 1);
-                        }
-                    }
-                }
-                return null;
-            }, 30000L, byte[].class);
-
-        return getBlobManager(entry.getAction().getTable()).getBlob(entry);
+        if (entry.getAction().getTable().hasBlob()) {
+            return query("SELECT ablob FROM " + entry.getAction().getTable() + " WHERE time=? LIMIT 1", rs -> {
+                if (!rs.next()) return null;
+                return getBlob(rs, 1);
+            }, 10000L, entry.getSnowflake());
+        } else {
+            return getBlobManager(entry.getAction().getTable()).getBlob(entry);
+        }
     }
 
     public void getMultipleBlobs(DbEntry... entries) throws SQLException, BusyException {
@@ -710,20 +708,20 @@ public class SQLManager extends ConnectionPool {
 
     public void setLast(LastKeys key, long value) throws SQLException, BusyException {
         key.value = value;
-        execute(connection -> setLast(key, value, connection), 30000L);
+        execute((ConnectionConsumer) connection -> setLast(connection, key, value), 30000L);
     }
 
-    public void setLast(LastKeys key, long value, Connection connection) throws SQLException {
+    public void setLast(Connection connection, LastKeys key, long value) throws SQLException {
         key.value = value;
-        execute("UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", connection, value, key.id);
+        execute(connection, "UPDATE " + Table.AUXPROTECT_LASTS + " SET value=? WHERE name=?", value, key.id);
     }
 
     public long getLast(LastKeys key) throws SQLException, BusyException {
         if (key.value != null) return key.value;
-        return executeReturn(connection -> getLast(key, connection), 30000L, Long.class);
+        return execute((ConnectionFunction<Long>) connection -> getLast(connection, key), 30000L);
     }
 
-    public long getLast(LastKeys key, Connection connection) throws SQLException {
+    public long getLast(Connection connection, LastKeys key) throws SQLException {
         if (key.value != null) return key.value;
         try (PreparedStatement stmt = connection.prepareStatement("SELECT value FROM " + Table.AUXPROTECT_LASTS + " WHERE name=?")) {
             stmt.setShort(1, key.id);

@@ -1,7 +1,7 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.InvSerialization;
 import dev.heliosares.auxprotect.utils.InvSerialization.PlayerInventoryRecord;
 import lombok.Getter;
@@ -102,7 +102,7 @@ public class InvDiffManager extends BlobManager {
                 long blobid = getBlobId(connection, blob, diff.snowflake());
                 String stmt = "INSERT INTO " + Table.AUXPROTECT_INVDIFF + " (time, uid, slot, qty, blobid, damage) VALUES (?,?,?,?,?,?)";
 
-                sql.execute(stmt, connection, diff.snowflake(), sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
+                sql.execute(connection, stmt, diff.snowflake(), sql.getUserManager().getUIDFromUUID("$" + diff.uuid(), false), diff.slot(), diff.qty() >= 0 ? diff.qty() : null, blobid >= 0 ? blobid : null, damage);
             } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }
@@ -110,7 +110,7 @@ public class InvDiffManager extends BlobManager {
     }
 
     public DiffInventoryRecord getContentsAt(int uid, final long time) throws Exception {
-        return sql.executeReturnException(connection -> {
+        return sql.executeWithException(connection -> {
             long baseSnowflake;
             PlayerInventoryRecord inv;
 
@@ -212,7 +212,7 @@ public class InvDiffManager extends BlobManager {
                 }
             }
             return new DiffInventoryRecord(baseSnowflake / Snowflake.COUNTER_FACTOR, numdiff, listToPlayerInv(output, inv.exp()));
-        }, 3000L, DiffInventoryRecord.class);
+        }, 3000L);
     }
 
     @Getter

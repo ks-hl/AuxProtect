@@ -11,15 +11,13 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
-
+import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nullable;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+
 import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.Map;
@@ -62,26 +60,15 @@ public class TownyManager implements Runnable {
             return names.get(uid);
         }
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
-                + " WHERE action_id=? AND uid=?\nORDER BY time DESC\nLIMIT 1;";
-        plugin.debug(stmt, 3);
-        return sql.executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                pstmt.setInt(1, EntryAction.TOWNYNAME.id);
-                pstmt.setInt(2, uid);
-                try (ResultSet results = pstmt.executeQuery()) {
-                    if (results.next()) {
-                        String username = results.getString("target");
-                        plugin.debug("Resolved UID " + uid + " to " + username);
-                        if (username != null) {
-                            names.put(uid, username);
-                            return username;
-                        }
-                    }
-                }
+        return sql.query("SELECT target FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=? ORDER BY time DESC LIMIT 1", rs -> {
+            if (!rs.next()) return null;
+            String username = rs.getString("target");
+            plugin.debug("Resolved UID " + uid + " to " + username);
+            if (username != null) {
+                names.put(uid, username);
             }
-            return null;
-        }, wait ? 30000L : 1000L, String.class);
+            return username;
+        }, 5000L, EntryAction.TOWNYNAME.id, uid);
     }
 
     public int getIDFromName(String name, boolean wait) throws SQLException, BusyException {
@@ -92,27 +79,13 @@ public class TownyManager implements Runnable {
             return names.getKey(name);
         }
 
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM
-                + " WHERE action_id=? AND target=?\nORDER BY time DESC\nLIMIT 1;";
-        plugin.debug(stmt, 3);
-
-        return sql.executeReturn(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                pstmt.setInt(1, EntryAction.TOWNYNAME.id);
-                pstmt.setString(2, name);
-                try (ResultSet results = pstmt.executeQuery()) {
-                    if (results.next()) {
-                        int uid = results.getInt("uid");
-                        plugin.debug("Resolved name " + name + " to " + uid);
-                        if (uid > 0) {
-                            names.put(uid, name);
-                            return uid;
-                        }
-                    }
-                }
-            }
-            return null;
-        }, wait ? 30000L : 1000L, Integer.class);
+        return sql.query("SELECT uid FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND target=? ORDER BY time DESC LIMIT 1", rs -> {
+            if (!rs.next()) return null;
+            int uid = rs.getInt("uid");
+            plugin.debug("Resolved name " + name + " to " + uid);
+            if (uid > 0) names.put(uid, name);
+            return uid;
+        }, 5000L, EntryAction.TOWNYNAME.id, name);
     }
 
     public void updateName(Government gov, boolean async) {
@@ -123,7 +96,7 @@ public class TownyManager implements Runnable {
         Runnable run = () -> {
             int uid = -1;
             try {
-                uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true, true);
+                uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
             } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }

@@ -15,7 +15,6 @@
         <module>AuxProtect_Spigot_1.21</module>
         <module>AuxProtect_Spigot</module>
 
-        <module>AuxProtect_Bungee</module>
         <module>AuxProtect_Velocity</module>
 
         <module>AuxProtect_Package</module>
@@ -62,5 +61,38 @@
                 </executions>
             </plugin>
         </plugins>
+        <extensions>
+            <extension>
+                <groupId>org.apache.maven.wagon</groupId>
+                <artifactId>wagon-ssh-external</artifactId>
+                <version>3.5.3</version>
+            </extension>
+        </extensions>
     </build>
+
+    <repositories>
+        <repository>
+            <id>kshl-repo</id>
+            <url>https://maven.atownyserver.com/</url>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>dev.kshl</groupId>
+            <artifactId>KshLib</artifactId>
+            <version>2.0</version>
+        </dependency>
+    </dependencies>
+
+    <distributionManagement>
+        <repository>
+            <id>toaster5</id>
+            <url>scpexe://toaster5/var/www/maven</url>
+        </repository>
+        <snapshotRepository>
+            <id>toaster5</id>
+            <url>scpexe://toaster5/var/www/maven</url>
+        </snapshotRepository>
+    </distributionManagement>
 </project>

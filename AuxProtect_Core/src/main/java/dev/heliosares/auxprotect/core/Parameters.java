@@ -9,7 +9,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Snowflake;
 import dev.heliosares.auxprotect.database.Table;
-import dev.heliosares.auxprotect.exceptions.BusyException;
+import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
@@ -419,7 +419,7 @@ public class Parameters implements Cloneable {
             int uid;
             int altuid;
             try {
-                uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(user, false);
+                uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(user);
                 altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(user, false);
             } catch (BusyException e) {
                 throw new LookupException(L.DATABASE_BUSY);
@@ -523,7 +523,7 @@ public class Parameters implements Cloneable {
                 int uid;
                 int altuid;
                 try {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target, false);
+                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
                     altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(target, false);
                 } catch (BusyException e) {
                     throw new LookupException(L.DATABASE_BUSY);

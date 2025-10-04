@@ -10,8 +10,8 @@ import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
 import dev.heliosares.auxprotect.core.Parameters.Flag;
-import dev.heliosares.auxprotect.exceptions.BusyException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -56,8 +56,8 @@ public class Results {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         final GenericBuilder message = new GenericBuilder(plugin);
 
-        if (entry.getUser(false) == null) plugin.getSqlManager().execute(c -> entry.getUser(), 3000L);
-        if (entry.getTarget(false) == null) plugin.getSqlManager().execute(c -> entry.getTarget(), 3000L);
+        if (entry.getUser(false) == null) entry.getUser();
+        if (entry.getTarget(false) == null) entry.getTarget();
 
         plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
 

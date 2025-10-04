@@ -6,8 +6,7 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.LookupManager;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.exceptions.AlreadyExistsException;
-import dev.heliosares.auxprotect.exceptions.BusyException;
-import dev.heliosares.auxprotect.utils.SQLConsumer;
+import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
 
@@ -51,8 +50,7 @@ public final class AuxProtectAPI {
     }
 
     /**
-     * Gets the {@link SQLManager}. This can be used to do various SQL operations. Use {@link SQLManager#execute(SQLConsumer, long)} or similar method.
-     * {@link SQLConsumer} is a {@link FunctionalInterface}
+     * Gets the {@link SQLManager}. This can be used to do various SQL operations.
      */
     public static SQLManager getSQLManager() {
         return getInstance().getSqlManager();
