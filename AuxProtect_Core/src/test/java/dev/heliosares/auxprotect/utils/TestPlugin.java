@@ -221,6 +221,10 @@ public class TestPlugin implements IAuxProtect {
         return false;
     }
 
+    @Override
+    public void setDefaultChatLogging(boolean enabled) {
+    }
+
     public String formatMoney(double d) {
         if (!Double.isFinite(d) || Double.isNaN(d)) {
             return "$NaN";

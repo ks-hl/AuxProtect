@@ -63,8 +63,6 @@ public class PurgeCommand <S, P extends IAuxProtect, SA extends SenderAdapter<S,
         int count = 0;
         try {
             count += plugin.getSqlManager().purge(table, time);
-            sender.sendLang(Language.L.COMMAND__PURGE__UIDS);
-            count += plugin.getSqlManager().purgeUIDs();
 
             if (!plugin.getSqlManager().isMySQL()) {
                 plugin.getSqlManager().execute(plugin.getSqlManager()::vacuum, 30000L);

@@ -86,4 +86,5 @@ public interface IAuxProtect {
     Set<String> getEntityTypes();
     Set<String> getItemTypes();
     boolean isPrivate();
+    void setDefaultChatLogging(boolean enabled);
 }

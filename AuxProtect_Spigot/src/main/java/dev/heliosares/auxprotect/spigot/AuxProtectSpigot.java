@@ -43,6 +43,7 @@ import dev.kshl.kshlib.exceptions.BusyException;
 import dev.kshl.kshlib.function.ConnectionConsumer;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
+import lombok.Setter;
 import net.milkbowl.vault.economy.Economy;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -102,6 +103,9 @@ public class AuxProtectSpigot extends JavaPlugin implements IAuxProtect {
     private int SERVER_VERSION;
     private boolean isShuttingDown;
     private String stackLog = "";
+    @Setter
+    @Getter
+    private boolean defaultChatLogging = true;
 
     public static String getLabel(Object o) {
         if (o == null) {

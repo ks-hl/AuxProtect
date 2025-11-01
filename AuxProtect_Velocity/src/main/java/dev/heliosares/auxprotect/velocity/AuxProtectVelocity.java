@@ -31,6 +31,7 @@ import dev.kshl.kshlib.exceptions.BusyException;
 import dev.kshl.kshlib.function.ConnectionConsumer;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
+import lombok.Setter;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
 
@@ -67,8 +68,12 @@ public final class AuxProtectVelocity implements IAuxProtect {
     private String stackLog = "";
     private boolean enabled;
     private final ProxyServer server;
+    @Getter
     private final Logger logger;
     private final Path dataDirectory;
+    @Setter
+    @Getter
+    private boolean defaultChatLogging = true;
 
     @Inject
     public AuxProtectVelocity(ProxyServer server, Logger logger, @DataDirectory Path dataDirectory) {
@@ -93,11 +98,6 @@ public final class AuxProtectVelocity implements IAuxProtect {
         }
         return "#null";
     }
-
-    public Logger getLogger() {
-        return logger;
-    }
-
 
     @Subscribe
     public void onProxyInitialization(ProxyInitializeEvent event) {

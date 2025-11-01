@@ -52,7 +52,6 @@ command:
       hover: '&sClique para recuperar seu inventário!'
   purge:
     purging: '&pPurge em ''<table>''...'
-    uids: '&pRemovendo UIDs não utilizados...'
     notvacuum: '&cPulando o condensamento do arquivo SQLite. Feito por último <time> atrás. Para forçar isso, use ''ap sqli vacuum'' do console.'
     vacuum: '&pCondensando arquivo SQLite...'
     complete-count: '&pPurge completo. Removidas <rows> rows.'

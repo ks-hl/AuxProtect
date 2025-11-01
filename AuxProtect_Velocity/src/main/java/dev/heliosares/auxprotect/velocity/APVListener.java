@@ -23,7 +23,9 @@ public class APVListener {
 
     @Subscribe
     public void onChatEvent(PlayerChatEvent e) {
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getMessage().trim(), ""));
+        if (plugin.isDefaultChatLogging()) {
+            plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.CHAT, false, "", e.getMessage().trim()));
+        }
     }
 
     @Subscribe

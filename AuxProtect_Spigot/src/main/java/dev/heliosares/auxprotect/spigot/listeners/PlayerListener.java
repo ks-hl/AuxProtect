@@ -11,10 +11,10 @@ import dev.heliosares.auxprotect.database.DbEntry;
 import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SingleItemEntry;
 import dev.heliosares.auxprotect.database.SpigotDbEntry;
-import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.spigot.APPlayerSpigot;
 import dev.heliosares.auxprotect.spigot.AuxProtectSpigot;
 import dev.heliosares.auxprotect.utils.InvSerialization;
+import dev.kshl.kshlib.exceptions.BusyException;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
@@ -386,7 +386,9 @@ public class PlayerListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onChat(AsyncPlayerChatEvent e) {
         plugin.getAPPlayer(e.getPlayer()).addActivity(Activity.CHAT);
-        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), e.getMessage().trim(), ""));
+        if (plugin.isDefaultChatLogging()) {
+            plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(e.getPlayer()), EntryAction.CHAT, false, e.getPlayer().getLocation(), "", e.getMessage().trim()));
+        }
         if (plugin.getAPConfig().isDemoMode()) {
             e.getPlayer().sendMessage(GenericTextColor.RED + "Chat is disabled.");
             e.setCancelled(true);

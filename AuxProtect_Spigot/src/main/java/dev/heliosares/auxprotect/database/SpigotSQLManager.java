@@ -84,7 +84,7 @@ public class SpigotSQLManager extends SQLManager {
     }
 
     @Override
-    protected void createTables(Connection connection) throws SQLException, BusyException {
+    protected void createTables(Connection connection) throws SQLException {
         if (invDiffManager != null) {
             invDiffManager.createTable(connection);
         }

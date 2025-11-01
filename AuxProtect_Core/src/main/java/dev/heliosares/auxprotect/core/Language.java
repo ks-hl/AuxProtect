@@ -149,7 +149,6 @@ public class Language {
         COMMAND__PURGE__SKIPAUTO("time"),
         COMMAND__PURGE__TABLE,
         COMMAND__PURGE__TIME,
-        COMMAND__PURGE__UIDS,
         COMMAND__PURGE__VACUUM,
         COMMAND__SAVEINV__SUCCESS("target", "optional_s", "time"),
         COMMAND__SAVEINV__TOOSOON,

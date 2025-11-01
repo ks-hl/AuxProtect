@@ -33,7 +33,7 @@ public class LookupManager {
 
         ArrayList<String> writeparams = new ArrayList<>(Arrays.asList(sqlstmts).subList(1, sqlstmts.length));
         String stmt = "SELECT * FROM " + param.getTable().toString();
-        if (!param.getActions().isEmpty()) {
+        if (!param.getActions().isEmpty() && plugin.getAPConfig().isIndexing()) {
             Table.Index index = null;
             if (!param.getUsers().isEmpty()) {
                 index = Table.Index.UID;

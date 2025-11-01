@@ -1,7 +1,6 @@
 package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
-import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 
@@ -12,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MigrationManager {
-    public static final int TARGET_DB_VERSION = 16;
+    public static final int TARGET_DB_VERSION = 17;
     private final SQLManager sql;
     private final Connection connection;
     private final IAuxProtect plugin;
@@ -48,6 +47,33 @@ public class MigrationManager {
         }));
 
         //
+        // 17
+        //
+
+        migrationActions.put(17, new MigrationAction(true, () -> {
+            sql.execute(connection, "DROP TABLE IF EXISTS " + Table.AUXPROTECT_UIDS + "_temp");
+            sql.execute(connection, "DROP INDEX IF EXISTS idx_" + Table.AUXPROTECT_UIDS + "_hash");
+            sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_UIDS + " RENAME TO " + Table.AUXPROTECT_UIDS + "_aptemp");
+        }, () -> {
+            // UID migrations
+            sql.execute(connection, "INSERT OR IGNORE INTO " + Table.AUXPROTECT_UIDS + " (id,value) SELECT uid,uuid FROM " + Table.AUXPROTECT_UIDS + "_aptemp");
+            sql.execute(connection, "DROP TABLE " + Table.AUXPROTECT_UIDS + "_aptemp");
+
+            // Chat migrations
+            if (plugin.getSqlManager().isMySQL()) {
+                sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_CHAT + " CONVERT TO CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+            }
+            if (plugin.getSqlManager().isMySQL()) {
+                sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_CHAT + " ADD COLUMN data LONGTEXT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci");
+            } else {
+                sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_CHAT + " ADD COLUMN data LONGTEXT");
+            }
+            sql.execute(connection, "ALTER TABLE " + Table.AUXPROTECT_CHAT + " ADD COLUMN target_id INTEGER");
+            sql.execute(connection, "UPDATE " + Table.AUXPROTECT_CHAT + " SET data=target");
+            sql.execute(connection, "UPDATE " + Table.AUXPROTECT_CHAT + " SET target=NULL");
+        }));
+
+        //
         // Finalizing
         //
 
@@ -75,7 +101,7 @@ public class MigrationManager {
         return isMigrating;
     }
 
-    void preTables() throws SQLException, BusyException {
+    void preTables() throws SQLException {
 
         sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_VERSION + " (time BIGINT,version INTEGER)");
 
@@ -129,7 +155,7 @@ public class MigrationManager {
         }
     }
 
-    void postTables() throws SQLException, BusyException {
+    void postTables() throws SQLException {
         for (int i = sql.getVersion() + 1; i <= TARGET_DB_VERSION; i++) {
             MigrationAction action = migrationActions.get(i);
             if (action.necessary && action.postTableAction != null) {
@@ -163,7 +189,7 @@ public class MigrationManager {
 
     @FunctionalInterface
     interface MigrateRunnable {
-        void run() throws SQLException, BusyException;
+        void run() throws SQLException;
     }
 
     private record MigrationAction(boolean necessary, @Nullable MigrateRunnable preTableAction,

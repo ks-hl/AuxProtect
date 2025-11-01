@@ -54,7 +54,6 @@ command:
       hover: '&sClick to claim your recovered inventory'
   purge:
     purging: '&pPurging ''<table>''...'
-    uids: '&pPurging unused UIDs...'
     notvacuum: '&cSkipping condensing SQLite file. Last performed <time> ago. To force this, run ''ap sqli vacuum'' from the console.'
     vacuum: '&pCondensing SQLite file...'
     complete-count: '&pPurge complete. Purged <rows> rows.'

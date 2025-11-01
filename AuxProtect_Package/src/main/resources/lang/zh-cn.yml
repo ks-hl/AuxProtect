@@ -44,8 +44,7 @@ command:
       label: '领取'
       hover: '&s单击以领取您恢复的背包'
   purge:
-    purging: '&p正在清理表 &l<table&g<...'
-    uids: '&p清理未使用的UID...'
+    purging: '&p正在清理表 &l<table>...'
     notvacuum: '&c跳过压缩SQLite文件。上次执行时间：&l<time>。若要强制执行，请从控制台运行 ''ap sqli vacuum''。'
     vacuum: '&p正在压缩SQLite文件...'
     complete-count: '&p清理完成。共清理了 &l<rows> 行。'

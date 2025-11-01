@@ -3,7 +3,6 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
 import dev.kshl.kshlib.exceptions.BusyException;
-import dev.kshl.kshlib.sql.ConnectionManager;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -17,7 +16,6 @@ import java.util.UUID;
 public class SQLUserManager {
     private final IAuxProtect plugin;
     private final SQLManager sql;
-    private final BidiMapCache<Integer, String> uuids = new BidiMapCache<>(300000L, 300000L, true);
     private final BidiMapCache<Integer, String> usernames = new BidiMapCache<>(300000L, 300000L, true);
 
     public SQLUserManager(IAuxProtect plugin, SQLManager sql) {
@@ -71,6 +69,12 @@ public class SQLUserManager {
     }
 
     public String getUsernameFromUID(int uid) throws SQLException, BusyException {
+        return sql.execute(connection -> {
+            return getUsernameFromUID(connection, uid);
+        }, 3000L);
+    }
+
+    public String getUsernameFromUID(Connection connection, int uid) throws SQLException {
         if (uid < 0) {
             return null;
         }
@@ -81,7 +85,7 @@ public class SQLUserManager {
             return usernames.get(uid);
         }
 
-        return sql.query("SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=? ORDER BY time DESC LIMIT 1", rs -> {
+        return sql.query(connection, "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=? ORDER BY time DESC LIMIT 1", rs -> {
             if (!rs.next()) return null;
 
             String username = rs.getString("target");
@@ -90,7 +94,7 @@ public class SQLUserManager {
                 usernames.put(uid, username);
             }
             return username;
-        }, 5000L, EntryAction.USERNAME.id, uid);
+        }, EntryAction.USERNAME.id, uid);
     }
 
     public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException, BusyException {
@@ -144,39 +148,19 @@ public class SQLUserManager {
     }
 
     public int getUIDFromUUID(String uuid, boolean insert) throws SQLException, BusyException {
+        return sql.execute(connection -> {
+            return getUIDFromUUID(connection, uuid, insert);
+        }, 3000L);
+    }
+
+    public int getUIDFromUUID(Connection connection, String uuid, boolean insert) throws SQLException {
         if (uuid == null || uuid.equalsIgnoreCase("#null")) {
             return -1;
         }
         if (uuid.isEmpty()) {
             return 0;
         }
-        uuid = uuid.toLowerCase();
-        if (uuids.containsValue(uuid)) {
-            return uuids.getKey(uuid);
-        }
-        final String uuidLower = uuid;
-        final int hash = uuidLower.hashCode();
-
-        int uid = sql.query("SELECT uid,uuid FROM " + Table.AUXPROTECT_UIDS + " WHERE hash=?", rs -> {
-            while (rs.next()) {
-                if (!rs.getString("uuid").equalsIgnoreCase(uuidLower)) continue;
-                int _uid = rs.getInt("uid");
-                uuids.put(_uid, uuidLower);
-                return _uid;
-            }
-            return -1;
-        }, 5000L, hash);
-
-        if (uid > 0) return uid;
-
-        if (insert) {
-            uid = sql.executeReturnGenerated("INSERT INTO " + Table.AUXPROTECT_UIDS + " (uuid,hash) VALUES (?,?)", 3000L, uuidLower, hash);
-            uuids.put(uid, uuidLower);
-            plugin.debug("New UUID: " + uuidLower + ":" + uid, 1);
-            sql.incrementRows();
-        }
-
-        return uid;
+        return sql.getUidManager().getIDOpt(connection, uuid, insert).orElse(-1);
     }
 
     public String getUUIDFromUID(int uid) throws SQLException, BusyException {
@@ -186,15 +170,7 @@ public class SQLUserManager {
         if (uid == 0) {
             return "";
         }
-        if (uuids.containsKey(uid)) {
-            return uuids.get(uid);
-        }
-        return sql.query("SELECT uuid FROM " + Table.AUXPROTECT_UIDS + " WHERE uid=?", rs -> {
-            if (!rs.next()) return null;
-            String uuid = rs.getString("uuid");
-            uuids.put(uid, uuid);
-            return uuid;
-        }, 5000L, uid);
+        return sql.getUidManager().getValueOpt(uid).orElse(null);
     }
 
     public Collection<String> getCachedUsernames() {
@@ -224,7 +200,7 @@ public class SQLUserManager {
                 try {
                     sql.execute(connection, "INSERT INTO " + Table.AUXPROTECT_USERDATA_PENDINV + " (time, uid, pending) VALUES (?,?,?)", time, uid, blob);
                 } catch (SQLException e) {
-                    if (!ConnectionManager.isConstraintViolation(e)) throw e;
+                    if (!sql.isConstraintViolation(e)) throw e;
                     sql.execute(connection, "UPDATE " + Table.AUXPROTECT_USERDATA_PENDINV + " SET time=?,pending=? WHERE uid=?", time, blob, uid);
                 }
             }
@@ -233,24 +209,9 @@ public class SQLUserManager {
 
     protected void cleanup() {
         usernames.cleanup();
-        uuids.cleanup();
     }
 
     public void init(Connection connection) throws SQLException {
-        String stmt = "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_UIDS;
-        if (sql.isMySQL()) {
-            stmt += " (uid INTEGER AUTO_INCREMENT, uuid varchar(200) UNIQUE, hash INT, PRIMARY KEY (uid));";
-        } else {
-            stmt += " (uid INTEGER PRIMARY KEY AUTOINCREMENT, uuid TEXT UNIQUE, hash INT);";
-        }
-        sql.execute(connection, stmt);
-        sql.execute(connection, "CREATE INDEX IF NOT EXISTS idx_" + Table.AUXPROTECT_UIDS + "_hash ON " + Table.AUXPROTECT_UIDS + " (hash)");
-
         sql.execute(connection, "CREATE TABLE IF NOT EXISTS " + Table.AUXPROTECT_USERDATA_PENDINV + " (time BIGINT, uid INTEGER PRIMARY KEY, pending MEDIUMBLOB)");
-    }
-
-    public void clearCache() {
-        usernames.clear();
-        uuids.clear();
     }
 }

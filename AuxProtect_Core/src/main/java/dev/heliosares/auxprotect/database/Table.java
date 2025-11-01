@@ -5,6 +5,7 @@ import dev.heliosares.auxprotect.core.PlatformType;
 
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -26,7 +27,7 @@ public enum Table {
     AUXPROTECT_XRAY(AP_ENTRIES, DATA, LOCATION, PRIVATE), //
     AUXPROTECT_INVENTORY(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
     AUXPROTECT_COMMANDS(AP_ENTRIES, LOCATION, STRING_TARGET), //
-    AUXPROTECT_CHAT(AP_ENTRIES, LOCATION, STRING_TARGET), //
+    AUXPROTECT_CHAT(AP_ENTRIES, LOCATION, DATA), //
     AUXPROTECT_POSITION(AP_ENTRIES, LOCATION, ACTION_ID, BLOB), //
     AUXPROTECT_TOWNY(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
     AUXPROTECT_TRANSACTIONS(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
@@ -107,50 +108,11 @@ public enum Table {
     }
 
     public String getValuesHeader(PlatformType platform) {
-        if (this == Table.AUXPROTECT_LONGTERM) {
-            return "(time, uid, action_id, target, target_hash)";
-        } else if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
-            if (platform.getLevel() == PlatformType.Level.PROXY) {
-                return "(time, uid, target)";
-            }
-            return "(time, uid, world_id, x, y, z, target)";
-        } else if (platform.getLevel() == PlatformType.Level.PROXY) {
-            return "(time, uid, action_id, target_id, data)";
-        } else if (this == Table.AUXPROTECT_MAIN || this == Table.AUXPROTECT_SPAM || this == Table.AUXPROTECT_API || this == Table.AUXPROTECT_TOWNY) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id, data)";
-        } else if (this == Table.AUXPROTECT_TRANSACTIONS) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, quantity, cost, balance, target_id2)";
-        } else if (this == Table.AUXPROTECT_INVENTORY) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id, data, blobid, qty, damage)";
-        } else if (this == Table.AUXPROTECT_ABANDONED) {
-            return "(time, uid, action_id, world_id, x, y, z, target_id)";
-        } else if (this == Table.AUXPROTECT_POSITION) {
-            return "(time, uid, action_id, world_id, x, y, z, increment, pitch, yaw, target_id, ablob)";
-        } else if (this == Table.AUXPROTECT_XRAY) {
-            return "(time, uid, world_id, x, y, z, target_id, rating, data)";
-        }
-        return null;
+        return "(" + getColumns(platform).keySet().stream().reduce((a, b) -> a + ", " + b).orElse("") + ")";
     }
 
     public int getNumColumns(PlatformType platform) {
-        if (this == Table.AUXPROTECT_LONGTERM) {
-            return 5;
-        }
-        if (this == Table.AUXPROTECT_COMMANDS || this == Table.AUXPROTECT_CHAT) {
-            if (platform.getLevel() == PlatformType.Level.PROXY) {
-                return 3;
-            }
-            return 7;
-        }
-        if (platform.getLevel() == PlatformType.Level.PROXY) return 5;
-
-        return switch (this) {
-            case AUXPROTECT_ABANDONED -> 8;
-            case AUXPROTECT_MAIN, AUXPROTECT_SPAM, AUXPROTECT_API, AUXPROTECT_XRAY, AUXPROTECT_TOWNY -> 9;
-            case AUXPROTECT_POSITION, AUXPROTECT_INVENTORY -> 12;
-            case AUXPROTECT_TRANSACTIONS -> 14;
-            default -> -1;
-        };
+        return getColumns(platform).size();
     }
 
     public String getValuesTemplate(PlatformType platform) {
@@ -162,60 +124,10 @@ public enum Table {
             return null;
         }
         String stmt = "CREATE TABLE IF NOT EXISTS " + this + " (";
-        stmt += "time BIGINT";
-        stmt += ",uid integer";
-        if (hasActionId()) {
-            stmt += ",action_id SMALLINT";
-        }
-        if (plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && hasLocation()) {
-            stmt += ",world_id SMALLINT";
-            stmt += ",x INTEGER";
-            stmt += ",y SMALLINT";
-            stmt += ",z INTEGER";
-        }
-        if (this == AUXPROTECT_POSITION) {
-            stmt += ",increment TINYINT";
-        }
-        if (hasLook()) {
-            stmt += ",pitch SMALLINT";
-            stmt += ",yaw SMALLINT";
-        }
-        if (hasStringTarget()) {
-            stmt += ",target ";
-            if (this == AUXPROTECT_COMMANDS || this == AUXPROTECT_CHAT) {
-                stmt += "LONGTEXT";
-            } else {
-                stmt += "varchar(255)";
-            }
-            if (this == AUXPROTECT_LONGTERM) {
-                stmt += ",target_hash INT";
-            }
-        } else {
-            stmt += ",target_id integer";
-        }
-        if (this == AUXPROTECT_XRAY) {
-            stmt += ",rating SMALLINT";
-        }
-        if (hasData()) {
-            stmt += ",data LONGTEXT";
-        }
 
-        if (hasBlob()) stmt += ",ablob BLOB";
-        else if (hasBlobID()) stmt += ",blobid BIGINT";
+        stmt += getColumns(plugin.getPlatform()).entrySet().stream().map(e -> e.getKey() + " " + e.getValue()).reduce((a, b) -> a + ", " + b).orElse("");
 
-        if (hasItemMeta()) {
-            stmt += ",qty INTEGER";
-            stmt += ",damage INTEGER";
-        }
-
-        if (this == AUXPROTECT_TRANSACTIONS) {
-            stmt += ",quantity SMALLINT";
-            stmt += ",cost DECIMAL(12,3)";
-            stmt += ",balance DECIMAL(15,3)";
-            stmt += ",target_id2 INTEGER";
-        }
-
-        stmt += "\n)";
+        stmt += ")";
 
         if (plugin.getSqlManager().isMySQL() && (hasStringTarget() || hasData())) {
             stmt += " CHARACTER SET utf8mb4";
@@ -224,6 +136,76 @@ public enum Table {
 
         return stmt;
     }
+
+    public LinkedHashMap<String, String> getColumns(PlatformType platform) {
+        var map = new LinkedHashMap<String, String>();
+
+        map.put("time", "BIGINT");
+        map.put("uid", "INTEGER");
+
+        if (hasActionId()) {
+            map.put("action_id", "SMALLINT");
+        }
+
+        if (platform.getLevel() == PlatformType.Level.SERVER && hasLocation()) {
+            map.put("world_id", "SMALLINT");
+            map.put("x", "INTEGER");
+            map.put("y", "SMALLINT");
+            map.put("z", "INTEGER");
+
+            if (this == AUXPROTECT_POSITION) {
+                map.put("increment", "TINYINT");
+            }
+
+            if (hasLook()) {
+                map.put("pitch", "SMALLINT");
+                map.put("yaw", "SMALLINT");
+            }
+        }
+
+        if (hasStringTarget()) {
+            if (this == AUXPROTECT_COMMANDS) {
+                map.put("target", "LONGTEXT");
+            } else {
+                map.put("target", "VARCHAR(255)");
+            }
+
+            if (this == AUXPROTECT_LONGTERM) {
+                map.put("target_hash", "INT");
+            }
+        } else {
+            map.put("target_id", "INTEGER");
+        }
+
+        if (this == AUXPROTECT_XRAY) {
+            map.put("rating", "SMALLINT");
+        }
+
+        if (hasData()) {
+            map.put("data", "LONGTEXT");
+        }
+
+        if (hasBlob()) {
+            map.put("ablob", "BLOB");
+        } else if (hasBlobID()) {
+            map.put("blobid", "BIGINT");
+        }
+
+        if (hasItemMeta()) {
+            map.put("qty", "INTEGER");
+            map.put("damage", "INTEGER");
+        }
+
+        if (this == AUXPROTECT_TRANSACTIONS) {
+            map.put("quantity", "SMALLINT");
+            map.put("cost", "DECIMAL(12,3)");
+            map.put("balance", "DECIMAL(15,3)");
+            map.put("target_id2", "INTEGER");
+        }
+
+        return map;
+    }
+
 
     public boolean hasBlobID() {
         return characteristics.contains(BLOB_ID);
