@@ -320,7 +320,7 @@ public class SQLManager extends ConnectionManager {
             }
 
             // Step 3: Delete the UIDs
-            int count_ = executeReturnRows(connection, "DELETE FROM auxprotect_uids WHERE uid IN (SELECT auxprotect_uids.uid FROM auxprotect_uids LEFT JOIN temp_uids AS temp ON auxprotect_uids.uid = temp.uid WHERE temp.uid IS NULL)");
+            int count_ = executeReturnRows(connection, "DELETE FROM " + Table.AUXPROTECT_UIDS + " WHERE uid IN (SELECT uid FROM (SELECT uids.uid FROM " + Table.AUXPROTECT_UIDS + " AS uids LEFT JOIN temp_uids AS temp ON uids.uid = temp.uid WHERE temp.uid IS NULL) AS to_delete)");
 
             // Step 4: Drop the Temporary Table
             execute(connection, "DROP " + (isMySQL() ? "TEMPORARY " : "") + "TABLE IF EXISTS temp_uids");
