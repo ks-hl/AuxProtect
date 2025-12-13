@@ -82,7 +82,7 @@ public class TransactionEntry extends SpigotDbEntry {
         if (target_id2 > 0) {
             return target_id2;
         }
-        return target_id2 = sql.getUserManager().getUIDFromUUID(getTargetUUID2(), true);
+        return target_id2 = sql.getUserManager().getUID(getTargetUUID2(), true);
     }
 
     public String getTarget2() throws SQLException, BusyException {

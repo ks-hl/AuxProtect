@@ -6,7 +6,12 @@ import dev.heliosares.auxprotect.core.APPermission;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.PlatformType;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.nio.ByteBuffer;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -140,8 +145,11 @@ public class EntryAction {
     public final int id;
     public final int idPos;
     public final String name;
+    @Getter
     private final Table table;
     private boolean enabled;
+    @Setter
+    @Getter
     private boolean lowestpriority;
 
     private String overridePText;
@@ -270,10 +278,6 @@ public class EntryAction {
         throw new UnsupportedOperationException("Unknown level " + plugin.getPlatform().getLevel() + " for platform " + plugin.getPlatform());
     }
 
-    public Table getTable() {
-        return table;
-    }
-
     public int getId(boolean state) {
         if (state) {
             return idPos;
@@ -306,14 +310,6 @@ public class EntryAction {
             return this.id == otherEntry.id && this.idPos == otherEntry.idPos;
         }
         return false;
-    }
-
-    public boolean isLowestpriority() {
-        return lowestpriority;
-    }
-
-    public void setLowestpriority(boolean lowestpriority) {
-        this.lowestpriority = lowestpriority;
     }
 
     public String getNode() {

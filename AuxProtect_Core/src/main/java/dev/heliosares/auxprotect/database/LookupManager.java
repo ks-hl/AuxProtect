@@ -3,9 +3,9 @@ package dev.heliosares.auxprotect.database;
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.Language;
 import dev.heliosares.auxprotect.core.Parameters;
-import dev.heliosares.auxprotect.core.PlatformType;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.utils.BidiMapCache;
+import dev.kshl.kshlib.concurrent.ConcurrentArrayList;
 import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.sql.Connection;
@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class LookupManager {
     private final SQLManager sql;
     private final IAuxProtect plugin;
-    private final List<EntryLoader> loaders = new ArrayList<>();
+    private final List<EntryLoader> loaders = new ConcurrentArrayList<>();
     private static final BidiMapCache<Long, Parameters> groupParameterCache = new BidiMapCache<>(3 * 3600000L, 3 * 3600000L, true);
 
     public LookupManager(SQLManager sql, IAuxProtect plugin) {
@@ -37,7 +37,7 @@ public class LookupManager {
             Table.Index index = null;
             if (!param.getUsers().isEmpty()) {
                 index = Table.Index.UID;
-            } else if (param.getTable().hasLocation() && !param.getRadius().isEmpty() && param.getWorldID() >= 0) {
+            } else if (param.getTable().hasLocation(plugin.getPlatform()) && !param.getRadius().isEmpty() && param.getWorldID() >= 0) {
                 index = Table.Index.XZ;
             }
             if (index != null) {
@@ -162,7 +162,7 @@ public class LookupManager {
      * @see LookupManager#lookup(dev.heliosares.auxprotect.core.Parameters)
      */
     protected void lookup(Connection connection, ArrayList<DbEntry> output, Table table, String stmt, ArrayList<String> writeParams) throws LookupException {
-        final boolean hasLocation = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && table.hasLocation();
+        final boolean hasLocation = table.hasLocation(plugin.getPlatform());
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

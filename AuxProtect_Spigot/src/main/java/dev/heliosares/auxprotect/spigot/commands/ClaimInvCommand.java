@@ -41,7 +41,7 @@ public class ClaimInvCommand implements CommandExecutor {
             try {
                 other = (args.length == 1) && APPermission.INV_RECOVER.hasPermission(new SpigotSenderAdapter(plugin, sender));
                 if (other) {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(args[0]);
+                    uid = plugin.getSqlManager().getUserManager().getUID(args[0], false);
                     if (uid <= 0) {
                         sender.sendMessage(Language.L.PLAYERNOTFOUND.translate());
                         return;
@@ -49,7 +49,7 @@ public class ClaimInvCommand implements CommandExecutor {
                     target = Bukkit.getOfflinePlayer(UUID.fromString(
                             plugin.getSqlManager().getUserManager().getUUIDFromUID(uid).substring(1)));
                 } else if (sender instanceof Player player) {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + player.getUniqueId(),
+                    uid = plugin.getSqlManager().getUserManager().getUID("$" + player.getUniqueId(),
                             false);
                     target = player;
                 } else {

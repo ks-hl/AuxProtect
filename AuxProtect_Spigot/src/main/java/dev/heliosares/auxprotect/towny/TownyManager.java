@@ -96,7 +96,7 @@ public class TownyManager implements Runnable {
         Runnable run = () -> {
             int uid = -1;
             try {
-                uid = sql.getUserManager().getUIDFromUUID("$t" + uuid, true);
+                uid = sql.getUserManager().getUID("$t" + uuid, true);
             } catch (SQLException | BusyException e) {
                 plugin.print(e);
             }

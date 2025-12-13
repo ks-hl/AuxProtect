@@ -54,7 +54,9 @@ public class SQLManager extends ConnectionManager {
     @Getter
     private long timeConnected;
     @Getter
-    private final SQLIDManager.Str uidManager = new SQLIDManager.Str(this, Table.AUXPROTECT_UIDS.toString());
+    private final SQLIDManager.Str uidManager = new SQLIDManager.Str(this, Table.AUXPROTECT_UIDS.toString(), true);
+    @Getter
+    private final SQLIDManager.Str enumIDManager = new SQLIDManager.Str(this, Table.AUXPROTECT_ENUM_IDS.toString(), false);
 
     public SQLManager(IAuxProtect plugin, String host, String database, String prefix, File sqliteFile, String user, String pass) throws ClassNotFoundException, SQLException, IOException {
         super(sqliteFile, host, database, user, pass, 10);
@@ -228,7 +230,10 @@ public class SQLManager extends ConnectionManager {
             transactionBlobManager.createTable(connection);
         }
 
+
+
         uidManager.init(connection);
+        enumIDManager.init(connection);
 
         boolean doIndex = plugin.getAPConfig().isIndexing();
         if (doIndex) {
@@ -238,7 +243,7 @@ public class SQLManager extends ConnectionManager {
             if (table.hasAPEntries() && table.exists(plugin)) {
                 execute(connection, table.getSQLCreateString(plugin));
                 if (doIndex) {
-                    for (String indexStatement : table.getIndexStatements()) {
+                    for (String indexStatement : table.getIndexStatements(plugin.getPlatform())) {
                         execute(connection, indexStatement);
                     }
                 }
@@ -360,7 +365,7 @@ public class SQLManager extends ConnectionManager {
         StringBuilder stmt = new StringBuilder("INSERT INTO " + table + " ");
         int numColumns = table.getNumColumns(plugin.getPlatform());
         String inc = Table.getValuesTemplate(numColumns);
-        final boolean hasLocation = plugin.getPlatform().getLevel() == PlatformType.Level.SERVER && table.hasLocation();
+        final boolean hasLocation = table.hasLocation(plugin.getPlatform());
         final boolean hasData = table.hasData();
         final boolean hasAction = table.hasActionId();
         final boolean hasLook = table.hasLook();

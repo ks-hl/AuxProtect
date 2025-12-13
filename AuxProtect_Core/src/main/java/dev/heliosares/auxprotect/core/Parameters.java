@@ -9,16 +9,17 @@ import dev.heliosares.auxprotect.database.EntryAction;
 import dev.heliosares.auxprotect.database.SQLManager;
 import dev.heliosares.auxprotect.database.Snowflake;
 import dev.heliosares.auxprotect.database.Table;
-import dev.kshl.kshlib.exceptions.BusyException;
 import dev.heliosares.auxprotect.exceptions.LookupException;
 import dev.heliosares.auxprotect.exceptions.NotPlayerException;
 import dev.heliosares.auxprotect.exceptions.ParseException;
 import dev.heliosares.auxprotect.utils.TimeUtil;
+import dev.kshl.kshlib.exceptions.BusyException;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -415,32 +416,11 @@ public class Parameters implements Cloneable {
         if (negateUser = param.startsWith("!")) {
             param = param.substring(1);
         }
-        for (String user : param.split(",")) {
-            int uid;
-            int altuid;
-            try {
-                uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(user);
-                altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(user, false);
-            } catch (BusyException e) {
-                throw new LookupException(L.DATABASE_BUSY);
-            } catch (SQLException e) {
-                throw new LookupException(L.ERROR);
-            }
-
-            boolean good = false;
-            if (uid > 0) {
-                uids.add(Integer.toString(uid));
-                good = true;
-            }
-            if (altuid > 0) {
-                uids.add(Integer.toString(altuid));
-                good = true;
-            }
-            if (!good) {
-                throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, user);
-            }
-            users.add(user);
+        uids.addAll(userTargetParamToList(param));
+        if (uids.isEmpty()) { // catch-all
+            throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, param);
         }
+        users.addAll(Arrays.asList(param.split(",")));
         return this;
     }
 
@@ -499,7 +479,6 @@ public class Parameters implements Cloneable {
     /**
      * Sets the target of the lookup. Equivalent to target:<target>
      * <p>
-     * <<<<<<< Updated upstream
      *
      * @param param Null will clear
      * @throws IllegalStateException if the table is null
@@ -519,32 +498,36 @@ public class Parameters implements Cloneable {
         if (table.hasStringTarget()) {
             targets.addAll(split(param));
         } else {
-            for (String target : param.split(",")) {
-                int uid;
-                int altuid;
-                try {
-                    uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
-                    altuid = plugin.getSqlManager().getUserManager().getUIDFromUUID(target, false);
-                } catch (BusyException e) {
-                    throw new LookupException(L.DATABASE_BUSY);
-                } catch (SQLException e) {
-                    throw new LookupException(L.ERROR);
-                }
-                boolean good = false;
-                if (uid > 0) {
-                    targets.add(Integer.toString(uid));
-                    good = true;
-                }
-                if (altuid > 0) {
-                    targets.add(Integer.toString(altuid));
-                    good = true;
-                }
-                if (!good) {
-                    throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, target);
-                }
-            }
+            targets.addAll(userTargetParamToList(param));
         }
         return this;
+    }
+
+    private List<String> userTargetParamToList(String param) throws LookupException {
+        List<String> out = new ArrayList<>();
+        for (String user : param.split(",")) {
+            int uid;
+            int resolvedID;
+            try {
+                uid = plugin.getSqlManager().getUserManager().getUID(user, false);
+                resolvedID = plugin.getSqlManager().getUserManager().getUIDFromUsernameID(uid);
+            } catch (BusyException e) {
+                throw new LookupException(L.DATABASE_BUSY);
+            } catch (SQLException e) {
+                throw new LookupException(L.ERROR);
+            }
+            boolean good = false;
+            if (uid > 0) {
+                out.add(Integer.toString(uid));
+                good = true;
+            }
+            if (resolvedID > 0) {
+                out.add(Integer.toString(resolvedID));
+                good = true;
+            }
+            if (!good) throw new LookupException(Language.L.LOOKUP_PLAYERNOTFOUND, user);
+        }
+        return out;
     }
 
     /**
@@ -634,7 +617,7 @@ public class Parameters implements Cloneable {
         this.negateUser = negate;
         int uid;
         try {
-            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+            uid = plugin.getSqlManager().getUserManager().getUID("$" + uuid.toString(), false);
         } catch (BusyException e) {
             throw new LookupException(L.DATABASE_BUSY);
         } catch (SQLException e) {
@@ -694,7 +677,7 @@ public class Parameters implements Cloneable {
         this.negateTarget = negate;
         int uid;
         try {
-            uid = plugin.getSqlManager().getUserManager().getUIDFromUUID("$" + uuid.toString(), false);
+            uid = plugin.getSqlManager().getUserManager().getUID("$" + uuid.toString(), false);
         } catch (BusyException e) {
             throw new LookupException(L.DATABASE_BUSY);
         } catch (SQLException e) {
@@ -790,10 +773,6 @@ public class Parameters implements Cloneable {
         return flags.contains(flag);
     }
 
-    // -----------------------------------------------
-    // ------------------- PRIVATE -------------------
-    // -----------------------------------------------
-
     public String[] toSQL(IAuxProtect plugin) {
         if (table == null) {
             throw new IllegalStateException();
@@ -875,7 +854,7 @@ public class Parameters implements Cloneable {
             stmts.add((negateData ? "NOT " : "") + stmt + ")");
         }
 
-        if (table.hasLocation()) {
+        if (table.hasLocation(plugin.getPlatform())) {
             if (!radius.isEmpty() && world >= 0) {
                 radius.forEach((r, n) -> {
                     String between = " BETWEEN ";

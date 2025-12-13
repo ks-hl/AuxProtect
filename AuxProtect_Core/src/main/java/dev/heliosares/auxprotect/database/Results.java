@@ -56,10 +56,9 @@ public class Results {
         String commandPrefix = "/" + plugin.getCommandPrefix();
         final GenericBuilder message = new GenericBuilder(plugin);
 
-        if (entry.getUser(false) == null) entry.getUser();
-        if (entry.getTarget(false) == null) entry.getTarget();
-
-        plugin.debug(entry.getTarget() + "(" + entry.getTargetId() + "): " + entry.getTargetUUID());
+        // Resolve
+        entry.getUser();
+        entry.getTarget();
 
         APPlayer<?> apPlayer = plugin.getAPPlayer(player);
         TimeZone timeZone = time ? (apPlayer == null ? TimeZone.getDefault() : apPlayer.getTimeZone()) : null;

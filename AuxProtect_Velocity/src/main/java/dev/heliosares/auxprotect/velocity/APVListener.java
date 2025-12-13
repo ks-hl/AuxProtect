@@ -57,10 +57,10 @@ public class APVListener {
                 plugin.print(ex);
             }
         });
-        String data = "";
-        if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
+        String target = "";
+        if (plugin.getAPConfig().isSessionLogIP()) target = ip;
 
-        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer().getUniqueId()), EntryAction.SESSION, true, e.getResult().isAllowed() ? "" : "CANCELLED", data));
+        plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer().getUniqueId()), EntryAction.SESSION, true, target, e.getResult().isAllowed() ? "" : "CANCELLED"));
 
         if (!e.getResult().isAllowed()) {
             plugin.add(new DbEntry(AuxProtectVelocity.getLabel(e.getPlayer()), EntryAction.KICK, false, "", e.getResult().getReasonComponent().map(AuxProtectVelocity::toString).orElse("")));

@@ -141,7 +141,7 @@ public class InvCommand<S, P extends IAuxProtect, SA extends SenderAdapter<S, P>
                     }
                     try {
                         plugin.getSqlManager().getUserManager().setPendingInventory(plugin.getSqlManager()
-                                        .getUserManager().getUIDFromUUID("$" + target.getUniqueId(), true),
+                                        .getUserManager().getUID("$" + target.getUniqueId(), true),
                                 recover);
                         update(plugin, player, when);
                     } catch (Exception e) {

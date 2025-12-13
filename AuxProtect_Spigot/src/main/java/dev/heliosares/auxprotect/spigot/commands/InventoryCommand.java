@@ -75,7 +75,7 @@ public class InventoryCommand<S, P extends IAuxProtect, SA extends SenderAdapter
         int uid;
         String uuid;
         try {
-            uid = plugin.getSqlManager().getUserManager().getUIDFromUsername(target);
+            uid = plugin.getSqlManager().getUserManager().getUID(target, false);
             uuid = plugin.getSqlManager().getUserManager().getUUIDFromUID(uid);
         } catch (BusyException e) {
             sender.sendLang(Language.L.DATABASE_BUSY);

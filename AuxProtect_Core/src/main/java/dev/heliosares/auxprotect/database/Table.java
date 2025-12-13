@@ -2,7 +2,9 @@ package dev.heliosares.auxprotect.database;
 
 import dev.heliosares.auxprotect.core.IAuxProtect;
 import dev.heliosares.auxprotect.core.PlatformType;
+import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -22,7 +24,7 @@ import static dev.heliosares.auxprotect.database.Table.Characteristic.STRING_TAR
 public enum Table {
     AUXPROTECT_MAIN(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
     AUXPROTECT_SPAM(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
-    AUXPROTECT_LONGTERM(AP_ENTRIES, ACTION_ID, STRING_TARGET), //
+    AUXPROTECT_LONGTERM(AP_ENTRIES, ACTION_ID), //
     AUXPROTECT_ABANDONED(AP_ENTRIES, LOCATION, ACTION_ID, PRIVATE), //
     AUXPROTECT_XRAY(AP_ENTRIES, DATA, LOCATION, PRIVATE), //
     AUXPROTECT_INVENTORY(AP_ENTRIES, DATA, LOCATION, ACTION_ID, BLOB_ID), //
@@ -34,7 +36,7 @@ public enum Table {
     AUXPROTECT_API(AP_ENTRIES, DATA, LOCATION, ACTION_ID), //
 
     // Utility tables
-    AUXPROTECT_INVDIFF(BLOB_ID), AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV, AUXPROTECT_TRANSACTIONS_BLOB;
+    AUXPROTECT_INVDIFF(BLOB_ID), AUXPROTECT_UIDS, AUXPROTECT_WORLDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_MIGRATION_TASKS, AUXPROTECT_INVBLOB, AUXPROTECT_LASTS, AUXPROTECT_INVDIFFBLOB, AUXPROTECT_USERDATA_PENDINV, AUXPROTECT_TRANSACTIONS_BLOB, AUXPROTECT_ENUM_IDS;
 
     public static final long MIN_PURGE_INTERVAL = 1000L * 60L * 60L * 24L * 14L;
     final ConcurrentLinkedQueue<DbEntry> queue = new ConcurrentLinkedQueue<>();
@@ -71,7 +73,7 @@ public enum Table {
         if (plugin.getPlatform().getLevel() == PlatformType.Level.PROXY) {
             return switch (this) {
                 case AUXPROTECT_MAIN, AUXPROTECT_COMMANDS, AUXPROTECT_CHAT, AUXPROTECT_LONGTERM, AUXPROTECT_API,
-                     AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION -> true;
+                     AUXPROTECT_UIDS, AUXPROTECT_API_ACTIONS, AUXPROTECT_VERSION, AUXPROTECT_MIGRATION_TASKS, AUXPROTECT_ENUM_IDS -> true;
                 default -> false;
             };
         }
@@ -86,7 +88,8 @@ public enum Table {
         return characteristics.contains(DATA);
     }
 
-    public boolean hasLocation() {
+    public boolean hasLocation(PlatformType platform) {
+        if (platform.getLevel() == PlatformType.Level.PROXY) return false;
         return characteristics.contains(LOCATION);
     }
 
@@ -140,14 +143,14 @@ public enum Table {
     public LinkedHashMap<String, String> getColumns(PlatformType platform) {
         var map = new LinkedHashMap<String, String>();
 
-        map.put("time", "BIGINT");
+        map.put("time", "BIGINT PRIMARY KEY");
         map.put("uid", "INTEGER");
 
         if (hasActionId()) {
             map.put("action_id", "SMALLINT");
         }
 
-        if (platform.getLevel() == PlatformType.Level.SERVER && hasLocation()) {
+        if (hasLocation(platform)) {
             map.put("world_id", "SMALLINT");
             map.put("x", "INTEGER");
             map.put("y", "SMALLINT");
@@ -164,15 +167,7 @@ public enum Table {
         }
 
         if (hasStringTarget()) {
-            if (this == AUXPROTECT_COMMANDS) {
-                map.put("target", "LONGTEXT");
-            } else {
-                map.put("target", "VARCHAR(255)");
-            }
-
-            if (this == AUXPROTECT_LONGTERM) {
-                map.put("target_hash", "INT");
-            }
+            map.put("target", "LONGTEXT");
         } else {
             map.put("target_id", "INTEGER");
         }
@@ -231,41 +226,52 @@ public enum Table {
         }
     }
 
-    public List<String> getIndexStatements() {
-        return Arrays.stream(Index.values()).filter(i -> i.exists(this)).map(i -> i.getCreate(this)).toList();
+    public List<String> getIndexStatements(PlatformType platform) {
+        return Arrays.stream(Index.values()).filter(i -> i.exists(this, platform)).map(i -> i.getCreate(this)).toList();
     }
 
+    @RequiredArgsConstructor
     public enum Index {
-        UID, TIME, XZ;
+        UID(
+                "idx_%s_action_uid",
+                List.of("action_id", "uid")
+        ),
+        TIME(
+                "uidx_%s_time_action",
+                List.of("time", "action_id")
+        ),
+        XZ(
+                "idx_%s_action_xz",
+                List.of("action_id", "x", "z")
+        );
+
+        private final String name;
+        private final List<String> columns;
 
         public String getName(Table table) {
-            String name = "idx_" + table;
-
-            if (table.hasActionId()) name += "_action";
-
-            return name + "_" + this.toString().toLowerCase();
+            return String.format(this.name, table.toString());
         }
 
-        public boolean exists(Table table) {
-            return this != XZ || table.hasLocation();
+        public boolean exists(Table table, PlatformType platform) {
+            if (this == XZ) {
+                return table.hasLocation(platform);
+            }
+            return true;
         }
 
         public String getCreate(Table table) {
-            return "CREATE INDEX IF NOT EXISTS " + getName(table) + " ON " + table + " " + getColumns(table);
+            String create = "CREATE ";
+            if (this == TIME) create += "UNIQUE ";
+            create += "INDEX IF NOT EXISTS " + getName(table) + " ON " + table + " " + getColumns(table);
+            return create;
         }
 
         private String getColumns(Table table) {
-            String out = "(";
-            if (table.hasActionId()) {
-                out += "action_id, ";
+            List<String> columns = new ArrayList<>(this.columns);
+            if (!table.hasActionId()) {
+                columns.remove("action_id");
             }
-            out += switch (this) {
-                case UID -> "uid";
-                case TIME -> "time";
-                case XZ -> "x, z";
-            };
-            out += ")";
-            return out;
+            return "(" + columns.stream().reduce((a, b) -> a + ", " + b).orElse("") + ")";
         }
     }
 

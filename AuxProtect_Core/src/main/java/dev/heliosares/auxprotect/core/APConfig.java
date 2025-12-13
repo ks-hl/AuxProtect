@@ -66,6 +66,8 @@ public class APConfig {
     private boolean sanitizeUnicode;
     @Getter
     private boolean indexing;
+    @Getter
+    private boolean migrateDataNormalization;
 
     public void load(IAuxProtect plugin, File file, Supplier<InputStream> streamSupplier) throws IOException {
         this.plugin = plugin;
@@ -135,6 +137,7 @@ public class APConfig {
         }
         demoMode = config.getBoolean("demomode").orElse(false);
         indexing = config.getBoolean("Indexing").orElse(false);
+        migrateDataNormalization = config.getBoolean("MigrateDataNormalization").orElse(false);
         config.save();
     }
 

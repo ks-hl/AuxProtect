@@ -119,7 +119,7 @@ public class DbEntry {
         if (uid > 0) {
             return uid;
         }
-        return uid = sql.getUserManager().getUIDFromUUID(getUserUUID(), true);
+        return uid = sql.getUserManager().getUID(getUserUUID(), true);
     }
 
     public String getUser() throws SQLException, BusyException {
@@ -146,7 +146,7 @@ public class DbEntry {
         if (target_id > 0) {
             return target_id;
         }
-        return target_id = sql.getUserManager().getUIDFromUUID(getTargetUUID(), true);
+        return target_id = sql.getUserManager().getUID(getTargetUUID(), true);
     }
 
     public String getTarget() throws SQLException, BusyException {

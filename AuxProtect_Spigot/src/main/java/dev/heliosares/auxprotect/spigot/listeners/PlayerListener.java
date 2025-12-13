@@ -213,9 +213,9 @@ public class PlayerListener implements Listener {
         logMoney(plugin, e.getPlayer(), "join");
         if (e.getPlayer().getAddress() != null) {
             String ip = e.getPlayer().getAddress().getHostString();
-            String data = "";
-            if (plugin.getAPConfig().isSessionLogIP()) data = "IP: " + ip;
-            logSession(e.getPlayer(), true, data);
+            String target = "";
+            if (plugin.getAPConfig().isSessionLogIP()) target = ip;
+            logSession(e.getPlayer(), true, target);
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 try {
                     plugin.getSqlManager().getUserManager().updateUsernameAndIP(e.getPlayer().getUniqueId(),
@@ -237,7 +237,7 @@ public class PlayerListener implements Listener {
             try {
                 if (plugin.getSqlManager().getUserManager()
                         .getPendingInventory(plugin.getSqlManager().getUserManager()
-                                .getUIDFromUUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
+                                .getUID("$" + e.getPlayer().getUniqueId(), false)) == null) {
                     return;
                 }
             } catch (SQLException | BusyException e1) {
@@ -327,9 +327,8 @@ public class PlayerListener implements Listener {
                 e.getPlayer().getLocation(), "", e.getReason()));
     }
 
-    protected void logSession(Player player, boolean login, String supp) {
-        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), "",
-                supp));
+    protected void logSession(Player player, boolean login, String target) {
+        plugin.add(new SpigotDbEntry(AuxProtectSpigot.getLabel(player), EntryAction.SESSION, login, player.getLocation(), target, ""));
     }
 
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)

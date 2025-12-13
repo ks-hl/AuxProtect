@@ -5,12 +5,11 @@ import dev.heliosares.auxprotect.utils.BidiMapCache;
 import dev.kshl.kshlib.exceptions.BusyException;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.Objects;
 import java.util.UUID;
 
 public class SQLUserManager {
@@ -24,45 +23,32 @@ public class SQLUserManager {
     }
 
     public void updateUsernameAndIP(UUID uuid, String name, String ip) throws SQLException, BusyException {
-        final int uid = this.getUIDFromUUID("$" + uuid, true);
+        Objects.requireNonNull(uuid, "UUID cannot be null");
+        Objects.requireNonNull(name, "Username cannot be null");
+        Objects.requireNonNull(ip, "IP cannot be null");
+
+        final int uid = this.getUID("$" + uuid, true);
         if (uid <= 0) {
             return;
         }
         usernames.put(uid, name);
         sql.executeTransaction(connection -> {
-            String newestusername = null;
-            long newestusernametime = 0;
-            boolean newip = true;
-            String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE uid=?;";
-            plugin.debug(stmt, 3);
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                pstmt.setInt(1, uid);
-                try (ResultSet results = pstmt.executeQuery()) {
-                    while (results.next()) {
-                        String target = results.getString("target");
-                        if (target == null) {
-                            continue;
-                        }
-                        long time = results.getLong("time");
-                        int action_id = results.getInt("action_id");
-                        if (action_id == EntryAction.IP.id) {
-                            if (target.equals(ip)) {
-                                newip = false;
-                            }
-                        } else if (action_id == EntryAction.USERNAME.id) {
-                            if (time > newestusernametime) {
-                                newestusername = target;
-                                newestusernametime = time;
-                            }
-                        }
-                    }
-                }
-            }
-            if (newip) {
+            int ipID = getUID(connection, ip, true);
+            if (sql.query(connection, "SELECT 1 FROM " + Table.AUXPROTECT_LONGTERM + " WHERE target_id=?", ResultSet::next, ipID)) {
                 plugin.add(new DbEntry("$" + uuid, EntryAction.IP, false, ip, ""));
             }
-            if (!name.equalsIgnoreCase(newestusername)) {
-                plugin.debug("New username: " + name + " for " + newestusername);
+            String stmt = String.format("""
+                    SELECT value
+                    FROM %s
+                    LEFT JOIN %s AS u
+                        ON u.id=target_id
+                    WHERE
+                        uid=?
+                        AND action_id=?
+                    ORDER BY time DESC
+                    LIMIT 1
+                    """, Table.AUXPROTECT_LONGTERM, Table.AUXPROTECT_UIDS);
+            if (sql.query(connection, stmt, rs -> !name.equalsIgnoreCase(rs.getString(1)), uid, EntryAction.USERNAME.id)) {
                 plugin.add(new DbEntry("$" + uuid, EntryAction.USERNAME, false, name, ""));
             }
         }, 300000L);
@@ -85,11 +71,19 @@ public class SQLUserManager {
             return usernames.get(uid);
         }
 
-        return sql.query(connection, "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=? ORDER BY time DESC LIMIT 1", rs -> {
+        return sql.query(connection, String.format("""
+                SELECT value FROM %s
+                LEFT JOIN %s AS u ON u.id=target_id
+                WHERE
+                    action_id=?
+                    AND uid=?
+                ORDER BY time DESC
+                LIMIT 1
+                """, Table.AUXPROTECT_LONGTERM, Table.AUXPROTECT_UIDS), rs -> {
             if (!rs.next()) return null;
 
-            String username = rs.getString("target");
-            plugin.debug("Resolved UID " + uid + " to " + username, 5);
+            String username = rs.getString(1);
+            plugin.debug("Resolved UID " + uid + " to " + username, 2);
             if (username != null) {
                 usernames.put(uid, username);
             }
@@ -97,70 +91,31 @@ public class SQLUserManager {
         }, EntryAction.USERNAME.id, uid);
     }
 
-    public HashMap<Long, String> getUsernamesFromUID(int uid, boolean wait) throws SQLException, BusyException {
-        HashMap<Long, String> out = new HashMap<>();
-        String stmt = "SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND uid=?;";
-        plugin.debug(stmt, 3);
-        sql.execute(connection -> {
-            try (PreparedStatement pstmt = connection.prepareStatement(stmt)) {
-                pstmt.setInt(1, EntryAction.USERNAME.id);
-                pstmt.setInt(2, uid);
-                try (ResultSet results = pstmt.executeQuery()) {
-                    while (results.next()) {
-                        long time = results.getLong("time");
-                        String username = results.getString("target");
-                        if (username != null) {
-                            out.put(time, username);
-                        }
-                    }
-                }
-            }
-        }, wait ? 300000L : 3000L);
-        return out;
+    public long getJoinTime(int uid) throws SQLException, BusyException {
+        return sql.query("SELECT MIN(time) FROM " + Table.AUXPROTECT_LONGTERM + " WHERE uid=?", rs -> {
+            if (!rs.next()) return 0L;
+            return rs.getLong(1);
+        }, 3000L, uid) / Snowflake.COUNTER_FACTOR;
     }
 
-    public int getUIDFromUsername(String username) throws SQLException, BusyException {
-        if (username == null) {
-            return -1;
-        }
-        if (usernames.containsValue(username)) {
-            return usernames.getKey(username);
-        }
-
-        return sql.query("SELECT * FROM " + Table.AUXPROTECT_LONGTERM + " WHERE action_id=? AND target_hash=? ORDER BY time DESC LIMIT 1", rs -> {
-            while (rs.next()) {
-                String username_ = rs.getString("target");
-                if (username_ == null || !username_.equalsIgnoreCase(username)) continue;
-                int uid = rs.getInt("uid");
-                if (uid > 0) {
-                    plugin.debug("Resolved username " + username_ + " to UID " + uid, 5);
-                    usernames.put(uid, username_);
-                    return uid;
-                }
-            }
-            plugin.debug("Unknown UID for " + username, 3);
-            return -1;
-        }, 5000L, EntryAction.USERNAME.id, username.toLowerCase().hashCode());
+    public int getUID(String value, boolean insert) throws SQLException, BusyException {
+        if (value == null || value.equalsIgnoreCase("#null")) return -1;
+        if (value.isBlank()) return 0;
+        return sql.getUidManager().getIDOpt(value, insert).orElse(-1);
     }
 
-    public int getUIDFromUUID(String uuid) throws SQLException, BusyException {
-        return getUIDFromUUID(uuid, false);
+    public int getUID(Connection connection, String value, boolean insert) throws SQLException {
+        if (value == null || value.equalsIgnoreCase("#null")) return -1;
+        if (value.isBlank()) return 0;
+        return sql.getUidManager().getIDOpt(connection, value, insert).orElse(-1);
     }
 
-    public int getUIDFromUUID(String uuid, boolean insert) throws SQLException, BusyException {
-        return sql.execute(connection -> {
-            return getUIDFromUUID(connection, uuid, insert);
-        }, 3000L);
-    }
-
-    public int getUIDFromUUID(Connection connection, String uuid, boolean insert) throws SQLException {
-        if (uuid == null || uuid.equalsIgnoreCase("#null")) {
-            return -1;
-        }
-        if (uuid.isEmpty()) {
-            return 0;
-        }
-        return sql.getUidManager().getIDOpt(connection, uuid, insert).orElse(-1);
+    public int getUIDFromUsernameID(int nameID) throws SQLException, BusyException {
+        if (nameID <= 0) return -1;
+        return sql.query("SELECT uid FROM " + Table.AUXPROTECT_LONGTERM + " WHERE target_id=? AND action_id=? ORDER BY time DESC LIMIT 1", rs -> {
+            if (!rs.next()) return -1;
+            return rs.getInt("uid");
+        }, 3000L, nameID, EntryAction.USERNAME.id);
     }
 
     public String getUUIDFromUID(int uid) throws SQLException, BusyException {
