@@ -282,7 +282,7 @@ public class SQLManager extends ConnectionPool {
                         String ntext = results.getString("ntext");
                         String ptext = results.getString("ptext");
                         nextActionId = Math.max(nextActionId, Math.max(nid, pid) + 1);
-                        new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API_ACTIONS);
+                        new EntryAction(key, nid, pid, ntext, ptext, Table.AUXPROTECT_API);
                     }
                 }
             }
